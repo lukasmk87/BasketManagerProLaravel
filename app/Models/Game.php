@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -189,6 +191,30 @@ class Game extends Model implements HasMedia
             ->withTimestamps();
     }
 
+    /**
+     * Get all game actions for this game.
+     */
+    public function gameActions(): HasMany
+    {
+        return $this->hasMany(GameAction::class);
+    }
+
+    /**
+     * Get the live game data for this game.
+     */
+    public function liveGame(): HasOne
+    {
+        return $this->hasOne(LiveGame::class);
+    }
+
+    /**
+     * Get the scorer assignments for this game.
+     */
+    public function scorekeeperAssignments(): HasMany
+    {
+        return $this->hasMany(ScorekeeperAssignment::class);
+    }
+
     // ============================
     // SCOPES
     // ============================
@@ -241,6 +267,24 @@ class Game extends Model implements HasMedia
     {
         return $query->where('home_team_id', $teamId)
             ->orWhere('away_team_id', $teamId);
+    }
+
+    /**
+     * Scope a query to only include games with live game data.
+     */
+    public function scopeWithLiveData($query)
+    {
+        return $query->whereHas('liveGame');
+    }
+
+    /**
+     * Scope a query to only include games that are currently being broadcast.
+     */
+    public function scopeBroadcasting($query)
+    {
+        return $query->whereHas('liveGame', function ($q) {
+            $q->where('is_being_broadcasted', true);
+        });
     }
 
     // ============================
@@ -540,6 +584,61 @@ class Game extends Model implements HasMedia
             'scheduled_at' => $newDateTime,
             'pre_game_notes' => $reason,
         ]);
+    }
+
+    /**
+     * Check if the game can be scored.
+     */
+    public function canBeScored(): bool
+    {
+        return in_array($this->status, ['live', 'halftime', 'overtime']);
+    }
+
+    /**
+     * Check if the game can be started.
+     */
+    public function canBeStarted(): bool
+    {
+        return $this->status === 'scheduled' && 
+               $this->scheduled_at <= now()->addMinutes(30);
+    }
+
+    /**
+     * Get the opponent team for a given team.
+     */
+    public function getOpponentTeam(BasketballTeam $team): BasketballTeam
+    {
+        if ($this->home_team_id === $team->id) {
+            return $this->awayTeam;
+        } elseif ($this->away_team_id === $team->id) {
+            return $this->homeTeam;
+        }
+        
+        throw new \InvalidArgumentException('Team is not participating in this game');
+    }
+
+    /**
+     * Check if a team is the home team.
+     */
+    public function isHomeTeam(BasketballTeam $team): bool
+    {
+        return $this->home_team_id === $team->id;
+    }
+
+    /**
+     * Check if a team is the away team.
+     */
+    public function isAwayTeam(BasketballTeam $team): bool
+    {
+        return $this->away_team_id === $team->id;
+    }
+
+    /**
+     * Get the team for a given side.
+     */
+    public function getTeamForSide(string $side): BasketballTeam
+    {
+        return $side === 'home' ? $this->homeTeam : $this->awayTeam;
     }
 
     // ============================
