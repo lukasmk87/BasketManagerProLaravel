@@ -1,0 +1,558 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Team;
+use App\Models\Player;
+use App\Models\User;
+use App\Models\Club;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Collection;
+
+class TeamService
+{
+    public function __construct(
+        private StatisticsService $statisticsService
+    ) {}
+
+    /**
+     * Create a new team.
+     */
+    public function createTeam(array $data): Team
+    {
+        DB::beginTransaction();
+
+        try {
+            $team = Team::create([
+                'name' => $data['name'],
+                'short_name' => $data['short_name'] ?? null,
+                'club_id' => $data['club_id'],
+                'description' => $data['description'] ?? null,
+                'season' => $data['season'],
+                'league' => $data['league'] ?? null,
+                'division' => $data['division'] ?? null,
+                'gender' => $data['gender'],
+                'age_group' => $data['age_group'],
+                'competitive_level' => $data['competitive_level'] ?? 'recreational',
+                'max_players' => $data['max_players'] ?? 15,
+                'min_age' => $data['min_age'] ?? null,
+                'max_age' => $data['max_age'] ?? null,
+                'head_coach_id' => $data['head_coach_id'] ?? null,
+                'assistant_coach_id' => $data['assistant_coach_id'] ?? null,
+                'is_active' => $data['is_active'] ?? true,
+                'is_recruiting' => $data['is_recruiting'] ?? false,
+                'home_venue' => $data['home_venue'] ?? null,
+                'venue_details' => $data['venue_details'] ?? null,
+                'training_schedule' => $data['training_schedule'] ?? null,
+                'practice_times' => $data['practice_times'] ?? null,
+                'team_color_primary' => $data['team_color_primary'] ?? '#000000',
+                'team_color_secondary' => $data['team_color_secondary'] ?? '#ffffff',
+                'team_logo_url' => $data['team_logo_url'] ?? null,
+                'contact_email' => $data['contact_email'] ?? null,
+                'contact_phone' => $data['contact_phone'] ?? null,
+                'registration_fee' => $data['registration_fee'] ?? null,
+                'monthly_fee' => $data['monthly_fee'] ?? null,
+                'equipment_provided' => $data['equipment_provided'] ?? false,
+                'insurance_required' => $data['insurance_required'] ?? true,
+                'medical_check_required' => $data['medical_check_required'] ?? true,
+                'requirements' => $data['requirements'] ?? null,
+                'additional_info' => $data['additional_info'] ?? null,
+            ]);
+
+            // Add head coach as team member if specified
+            if (!empty($data['head_coach_id'])) {
+                $this->addCoachToTeam($team, $data['head_coach_id'], 'head_coach');
+            }
+
+            // Add assistant coach as team member if specified
+            if (!empty($data['assistant_coach_id'])) {
+                $this->addCoachToTeam($team, $data['assistant_coach_id'], 'assistant_coach');
+            }
+
+            DB::commit();
+
+            Log::info("Team created successfully", [
+                'team_id' => $team->id,
+                'team_name' => $team->name,
+                'club_id' => $team->club_id
+            ]);
+
+            return $team->fresh(['club', 'headCoach', 'assistantCoach']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Failed to create team", [
+                'error' => $e->getMessage(),
+                'data' => $data
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Update an existing team.
+     */
+    public function updateTeam(Team $team, array $data): Team
+    {
+        DB::beginTransaction();
+
+        try {
+            $team->update($data);
+
+            // Update coach assignments if changed
+            if (isset($data['head_coach_id']) && $data['head_coach_id'] !== $team->head_coach_id) {
+                if ($team->head_coach_id) {
+                    $this->removeCoachFromTeam($team, $team->head_coach_id, 'head_coach');
+                }
+                if ($data['head_coach_id']) {
+                    $this->addCoachToTeam($team, $data['head_coach_id'], 'head_coach');
+                }
+            }
+
+            if (isset($data['assistant_coach_id']) && $data['assistant_coach_id'] !== $team->assistant_coach_id) {
+                if ($team->assistant_coach_id) {
+                    $this->removeCoachFromTeam($team, $team->assistant_coach_id, 'assistant_coach');
+                }
+                if ($data['assistant_coach_id']) {
+                    $this->addCoachToTeam($team, $data['assistant_coach_id'], 'assistant_coach');
+                }
+            }
+
+            DB::commit();
+
+            Log::info("Team updated successfully", [
+                'team_id' => $team->id,
+                'team_name' => $team->name
+            ]);
+
+            return $team->fresh(['club', 'headCoach', 'assistantCoach']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Failed to update team", [
+                'team_id' => $team->id,
+                'error' => $e->getMessage(),
+                'data' => $data
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Delete a team.
+     */
+    public function deleteTeam(Team $team): bool
+    {
+        DB::beginTransaction();
+
+        try {
+            // Check if team has active players
+            if ($team->activePlayers()->count() > 0) {
+                throw new \InvalidArgumentException('Team kann nicht gelöscht werden, da noch aktive Spieler vorhanden sind.');
+            }
+
+            // Check if team has scheduled games
+            $upcomingGames = $team->allGames()
+                ->where('scheduled_at', '>', now())
+                ->where('status', 'scheduled')
+                ->count();
+
+            if ($upcomingGames > 0) {
+                throw new \InvalidArgumentException('Team kann nicht gelöscht werden, da noch geplante Spiele vorhanden sind.');
+            }
+
+            // Remove all team memberships
+            $team->members()->detach();
+
+            // Soft delete the team
+            $team->delete();
+
+            DB::commit();
+
+            Log::info("Team deleted successfully", [
+                'team_id' => $team->id,
+                'team_name' => $team->name
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Failed to delete team", [
+                'team_id' => $team->id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get comprehensive team statistics.
+     */
+    public function getTeamStatistics(Team $team): array
+    {
+        $currentSeason = $team->season;
+        
+        return [
+            'basic_stats' => [
+                'games_played' => $team->games_played,
+                'games_won' => $team->games_won,
+                'games_lost' => $team->games_lost,
+                'games_tied' => $team->games_tied,
+                'win_percentage' => $team->win_percentage,
+                'points_scored' => $team->points_scored,
+                'points_allowed' => $team->points_allowed,
+                'points_per_game' => $team->games_played > 0 ? round($team->points_scored / $team->games_played, 1) : 0,
+                'points_allowed_per_game' => $team->games_played > 0 ? round($team->points_allowed / $team->games_played, 1) : 0,
+            ],
+            'roster_stats' => [
+                'current_roster_size' => $team->current_roster_size,
+                'max_players' => $team->max_players,
+                'available_spots' => $team->players_slots_available,
+                'average_player_age' => $team->average_player_age,
+                'captains_count' => $team->players()->where('is_captain', true)->count(),
+                'starters_count' => $team->players()->where('is_starter', true)->count(),
+            ],
+            'season_stats' => $this->statisticsService->getTeamSeasonStats($team, $currentSeason),
+            'recent_performance' => $this->getRecentPerformance($team, 5),
+            'player_contributions' => $this->getTopPlayerContributions($team, $currentSeason),
+        ];
+    }
+
+    /**
+     * Add a player to the team.
+     */
+    public function addPlayerToTeam(Team $team, array $playerData): Player
+    {
+        DB::beginTransaction();
+
+        try {
+            // Check if team can accept new players
+            if (!$team->canAcceptNewPlayer()) {
+                throw new \InvalidArgumentException('Team kann keine neuen Spieler aufnehmen.');
+            }
+
+            // Validate jersey number uniqueness
+            if (!empty($playerData['jersey_number'])) {
+                $existingPlayer = $team->players()
+                    ->where('jersey_number', $playerData['jersey_number'])
+                    ->where('status', 'active')
+                    ->first();
+                
+                if ($existingPlayer) {
+                    throw new \InvalidArgumentException("Trikotnummer {$playerData['jersey_number']} ist bereits vergeben.");
+                }
+            }
+
+            $user = User::findOrFail($playerData['user_id']);
+            
+            // Check if user is already on another active team in the same league/season
+            $existingMembership = $user->players()
+                ->whereHas('team', function ($query) use ($team) {
+                    $query->where('season', $team->season)
+                          ->where('league', $team->league)
+                          ->where('is_active', true);
+                })
+                ->where('status', 'active')
+                ->first();
+
+            if ($existingMembership) {
+                throw new \InvalidArgumentException('Spieler ist bereits in einem anderen aktiven Team in dieser Liga registriert.');
+            }
+
+            // Create player record
+            $player = Player::create([
+                'user_id' => $user->id,
+                'team_id' => $team->id,
+                'jersey_number' => $playerData['jersey_number'] ?? null,
+                'primary_position' => $playerData['position'] ?? null,
+                'secondary_positions' => $playerData['secondary_positions'] ?? null,
+                'is_starter' => $playerData['is_starter'] ?? false,
+                'is_captain' => $playerData['is_captain'] ?? false,
+                'status' => 'active',
+                'joined_at' => now(),
+                'contract_start_date' => $playerData['contract_start_date'] ?? now(),
+                'contract_end_date' => $playerData['contract_end_date'] ?? null,
+                'salary' => $playerData['salary'] ?? null,
+                'notes' => $playerData['notes'] ?? null,
+            ]);
+
+            // Add user to team members
+            $team->members()->attach($user->id, [
+                'role' => 'player',
+                'joined_at' => now()
+            ]);
+
+            DB::commit();
+
+            Log::info("Player added to team successfully", [
+                'team_id' => $team->id,
+                'user_id' => $user->id,
+                'player_id' => $player->id
+            ]);
+
+            return $player->fresh(['user', 'team']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Failed to add player to team", [
+                'team_id' => $team->id,
+                'error' => $e->getMessage(),
+                'player_data' => $playerData
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Remove a player from the team.
+     */
+    public function removePlayerFromTeam(Team $team, Player $player): bool
+    {
+        DB::beginTransaction();
+
+        try {
+            if ($player->team_id !== $team->id) {
+                throw new \InvalidArgumentException('Spieler gehört nicht zu diesem Team.');
+            }
+
+            // Check if player has upcoming games
+            $upcomingGames = $team->allGames()
+                ->where('scheduled_at', '>', now())
+                ->where('status', 'scheduled')
+                ->count();
+
+            if ($upcomingGames > 0 && $player->is_starter) {
+                Log::warning("Removing starter player with upcoming games", [
+                    'team_id' => $team->id,
+                    'player_id' => $player->id,
+                    'upcoming_games' => $upcomingGames
+                ]);
+            }
+
+            // Update player status instead of deleting
+            $player->update([
+                'status' => 'inactive',
+                'left_at' => now(),
+                'is_starter' => false,
+                'is_captain' => false,
+            ]);
+
+            // Remove from team members
+            $team->members()->detach($player->user_id);
+
+            DB::commit();
+
+            Log::info("Player removed from team successfully", [
+                'team_id' => $team->id,
+                'player_id' => $player->id
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Failed to remove player from team", [
+                'team_id' => $team->id,
+                'player_id' => $player->id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Generate comprehensive team report.
+     */
+    public function generateTeamReport(Team $team): array
+    {
+        return [
+            'team_info' => [
+                'id' => $team->id,
+                'name' => $team->name,
+                'short_name' => $team->short_name,
+                'club' => $team->club->name,
+                'season' => $team->season,
+                'league' => $team->league,
+                'division' => $team->division,
+                'gender' => $team->gender,
+                'age_group' => $team->age_group,
+                'competitive_level' => $team->competitive_level,
+            ],
+            'coaching_staff' => [
+                'head_coach' => $team->headCoach?->name,
+                'assistant_coach' => $team->assistantCoach?->name,
+            ],
+            'roster' => $this->getTeamRoster($team),
+            'statistics' => $this->getTeamStatistics($team),
+            'recent_games' => $this->getRecentGames($team, 10),
+            'upcoming_games' => $this->getUpcomingGames($team, 5),
+            'training_info' => [
+                'training_schedule' => $team->training_schedule,
+                'practice_times' => $team->practice_times,
+                'home_venue' => $team->home_venue,
+                'venue_details' => $team->venue_details,
+            ],
+            'financial_info' => [
+                'registration_fee' => $team->registration_fee,
+                'monthly_fee' => $team->monthly_fee,
+                'equipment_provided' => $team->equipment_provided,
+            ],
+            'requirements' => [
+                'insurance_required' => $team->insurance_required,
+                'medical_check_required' => $team->medical_check_required,
+                'requirements' => $team->requirements,
+                'min_age' => $team->min_age,
+                'max_age' => $team->max_age,
+            ],
+            'generated_at' => now()->toISOString(),
+        ];
+    }
+
+    /**
+     * Add coach to team.
+     */
+    private function addCoachToTeam(Team $team, int $userId, string $role): void
+    {
+        $team->members()->attach($userId, [
+            'role' => $role,
+            'joined_at' => now()
+        ]);
+    }
+
+    /**
+     * Remove coach from team.
+     */
+    private function removeCoachFromTeam(Team $team, int $userId, string $role): void
+    {
+        $team->members()->wherePivot('role', $role)->detach($userId);
+    }
+
+    /**
+     * Get team roster with detailed player information.
+     */
+    private function getTeamRoster(Team $team): array
+    {
+        $players = $team->players()
+            ->with(['user:id,name,birth_date'])
+            ->where('status', 'active')
+            ->orderBy('jersey_number')
+            ->get()
+            ->map(function ($player) {
+                return [
+                    'id' => $player->id,
+                    'name' => $player->user?->name ?? $player->full_name,
+                    'jersey_number' => $player->jersey_number,
+                    'position' => $player->primary_position,
+                    'age' => $player->user?->birth_date?->age,
+                    'is_captain' => $player->is_captain,
+                    'is_starter' => $player->is_starter,
+                    'status' => $player->status,
+                    'joined_at' => $player->joined_at?->format('Y-m-d'),
+                ];
+            });
+
+        return [
+            'players' => $players,
+            'total_players' => $players->count(),
+            'captains' => $players->where('is_captain', true)->values(),
+            'starters' => $players->where('is_starter', true)->values(),
+        ];
+    }
+
+    /**
+     * Get recent team performance.
+     */
+    private function getRecentPerformance(Team $team, int $gameCount): array
+    {
+        $recentGames = $team->allGames()
+            ->where('status', 'finished')
+            ->orderBy('scheduled_at', 'desc')
+            ->limit($gameCount)
+            ->get();
+
+        $wins = 0;
+        $totalPoints = 0;
+        $totalPointsAllowed = 0;
+
+        foreach ($recentGames as $game) {
+            $teamScore = $game->isHomeTeam($team) ? $game->home_team_score : $game->away_team_score;
+            $opponentScore = $game->isHomeTeam($team) ? $game->away_team_score : $game->home_team_score;
+            
+            if ($teamScore > $opponentScore) {
+                $wins++;
+            }
+            
+            $totalPoints += $teamScore;
+            $totalPointsAllowed += $opponentScore;
+        }
+
+        return [
+            'games_played' => $recentGames->count(),
+            'wins' => $wins,
+            'losses' => $recentGames->count() - $wins,
+            'win_percentage' => $recentGames->count() > 0 ? round(($wins / $recentGames->count()) * 100, 1) : 0,
+            'avg_points_scored' => $recentGames->count() > 0 ? round($totalPoints / $recentGames->count(), 1) : 0,
+            'avg_points_allowed' => $recentGames->count() > 0 ? round($totalPointsAllowed / $recentGames->count(), 1) : 0,
+        ];
+    }
+
+    /**
+     * Get top player contributions for the team.
+     */
+    private function getTopPlayerContributions(Team $team, string $season): array
+    {
+        $players = $team->players()->where('status', 'active')->get();
+        $contributions = [];
+
+        foreach ($players as $player) {
+            $stats = $this->statisticsService->getPlayerSeasonStats($player, $season);
+            
+            $contributions[] = [
+                'player_id' => $player->id,
+                'name' => $player->user?->name ?? $player->full_name,
+                'jersey_number' => $player->jersey_number,
+                'avg_points' => $stats['avg_points'] ?? 0,
+                'avg_rebounds' => $stats['avg_rebounds'] ?? 0,
+                'avg_assists' => $stats['avg_assists'] ?? 0,
+                'total_points' => $stats['total_points'] ?? 0,
+                'games_played' => $stats['games_played'] ?? 0,
+            ];
+        }
+
+        // Sort by total points descending
+        usort($contributions, function ($a, $b) {
+            return $b['total_points'] <=> $a['total_points'];
+        });
+
+        return array_slice($contributions, 0, 10); // Top 10 contributors
+    }
+
+    /**
+     * Get recent games.
+     */
+    private function getRecentGames(Team $team, int $limit): Collection
+    {
+        return $team->allGames()
+            ->with(['homeTeam:id,name', 'awayTeam:id,name'])
+            ->where('status', 'finished')
+            ->orderBy('scheduled_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Get upcoming games.
+     */
+    private function getUpcomingGames(Team $team, int $limit): Collection
+    {
+        return $team->allGames()
+            ->with(['homeTeam:id,name', 'awayTeam:id,name'])
+            ->where('status', 'scheduled')
+            ->where('scheduled_at', '>', now())
+            ->orderBy('scheduled_at', 'asc')
+            ->limit($limit)
+            ->get();
+    }
+}

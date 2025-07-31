@@ -123,7 +123,7 @@ trait HasLocalePreference
     /**
      * Check if the user has a specific locale preference.
      */
-    public function hasLocalePreference(string $locale = null): bool
+    public function hasLocalePreference(?string $locale = null): bool
     {
         if ($locale === null) {
             return !empty($this->language);

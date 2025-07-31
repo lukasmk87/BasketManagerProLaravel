@@ -194,7 +194,7 @@ class Player extends Model implements HasMedia
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(BasketballTeam::class, 'team_id');
+        return $this->belongsTo(Team::class, 'team_id');
     }
 
     /**
