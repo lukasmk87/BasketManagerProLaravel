@@ -1,0 +1,186 @@
+<script setup>
+import { computed } from 'vue';
+
+const props = defineProps({
+    dashboardData: Object,
+    user: Object,
+    recentActivities: Array,
+});
+
+const availableActions = computed(() => props.dashboardData.available_actions || {});
+const hasActions = computed(() => Object.keys(availableActions.value).length > 0);
+</script>
+
+<template>
+    <div class="space-y-6">
+        <!-- Welcome Message -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-6">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-orange-100 mb-4">
+                        <svg class="h-12 w-12 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v18a1 1 0 01-1 1H4a1 1 0 01-1-1V1a1 1 0 011-1h2a1 1 0 011 1v3m0 0h8m-8 0H4a1 1 0 00-1 1v3a1 1 0 001 1h3m12-4h3a1 1 0 011 1v3a1 1 0 01-1 1h-3m-12 4v3a1 1 0 001 1h3m8-4h3a1 1 0 011 1v3a1 1 0 01-1 1h-3"></path>
+                        </svg>
+                    </div>
+                    
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">
+                        Willkommen bei BasketManager Pro!
+                    </h3>
+                    
+                    <p class="text-sm text-gray-600 max-w-md mx-auto mb-6">
+                        {{ dashboardData.message || 'Ihr Dashboard wird eingerichtet. Kontaktieren Sie Ihren Administrator für weitere Informationen zu Rollen und Berechtigungen.' }}
+                    </p>
+                    
+                    <!-- Available Actions -->
+                    <div v-if="hasActions" class="space-y-4">
+                        <h4 class="text-sm font-medium text-gray-900">Verfügbare Aktionen:</h4>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <a v-for="(description, action) in availableActions" 
+                               :key="action"
+                               :href="route(action === 'profile' ? 'profile.show' : action === 'settings' ? 'profile.show' : '#')"
+                               class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200">
+                                <svg v-if="action === 'profile'" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                                <svg v-else-if="action === 'settings'" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <svg v-else class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                {{ description }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Get Started Card -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="ml-3 text-lg font-medium text-blue-900">
+                        Erste Schritte
+                    </h3>
+                </div>
+                <div class="text-sm text-blue-700 space-y-2">
+                    <p>• Vervollständigen Sie Ihr Profil</p>
+                    <p>• Kontaktieren Sie Ihren Administrator</p>
+                    <p>• Treten Sie einem Team oder Club bei</p>
+                </div>
+            </div>
+
+            <!-- Features Card -->
+            <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="ml-3 text-lg font-medium text-green-900">
+                        Features
+                    </h3>
+                </div>
+                <div class="text-sm text-green-700 space-y-2">
+                    <p>• Team- und Spielerverwaltung</p>
+                    <p>• Live-Scoring und Statistiken</p>
+                    <p>• Training und Terminplanung</p>
+                    <p>• Notfallkontakte-System</p>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="ml-3 text-lg font-medium text-orange-900">
+                        Hilfe
+                    </h3>
+                </div>
+                <div class="text-sm text-orange-700 space-y-2">
+                    <p>• Benutzerhandbuch verfügbar</p>
+                    <p>• Support-Team kontaktieren</p>
+                    <p>• Video-Tutorials ansehen</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Administrator -->
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
+                    <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                
+                <h3 class="text-lg font-medium text-gray-900 mb-2">
+                    Benötigen Sie Hilfe?
+                </h3>
+                
+                <p class="text-sm text-gray-600 mb-4">
+                    Kontaktieren Sie Ihren Administrator, um Rollen und Berechtigungen zu erhalten oder weitere Fragen zu klären.
+                </p>
+                
+                <div class="flex justify-center space-x-3">
+                    <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        Administrator kontaktieren
+                    </button>
+                    
+                    <button class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        Dokumentation
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities (if available) -->
+        <div v-if="recentActivities && recentActivities.length > 0" class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    Letzte Aktivitäten
+                </h3>
+                
+                <div class="space-y-3">
+                    <div v-for="activity in recentActivities" :key="activity.id" 
+                         class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-900">
+                                {{ activity.description }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                {{ new Date(activity.created_at).toLocaleDateString('de-DE') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
