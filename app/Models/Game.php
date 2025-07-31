@@ -566,7 +566,7 @@ class Game extends Model implements HasMedia
     /**
      * Cancel the game.
      */
-    public function cancelGame(string $reason = null): void
+    public function cancelGame(?string $reason = null): void
     {
         $this->update([
             'status' => 'cancelled',
@@ -577,7 +577,7 @@ class Game extends Model implements HasMedia
     /**
      * Postpone the game.
      */
-    public function postponeGame(\DateTime $newDateTime, string $reason = null): void
+    public function postponeGame(\DateTime $newDateTime, ?string $reason = null): void
     {
         $this->update([
             'status' => 'postponed',
@@ -663,7 +663,7 @@ class Game extends Model implements HasMedia
     /**
      * Register media conversions.
      */
-    public function registerMediaConversions(Media $media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')
             ->width(300)

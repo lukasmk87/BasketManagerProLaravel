@@ -142,8 +142,7 @@ return new class extends Migration
             $table->index('winning_team_id');
             $table->index(['is_streamed', 'scheduled_at']);
             
-            // Ensure teams don't play themselves
-            $table->check('home_team_id != away_team_id');
+            // Note: Check constraint (home_team_id != away_team_id) handled in application logic
         });
     }
 
