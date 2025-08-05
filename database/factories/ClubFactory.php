@@ -44,16 +44,13 @@ class ClubFactory extends Factory
             'address_country' => 'Deutschland',
             
             // Club details
-            'founded_year' => $this->faker->numberBetween(1950, 2020),
-            'colors' => json_encode([
-                'primary' => $this->faker->hexColor(),
-                'secondary' => $this->faker->hexColor(),
-            ]),
+            'founded_at' => $this->faker->optional(0.8)->dateTimeBetween('-70 years', '-5 years'),
+            'primary_color' => $this->faker->hexColor(),
+            'secondary_color' => $this->faker->hexColor(),
+            'accent_color' => $this->faker->optional(0.5)->hexColor(),
             
             // Financial information
-            'membership_fee_annual' => $this->faker->randomFloat(2, 50, 500),
-            'membership_fee_monthly' => $this->faker->randomFloat(2, 5, 50),
-            'membership_fee_family' => $this->faker->randomFloat(2, 80, 400),
+            'membership_fee' => $this->faker->randomFloat(2, 50, 500),
             
             // Facilities
             'facilities' => json_encode([
@@ -64,16 +61,16 @@ class ClubFactory extends Factory
             ]),
             
             // Social media
-            'social_media' => json_encode([
+            'social_links' => json_encode([
                 'facebook' => $this->faker->optional(0.6)->url(),
                 'instagram' => $this->faker->optional(0.5)->userName(),
                 'twitter' => $this->faker->optional(0.3)->userName(),
             ]),
             
             // League information
-            'league_memberships' => json_encode([
-                $this->faker->randomElement(['Regionalliga', 'Landesliga', 'Bezirksliga', 'Kreisliga']),
-            ]),
+            'league' => $this->faker->randomElement(['Regionalliga', 'Landesliga', 'Bezirksliga', 'Kreisliga']),
+            'division' => $this->faker->optional(0.7)->randomElement(['A', 'B', 'C']),
+            'season' => '2024-25',
             
             // Settings
             'settings' => json_encode([
@@ -82,34 +79,35 @@ class ClubFactory extends Factory
                 'enable_emergency_system' => $this->faker->boolean(80),
             ]),
             
+            // Preferences
+            'preferences' => json_encode([
+                'notification_preferences' => [
+                    'email_notifications' => $this->faker->boolean(90),
+                    'sms_notifications' => $this->faker->boolean(60),
+                ],
+            ]),
+            
             // Status
             'is_active' => $this->faker->boolean(95),
             'is_verified' => $this->faker->boolean(80),
             'verified_at' => $this->faker->optional(0.8)->dateTimeBetween('-2 years', 'now'),
-            'status' => $this->faker->randomElement(['active', 'inactive', 'pending']),
             
-            // Registration
-            'registration_number' => $this->faker->optional(0.7)->regexify('[A-Z]{2}[0-9]{6}'),
-            'tax_number' => $this->faker->optional(0.6)->regexify('[0-9]{11}'),
+            // Language settings
+            'default_language' => 'de',
+            'supported_languages' => json_encode(['de', 'en']),
             
-            // Emergency contacts
-            'emergency_contacts' => json_encode([
-                [
-                    'name' => $this->faker->name(),
-                    'phone' => $this->faker->phoneNumber(),
-                    'email' => $this->faker->email(),
-                    'role' => 'Präsident',
-                ],
-                [
-                    'name' => $this->faker->name(),
-                    'phone' => $this->faker->phoneNumber(),
-                    'email' => $this->faker->email(),
-                    'role' => 'Geschäftsführer',
-                ],
-            ]),
+            // Currency
+            'currency' => 'EUR',
             
-            'created_at' => $this->faker->dateTimeBetween('-2 years', 'now'),
-            'updated_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
+            // Emergency contact (single contact instead of array)
+            'emergency_contact_name' => $this->faker->name(),
+            'emergency_contact_phone' => $this->faker->phoneNumber(),
+            'emergency_contact_email' => $this->faker->email(),
+            
+            // GDPR compliance
+            'gdpr_compliant' => $this->faker->boolean(95),
+            'privacy_policy_updated_at' => $this->faker->optional(0.8)->dateTimeBetween('-1 year', 'now'),
+            'terms_updated_at' => $this->faker->optional(0.8)->dateTimeBetween('-1 year', 'now'),
         ];
     }
 
@@ -121,7 +119,7 @@ class ClubFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'is_verified' => true,
             'verified_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
-            'status' => 'active',
+            'is_active' => true,
         ]);
     }
 
@@ -132,7 +130,6 @@ class ClubFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_active' => false,
-            'status' => 'inactive',
         ]);
     }
 
@@ -144,7 +141,6 @@ class ClubFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'is_verified' => false,
             'verified_at' => null,
-            'status' => 'pending',
         ]);
     }
 
@@ -154,15 +150,15 @@ class ClubFactory extends Factory
     public function small(): static
     {
         return $this->state(fn (array $attributes) => [
-            'membership_fee_annual' => $this->faker->randomFloat(2, 30, 150),
-            'membership_fee_monthly' => $this->faker->randomFloat(2, 3, 15),
+            'membership_fee' => $this->faker->randomFloat(2, 30, 150),
             'facilities' => json_encode([
                 'courts' => 1,
                 'gym' => false,
                 'locker_rooms' => true,
                 'parking' => $this->faker->boolean(50),
             ]),
-            'league_memberships' => json_encode(['Kreisliga']),
+            'league' => 'Kreisliga',
+            'division' => null,
         ]);
     }
 
@@ -172,8 +168,7 @@ class ClubFactory extends Factory
     public function large(): static
     {
         return $this->state(fn (array $attributes) => [
-            'membership_fee_annual' => $this->faker->randomFloat(2, 200, 800),
-            'membership_fee_monthly' => $this->faker->randomFloat(2, 20, 80),
+            'membership_fee' => $this->faker->randomFloat(2, 200, 800),
             'facilities' => json_encode([
                 'courts' => $this->faker->numberBetween(2, 6),
                 'gym' => true,
@@ -182,7 +177,8 @@ class ClubFactory extends Factory
                 'restaurant' => true,
                 'pro_shop' => true,
             ]),
-            'league_memberships' => json_encode(['Bundesliga', 'Regionalliga']),
+            'league' => $this->faker->randomElement(['Bundesliga', 'Regionalliga']),
+            'division' => $this->faker->randomElement(['A', 'B']),
             'is_verified' => true,
             'verified_at' => $this->faker->dateTimeBetween('-2 years', '-6 months'),
         ]);

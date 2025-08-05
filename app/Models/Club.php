@@ -443,6 +443,14 @@ class Club extends Model implements HasMedia
     // ============================
 
     /**
+     * Get the date format for the model.
+     */
+    public function getDateFormat(): string
+    {
+        return 'Y-m-d H:i:s';
+    }
+
+    /**
      * Get the activity log options.
      */
     public function getActivitylogOptions(): LogOptions

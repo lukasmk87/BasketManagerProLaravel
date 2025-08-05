@@ -322,6 +322,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the date format for the model.
+     */
+    public function getDateFormat(): string
+    {
+        return 'Y-m-d H:i:s';
+    }
+
+    /**
      * Get basketball-specific user statistics.
      */
     public function getBasketballStats(): array
