@@ -136,7 +136,7 @@ class RoleAndPermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create([
+            Permission::firstOrCreate([
                 'name' => $permission,
                 'guard_name' => 'web'
             ]);
@@ -149,14 +149,14 @@ class RoleAndPermissionSeeder extends Seeder
     protected function createRoles(): void
     {
         // Super Admin Role
-        $superAdmin = Role::create([
+        $superAdmin = Role::firstOrCreate([
             'name' => 'super_admin',
             'guard_name' => 'web'
         ]);
         $superAdmin->givePermissionTo(Permission::all());
 
         // System Administrator Role
-        $admin = Role::create([
+        $admin = Role::firstOrCreate([
             'name' => 'admin',
             'guard_name' => 'web'
         ]);
@@ -215,7 +215,7 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // Club Administrator Role
-        $clubAdmin = Role::create([
+        $clubAdmin = Role::firstOrCreate([
             'name' => 'club_admin',
             'guard_name' => 'web'
         ]);
@@ -265,7 +265,7 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // Head Coach/Trainer Role
-        $trainer = Role::create([
+        $trainer = Role::firstOrCreate([
             'name' => 'trainer',
             'guard_name' => 'web'
         ]);
@@ -300,7 +300,7 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // Assistant Coach Role
-        $assistantCoach = Role::create([
+        $assistantCoach = Role::firstOrCreate([
             'name' => 'assistant_coach',
             'guard_name' => 'web'
         ]);
@@ -332,7 +332,7 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // Scorer/Statistician Role
-        $scorer = Role::create([
+        $scorer = Role::firstOrCreate([
             'name' => 'scorer',
             'guard_name' => 'web'
         ]);
@@ -348,7 +348,7 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // Player Role
-        $player = Role::create([
+        $player = Role::firstOrCreate([
             'name' => 'player',
             'guard_name' => 'web'
         ]);
@@ -376,7 +376,7 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // Parent/Guardian Role
-        $parent = Role::create([
+        $parent = Role::firstOrCreate([
             'name' => 'parent',
             'guard_name' => 'web'
         ]);
@@ -401,7 +401,7 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // Team Manager Role
-        $teamManager = Role::create([
+        $teamManager = Role::firstOrCreate([
             'name' => 'team_manager',
             'guard_name' => 'web'
         ]);
@@ -429,7 +429,7 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // Guest/Fan Role
-        $guest = Role::create([
+        $guest = Role::firstOrCreate([
             'name' => 'guest',
             'guard_name' => 'web'
         ]);
@@ -441,7 +441,7 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // Referee Role
-        $referee = Role::create([
+        $referee = Role::firstOrCreate([
             'name' => 'referee',
             'guard_name' => 'web'
         ]);

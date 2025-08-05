@@ -2,14 +2,14 @@
 
 namespace App\Observers;
 
-use App\Models\BasketballTeam;
+use App\Models\Team;
 
 class TeamObserver
 {
     /**
      * Handle the Team "created" event.
      */
-    public function created(BasketballTeam $team): void
+    public function created(Team $team): void
     {
         // Log team creation
         activity()
@@ -26,7 +26,7 @@ class TeamObserver
     /**
      * Handle the Team "updated" event.
      */
-    public function updated(BasketballTeam $team): void
+    public function updated(Team $team): void
     {
         // Update player count when team changes
         if ($team->isDirty('max_players')) {
@@ -37,7 +37,7 @@ class TeamObserver
     /**
      * Handle the Team "deleted" event.
      */
-    public function deleted(BasketballTeam $team): void
+    public function deleted(Team $team): void
     {
         // Handle team deletion
         activity()
@@ -49,7 +49,7 @@ class TeamObserver
     /**
      * Handle the Team "restored" event.
      */
-    public function restored(BasketballTeam $team): void
+    public function restored(Team $team): void
     {
         activity()
             ->performedOn($team)
@@ -60,7 +60,7 @@ class TeamObserver
     /**
      * Handle the Team "force deleted" event.
      */
-    public function forceDeleted(BasketballTeam $team): void
+    public function forceDeleted(Team $team): void
     {
         // Handle permanent deletion
         activity()

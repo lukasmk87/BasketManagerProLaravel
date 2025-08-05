@@ -28,6 +28,11 @@ Route::middleware([
     })->name('dashboard');
 });
 
+// Include Jetstream Team Routes
+if (file_exists(base_path('vendor/laravel/jetstream/routes/jetstream.php'))) {
+    require base_path('vendor/laravel/jetstream/routes/jetstream.php');
+}
+
 // Register routes for all locales with prefix (including default locale for explicit redirect)
 foreach ($supportedLocales as $locale) {
     Route::prefix($locale)->name($locale . '.')->group(function () use ($locale, $defaultLocale) {
