@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\DashboardController;
 
 // Define supported locales
 $supportedLocales = config('localization.supported_locales', ['de', 'en']);
@@ -23,9 +24,7 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 // Include Jetstream Team Routes
@@ -70,9 +69,7 @@ foreach ($supportedLocales as $locale) {
                 config('jetstream.auth_session'),
                 'verified',
             ])->group(function () {
-                Route::get('/dashboard', function () {
-                    return Inertia::render('Dashboard');
-                })->name('dashboard');
+                Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
             });
         }
     });
