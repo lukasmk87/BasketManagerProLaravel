@@ -2583,4 +2583,991 @@ class StatisticsService
 
 ---
 
-Das ist der erste Teil von Phase 2. Das Dokument wird sehr umfangreich, daher sollte ich es aufteilen. Soll ich fortfahren mit den verbleibenden Abschnitten (Real-time Broadcasting, Reporting System, Export-Funktionen, etc.)?
+## 🏆 League Management System
+
+### League Models & Database Design
+
+#### Leagues Migration
+
+```php
+<?php
+// database/migrations/2024_02_20_000000_create_leagues_table.php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('leagues', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('organization_id')->constrained()->onDelete('cascade');
+            
+            // Basic Information
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->string('logo_path')->nullable();
+            
+            // League Configuration
+            $table->enum('type', ['regular', 'cup', 'playoff', 'tournament'])->default('regular');
+            $table->enum('format', ['round_robin', 'single_elimination', 'double_elimination', 'swiss'])->default('round_robin');
+            $table->enum('category', ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'U20', 'Herren', 'Damen', 'Senioren']);
+            $table->enum('gender', ['male', 'female', 'mixed']);
+            
+            // Season Information
+            $table->string('season');
+            $table->date('season_start');
+            $table->date('season_end');
+            $table->date('registration_deadline')->nullable();
+            
+            // League Rules
+            $table->integer('max_teams')->default(16);
+            $table->integer('min_teams')->default(4);
+            $table->integer('games_per_matchday')->nullable();
+            $table->json('scoring_system'); // Points for win/draw/loss
+            $table->json('tiebreaker_rules'); // How to resolve ties
+            $table->json('promotion_relegation')->nullable();
+            
+            // Settings
+            $table->boolean('public_standings')->default(true);
+            $table->boolean('allow_transfers')->default(true);
+            $table->date('transfer_deadline')->nullable();
+            $table->boolean('playoff_system')->default(false);
+            $table->integer('playoff_teams')->nullable();
+            
+            // Status
+            $table->enum('status', ['planning', 'registration', 'active', 'completed', 'cancelled']);
+            $table->boolean('is_published')->default(false);
+            $table->integer('current_matchday')->default(0);
+            
+            // Contact Information
+            $table->string('commissioner_name')->nullable();
+            $table->string('commissioner_email')->nullable();
+            $table->string('commissioner_phone')->nullable();
+            
+            $table->timestamps();
+            
+            // Indexes
+            $table->index(['season', 'category', 'gender']);
+            $table->index(['status', 'is_published']);
+            $table->index('organization_id');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('leagues');
+    }
+};
+```
+
+#### League Teams Migration
+
+```php
+<?php
+// database/migrations/2024_02_21_000000_create_league_teams_table.php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('league_teams', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('league_id')->constrained()->onDelete('cascade');
+            $table->foreignId('team_id')->constrained();
+            
+            // Registration
+            $table->timestamp('registered_at');
+            $table->foreignId('registered_by_user_id')->constrained('users');
+            $table->enum('registration_status', ['pending', 'approved', 'rejected', 'withdrawn']);
+            
+            // League Position
+            $table->integer('league_position')->nullable();
+            $table->integer('group_number')->nullable(); // For group-based leagues
+            
+            // Statistics
+            $table->integer('games_played')->default(0);
+            $table->integer('wins')->default(0);
+            $table->integer('draws')->default(0);
+            $table->integer('losses')->default(0);
+            $table->integer('points_for')->default(0);
+            $table->integer('points_against')->default(0);
+            $table->integer('league_points')->default(0); // League standings points
+            
+            // Additional Stats
+            $table->integer('home_wins')->default(0);
+            $table->integer('home_losses')->default(0);
+            $table->integer('away_wins')->default(0);
+            $table->integer('away_losses')->default(0);
+            $table->integer('streak_current')->default(0); // Current win/loss streak
+            $table->string('streak_type')->nullable(); // 'W' or 'L'
+            
+            // Penalties & Deductions
+            $table->integer('point_deductions')->default(0);
+            $table->text('deduction_reason')->nullable();
+            $table->boolean('relegated')->default(false);
+            $table->boolean('promoted')->default(false);
+            
+            $table->timestamps();
+            
+            // Indexes
+            $table->index(['league_id', 'league_position']);
+            $table->index(['league_id', 'league_points']);
+            $table->unique(['league_id', 'team_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('league_teams');
+    }
+};
+```
+
+### League Service Implementation
+
+```php
+<?php
+// app/Services/LeagueService.php
+
+namespace App\Services;
+
+use App\Models\League;
+use App\Models\Team;
+use App\Models\Game;
+use App\Models\LeagueTeam;
+use App\Jobs\UpdateLeagueStandings;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+
+class LeagueService
+{
+    public function generateStandings(League $league): array
+    {
+        $cacheKey = "league_standings_{$league->id}";
+        
+        return Cache::remember($cacheKey, 3600, function () use ($league) {
+            $standings = LeagueTeam::where('league_id', $league->id)
+                ->with(['team'])
+                ->orderBy('league_points', 'desc')
+                ->orderByRaw('(points_for - points_against) DESC')
+                ->orderBy('points_for', 'desc')
+                ->get()
+                ->map(function ($leagueTeam, $index) {
+                    return [
+                        'position' => $index + 1,
+                        'team' => $leagueTeam->team,
+                        'games_played' => $leagueTeam->games_played,
+                        'wins' => $leagueTeam->wins,
+                        'draws' => $leagueTeam->draws,
+                        'losses' => $leagueTeam->losses,
+                        'points_for' => $leagueTeam->points_for,
+                        'points_against' => $leagueTeam->points_against,
+                        'point_difference' => $leagueTeam->points_for - $leagueTeam->points_against,
+                        'league_points' => $leagueTeam->league_points,
+                        'form' => $this->getTeamForm($leagueTeam->team, $league),
+                        'streak' => [
+                            'type' => $leagueTeam->streak_type,
+                            'count' => $leagueTeam->streak_current
+                        ],
+                        'home_record' => [
+                            'wins' => $leagueTeam->home_wins,
+                            'losses' => $leagueTeam->home_losses
+                        ],
+                        'away_record' => [
+                            'wins' => $leagueTeam->away_wins,
+                            'losses' => $leagueTeam->away_losses
+                        ]
+                    ];
+                });
+
+            return $standings->toArray();
+        });
+    }
+
+    public function updateStandingsAfterGame(Game $game): void
+    {
+        if (!$game->isFinished() || !$game->tournament_id) {
+            return;
+        }
+
+        $league = League::where('id', $game->tournament_id)->first();
+        if (!$league) {
+            return;
+        }
+
+        DB::transaction(function () use ($game, $league) {
+            $homeTeam = LeagueTeam::where('league_id', $league->id)
+                ->where('team_id', $game->home_team_id)
+                ->first();
+                
+            $awayTeam = LeagueTeam::where('league_id', $league->id)
+                ->where('team_id', $game->away_team_id)
+                ->first();
+
+            if (!$homeTeam || !$awayTeam) {
+                return;
+            }
+
+            // Update game statistics
+            $this->updateTeamStats($homeTeam, $game, true);
+            $this->updateTeamStats($awayTeam, $game, false);
+
+            // Update league points based on result
+            $this->updateLeaguePoints($homeTeam, $awayTeam, $game, $league);
+
+            // Update streaks
+            $this->updateTeamStreaks($homeTeam, $awayTeam, $game);
+        });
+
+        // Clear standings cache
+        Cache::forget("league_standings_{$league->id}");
+        
+        // Dispatch job to update related caches and rankings
+        UpdateLeagueStandings::dispatch($league);
+    }
+
+    private function updateTeamStats(LeagueTeam $leagueTeam, Game $game, bool $isHome): void
+    {
+        $teamScore = $isHome ? $game->final_score_home : $game->final_score_away;
+        $opponentScore = $isHome ? $game->final_score_away : $game->final_score_home;
+        
+        $leagueTeam->increment('games_played');
+        $leagueTeam->increment('points_for', $teamScore);
+        $leagueTeam->increment('points_against', $opponentScore);
+
+        if ($teamScore > $opponentScore) {
+            // Win
+            $leagueTeam->increment('wins');
+            if ($isHome) {
+                $leagueTeam->increment('home_wins');
+            } else {
+                $leagueTeam->increment('away_wins');
+            }
+        } elseif ($teamScore < $opponentScore) {
+            // Loss
+            $leagueTeam->increment('losses');
+            if ($isHome) {
+                $leagueTeam->increment('home_losses');
+            } else {
+                $leagueTeam->increment('away_losses');
+            }
+        } else {
+            // Draw (if applicable)
+            $leagueTeam->increment('draws');
+        }
+    }
+
+    private function updateLeaguePoints(LeagueTeam $homeTeam, LeagueTeam $awayTeam, Game $game, League $league): void
+    {
+        $scoringSystem = $league->scoring_system;
+        $homeScore = $game->final_score_home;
+        $awayScore = $game->final_score_away;
+
+        if ($homeScore > $awayScore) {
+            // Home team wins
+            $homeTeam->increment('league_points', $scoringSystem['win'] ?? 2);
+            $awayTeam->increment('league_points', $scoringSystem['loss'] ?? 0);
+        } elseif ($homeScore < $awayScore) {
+            // Away team wins
+            $awayTeam->increment('league_points', $scoringSystem['win'] ?? 2);
+            $homeTeam->increment('league_points', $scoringSystem['loss'] ?? 0);
+        } else {
+            // Draw
+            $homeTeam->increment('league_points', $scoringSystem['draw'] ?? 1);
+            $awayTeam->increment('league_points', $scoringSystem['draw'] ?? 1);
+        }
+    }
+
+    private function updateTeamStreaks(LeagueTeam $homeTeam, LeagueTeam $awayTeam, Game $game): void
+    {
+        $homeWon = $game->final_score_home > $game->final_score_away;
+        $awayWon = $game->final_score_away > $game->final_score_home;
+
+        // Update home team streak
+        if ($homeWon) {
+            if ($homeTeam->streak_type === 'W') {
+                $homeTeam->increment('streak_current');
+            } else {
+                $homeTeam->update(['streak_type' => 'W', 'streak_current' => 1]);
+            }
+        } else {
+            if ($homeTeam->streak_type === 'L') {
+                $homeTeam->increment('streak_current');
+            } else {
+                $homeTeam->update(['streak_type' => 'L', 'streak_current' => 1]);
+            }
+        }
+
+        // Update away team streak
+        if ($awayWon) {
+            if ($awayTeam->streak_type === 'W') {
+                $awayTeam->increment('streak_current');
+            } else {
+                $awayTeam->update(['streak_type' => 'W', 'streak_current' => 1]);
+            }
+        } else {
+            if ($awayTeam->streak_type === 'L') {
+                $awayTeam->increment('streak_current');
+            } else {
+                $awayTeam->update(['streak_type' => 'L', 'streak_current' => 1]);
+            }
+        }
+    }
+
+    private function getTeamForm(Team $team, League $league): array
+    {
+        $recentGames = Game::where(function ($query) use ($team) {
+                $query->where('home_team_id', $team->id)
+                      ->orWhere('away_team_id', $team->id);
+            })
+            ->where('tournament_id', $league->id)
+            ->where('status', 'finished')
+            ->orderBy('scheduled_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        return $recentGames->map(function ($game) use ($team) {
+            $isHome = $game->home_team_id === $team->id;
+            $teamScore = $isHome ? $game->final_score_home : $game->final_score_away;
+            $opponentScore = $isHome ? $game->final_score_away : $game->final_score_home;
+
+            if ($teamScore > $opponentScore) {
+                return 'W';
+            } elseif ($teamScore < $opponentScore) {
+                return 'L';
+            } else {
+                return 'D';
+            }
+        })->reverse()->values()->toArray();
+    }
+
+    public function generateFixtures(League $league): array
+    {
+        $teams = $league->teams()->get();
+        $teamCount = $teams->count();
+        
+        if ($teamCount < 2) {
+            return [];
+        }
+
+        $fixtures = [];
+        
+        if ($league->format === 'round_robin') {
+            $fixtures = $this->generateRoundRobinFixtures($teams, $league);
+        }
+        
+        return $fixtures;
+    }
+
+    private function generateRoundRobinFixtures($teams, League $league): array
+    {
+        $fixtures = [];
+        $teamArray = $teams->toArray();
+        $teamCount = count($teamArray);
+        
+        // If odd number of teams, add bye
+        if ($teamCount % 2 !== 0) {
+            $teamArray[] = null; // Bye
+            $teamCount++;
+        }
+
+        $rounds = $teamCount - 1;
+        $matchesPerRound = $teamCount / 2;
+
+        for ($round = 0; $round < $rounds; $round++) {
+            $roundFixtures = [];
+            
+            for ($match = 0; $match < $matchesPerRound; $match++) {
+                $home = ($round + $match) % ($teamCount - 1);
+                $away = ($teamCount - 1 - $match + $round) % ($teamCount - 1);
+                
+                if ($match === 0) {
+                    $away = $teamCount - 1;
+                }
+
+                $homeTeam = $teamArray[$home];
+                $awayTeam = $teamArray[$away];
+
+                // Skip if bye
+                if (!$homeTeam || !$awayTeam) {
+                    continue;
+                }
+
+                $roundFixtures[] = [
+                    'round' => $round + 1,
+                    'home_team' => $homeTeam,
+                    'away_team' => $awayTeam,
+                ];
+            }
+            
+            $fixtures[] = $roundFixtures;
+        }
+
+        return $fixtures;
+    }
+}
+```
+
+---
+
+## 📊 Advanced Analytics & Reporting
+
+### Enhanced Player Performance Metrics
+
+```php
+<?php
+// app/Services/AdvancedAnalyticsService.php
+
+namespace App\Services;
+
+use App\Models\Player;
+use App\Models\Game;
+use App\Models\GameAction;
+use App\Models\Team;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+
+class AdvancedAnalyticsService
+{
+    public function calculatePlayerEfficiencyRating(Player $player, string $season): float
+    {
+        $cacheKey = "player_per_{$player->id}_{$season}";
+        
+        return Cache::remember($cacheKey, 1800, function () use ($player, $season) {
+            $gameActions = GameAction::whereHas('game', function ($query) use ($season) {
+                    $query->where('season', $season)->where('status', 'finished');
+                })
+                ->where('player_id', $player->id)
+                ->get();
+
+            if ($gameActions->isEmpty()) {
+                return 0.0;
+            }
+
+            $stats = $this->aggregatePlayerStats($gameActions);
+            
+            // PER = (Points + Rebounds + Assists + Steals + Blocks - Turnovers - Missed FG - Missed FT) / Games Played
+            $per = (
+                $stats['total_points'] + 
+                $stats['total_rebounds'] + 
+                $stats['assists'] + 
+                $stats['steals'] + 
+                $stats['blocks'] - 
+                $stats['turnovers'] - 
+                ($stats['field_goals_attempted'] - $stats['field_goals_made']) -
+                ($stats['free_throws_attempted'] - $stats['free_throws_made'])
+            ) / max(1, $stats['games_played']);
+
+            return round($per, 2);
+        });
+    }
+
+    public function calculatePlusMinus(Player $player, Game $game): array
+    {
+        $playerActions = GameAction::where('game_id', $game->id)
+            ->where('player_id', $player->id)
+            ->orderBy('period')
+            ->orderBy('time_remaining', 'desc')
+            ->get();
+
+        $teamScore = 0;
+        $opponentScore = 0;
+        $isOnCourt = false;
+        
+        // This would need more complex logic to track when player is on/off court
+        // For now, we'll use a simplified calculation
+        
+        $playerOnCourtActions = $playerActions->whereBetween('created_at', [
+            $game->actual_start_time,
+            $game->actual_end_time
+        ]);
+
+        foreach ($playerOnCourtActions as $action) {
+            if ($action->team_id === $player->team_id) {
+                $teamScore += $action->points;
+            } else {
+                // This would be opponent actions while player was on court
+                // Requires more complex tracking
+            }
+        }
+
+        return [
+            'plus_minus' => $teamScore - $opponentScore,
+            'team_points_while_on_court' => $teamScore,
+            'opponent_points_while_on_court' => $opponentScore,
+        ];
+    }
+
+    public function generateShotChart(Player $player, string $season): array
+    {
+        $shots = GameAction::whereHas('game', function ($query) use ($season) {
+                $query->where('season', $season)->where('status', 'finished');
+            })
+            ->where('player_id', $player->id)
+            ->whereIn('action_type', [
+                'field_goal_made', 'field_goal_missed',
+                'three_point_made', 'three_point_missed'
+            ])
+            ->whereNotNull('shot_x')
+            ->whereNotNull('shot_y')
+            ->get();
+
+        $shotZones = [
+            'paint' => ['made' => 0, 'attempted' => 0],
+            'mid_range' => ['made' => 0, 'attempted' => 0],
+            'three_point' => ['made' => 0, 'attempted' => 0],
+            'free_throw_line' => ['made' => 0, 'attempted' => 0],
+        ];
+
+        $shotData = [];
+
+        foreach ($shots as $shot) {
+            $zone = $this->determineShotZone($shot->shot_x, $shot->shot_y);
+            $made = in_array($shot->action_type, ['field_goal_made', 'three_point_made']);
+            
+            $shotZones[$zone]['attempted']++;
+            if ($made) {
+                $shotZones[$zone]['made']++;
+            }
+
+            $shotData[] = [
+                'x' => $shot->shot_x,
+                'y' => $shot->shot_y,
+                'made' => $made,
+                'zone' => $zone,
+                'distance' => $shot->shot_distance,
+                'period' => $shot->period,
+                'game_id' => $shot->game_id,
+            ];
+        }
+
+        // Calculate percentages
+        foreach ($shotZones as $zone => &$data) {
+            $data['percentage'] = $data['attempted'] > 0 
+                ? round(($data['made'] / $data['attempted']) * 100, 1) 
+                : 0;
+        }
+
+        return [
+            'shot_zones' => $shotZones,
+            'shot_data' => $shotData,
+            'total_shots' => $shots->count(),
+            'shooting_percentage' => $shots->count() > 0 
+                ? round(($shots->whereIn('action_type', ['field_goal_made', 'three_point_made'])->count() / $shots->count()) * 100, 1)
+                : 0,
+        ];
+    }
+
+    public function calculateTeamChemistry(Team $team, string $season): array
+    {
+        // Analyze assist networks, player combinations, etc.
+        $assists = GameAction::whereHas('game', function ($query) use ($season, $team) {
+                $query->where('season', $season)
+                      ->where('status', 'finished')
+                      ->where(function ($q) use ($team) {
+                          $q->where('home_team_id', $team->id)
+                            ->orWhere('away_team_id', $team->id);
+                      });
+            })
+            ->where('action_type', 'assist')
+            ->whereHas('player', function ($query) use ($team) {
+                $query->where('team_id', $team->id);
+            })
+            ->with(['player', 'assistedByPlayer'])
+            ->get();
+
+        $assistNetwork = [];
+        foreach ($assists as $assist) {
+            $assisterId = $assist->player_id;
+            $scorerId = $assist->assisted_by_player_id;
+            
+            if (!isset($assistNetwork[$assisterId])) {
+                $assistNetwork[$assisterId] = [];
+            }
+            
+            if (!isset($assistNetwork[$assisterId][$scorerId])) {
+                $assistNetwork[$assisterId][$scorerId] = 0;
+            }
+            
+            $assistNetwork[$assisterId][$scorerId]++;
+        }
+
+        return [
+            'assist_network' => $assistNetwork,
+            'total_assists' => $assists->count(),
+            'chemistry_score' => $this->calculateChemistryScore($assistNetwork),
+        ];
+    }
+
+    private function aggregatePlayerStats($gameActions): array
+    {
+        $stats = [
+            'total_points' => 0,
+            'field_goals_made' => 0,
+            'field_goals_attempted' => 0,
+            'three_points_made' => 0,
+            'three_points_attempted' => 0,
+            'free_throws_made' => 0,
+            'free_throws_attempted' => 0,
+            'total_rebounds' => 0,
+            'assists' => 0,
+            'steals' => 0,
+            'blocks' => 0,
+            'turnovers' => 0,
+            'games_played' => $gameActions->groupBy('game_id')->count(),
+        ];
+
+        foreach ($gameActions as $action) {
+            switch ($action->action_type) {
+                case 'field_goal_made':
+                    $stats['field_goals_made']++;
+                    $stats['total_points'] += 2;
+                    break;
+                case 'field_goal_missed':
+                    $stats['field_goals_attempted']++;
+                    break;
+                case 'three_point_made':
+                    $stats['three_points_made']++;
+                    $stats['total_points'] += 3;
+                    break;
+                case 'three_point_missed':
+                    $stats['three_points_attempted']++;
+                    break;
+                case 'free_throw_made':
+                    $stats['free_throws_made']++;
+                    $stats['total_points'] += 1;
+                    break;
+                case 'free_throw_missed':
+                    $stats['free_throws_attempted']++;
+                    break;
+                case 'rebound_offensive':
+                case 'rebound_defensive':
+                    $stats['total_rebounds']++;
+                    break;
+                case 'assist':
+                    $stats['assists']++;
+                    break;
+                case 'steal':
+                    $stats['steals']++;
+                    break;
+                case 'block':
+                    $stats['blocks']++;
+                    break;
+                case 'turnover':
+                    $stats['turnovers']++;
+                    break;
+            }
+        }
+
+        $stats['field_goals_attempted'] += $stats['field_goals_made'];
+        $stats['three_points_attempted'] += $stats['three_points_made'];
+        $stats['free_throws_attempted'] += $stats['free_throws_made'];
+
+        return $stats;
+    }
+
+    private function determineShotZone(float $x, float $y): string
+    {
+        $distance = sqrt($x * $x + $y * $y);
+        
+        if ($distance <= 5) {
+            return 'paint';
+        } elseif ($distance <= 15) {
+            return 'mid_range';
+        } elseif ($distance >= 23.75) {
+            return 'three_point';
+        } else {
+            return 'free_throw_line';
+        }
+    }
+
+    private function calculateChemistryScore(array $assistNetwork): float
+    {
+        $totalConnections = 0;
+        $strongConnections = 0;
+        
+        foreach ($assistNetwork as $assister => $receivers) {
+            foreach ($receivers as $receiver => $count) {
+                $totalConnections++;
+                if ($count >= 5) { // Strong connection threshold
+                    $strongConnections++;
+                }
+            }
+        }
+        
+        return $totalConnections > 0 ? ($strongConnections / $totalConnections) * 100 : 0;
+    }
+}
+```
+
+---
+
+## 📋 PDF & Excel Export System
+
+### Export Service Implementation
+
+```php
+<?php
+// app/Services/ReportExportService.php
+
+namespace App\Services;
+
+use App\Models\Team;
+use App\Models\Player;
+use App\Models\Game;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\TeamStatsExport;
+use App\Exports\PlayerStatsExport;
+use App\Exports\GameReportExport;
+use Illuminate\Http\Response;
+
+class ReportExportService
+{
+    public function exportTeamStatsPDF(Team $team, string $season): Response
+    {
+        $statsService = app(StatisticsService::class);
+        $teamStats = $statsService->getTeamSeasonStats($team, $season);
+        $playerStats = $team->players->map(function ($player) use ($statsService, $season) {
+            return [
+                'player' => $player,
+                'stats' => $statsService->getPlayerSeasonStats($player, $season)
+            ];
+        });
+
+        $pdf = PDF::loadView('exports.team-stats-pdf', [
+            'team' => $team,
+            'season' => $season,
+            'teamStats' => $teamStats,
+            'playerStats' => $playerStats,
+            'generatedAt' => now()->format('d.m.Y H:i')
+        ]);
+
+        $filename = "team-stats-{$team->slug}-{$season}.pdf";
+        
+        return $pdf->download($filename);
+    }
+
+    public function exportPlayerStatsPDF(Player $player, string $season): Response
+    {
+        $statsService = app(StatisticsService::class);
+        $analyticsService = app(AdvancedAnalyticsService::class);
+        
+        $stats = $statsService->getPlayerSeasonStats($player, $season);
+        $per = $analyticsService->calculatePlayerEfficiencyRating($player, $season);
+        $shotChart = $analyticsService->generateShotChart($player, $season);
+
+        $recentGames = Game::where(function ($query) use ($player) {
+                $query->where('home_team_id', $player->team_id)
+                      ->orWhere('away_team_id', $player->team_id);
+            })
+            ->where('season', $season)
+            ->where('status', 'finished')
+            ->with(['homeTeam', 'awayTeam'])
+            ->orderBy('scheduled_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($game) use ($player, $statsService) {
+                return [
+                    'game' => $game,
+                    'stats' => $statsService->getPlayerGameStats($player, $game)
+                ];
+            });
+
+        $pdf = PDF::loadView('exports.player-stats-pdf', [
+            'player' => $player,
+            'season' => $season,
+            'stats' => $stats,
+            'per' => $per,
+            'shotChart' => $shotChart,
+            'recentGames' => $recentGames,
+            'generatedAt' => now()->format('d.m.Y H:i')
+        ]);
+
+        $filename = "player-stats-{$player->slug}-{$season}.pdf";
+        
+        return $pdf->download($filename);
+    }
+
+    public function exportGameReportPDF(Game $game): Response
+    {
+        $game->load([
+            'homeTeam.players',
+            'awayTeam.players', 
+            'gameActions.player',
+            'liveGame'
+        ]);
+
+        $statsService = app(StatisticsService::class);
+        $homeStats = $statsService->getTeamGameStats($game->homeTeam, $game);
+        $awayStats = $statsService->getTeamGameStats($game->awayTeam, $game);
+
+        $playerStats = [];
+        foreach ([$game->homeTeam, $game->awayTeam] as $team) {
+            foreach ($team->players as $player) {
+                $playerStats[$team->id][$player->id] = $statsService->getPlayerGameStats($player, $game);
+            }
+        }
+
+        $pdf = PDF::loadView('exports.game-report-pdf', [
+            'game' => $game,
+            'homeStats' => $homeStats,
+            'awayStats' => $awayStats,
+            'playerStats' => $playerStats,
+            'generatedAt' => now()->format('d.m.Y H:i')
+        ]);
+
+        $filename = "game-report-{$game->id}-{$game->scheduled_at->format('Y-m-d')}.pdf";
+        
+        return $pdf->download($filename);
+    }
+
+    public function exportTeamStatsExcel(Team $team, string $season)
+    {
+        $filename = "team-stats-{$team->slug}-{$season}.xlsx";
+        
+        return Excel::download(new TeamStatsExport($team, $season), $filename);
+    }
+
+    public function exportPlayerStatsExcel(Team $team, string $season)
+    {
+        $filename = "player-stats-{$team->slug}-{$season}.xlsx";
+        
+        return Excel::download(new PlayerStatsExport($team, $season), $filename);
+    }
+
+    public function exportGameDataExcel(Game $game)
+    {
+        $filename = "game-data-{$game->id}.xlsx";
+        
+        return Excel::download(new GameReportExport($game), $filename);
+    }
+}
+```
+
+### Excel Export Classes
+
+```php
+<?php
+// app/Exports/TeamStatsExport.php
+
+namespace App\Exports;
+
+use App\Models\Team;
+use App\Services\StatisticsService;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
+
+class TeamStatsExport implements WithMultipleSheets
+{
+    private Team $team;
+    private string $season;
+
+    public function __construct(Team $team, string $season)
+    {
+        $this->team = $team;
+        $this->season = $season;
+    }
+
+    public function sheets(): array
+    {
+        return [
+            'Team Overview' => new TeamOverviewSheet($this->team, $this->season),
+            'Player Stats' => new PlayerStatsSheet($this->team, $this->season),
+            'Game Results' => new GameResultsSheet($this->team, $this->season),
+        ];
+    }
+}
+
+class PlayerStatsSheet implements FromCollection, WithHeadings, WithMapping, WithTitle
+{
+    private Team $team;
+    private string $season;
+
+    public function __construct(Team $team, string $season)
+    {
+        $this->team = $team;
+        $this->season = $season;
+    }
+
+    public function collection()
+    {
+        $statsService = app(StatisticsService::class);
+        
+        return $this->team->players->map(function ($player) use ($statsService) {
+            return [
+                'player' => $player,
+                'stats' => $statsService->getPlayerSeasonStats($player, $this->season)
+            ];
+        });
+    }
+
+    public function headings(): array
+    {
+        return [
+            'Player Name',
+            'Jersey Number',
+            'Position', 
+            'Games Played',
+            'Points',
+            'Avg Points',
+            'Rebounds',
+            'Avg Rebounds',
+            'Assists',
+            'Avg Assists',
+            'Steals',
+            'Blocks',
+            'Turnovers',
+            'FG%',
+            '3P%',
+            'FT%',
+            'Minutes Played'
+        ];
+    }
+
+    public function map($row): array
+    {
+        $player = $row['player'];
+        $stats = $row['stats'];
+
+        return [
+            $player->full_name,
+            $player->jersey_number,
+            $player->position,
+            $stats['games_played'] ?? 0,
+            $stats['total_points'] ?? 0,
+            $stats['avg_points'] ?? 0,
+            $stats['total_rebounds'] ?? 0,
+            $stats['avg_rebounds'] ?? 0,
+            $stats['assists'] ?? 0,
+            $stats['avg_assists'] ?? 0,
+            $stats['steals'] ?? 0,
+            $stats['blocks'] ?? 0,
+            $stats['turnovers'] ?? 0,
+            $stats['field_goal_percentage'] ?? 0,
+            $stats['three_point_percentage'] ?? 0,
+            $stats['free_throw_percentage'] ?? 0,
+            $stats['minutes_played'] ?? 0,
+        ];
+    }
+
+    public function title(): string
+    {
+        return 'Player Stats';
+    }
+}
+```
+
+---
+
+Das vervollständigt die Phase 2 PRD mit den erweiterten Features für League Management, Advanced Analytics und Export-Funktionen, die in der Next_Development_Steps.md gefordert sind.

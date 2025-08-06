@@ -25,6 +25,85 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // Live Scoring Routes
+    Route::prefix('games')->name('games.')->group(function () {
+        Route::get('/{game}/live-scoring', [\App\Http\Controllers\LiveScoringController::class, 'show'])
+            ->name('live-scoring');
+        
+        Route::post('/{game}/start', [\App\Http\Controllers\LiveScoringController::class, 'startGame'])
+            ->name('start');
+        
+        Route::post('/{game}/finish', [\App\Http\Controllers\LiveScoringController::class, 'finishGame'])
+            ->name('finish');
+        
+        Route::post('/{game}/actions', [\App\Http\Controllers\LiveScoringController::class, 'addAction'])
+            ->name('add-action');
+        
+        Route::put('/{game}/score', [\App\Http\Controllers\LiveScoringController::class, 'updateScore'])
+            ->name('update-score');
+        
+        Route::post('/{game}/clock', [\App\Http\Controllers\LiveScoringController::class, 'controlClock'])
+            ->name('control-clock');
+        
+        Route::post('/{game}/timeout', [\App\Http\Controllers\LiveScoringController::class, 'timeout'])
+            ->name('timeout');
+        
+        Route::delete('/{game}/timeout', [\App\Http\Controllers\LiveScoringController::class, 'endTimeout'])
+            ->name('end-timeout');
+        
+        Route::post('/{game}/substitution', [\App\Http\Controllers\LiveScoringController::class, 'substitution'])
+            ->name('substitution');
+        
+        Route::post('/{game}/shot-clock/reset', [\App\Http\Controllers\LiveScoringController::class, 'resetShotClock'])
+            ->name('reset-shot-clock');
+        
+        Route::put('/{game}/players-on-court', [\App\Http\Controllers\LiveScoringController::class, 'updatePlayersOnCourt'])
+            ->name('update-players-on-court');
+        
+        Route::put('/actions/{action}', [\App\Http\Controllers\LiveScoringController::class, 'correctAction'])
+            ->name('correct-action');
+        
+        Route::delete('/actions/{action}', [\App\Http\Controllers\LiveScoringController::class, 'deleteAction'])
+            ->name('delete-action');
+        
+        Route::get('/{game}/live-data', [\App\Http\Controllers\LiveScoringController::class, 'getLiveData'])
+            ->name('live-data');
+        
+        Route::get('/{game}/statistics', [\App\Http\Controllers\LiveScoringController::class, 'getGameStatistics'])
+            ->name('statistics');
+    });
+    
+    // Export Routes
+    Route::prefix('export')->name('export.')->group(function () {
+        // Game Exports
+        Route::get('/games/{game}/stats/pdf', [\App\Http\Controllers\ExportController::class, 'gameStatsPdf'])
+            ->name('game-stats-pdf');
+        Route::get('/games/{game}/stats/excel', [\App\Http\Controllers\ExportController::class, 'gameStatsExcel'])
+            ->name('game-stats-excel');
+        Route::get('/games/{game}/scoresheet', [\App\Http\Controllers\ExportController::class, 'gameScoresheet'])
+            ->name('game-scoresheet');
+        
+        // Player Exports
+        Route::get('/players/{player}/stats/pdf', [\App\Http\Controllers\ExportController::class, 'playerStatsPdf'])
+            ->name('player-stats-pdf');
+        Route::get('/players/{player}/stats/excel', [\App\Http\Controllers\ExportController::class, 'playerStatsExcel'])
+            ->name('player-stats-excel');
+        
+        // Team Exports
+        Route::get('/teams/{team}/stats/pdf', [\App\Http\Controllers\ExportController::class, 'teamStatsPdf'])
+            ->name('team-stats-pdf');
+        Route::get('/teams/{team}/stats/excel', [\App\Http\Controllers\ExportController::class, 'teamStatsExcel'])
+            ->name('team-stats-excel');
+        
+        // Shot Chart Export
+        Route::get('/players/{player}/games/{game}/shot-chart/csv', [\App\Http\Controllers\ExportController::class, 'shotChartCsv'])
+            ->name('shot-chart-csv');
+        
+        // League Standings
+        Route::get('/league/standings/pdf', [\App\Http\Controllers\ExportController::class, 'leagueStandingsPdf'])
+            ->name('league-standings-pdf');
+    });
 });
 
 // Include Jetstream Routes (Inertia stack)

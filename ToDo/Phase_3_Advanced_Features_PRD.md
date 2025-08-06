@@ -8499,3 +8499,347 @@ class PerformanceMonitoringService
 ```
 
 ---
+
+## 📰 Content Management System
+
+### News & Announcement System
+
+Ein umfassendes Content Management System für Team-News, Ankündigungen und Community-Features.
+
+#### News Models & Database Design
+
+##### News Articles Migration
+
+```php
+<?php
+// database/migrations/2024_04_01_000000_create_news_articles_table.php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('news_articles', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('author_id')->constrained('users');
+            $table->foreignId('team_id')->nullable()->constrained();
+            $table->foreignId('club_id')->constrained();
+            
+            // Article Content
+            $table->string('title');
+            $table->string('slug')->unique();
+            $table->text('excerpt');
+            $table->longText('content');
+            $table->string('featured_image_path')->nullable();
+            
+            // Article Settings
+            $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
+            $table->enum('visibility', ['public', 'members_only', 'team_only', 'private'])->default('public');
+            $table->dateTime('published_at')->nullable();
+            $table->dateTime('scheduled_publish_at')->nullable();
+            
+            // SEO and Meta
+            $table->string('meta_title')->nullable();
+            $table->text('meta_description')->nullable();
+            $table->json('meta_keywords')->nullable();
+            
+            // Engagement
+            $table->boolean('allow_comments')->default(true);
+            $table->boolean('is_featured')->default(false);
+            $table->boolean('send_notification')->default(false);
+            $table->integer('view_count')->default(0);
+            $table->integer('like_count')->default(0);
+            $table->integer('share_count')->default(0);
+            
+            // Categories and Tags
+            $table->json('categories')->nullable();
+            $table->json('tags')->nullable();
+            
+            $table->timestamps();
+            $table->softDeletes();
+            
+            $table->index(['status', 'published_at']);
+            $table->index(['team_id', 'status']);
+            $table->index(['is_featured', 'published_at']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('news_articles');
+    }
+};
+```
+
+##### Photo Gallery Migration
+
+```php
+<?php
+// database/migrations/2024_04_03_000000_create_photo_galleries_table.php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('photo_galleries', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('created_by_id')->constrained('users');
+            $table->foreignId('team_id')->nullable()->constrained();
+            $table->foreignId('club_id')->constrained();
+            $table->foreignId('game_id')->nullable()->constrained();
+            $table->foreignId('training_session_id')->nullable()->constrained();
+            
+            // Gallery Information
+            $table->string('title');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            $table->date('event_date');
+            
+            // Settings
+            $table->enum('visibility', ['public', 'members_only', 'team_only', 'private'])->default('public');
+            $table->boolean('is_featured')->default(false);
+            $table->boolean('allow_downloads')->default(false);
+            $table->string('cover_photo_path')->nullable();
+            
+            // Statistics
+            $table->integer('photo_count')->default(0);
+            $table->integer('view_count')->default(0);
+            $table->integer('download_count')->default(0);
+            
+            // Metadata
+            $table->json('tags')->nullable();
+            $table->string('photographer_name')->nullable();
+            $table->string('photographer_credit')->nullable();
+            
+            $table->timestamps();
+            $table->softDeletes();
+            
+            $table->index(['team_id', 'event_date']);
+            $table->index(['is_featured', 'event_date']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('photo_galleries');
+    }
+};
+```
+
+### Enhanced Video Management & CDN Integration
+
+```php
+<?php
+// app/Services/EnhancedVideoService.php
+
+namespace App\Services;
+
+use App\Models\VideoFile;
+use App\Models\Team;
+use App\Models\Game;
+use App\Models\TrainingSession;
+use Illuminate\Support\Facades\Storage;
+use AWS\S3\S3Client;
+use FFMpeg\FFMpeg;
+use FFMpeg\Format\Video\X264;
+
+class EnhancedVideoService
+{
+    private S3Client $s3Client;
+    private string $cdnUrl;
+
+    public function __construct()
+    {
+        $this->s3Client = new S3Client([
+            'version' => 'latest',
+            'region' => config('filesystems.disks.s3.region'),
+            'credentials' => [
+                'key' => config('filesystems.disks.s3.key'),
+                'secret' => config('filesystems.disks.s3.secret'),
+            ],
+        ]);
+        
+        $this->cdnUrl = config('services.cloudfront.url');
+    }
+
+    public function uploadGameHighlight(array $data, Game $game): VideoFile
+    {
+        $videoFile = VideoFile::create([
+            'uploaded_by_user_id' => auth()->id(),
+            'team_id' => $game->home_team_id,
+            'game_id' => $game->id,
+            'title' => $data['title'] ?? "Game Highlights - {$game->home_team->name} vs {$game->away_team->name}",
+            'description' => $data['description'] ?? null,
+            'video_type' => 'game_highlights',
+            'original_filename' => $data['video']->getClientOriginalName(),
+            'mime_type' => $data['video']->getMimeType(),
+            'file_size' => $data['video']->getSize(),
+            'processing_status' => 'pending',
+            'ai_analysis_enabled' => true,
+        ]);
+
+        $this->processAndUploadToCDN($videoFile, $data['video']);
+        
+        return $videoFile;
+    }
+
+    public function uploadTrainingVideo(array $data, TrainingSession $session): VideoFile
+    {
+        $videoFile = VideoFile::create([
+            'uploaded_by_user_id' => auth()->id(),
+            'team_id' => $session->team_id,
+            'training_session_id' => $session->id,
+            'title' => $data['title'] ?? "Training Video - {$session->title}",
+            'description' => $data['description'] ?? null,
+            'video_type' => 'training_session',
+            'original_filename' => $data['video']->getClientOriginalName(),
+            'mime_type' => $data['video']->getMimeType(),
+            'file_size' => $data['video']->getSize(),
+            'processing_status' => 'pending',
+            'ai_analysis_enabled' => false,
+        ]);
+
+        $this->processAndUploadToCDN($videoFile, $data['video']);
+        
+        return $videoFile;
+    }
+
+    public function uploadPlayerSkillVideo(array $data, $playerId): VideoFile
+    {
+        $videoFile = VideoFile::create([
+            'uploaded_by_user_id' => auth()->id(),
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'video_type' => 'player_analysis',
+            'original_filename' => $data['video']->getClientOriginalName(),
+            'mime_type' => $data['video']->getMimeType(),
+            'file_size' => $data['video']->getSize(),
+            'processing_status' => 'pending',
+            'ai_analysis_enabled' => true,
+            'tags' => array_merge($data['tags'] ?? [], ['player_' . $playerId]),
+        ]);
+
+        $this->processAndUploadToCDN($videoFile, $data['video']);
+        
+        return $videoFile;
+    }
+
+    private function processAndUploadToCDN(VideoFile $videoFile, $uploadedFile): void
+    {
+        // Store temporarily
+        $tempPath = $uploadedFile->store('temp/videos');
+        $localPath = Storage::path($tempPath);
+
+        try {
+            $videoFile->update(['processing_status' => 'processing']);
+
+            // Process video with FFmpeg
+            $processedPath = $this->processVideo($localPath);
+            $thumbnailPath = $this->generateThumbnail($localPath);
+            $watermarkedPath = $this->addWatermark($processedPath, $videoFile->team);
+
+            // Upload to S3
+            $s3VideoPath = $this->uploadToS3($watermarkedPath, 'videos/' . $videoFile->id . '.mp4');
+            $s3ThumbnailPath = $this->uploadToS3($thumbnailPath, 'thumbnails/' . $videoFile->id . '.jpg');
+
+            // Update video file with CDN URLs
+            $videoFile->update([
+                'file_path' => $s3VideoPath,
+                'thumbnail_path' => $s3ThumbnailPath,
+                'processed_path' => $s3VideoPath,
+                'processing_status' => 'completed',
+                'is_processed' => true,
+                'cdn_url' => $this->cdnUrl . '/' . $s3VideoPath,
+            ]);
+
+            // Extract metadata
+            $this->extractAndUpdateMetadata($videoFile, $localPath);
+
+            // Cleanup temp files
+            Storage::delete($tempPath);
+            unlink($processedPath);
+            unlink($thumbnailPath);
+            unlink($watermarkedPath);
+
+        } catch (\Exception $e) {
+            $videoFile->update([
+                'processing_status' => 'failed',
+                'processing_error' => $e->getMessage(),
+            ]);
+            
+            // Cleanup
+            Storage::delete($tempPath);
+            throw $e;
+        }
+    }
+
+    private function processVideo(string $inputPath): string
+    {
+        $ffmpeg = FFMpeg::create();
+        $video = $ffmpeg->open($inputPath);
+
+        $outputPath = storage_path('app/temp/processed_' . basename($inputPath));
+
+        // Optimize for web streaming
+        $format = new X264('aac');
+        $format->setKiloBitrate(2000)
+               ->setAudioKiloBitrate(128);
+
+        $video->filters()
+              ->resize(new \FFMpeg\Coordinate\Dimension(1280, 720))
+              ->synchronize();
+
+        $video->save($format, $outputPath);
+
+        return $outputPath;
+    }
+
+    private function addWatermark(string $videoPath, ?Team $team): string
+    {
+        if (!$team || !$team->getFirstMediaUrl('logo')) {
+            return $videoPath;
+        }
+
+        $ffmpeg = FFMpeg::create();
+        $video = $ffmpeg->open($videoPath);
+
+        $outputPath = storage_path('app/temp/watermarked_' . basename($videoPath));
+
+        // Add team logo as watermark
+        $logoPath = $team->getFirstMedia('logo')->getPath();
+        
+        $video->filters()
+              ->watermark($logoPath, [
+                  'position' => 'relative',
+                  'bottom' => 50,
+                  'right' => 50,
+              ]);
+
+        $video->save(new X264('aac'), $outputPath);
+
+        return $outputPath;
+    }
+
+    private function uploadToS3(string $localPath, string $s3Key): string
+    {
+        $result = $this->s3Client->putObject([
+            'Bucket' => config('filesystems.disks.s3.bucket'),
+            'Key' => $s3Key,
+            'SourceFile' => $localPath,
+            'ACL' => 'public-read',
+            'ContentType' => mime_content_type($localPath),
+        ]);
+
+        return $s3Key;
+    }
+}
+```
+
+---

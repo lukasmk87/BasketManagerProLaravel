@@ -4405,6 +4405,959 @@ class SecurityAuditCommand extends Command
 
 ---
 
+## 📱 Enhanced Mobile API & React Native Integration
+
+### Mobile-Optimized API Endpoints
+
+Erweiterte API-Endpunkte speziell für Mobile-Apps mit Offline-Unterstützung und optimierten Datenformaten.
+
+#### Mobile API Architecture
+
+```php
+<?php
+// app/Http/Controllers/Api/Mobile/MobileGameController.php
+
+namespace App\Http\Controllers\Api\Mobile;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Mobile\MobileGameResource;
+use App\Http\Resources\Mobile\MobileGameDetailResource;
+use App\Models\Game;
+use App\Services\MobileDataSyncService;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+
+class MobileGameController extends Controller
+{
+    public function __construct(
+        private MobileDataSyncService $syncService
+    ) {}
+
+    /**
+     * Get games optimized for mobile consumption
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'team_id' => 'nullable|exists:teams,id',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date',
+            'limit' => 'nullable|integer|min:1|max:50',
+            'last_sync' => 'nullable|date'
+        ]);
+
+        $query = Game::with([
+            'homeTeam:id,name,logo_path',
+            'awayTeam:id,name,logo_path',
+            'venue:id,name,address'
+        ])
+        ->when($validated['team_id'] ?? null, function ($q, $teamId) {
+            return $q->where('home_team_id', $teamId)
+                    ->orWhere('away_team_id', $teamId);
+        })
+        ->when($validated['date_from'] ?? null, function ($q, $date) {
+            return $q->where('scheduled_at', '>=', $date);
+        })
+        ->when($validated['date_to'] ?? null, function ($q, $date) {
+            return $q->where('scheduled_at', '<=', $date);
+        })
+        ->when($validated['last_sync'] ?? null, function ($q, $lastSync) {
+            return $q->where('updated_at', '>', $lastSync);
+        })
+        ->orderBy('scheduled_at')
+        ->limit($validated['limit'] ?? 20);
+
+        $games = $query->get();
+
+        return response()->json([
+            'data' => MobileGameResource::collection($games),
+            'sync_timestamp' => now()->toISOString(),
+            'has_more' => $games->count() === ($validated['limit'] ?? 20)
+        ]);
+    }
+
+    /**
+     * Get detailed game data for mobile live scoring
+     */
+    public function show(Game $game): JsonResponse
+    {
+        $game->load([
+            'homeTeam.players:id,team_id,user_id,jersey_number',
+            'homeTeam.players.user:id,name',
+            'awayTeam.players:id,team_id,user_id,jersey_number',
+            'awayTeam.players.user:id,name',
+            'gameEvents.player.user:id,name',
+            'gameStats.player.user:id,name',
+            'periods'
+        ]);
+
+        return response()->json([
+            'data' => new MobileGameDetailResource($game),
+            'sync_timestamp' => now()->toISOString()
+        ]);
+    }
+
+    /**
+     * Sync mobile data changes back to server
+     */
+    public function syncData(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'offline_actions' => 'required|array',
+            'offline_actions.*.type' => 'required|string|in:score,event,stat',
+            'offline_actions.*.data' => 'required|array',
+            'offline_actions.*.timestamp' => 'required|date',
+            'device_id' => 'required|string'
+        ]);
+
+        $results = $this->syncService->processMobileSync(
+            $validated['offline_actions'],
+            $validated['device_id'],
+            auth()->user()
+        );
+
+        return response()->json([
+            'sync_results' => $results,
+            'sync_timestamp' => now()->toISOString(),
+            'conflicts' => $results['conflicts'] ?? []
+        ]);
+    }
+}
+```
+
+#### Mobile-Optimized Resources
+
+```php
+<?php
+// app/Http/Resources/Mobile/MobileGameResource.php
+
+namespace App\Http\Resources\Mobile;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class MobileGameResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'home_team' => [
+                'id' => $this->homeTeam->id,
+                'name' => $this->homeTeam->name,
+                'logo' => $this->homeTeam->logo_path ? url($this->homeTeam->logo_path) : null,
+                'score' => $this->home_score
+            ],
+            'away_team' => [
+                'id' => $this->awayTeam->id,
+                'name' => $this->awayTeam->name,
+                'logo' => $this->awayTeam->logo_path ? url($this->awayTeam->logo_path) : null,
+                'score' => $this->away_score
+            ],
+            'scheduled_at' => $this->scheduled_at->toISOString(),
+            'status' => $this->status,
+            'current_period' => $this->current_period,
+            'venue' => $this->venue ? [
+                'name' => $this->venue->name,
+                'address' => $this->venue->address
+            ] : null,
+            'is_live' => $this->isLive(),
+            'last_updated' => $this->updated_at->toISOString()
+        ];
+    }
+}
+```
+
+### Offline-First Data Synchronization
+
+```php
+<?php
+// app/Services/MobileDataSyncService.php
+
+namespace App\Services;
+
+use App\Models\Game;
+use App\Models\GameEvent;
+use App\Models\GameStat;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Carbon\Carbon;
+
+class MobileDataSyncService
+{
+    public function processMobileSync(array $offlineActions, string $deviceId, User $user): array
+    {
+        $results = [
+            'successful' => [],
+            'failed' => [],
+            'conflicts' => []
+        ];
+
+        DB::beginTransaction();
+        
+        try {
+            foreach ($offlineActions as $action) {
+                $result = $this->processOfflineAction($action, $deviceId, $user);
+                
+                if ($result['success']) {
+                    $results['successful'][] = $result;
+                } elseif ($result['conflict']) {
+                    $results['conflicts'][] = $result;
+                } else {
+                    $results['failed'][] = $result;
+                }
+            }
+            
+            DB::commit();
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            throw $e;
+        }
+
+        return $results;
+    }
+
+    private function processOfflineAction(array $action, string $deviceId, User $user): array
+    {
+        $actionTime = Carbon::parse($action['timestamp']);
+        
+        return match($action['type']) {
+            'score' => $this->processMobileScore($action['data'], $actionTime, $deviceId, $user),
+            'event' => $this->processMobileEvent($action['data'], $actionTime, $deviceId, $user),
+            'stat' => $this->processMobileStat($action['data'], $actionTime, $deviceId, $user),
+            default => ['success' => false, 'error' => 'Unknown action type']
+        };
+    }
+
+    private function processMobileScore(array $data, Carbon $actionTime, string $deviceId, User $user): array
+    {
+        $game = Game::find($data['game_id']);
+        
+        if (!$game) {
+            return ['success' => false, 'error' => 'Game not found'];
+        }
+
+        // Check for conflicts
+        if ($game->updated_at->isAfter($actionTime)) {
+            return [
+                'success' => false,
+                'conflict' => true,
+                'server_data' => [
+                    'home_score' => $game->home_score,
+                    'away_score' => $game->away_score,
+                    'updated_at' => $game->updated_at->toISOString()
+                ],
+                'mobile_data' => $data
+            ];
+        }
+
+        // Apply mobile changes
+        $game->update([
+            'home_score' => $data['home_score'],
+            'away_score' => $data['away_score'],
+            'current_period' => $data['current_period'] ?? $game->current_period
+        ]);
+
+        // Cache invalidation
+        Cache::tags(['game_' . $game->id])->flush();
+
+        return [
+            'success' => true,
+            'type' => 'score',
+            'game_id' => $game->id,
+            'applied_at' => now()->toISOString()
+        ];
+    }
+
+    public function generateMobileDownloadPackage(User $user, ?int $teamId = null): array
+    {
+        $cacheKey = "mobile_package_{$user->id}_{$teamId}";
+        
+        return Cache::remember($cacheKey, 300, function () use ($user, $teamId) {
+            $package = [
+                'teams' => $this->getTeamsForMobile($user, $teamId),
+                'games' => $this->getGamesForMobile($user, $teamId),
+                'players' => $this->getPlayersForMobile($user, $teamId),
+                'config' => $this->getMobileConfig(),
+                'generated_at' => now()->toISOString()
+            ];
+
+            return $package;
+        });
+    }
+}
+```
+
+## 🔍 Meilisearch Integration für Advanced Search
+
+### Meilisearch Service Implementation
+
+```php
+<?php
+// app/Services/MeilisearchService.php
+
+namespace App\Services;
+
+use App\Models\Player;
+use App\Models\Team;
+use App\Models\Game;
+use App\Models\NewsArticle;
+use Meilisearch\Client;
+use Illuminate\Support\Facades\Log;
+
+class MeilisearchService
+{
+    private Client $client;
+    
+    public function __construct()
+    {
+        $this->client = new Client(
+            config('services.meilisearch.host'),
+            config('services.meilisearch.key')
+        );
+    }
+
+    public function setupIndexes(): void
+    {
+        $this->setupPlayersIndex();
+        $this->setupTeamsIndex();
+        $this->setupGamesIndex();
+        $this->setupNewsIndex();
+    }
+
+    private function setupPlayersIndex(): void
+    {
+        $index = $this->client->index('players');
+        
+        // Configure searchable attributes
+        $index->updateSearchableAttributes([
+            'name',
+            'jersey_number',
+            'position',
+            'team_name',
+            'club_name'
+        ]);
+
+        // Configure filterable attributes
+        $index->updateFilterableAttributes([
+            'team_id',
+            'club_id',
+            'position',
+            'age_group',
+            'is_active',
+            'statistics.points_avg',
+            'statistics.rebounds_avg'
+        ]);
+
+        // Configure sortable attributes
+        $index->updateSortableAttributes([
+            'name',
+            'jersey_number',
+            'statistics.points_avg',
+            'statistics.rebounds_avg',
+            'created_at'
+        ]);
+
+        // Configure ranking rules
+        $index->updateRankingRules([
+            'words',
+            'typo',
+            'proximity',
+            'attribute',
+            'sort',
+            'exactness',
+            'statistics.points_avg:desc'
+        ]);
+    }
+
+    public function searchPlayers(string $query, array $filters = [], array $facets = []): array
+    {
+        $searchParams = [
+            'q' => $query,
+            'limit' => $filters['limit'] ?? 50,
+            'offset' => $filters['offset'] ?? 0,
+        ];
+
+        // Add filters
+        if (!empty($filters['team_id'])) {
+            $searchParams['filter'] = "team_id = {$filters['team_id']}";
+        }
+
+        if (!empty($filters['position'])) {
+            $positionFilter = is_array($filters['position']) 
+                ? 'position IN [' . implode(',', array_map(fn($p) => "'$p'", $filters['position'])) . ']'
+                : "position = '{$filters['position']}'";
+            
+            $searchParams['filter'] = isset($searchParams['filter']) 
+                ? $searchParams['filter'] . ' AND ' . $positionFilter
+                : $positionFilter;
+        }
+
+        // Add sorting
+        if (!empty($filters['sort'])) {
+            $searchParams['sort'] = [$filters['sort']];
+        }
+
+        // Add facets for filtering UI
+        if (!empty($facets)) {
+            $searchParams['facets'] = $facets;
+        }
+
+        try {
+            $index = $this->client->index('players');
+            $results = $index->search('', $searchParams);
+            
+            return [
+                'hits' => $results->getHits(),
+                'total' => $results->getEstimatedTotalHits(),
+                'facetDistribution' => $results->getFacetDistribution(),
+                'processingTimeMs' => $results->getProcessingTimeMs()
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Meilisearch player search error', [
+                'query' => $query,
+                'filters' => $filters,
+                'error' => $e->getMessage()
+            ]);
+            
+            return $this->fallbackPlayerSearch($query, $filters);
+        }
+    }
+
+    public function searchTeams(string $query, array $filters = []): array
+    {
+        $searchParams = [
+            'q' => $query,
+            'limit' => $filters['limit'] ?? 20,
+            'attributesToHighlight' => ['name', 'club_name'],
+            'highlightPreTag' => '<mark>',
+            'highlightPostTag' => '</mark>'
+        ];
+
+        if (!empty($filters['league_id'])) {
+            $searchParams['filter'] = "league_id = {$filters['league_id']}";
+        }
+
+        try {
+            $index = $this->client->index('teams');
+            $results = $index->search('', $searchParams);
+            
+            return [
+                'hits' => $results->getHits(),
+                'total' => $results->getEstimatedTotalHits()
+            ];
+            
+        } catch (\Exception $e) {
+            return $this->fallbackTeamSearch($query, $filters);
+        }
+    }
+
+    public function searchGames(string $query, array $filters = []): array
+    {
+        $searchParams = [
+            'q' => $query,
+            'limit' => $filters['limit'] ?? 30,
+            'facets' => ['status', 'league_name']
+        ];
+
+        // Date range filtering
+        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+            $searchParams['filter'] = "scheduled_at >= {$filters['date_from']} AND scheduled_at <= {$filters['date_to']}";
+        }
+
+        try {
+            $index = $this->client->index('games');
+            $results = $index->search('', $searchParams);
+            
+            return [
+                'hits' => $results->getHits(),
+                'total' => $results->getEstimatedTotalHits(),
+                'facets' => $results->getFacetDistribution()
+            ];
+            
+        } catch (\Exception $e) {
+            return $this->fallbackGameSearch($query, $filters);
+        }
+    }
+
+    public function indexPlayer(Player $player): void
+    {
+        try {
+            $index = $this->client->index('players');
+            $index->addDocuments([$player->toSearchableArray()]);
+        } catch (\Exception $e) {
+            Log::error('Failed to index player', [
+                'player_id' => $player->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function bulkIndexPlayers(array $players): void
+    {
+        try {
+            $index = $this->client->index('players');
+            $documents = array_map(fn($player) => $player->toSearchableArray(), $players);
+            $index->addDocuments($documents);
+        } catch (\Exception $e) {
+            Log::error('Failed to bulk index players', [
+                'count' => count($players),
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    private function fallbackPlayerSearch(string $query, array $filters): array
+    {
+        // Fallback to database search if Meilisearch fails
+        $queryBuilder = Player::query()
+            ->with(['user', 'team', 'club'])
+            ->where(function ($q) use ($query) {
+                $q->whereHas('user', function ($userQuery) use ($query) {
+                    $userQuery->where('name', 'LIKE', "%{$query}%");
+                })
+                ->orWhere('jersey_number', 'LIKE', "%{$query}%")
+                ->orWhere('position', 'LIKE', "%{$query}%");
+            });
+
+        if (!empty($filters['team_id'])) {
+            $queryBuilder->where('team_id', $filters['team_id']);
+        }
+
+        $players = $queryBuilder->limit($filters['limit'] ?? 50)->get();
+
+        return [
+            'hits' => $players->map(fn($player) => $player->toSearchableArray())->toArray(),
+            'total' => $players->count(),
+            'fallback' => true
+        ];
+    }
+}
+```
+
+### Search API Controller
+
+```php
+<?php
+// app/Http/Controllers/Api/SearchController.php
+
+namespace App\Http\Controllers\Controller\Api;
+
+use App\Http\Controllers\Controller;
+use App\Services\MeilisearchService;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+
+class SearchController extends Controller
+{
+    public function __construct(
+        private MeilisearchService $searchService
+    ) {}
+
+    public function search(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'q' => 'required|string|min:1|max:100',
+            'type' => 'nullable|string|in:players,teams,games,news,all',
+            'limit' => 'nullable|integer|min:1|max:100',
+            'filters' => 'nullable|array',
+            'facets' => 'nullable|array'
+        ]);
+
+        $query = $validated['q'];
+        $type = $validated['type'] ?? 'all';
+        $limit = $validated['limit'] ?? 20;
+        $filters = $validated['filters'] ?? [];
+        $facets = $validated['facets'] ?? [];
+
+        $results = match($type) {
+            'players' => ['players' => $this->searchService->searchPlayers($query, $filters, $facets)],
+            'teams' => ['teams' => $this->searchService->searchTeams($query, $filters)],
+            'games' => ['games' => $this->searchService->searchGames($query, $filters)],
+            'news' => ['news' => $this->searchService->searchNews($query, $filters)],
+            'all' => $this->searchAll($query, $limit, $filters)
+        };
+
+        return response()->json([
+            'query' => $query,
+            'results' => $results,
+            'total_results' => array_sum(array_map(fn($r) => $r['total'] ?? 0, $results)),
+            'search_time' => microtime(true) - LARAVEL_START
+        ]);
+    }
+
+    private function searchAll(string $query, int $limit, array $filters): array
+    {
+        $perType = intval($limit / 4);
+        
+        return [
+            'players' => $this->searchService->searchPlayers($query, array_merge($filters, ['limit' => $perType])),
+            'teams' => $this->searchService->searchTeams($query, array_merge($filters, ['limit' => $perType])),
+            'games' => $this->searchService->searchGames($query, array_merge($filters, ['limit' => $perType])),
+            'news' => $this->searchService->searchNews($query, array_merge($filters, ['limit' => $perType]))
+        ];
+    }
+}
+```
+
+## 🏢 Multi-Organization Support
+
+### Organization Model & Multi-Tenancy
+
+```php
+<?php
+// database/migrations/2024_05_01_000000_create_organizations_table.php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('organizations', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            
+            // Contact Information
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->text('address')->nullable();
+            $table->string('website')->nullable();
+            
+            // Organization Type and Details
+            $table->enum('type', [
+                'national_federation', 'regional_federation', 'league',
+                'club_organization', 'school_district', 'corporate'
+            ]);
+            $table->string('country_code', 2)->default('DE');
+            $table->string('language', 2)->default('de');
+            $table->string('timezone')->default('Europe/Berlin');
+            $table->string('currency', 3)->default('EUR');
+            
+            // Subscription and Billing
+            $table->enum('plan', ['free', 'basic', 'pro', 'enterprise'])->default('basic');
+            $table->integer('max_clubs')->default(1);
+            $table->integer('max_teams')->default(10);
+            $table->integer('max_players')->default(200);
+            $table->boolean('api_access_enabled')->default(false);
+            $table->boolean('white_label_enabled')->default(false);
+            
+            // Settings and Customization
+            $table->json('settings')->nullable();
+            $table->json('theme_config')->nullable();
+            $table->string('logo_path')->nullable();
+            $table->string('banner_path')->nullable();
+            $table->json('custom_css')->nullable();
+            
+            // Status and Analytics
+            $table->enum('status', ['active', 'suspended', 'trial', 'expired'])->default('trial');
+            $table->dateTime('trial_ends_at')->nullable();
+            $table->dateTime('subscription_ends_at')->nullable();
+            $table->integer('total_clubs')->default(0);
+            $table->integer('total_teams')->default(0);
+            $table->integer('total_players')->default(0);
+            $table->integer('total_games')->default(0);
+            
+            $table->timestamps();
+            $table->softDeletes();
+            
+            $table->index(['status', 'plan']);
+            $table->index(['country_code', 'type']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('organizations');
+    }
+};
+```
+
+### Multi-Tenant Middleware
+
+```php
+<?php
+// app/Http/Middleware/MultiTenantMiddleware.php
+
+namespace App\Http\Middleware;
+
+use App\Models\Organization;
+use App\Services\TenantService;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class MultiTenantMiddleware
+{
+    public function __construct(
+        private TenantService $tenantService
+    ) {}
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        $tenant = $this->resolveTenant($request);
+        
+        if (!$tenant) {
+            abort(404, 'Tenant not found');
+        }
+
+        if ($tenant->status !== 'active') {
+            return $this->handleInactiveTenant($tenant);
+        }
+
+        $this->tenantService->setCurrentTenant($tenant);
+        
+        // Set database connection for tenant
+        $this->configureDatabase($tenant);
+        
+        // Set tenant-specific configurations
+        $this->configureTenant($tenant);
+
+        return $next($request);
+    }
+
+    private function resolveTenant(Request $request): ?Organization
+    {
+        // Try subdomain first
+        $subdomain = $this->extractSubdomain($request);
+        if ($subdomain) {
+            $tenant = Organization::where('slug', $subdomain)->first();
+            if ($tenant) return $tenant;
+        }
+
+        // Try custom domain
+        $host = $request->getHost();
+        $tenant = Organization::where('custom_domain', $host)->first();
+        if ($tenant) return $tenant;
+
+        // Fallback to header or parameter
+        $tenantId = $request->header('X-Tenant-ID') ?? $request->get('tenant');
+        if ($tenantId) {
+            return Organization::find($tenantId);
+        }
+
+        return null;
+    }
+
+    private function extractSubdomain(Request $request): ?string
+    {
+        $host = $request->getHost();
+        $parts = explode('.', $host);
+        
+        if (count($parts) >= 3) {
+            return $parts[0];
+        }
+        
+        return null;
+    }
+
+    private function configureDatabase(Organization $tenant): void
+    {
+        // Configure tenant-specific database connection if needed
+        config(['database.connections.tenant.database' => "tenant_{$tenant->id}"]);
+    }
+
+    private function configureTenant(Organization $tenant): void
+    {
+        // Set tenant-specific configurations
+        config([
+            'app.tenant' => $tenant,
+            'app.locale' => $tenant->language,
+            'app.timezone' => $tenant->timezone,
+            'app.currency' => $tenant->currency
+        ]);
+
+        // Apply custom theme
+        if ($tenant->theme_config) {
+            view()->share('tenantTheme', $tenant->theme_config);
+        }
+    }
+
+    private function handleInactiveTenant(Organization $tenant): Response
+    {
+        return match($tenant->status) {
+            'trial' => $this->redirectToUpgrade($tenant),
+            'expired' => $this->showExpiredMessage($tenant),
+            'suspended' => $this->showSuspendedMessage($tenant),
+            default => abort(403, 'Tenant access denied')
+        };
+    }
+}
+```
+
+### Organization Management Service
+
+```php
+<?php
+// app/Services/OrganizationService.php
+
+namespace App\Services;
+
+use App\Models\Organization;
+use App\Models\User;
+use App\Models\Club;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
+class OrganizationService
+{
+    public function createOrganization(array $data, User $creator): Organization
+    {
+        DB::beginTransaction();
+        
+        try {
+            $organization = Organization::create([
+                'name' => $data['name'],
+                'slug' => $this->generateUniqueSlug($data['name']),
+                'description' => $data['description'] ?? null,
+                'type' => $data['type'],
+                'email' => $data['email'] ?? null,
+                'phone' => $data['phone'] ?? null,
+                'address' => $data['address'] ?? null,
+                'country_code' => $data['country_code'] ?? 'DE',
+                'language' => $data['language'] ?? 'de',
+                'timezone' => $data['timezone'] ?? 'Europe/Berlin',
+                'plan' => $data['plan'] ?? 'basic',
+                'status' => 'trial',
+                'trial_ends_at' => now()->addDays(14),
+            ]);
+
+            // Create default admin role for creator
+            $organization->users()->attach($creator->id, [
+                'role' => 'admin',
+                'joined_at' => now()
+            ]);
+
+            // Setup default organization structure
+            $this->setupDefaultStructure($organization, $creator);
+
+            DB::commit();
+            
+            return $organization;
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            throw $e;
+        }
+    }
+
+    public function upgradeOrganization(Organization $organization, string $newPlan): bool
+    {
+        $planLimits = $this->getPlanLimits($newPlan);
+        
+        $organization->update([
+            'plan' => $newPlan,
+            'max_clubs' => $planLimits['max_clubs'],
+            'max_teams' => $planLimits['max_teams'],
+            'max_players' => $planLimits['max_players'],
+            'api_access_enabled' => $planLimits['api_access'],
+            'white_label_enabled' => $planLimits['white_label'],
+            'status' => 'active',
+            'subscription_ends_at' => now()->addYear()
+        ]);
+
+        return true;
+    }
+
+    public function getOrganizationStats(Organization $organization): array
+    {
+        return [
+            'clubs' => $organization->clubs()->count(),
+            'teams' => $organization->clubs()
+                        ->withCount('teams')
+                        ->get()
+                        ->sum('teams_count'),
+            'players' => $organization->clubs()
+                          ->withCount(['teams.players'])
+                          ->get()
+                          ->sum('teams.players_count'),
+            'games_this_month' => $organization->clubs()
+                                   ->withCount(['teams.homeGames' => function ($query) {
+                                       $query->whereMonth('scheduled_at', now()->month);
+                                   }])
+                                   ->get()
+                                   ->sum('home_games_count'),
+            'active_users' => $organization->users()
+                               ->wherePivot('status', 'active')
+                               ->count()
+        ];
+    }
+
+    private function setupDefaultStructure(Organization $organization, User $creator): void
+    {
+        // Create default club if organization type requires it
+        if (in_array($organization->type, ['club_organization', 'school_district'])) {
+            Club::create([
+                'organization_id' => $organization->id,
+                'name' => $organization->name,
+                'slug' => $organization->slug,
+                'status' => 'active',
+                'settings' => [
+                    'default_club' => true
+                ]
+            ]);
+        }
+    }
+
+    private function generateUniqueSlug(string $name): string
+    {
+        $baseSlug = Str::slug($name);
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (Organization::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
+    }
+
+    private function getPlanLimits(string $plan): array
+    {
+        return match($plan) {
+            'free' => [
+                'max_clubs' => 1,
+                'max_teams' => 2,
+                'max_players' => 50,
+                'api_access' => false,
+                'white_label' => false
+            ],
+            'basic' => [
+                'max_clubs' => 1,
+                'max_teams' => 10,
+                'max_players' => 200,
+                'api_access' => false,
+                'white_label' => false
+            ],
+            'pro' => [
+                'max_clubs' => 5,
+                'max_teams' => 50,
+                'max_players' => 1000,
+                'api_access' => true,
+                'white_label' => false
+            ],
+            'enterprise' => [
+                'max_clubs' => -1, // unlimited
+                'max_teams' => -1,
+                'max_players' => -1,
+                'api_access' => true,
+                'white_label' => true
+            ]
+        };
+    }
+}
+```
+
+---
+
 ## 🧪 Testing & Quality Assurance
 
 ### Comprehensive Testing Strategy
