@@ -62,9 +62,7 @@ return [
     |
     */
 
-    'enabled' => env('TELESCOPE_ENABLED', 
-        env('APP_ENV') === 'local' || env('APP_ENV') === 'development'
-    ),
+    'enabled' => env('TELESCOPE_ENABLED', env('APP_ENV') === 'local'),
 
     /*
     |--------------------------------------------------------------------------
@@ -144,8 +142,8 @@ return [
             'ignore_paths' => [],
         ],
 
-        Watchers\HttpClientWatcher::class => [
-            'enabled' => env('TELESCOPE_HTTP_CLIENT_WATCHER', true),
+        Watchers\ClientRequestWatcher::class => [
+            'enabled' => env('TELESCOPE_CLIENT_REQUEST_WATCHER', true),
         ],
 
         Watchers\JobWatcher::class => [

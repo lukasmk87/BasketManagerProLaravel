@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\Facades\Gate;
+use Laravel\Telescope\IncomingEntry;
 use Laravel\Telescope\Telescope;
 use Laravel\Telescope\TelescopeApplicationServiceProvider;
 
@@ -13,8 +14,8 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     public function register(): void
     {
-        // Only register Telescope in specific environments
-        if ($this->app->environment(['local', 'development'])) {
+        // Only register Telescope in local environment
+        if ($this->app->environment('local')) {
             parent::register();
         }
     }
@@ -24,8 +25,8 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     public function boot(): void
     {
-        // Only boot Telescope in specific environments
-        if ($this->app->environment(['local', 'development'])) {
+        // Only boot Telescope in local environment
+        if ($this->app->environment('local')) {
             parent::boot();
 
             // Configure Telescope
@@ -33,7 +34,7 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
             $this->hideSensitiveRequestDetails();
 
-            Telescope::filter(function ($entry) {
+            Telescope::filter(function (IncomingEntry $entry) {
                 if ($this->app->environment('local')) {
                     return true;
                 }
@@ -52,10 +53,14 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     protected function authorization(): void
     {
+        if (!$this->app->environment('local')) {
+            return;
+        }
+
         $this->gate();
 
         Telescope::auth(function ($request) {
-            return app()->environment('local') ||
+            return $this->app->environment('local') ||
                    Gate::allows('viewTelescope', [$request->user()]);
         });
     }
@@ -69,7 +74,7 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
     {
         Gate::define('viewTelescope', function ($user) {
             return in_array($user->email, [
-                // Add admin emails here
+                // Add admin emails here if needed in non-local environments
             ]);
         });
     }
