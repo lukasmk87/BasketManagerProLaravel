@@ -31,7 +31,7 @@ return [
 
     'middleware' => ['web'],
 
-    'auth_session' => AuthenticateSession::class,
+    'auth_session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -44,7 +44,7 @@ return [
     |
     */
 
-    'guard' => 'sanctum',
+    'guard' => 'web',
 
     /*
     |--------------------------------------------------------------------------

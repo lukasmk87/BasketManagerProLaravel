@@ -27,9 +27,9 @@ Route::middleware([
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
-// Include Jetstream Team Routes
-if (file_exists(base_path('vendor/laravel/jetstream/routes/jetstream.php'))) {
-    require base_path('vendor/laravel/jetstream/routes/jetstream.php');
+// Include Jetstream Routes (Inertia stack)
+if (file_exists(base_path('vendor/laravel/jetstream/routes/inertia.php'))) {
+    require base_path('vendor/laravel/jetstream/routes/inertia.php');
 }
 
 // Register routes for all locales with prefix (including default locale for explicit redirect)

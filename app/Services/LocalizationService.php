@@ -203,7 +203,7 @@ class LocalizationService
     /**
      * Generate a localized URL for the given route.
      */
-    public function localizedRoute(string $name, array $parameters = [], string $locale = null): string
+    public function localizedRoute(string $name, array $parameters = [], ?string $locale = null): string
     {
         $locale = $locale ?: $this->getCurrentLocale();
         
