@@ -20,7 +20,7 @@ Route::get('/', function () {
 })->name('welcome');
 
 Route::middleware([
-    'auth:sanctum',
+    'auth:web',
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
@@ -44,7 +44,7 @@ foreach ($supportedLocales as $locale) {
             
             // Redirect /de/dashboard to /dashboard
             Route::middleware([
-                'auth:sanctum',
+                'auth:web',
                 config('jetstream.auth_session'),
                 'verified',
             ])->group(function () {
@@ -65,7 +65,7 @@ foreach ($supportedLocales as $locale) {
             
             // Authenticated routes
             Route::middleware([
-                'auth:sanctum',
+                'auth:web',
                 config('jetstream.auth_session'),
                 'verified',
             ])->group(function () {
