@@ -8,13 +8,11 @@ use App\Models\User;
 use App\Models\Club;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\App;
 use Illuminate\Database\Eloquent\Collection;
 
 class TeamService
 {
-    public function __construct(
-        private StatisticsService $statisticsService
-    ) {}
 
     /**
      * Create a new team.
@@ -214,7 +212,7 @@ class TeamService
                 'captains_count' => $team->players()->where('is_captain', true)->count(),
                 'starters_count' => $team->players()->where('is_starter', true)->count(),
             ],
-            'season_stats' => $this->statisticsService->getTeamSeasonStats($team, $currentSeason),
+            'season_stats' => App::make(StatisticsService::class)->getTeamSeasonStats($team, $currentSeason),
             'recent_performance' => $this->getRecentPerformance($team, 5),
             'player_contributions' => $this->getTopPlayerContributions($team, $currentSeason),
         ];
@@ -507,7 +505,7 @@ class TeamService
         $contributions = [];
 
         foreach ($players as $player) {
-            $stats = $this->statisticsService->getPlayerSeasonStats($player, $season);
+            $stats = App::make(StatisticsService::class)->getPlayerSeasonStats($player, $season);
             
             $contributions[] = [
                 'player_id' => $player->id,

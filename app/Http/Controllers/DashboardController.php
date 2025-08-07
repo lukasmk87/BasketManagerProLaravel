@@ -409,32 +409,24 @@ class DashboardController extends Controller
     {
         return match ($primaryRole) {
             'admin', 'super-admin' => [
-                ['label' => 'Benutzer verwalten', 'route' => 'admin.users.index', 'icon' => 'users'],
-                ['label' => 'Clubs verwalten', 'route' => 'admin.clubs.index', 'icon' => 'building'],
-                ['label' => 'System-Logs', 'route' => 'admin.logs.index', 'icon' => 'document-text'],
-                ['label' => 'Backup erstellen', 'route' => 'admin.backup.create', 'icon' => 'archive'],
+                ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user'],
+                ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
             'club-admin' => [
-                ['label' => 'Teams verwalten', 'route' => 'clubs.teams.index', 'icon' => 'user-group'],
-                ['label' => 'Spieler hinzufügen', 'route' => 'clubs.players.create', 'icon' => 'plus'],
-                ['label' => 'Spiele planen', 'route' => 'clubs.games.create', 'icon' => 'calendar'],
-                ['label' => 'Mitglieder verwalten', 'route' => 'clubs.members.index', 'icon' => 'users'],
+                ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user'],
+                ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
             'trainer', 'head-coach', 'assistant-coach' => [
-                ['label' => 'Team-Aufstellung', 'route' => 'teams.roster.index', 'icon' => 'user-group'],
-                ['label' => 'Training planen', 'route' => 'teams.training.create', 'icon' => 'calendar'],
-                ['label' => 'Spieler-Statistiken', 'route' => 'teams.players.stats', 'icon' => 'chart-bar'],
-                ['label' => 'Spiel-Analyse', 'route' => 'teams.games.analysis', 'icon' => 'presentation-chart-line'],
+                ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user'],
+                ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
             'player' => [
-                ['label' => 'Meine Statistiken', 'route' => 'players.stats.show', 'icon' => 'chart-bar'],
-                ['label' => 'Trainingsplan', 'route' => 'players.training.show', 'icon' => 'calendar'],
-                ['label' => 'Team-Termine', 'route' => 'players.schedule.show', 'icon' => 'clock'],
                 ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user'],
+                ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
             default => [
                 ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user'],
-                ['label' => 'Einstellungen', 'route' => 'profile.settings', 'icon' => 'cog'],
+                ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
         };
     }

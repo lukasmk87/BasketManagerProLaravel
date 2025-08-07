@@ -8,13 +8,11 @@ use App\Models\Team;
 use App\Models\EmergencyContact;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\App;
 use Carbon\Carbon;
 
 class PlayerService
 {
-    public function __construct(
-        private StatisticsService $statisticsService
-    ) {}
 
     /**
      * Create a new player.
@@ -258,7 +256,7 @@ class PlayerService
      */
     public function getPlayerStatistics(Player $player, string $season): array
     {
-        $stats = $this->statisticsService->getPlayerSeasonStats($player, $season);
+        $stats = App::make(StatisticsService::class)->getPlayerSeasonStats($player, $season);
         
         // Add player-specific calculations
         $basicStats = [
@@ -382,7 +380,7 @@ class PlayerService
             $player->update($updates);
 
             // Invalidate statistics cache
-            $this->statisticsService->invalidatePlayerStats($player);
+            App::make(StatisticsService::class)->invalidatePlayerStats($player);
 
             DB::commit();
 

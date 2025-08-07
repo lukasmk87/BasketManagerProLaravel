@@ -62,7 +62,7 @@ return [
     |
     */
 
-    'enabled' => env('TELESCOPE_ENABLED', env('APP_ENV') === 'local'),
+    'enabled' => env('TELESCOPE_ENABLED', false),
 
     /*
     |--------------------------------------------------------------------------

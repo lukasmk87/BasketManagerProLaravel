@@ -281,30 +281,30 @@ class UserService
         $activeUsersThisMonth = User::where('last_login_at', '>=', now()->startOfMonth())->count();
 
         // Geographic distribution
-        $countryStats = User::selectRaw('country, COUNT(*) as count')
-            ->whereNotNull('country')
-            ->groupBy('country')
+        $countryStats = User::selectRaw('address_country, COUNT(*) as count')
+            ->whereNotNull('address_country')
+            ->groupBy('address_country')
             ->orderBy('count', 'desc')
             ->limit(10)
-            ->pluck('count', 'country')
+            ->pluck('count', 'address_country')
             ->toArray();
 
-        // Age distribution for users with birth_date
+        // Age distribution for users with date_of_birth
         $ageGroups = [
-            'under_18' => User::whereNotNull('birth_date')
-                ->where('birth_date', '>', now()->subYears(18))
+            'under_18' => User::whereNotNull('date_of_birth')
+                ->where('date_of_birth', '>', now()->subYears(18))
                 ->count(),
-            '18_25' => User::whereNotNull('birth_date')
-                ->whereBetween('birth_date', [now()->subYears(25), now()->subYears(18)])
+            '18_25' => User::whereNotNull('date_of_birth')
+                ->whereBetween('date_of_birth', [now()->subYears(25), now()->subYears(18)])
                 ->count(),
-            '26_35' => User::whereNotNull('birth_date')
-                ->whereBetween('birth_date', [now()->subYears(35), now()->subYears(26)])
+            '26_35' => User::whereNotNull('date_of_birth')
+                ->whereBetween('date_of_birth', [now()->subYears(35), now()->subYears(26)])
                 ->count(),
-            '36_50' => User::whereNotNull('birth_date')
-                ->whereBetween('birth_date', [now()->subYears(50), now()->subYears(36)])
+            '36_50' => User::whereNotNull('date_of_birth')
+                ->whereBetween('date_of_birth', [now()->subYears(50), now()->subYears(36)])
                 ->count(),
-            'over_50' => User::whereNotNull('birth_date')
-                ->where('birth_date', '<', now()->subYears(50))
+            'over_50' => User::whereNotNull('date_of_birth')
+                ->where('date_of_birth', '<', now()->subYears(50))
                 ->count(),
         ];
 
