@@ -156,6 +156,18 @@ const chartConfig = computed(() => ({
     options: mergedOptions.value
 }));
 
+// Wartet auf Canvas-Element mit Retry-Mechanismus
+const waitForCanvas = async (maxRetries = 10, delay = 100) => {
+    for (let i = 0; i < maxRetries; i++) {
+        if (canvasRef.value) {
+            return canvasRef.value;
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+        await nextTick();
+    }
+    throw new Error('Canvas-Element nicht verfügbar');
+};
+
 // Chart.js dynamisch laden und Chart erstellen
 const initChart = async () => {
     try {
@@ -171,14 +183,22 @@ const initChart = async () => {
             chartInstance.value.destroy();
         }
 
+        // Auf DOM-Aktualisierung warten
         await nextTick();
 
-        if (!canvasRef.value) {
-            throw new Error('Canvas-Element nicht verfügbar');
+        // Mit Retry-Mechanismus auf Canvas-Element warten
+        const canvas = await waitForCanvas();
+
+        // Zusätzliche Prüfung, ob Canvas im DOM eingehängt ist
+        if (!canvas.isConnected) {
+            await nextTick();
+            if (!canvas.isConnected) {
+                throw new Error('Canvas-Element nicht im DOM verfügbar');
+            }
         }
 
         // Neue Chart-Instanz erstellen
-        chartInstance.value = new Chart(canvasRef.value, chartConfig.value);
+        chartInstance.value = new Chart(canvas, chartConfig.value);
         
         loading.value = false;
     } catch (err) {

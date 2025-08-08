@@ -28,11 +28,27 @@ const healthStatus = computed(() => {
 });
 
 const chartData = computed(() => {
+    const distribution = roleDistribution.value || {};
+    const keys = Object.keys(distribution);
+    const values = Object.values(distribution);
+    
+    // Fallback wenn keine Daten verfügbar sind
+    if (keys.length === 0 || values.every(v => !v || v === 0)) {
+        return {
+            labels: ['Keine Daten'],
+            datasets: [{
+                label: 'Benutzer',
+                data: [1],
+                backgroundColor: ['#E5E7EB'],
+            }]
+        };
+    }
+    
     return {
-        labels: Object.keys(roleDistribution.value),
+        labels: keys,
         datasets: [{
             label: 'Benutzer',
-            data: Object.values(roleDistribution.value),
+            data: values,
             backgroundColor: [
                 '#EF4444', '#3B82F6', '#10B981', '#F59E0B', 
                 '#8B5CF6', '#EC4899', '#6B7280', '#14B8A6'
