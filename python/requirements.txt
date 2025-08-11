@@ -1,0 +1,95 @@
+# Basketball AI Video Analysis Requirements
+# Core Computer Vision and Machine Learning
+
+# OpenCV for computer vision
+opencv-python==4.8.1.78
+opencv-contrib-python==4.8.1.78
+
+# NumPy for numerical computing
+numpy==1.24.3
+
+# Image processing and manipulation
+Pillow==10.0.1
+scikit-image==0.21.0
+
+# Machine Learning frameworks
+scikit-learn==1.3.0
+tensorflow==2.13.0
+torch==2.0.1
+torchvision==0.15.2
+
+# Video processing
+moviepy==1.0.3
+imageio==2.31.1
+imageio-ffmpeg==0.4.8
+
+# Data manipulation and analysis
+pandas==2.0.3
+matplotlib==3.7.2
+seaborn==0.12.2
+
+# JSON and configuration
+jsonschema==4.19.0
+pyyaml==6.0.1
+
+# Performance and optimization
+numba==0.57.1
+cython==3.0.0
+
+# Utility libraries
+tqdm==4.65.0
+argparse==1.4.0
+
+# Basketball-specific libraries (if available)
+# These would be custom or specialized libraries for sports analysis
+# sportspy==0.1.0  # Hypothetical sports analysis library
+# court-detection==0.2.0  # Hypothetical court detection library
+
+# Optional: Deep Learning for advanced features
+# detectron2  # For advanced object detection
+# mediapipe==0.10.3  # For pose detection and tracking
+# yolov8  # For real-time object detection
+
+# Development and testing
+pytest==7.4.0
+pytest-cov==4.1.0
+black==23.7.0
+flake8==6.0.0
+
+# Logging and monitoring
+loguru==0.7.0
+
+# File system utilities
+watchdog==3.0.0
+pathlib2==2.3.7
+
+# HTTP requests for API integration
+requests==2.31.0
+
+# Environment configuration
+python-dotenv==1.0.0
+
+# Basketball court templates and models (custom)
+# These would be custom packages containing:
+# - Court templates for different leagues (NBA, FIBA, etc.)
+# - Pre-trained models for player/ball detection
+# - Action recognition models
+# basketball-court-templates==1.0.0  # Custom package
+# basketball-models==1.0.0  # Custom package
+
+# GPU acceleration (optional, for CUDA-enabled systems)
+# tensorflow-gpu==2.13.0  # Use instead of tensorflow if GPU available
+# torch-gpu  # GPU version of PyTorch
+
+# Note: Some packages may require specific versions based on your system
+# For production deployment, pin all versions exactly
+# For development, these versions provide a stable baseline
+
+# Installation instructions:
+# pip install -r requirements.txt
+#
+# For GPU support (optional):
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+#
+# For advanced object detection:
+# pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu118/torch2.0/index.html
