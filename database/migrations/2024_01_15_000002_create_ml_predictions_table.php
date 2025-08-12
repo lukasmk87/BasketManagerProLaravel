@@ -117,7 +117,6 @@ return new class extends Migration
             
             // Indexes for performance
             $table->index(['ml_model_id', 'status']);
-            $table->index(['predictable_type', 'predictable_id']);
             $table->index(['prediction_type', 'created_at']);
             $table->index(['prediction_for_date', 'prediction_type']);
             $table->index(['confidence_score', 'status']);
@@ -127,8 +126,8 @@ return new class extends Migration
             $table->index(['flagged_for_review', 'status']);
             
             // Composite indexes for common queries
-            $table->index(['ml_model_id', 'prediction_type', 'predictable_type']);
-            $table->index(['prediction_for_date', 'predictable_type', 'status']);
+            $table->index(['ml_model_id', 'prediction_type', 'predictable_type'], 'idx_ml_pred_model_type_predictable');
+            $table->index(['prediction_for_date', 'predictable_type', 'status'], 'idx_ml_pred_date_type_status');
         });
     }
 

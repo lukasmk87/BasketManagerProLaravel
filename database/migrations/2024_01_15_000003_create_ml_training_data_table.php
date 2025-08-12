@@ -144,7 +144,6 @@ return new class extends Migration
             // Indexes for performance
             $table->index(['dataset_name', 'dataset_version']);
             $table->index(['data_type', 'status']);
-            $table->index(['source_entity_type', 'source_entity_id']);
             $table->index(['data_start_date', 'data_end_date']);
             $table->index(['season', 'data_type']);
             $table->index(['is_active', 'status']);
@@ -153,8 +152,8 @@ return new class extends Migration
             $table->index(['total_samples', 'data_type']);
             
             // Composite indexes
-            $table->index(['data_type', 'season', 'is_active']);
-            $table->index(['dataset_name', 'dataset_version', 'partition_type']);
+            $table->index(['data_type', 'season', 'is_active'], 'idx_ml_training_type_season_active');
+            $table->index(['dataset_name', 'dataset_version', 'partition_type'], 'idx_ml_training_dataset_partition');
         });
     }
 
