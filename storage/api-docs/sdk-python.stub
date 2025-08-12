@@ -1,0 +1,1866 @@
+"""
+BasketManager Pro API Python SDK
+
+Enterprise Basketball Club Management API with multi-tenant architecture, real-time scoring, and comprehensive statistics.
+
+API Version: 4.0
+SDK Version: 1.0.0
+Generated: {date('Y-m-d H:i:s')} UTC
+
+@package BasketManagerPro
+@author Auto-generated from OpenAPI specification
+@link https://basketmanager-pro.com/api/documentation
+"""
+import requests
+import json
+from typing import Dict, List, Optional, Union, Any
+from urllib.parse import urljoin, urlencode
+from datetime import datetime
+
+class ApiException(Exception):
+    """Base API Exception"""
+    
+    def __init__(self, message: str, status_code: int = 0, errors: Optional[Dict] = None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.errors = errors or {}
+
+
+class BadRequestException(ApiException):
+    """Bad Request Exception (400)"""
+    
+    def __init__(self, message: str, errors: Optional[Dict] = None):
+        super().__init__(message, 400, errors)
+
+
+class UnauthorizedException(ApiException):
+    """Unauthorized Exception (401)"""
+    
+    def __init__(self, message: str):
+        super().__init__(message, 401)
+
+
+class ForbiddenException(ApiException):
+    """Forbidden Exception (403)"""
+    
+    def __init__(self, message: str):
+        super().__init__(message, 403)
+
+
+class NotFoundException(ApiException):
+    """Not Found Exception (404)"""
+    
+    def __init__(self, message: str):
+        super().__init__(message, 404)
+
+
+class ValidationException(ApiException):
+    """Validation Exception (422)"""
+    
+    def __init__(self, message: str, errors: Optional[Dict] = None):
+        super().__init__(message, 422, errors)
+
+
+class RateLimitException(ApiException):
+    """Rate Limit Exception (429)"""
+    
+    def __init__(self, message: str):
+        super().__init__(message, 429)
+
+class BasketManagerProClient:
+    """BasketManager Pro API Client"""
+    
+    def __init__(self, api_key: str, base_url: str = "http://localhost/api", timeout: int = 30):
+        """
+        Initialize the API client
+        
+        Args:
+            api_key: Your API key
+            base_url: Optional custom base URL
+            timeout: Request timeout in seconds
+        """
+        self.api_key = api_key
+        self.base_url = base_url.rstrip('/')
+        self.timeout = timeout
+        self.sdk_version = "1.0.0"
+        
+        # Default headers
+        self.default_headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': f'BasketManagerPro-Python-SDK/{self.sdk_version}'
+        }
+        
+        # Initialize session
+        self.session = requests.Session()
+        self.session.headers.update(self.default_headers)
+        
+        # Initialize resource classes
+        self.teams = Teams(self)
+        self.players = Players(self)
+        self.games = Games(self)
+        self.clubs = Clubs(self)
+        self.tournaments = Tournaments(self)
+        self.training = Training(self)
+        self.videos = Videos(self)
+        self.analytics = Analytics(self)
+    
+    def request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
+        """
+        Make HTTP request to the API
+        
+        Args:
+            method: HTTP method
+            endpoint: API endpoint
+            **kwargs: Additional request arguments
+            
+        Returns:
+            Response data as dictionary
+            
+        Raises:
+            ApiException: For API errors
+        """
+        url = urljoin(self.base_url, endpoint.lstrip('/'))
+        
+        try:
+            response = self.session.request(
+                method.upper(),
+                url,
+                timeout=self.timeout,
+                **kwargs
+            )
+            
+            return self._handle_response(response)
+            
+        except requests.exceptions.RequestException as e:
+            raise ApiException(f"HTTP request failed: {str(e)}")
+    
+    def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
+        """Handle API response"""
+        try:
+            data = response.json()
+        except json.JSONDecodeError:
+            data = {}
+        
+        if 200 <= response.status_code < 300:
+            return data
+        
+        # Handle error responses
+        message = data.get('message', 'Unknown API error')
+        errors = data.get('errors', {})
+        
+        if response.status_code == 400:
+            raise BadRequestException(message, errors)
+        elif response.status_code == 401:
+            raise UnauthorizedException(message)
+        elif response.status_code == 403:
+            raise ForbiddenException(message)
+        elif response.status_code == 404:
+            raise NotFoundException(message)
+        elif response.status_code == 422:
+            raise ValidationException(message, errors)
+        elif response.status_code == 429:
+            raise RateLimitException(message)
+        else:
+            raise ApiException(message, response.status_code, errors)
+    
+    def set_api_key(self, api_key: str) -> None:
+        """Update API key"""
+        self.api_key = api_key
+        self.session.headers['Authorization'] = f'Bearer {api_key}'
+    
+    def get_sdk_version(self) -> str:
+        """Get SDK version"""
+        return self.sdk_version
+    
+    def get_base_url(self) -> str:
+        """Get API base URL"""
+        return self.base_url
+    
+    def ping(self) -> Dict[str, Any]:
+        """
+        Test API connection
+        
+        Returns:
+            API status information
+        """
+        return self.request('GET', '/v4/documentation/ping')
+
+
+class Authentication:
+    """Authentication resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+    def postauth_login(self, ) -> Dict[str, Any]:
+        """
+        Login auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/auth/login"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postauth_register(self, ) -> Dict[str, Any]:
+        """
+        Register auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/auth/register"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postauth_logout(self, ) -> Dict[str, Any]:
+        """
+        Logout auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/auth/logout"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postauth_refresh(self, ) -> Dict[str, Any]:
+        """
+        Refresh auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/auth/refresh"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getauth_user(self, ) -> Dict[str, Any]:
+        """
+        User auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/auth/user"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headauth_user(self, ) -> Dict[str, Any]:
+        """
+        User auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/auth/user"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+
+class Teams:
+    """Teams resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+    def getteam_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postteam_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putteam_update(self, team: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchteam_update(self, team: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deleteteam_destroy(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def getteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Players team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}/players"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Players team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}/players"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}/games"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}/games"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_statistics(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}/statistics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_statistics(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}/statistics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/teams/{team}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/teams/{team}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Players team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/teams/{team}/players"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Players team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/teams/{team}/players"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/teams/{team}/games"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/teams/{team}/games"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+
+class Players:
+    """Players resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+    def getplayer_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postplayer_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getplayer_show(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_show(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putplayer_update(self, player: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchplayer_update(self, player: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deleteplayer_destroy(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def getplayer_statistics(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}/statistics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_statistics(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}/statistics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getplayer_games(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}/games"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_games(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}/games"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postplayer_transfer(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Transfer player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/players/{player}/transfer"
+        return self.client.request('POST', endpoint, **kwargs)
+
+
+class Games:
+    """Games resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+    def getgame_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postgame_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putgame_update(self, game: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchgame_update(self, game: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletegame_destroy(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def getgame_statistics(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}/statistics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_statistics(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}/statistics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postgame_start(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Start game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}/start"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postgame_finish(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Finish game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}/finish"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveScore game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}/live-score"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveScore game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/games/{game}/live-score"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getgame_statistic_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_statistic_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postgame_statistic_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getgame_statistic_show(self, game_statistic: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics/{game_statistic}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_statistic_show(self, game_statistic: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics/{game_statistic}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putgame_statistic_update(self, game_statistic: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics/{game_statistic}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchgame_statistic_update(self, game_statistic: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics/{game_statistic}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletegame_statistic_destroy(self, game_statistic: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics/{game_statistic}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def postgame_statistic_bulk_store(self, ) -> Dict[str, Any]:
+        """
+        BulkStore gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics/bulk"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getgame_statistic_player_game_stats(self, game: Union[int, str], player: Union[int, str]) -> Dict[str, Any]:
+        """
+        PlayerGameStats gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics/{game}/player/{player}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_statistic_player_game_stats(self, game: Union[int, str], player: Union[int, str]) -> Dict[str, Any]:
+        """
+        PlayerGameStats gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/game-statistics/{game}/player/{player}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/games/{game}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/games/{game}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveScore game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/games/{game}/live-score"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveScore game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/games/{game}/live-score"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+
+class Tournaments:
+    """Tournaments resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+    def gettournament_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtournament_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def posttournament_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def gettournament_show(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtournament_show(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def puttournament_update(self, tournament: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchtournament_update(self, tournament: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletetournament_destroy(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def posttournament_add_team(self, tournament: Union[int, str], team: Union[int, str]) -> Dict[str, Any]:
+        """
+        AddTeam tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/teams/{team}"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def deletetournament_remove_team(self, tournament: Union[int, str], team: Union[int, str]) -> Dict[str, Any]:
+        """
+        RemoveTeam tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/teams/{team}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def posttournament_generate_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        GenerateBracket tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/generate-bracket"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def posttournament_advance_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        AdvanceBracket tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/advance-bracket"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def gettournament_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Bracket tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/bracket"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtournament_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Bracket tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/bracket"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def gettournament_standings(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Standings tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/standings"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtournament_standings(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Standings tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/standings"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def posttournament_start(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Start tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/start"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def posttournament_finish(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Finish tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/tournaments/{tournament}/finish"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def gettournament_show(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/tournaments/{tournament}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtournament_show(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/tournaments/{tournament}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def gettournament_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Bracket tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/tournaments/{tournament}/bracket"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtournament_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Bracket tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/tournaments/{tournament}/bracket"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def gettournament_standings(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Standings tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/tournaments/{tournament}/standings"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtournament_standings(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Standings tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/public/tournaments/{tournament}/standings"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+
+class Training:
+    """Training resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+    def gettraining_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtraining_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def posttraining_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def gettraining_show(self, training: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtraining_show(self, training: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def puttraining_update(self, training: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchtraining_update(self, training: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletetraining_destroy(self, training: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def gettraining_drills(self, training: Union[int, str]) -> Dict[str, Any]:
+        """
+        Drills training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}/drills"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtraining_drills(self, training: Union[int, str]) -> Dict[str, Any]:
+        """
+        Drills training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}/drills"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def posttraining_attach_drill(self, training: Union[int, str], drill: Union[int, str]) -> Dict[str, Any]:
+        """
+        AttachDrill training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}/drills/{drill}/attach"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def deletetraining_detach_drill(self, training: Union[int, str], drill: Union[int, str]) -> Dict[str, Any]:
+        """
+        DetachDrill training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}/drills/{drill}/detach"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def gettraining_team_trainings(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        TeamTrainings training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}/trainings"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtraining_team_trainings(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        TeamTrainings training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/teams/{team}/trainings"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def posttraining_duplicate(self, training: Union[int, str]) -> Dict[str, Any]:
+        """
+        Duplicate training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/trainings/{training}/duplicate"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getdrill_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headdrill_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postdrill_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getdrill_show(self, drill: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/{drill}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headdrill_show(self, drill: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/{drill}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putdrill_update(self, drill: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/{drill}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchdrill_update(self, drill: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/{drill}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletedrill_destroy(self, drill: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/{drill}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def getdrill_search(self, ) -> Dict[str, Any]:
+        """
+        Search drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/search"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headdrill_search(self, ) -> Dict[str, Any]:
+        """
+        Search drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/search"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getdrill_categories(self, ) -> Dict[str, Any]:
+        """
+        Categories drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/categories"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headdrill_categories(self, ) -> Dict[str, Any]:
+        """
+        Categories drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/categories"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getdrill_by_category(self, category: Union[int, str]) -> Dict[str, Any]:
+        """
+        ByCategory drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/category/{category}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headdrill_by_category(self, category: Union[int, str]) -> Dict[str, Any]:
+        """
+        ByCategory drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/drills/category/{category}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+
+class Analytics:
+    """Analytics resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+    def getm_l_analytics_get_dashboard_overview(self, ) -> Dict[str, Any]:
+        """
+        GetDashboardOverview mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/dashboard-overview"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_get_dashboard_overview(self, ) -> Dict[str, Any]:
+        """
+        GetDashboardOverview mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/dashboard-overview"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getm_l_analytics_get_player_performance_dashboard(self, ) -> Dict[str, Any]:
+        """
+        GetPlayerPerformanceDashboard mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/performance-dashboard"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_get_player_performance_dashboard(self, ) -> Dict[str, Any]:
+        """
+        GetPlayerPerformanceDashboard mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/performance-dashboard"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getm_l_analytics_get_injury_risk_dashboard(self, ) -> Dict[str, Any]:
+        """
+        GetInjuryRiskDashboard mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/injury-dashboard"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_get_injury_risk_dashboard(self, ) -> Dict[str, Any]:
+        """
+        GetInjuryRiskDashboard mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/injury-dashboard"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getm_l_analytics_get_experiment_dashboard(self, ) -> Dict[str, Any]:
+        """
+        GetExperimentDashboard mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/experiment-dashboard"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_get_experiment_dashboard(self, ) -> Dict[str, Any]:
+        """
+        GetExperimentDashboard mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/experiment-dashboard"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getm_l_analytics_get_predictions_timeline(self, ) -> Dict[str, Any]:
+        """
+        GetPredictionsTimeline mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/predictions-timeline"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_get_predictions_timeline(self, ) -> Dict[str, Any]:
+        """
+        GetPredictionsTimeline mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/predictions-timeline"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getm_l_analytics_get_model_accuracy(self, ) -> Dict[str, Any]:
+        """
+        GetModelAccuracy mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/model-accuracy"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_get_model_accuracy(self, ) -> Dict[str, Any]:
+        """
+        GetModelAccuracy mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/model-accuracy"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getm_l_analytics_get_prediction_comparison(self, ) -> Dict[str, Any]:
+        """
+        GetPredictionComparison mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/prediction-comparison"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_get_prediction_comparison(self, ) -> Dict[str, Any]:
+        """
+        GetPredictionComparison mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/ml-analytics/prediction-comparison"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+
+class Videos:
+    """Videos resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+    def getvideo_file_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headvideo_file_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postvideo_file_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getvideo_file_show(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headvideo_file_show(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putvideo_file_update(self, video: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchvideo_file_update(self, video: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletevideo_file_destroy(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def postvideo_file_process(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        Process videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}/process"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getvideo_file_download(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        Download videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}/download"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headvideo_file_download(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        Download videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}/download"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getvideo_file_stream(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        Stream videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}/stream"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headvideo_file_stream(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        Stream videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}/stream"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postvideo_file_analyze(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        Analyze videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}/analyze"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getvideo_annotation_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/video-annotations"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headvideo_annotation_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/video-annotations"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postvideo_annotation_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/video-annotations"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getvideo_annotation_show(self, video_annotation: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/video-annotations/{video_annotation}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headvideo_annotation_show(self, video_annotation: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/video-annotations/{video_annotation}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putvideo_annotation_update(self, video_annotation: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/video-annotations/{video_annotation}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchvideo_annotation_update(self, video_annotation: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/video-annotations/{video_annotation}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletevideo_annotation_destroy(self, video_annotation: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/video-annotations/{video_annotation}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def getvideo_annotation_video_annotations(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        VideoAnnotations videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}/annotations"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headvideo_annotation_video_annotations(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        VideoAnnotations videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}/annotations"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postvideo_annotation_bulk_store(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        BulkStore videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/videos/{video}/annotations/bulk"
+        return self.client.request('POST', endpoint, **kwargs)
+
+
+class MultiTenant:
+    """Multi-tenant resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+
+class Webhooks:
+    """Webhooks resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+
+
+class ExternalAPIs:
+    """External APIs resource"""
+    
+    def __init__(self, client: BasketManagerProClient):
+        self.client = client
+

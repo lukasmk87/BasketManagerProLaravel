@@ -57,6 +57,13 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_login_at',
         'last_login_ip',
         'is_active',
+        'subscription_tier',
+        'api_quota_reset_at',
+        'current_api_usage',
+        'api_key_hash',
+        'api_access_enabled',
+        'api_key_last_used_at',
+        'rate_limit_cache',
     ];
 
     /**
@@ -99,6 +106,10 @@ class User extends Authenticatable implements MustVerifyEmail
             'last_login_at' => 'datetime',
             'is_active' => 'boolean',
             'password' => 'hashed',
+            'api_quota_reset_at' => 'datetime',
+            'api_access_enabled' => 'boolean',
+            'api_key_last_used_at' => 'datetime',
+            'rate_limit_cache' => 'array',
         ];
     }
 
@@ -154,6 +165,30 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Club::class, 'club_members')
                     ->withPivot('role', 'joined_at', 'is_active')
                     ->withTimestamps();
+    }
+
+    /**
+     * Get the user's subscription.
+     */
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class);
+    }
+
+    /**
+     * Get the user's API usage tracking records.
+     */
+    public function apiUsageTracking(): HasMany
+    {
+        return $this->hasMany(ApiUsageTracking::class);
+    }
+
+    /**
+     * Get the user's rate limit exceptions.
+     */
+    public function rateLimitExceptions(): HasMany
+    {
+        return $this->hasMany(RateLimitException::class);
     }
 
     // ============================
@@ -391,5 +426,205 @@ class User extends Authenticatable implements MustVerifyEmail
             ->logOnly(['name', 'email', 'is_active', 'language', 'player_profile_active'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    // ============================
+    // API & SUBSCRIPTION METHODS
+    // ============================
+
+    /**
+     * Get user's current subscription or create a free one
+     */
+    public function getSubscription(): Subscription
+    {
+        $subscription = $this->subscription;
+        
+        if (!$subscription) {
+            $subscription = $this->subscription()->create([
+                'tier' => 'free',
+                'plan_name' => 'Free Plan',
+                'status' => 'active',
+                'api_requests_limit' => 1000,
+                'burst_limit' => 100,
+                'concurrent_requests_limit' => 10,
+            ]);
+        }
+        
+        return $subscription;
+    }
+
+    /**
+     * Get effective API rate limits for this user
+     */
+    public function getApiLimits(): array
+    {
+        $subscription = $this->getSubscription();
+        $baseLimits = $subscription->getApiLimits();
+        
+        // Check for active rate limit exceptions
+        $exceptions = RateLimitException::findActiveFor('user', $this->id);
+        
+        foreach ($exceptions as $exception) {
+            $baseLimits = $exception->getEffectiveLimits($baseLimits);
+        }
+        
+        return $baseLimits;
+    }
+
+    /**
+     * Check if user has exceeded their API quota
+     */
+    public function hasExceededApiQuota(): bool
+    {
+        $limits = $this->getApiLimits();
+        $usage = $this->getCurrentApiUsage();
+        
+        return $usage['total_requests'] >= $limits['requests_per_hour'];
+    }
+
+    /**
+     * Get current API usage for the user
+     */
+    public function getCurrentApiUsage(): array
+    {
+        return ApiUsageTracking::getCurrentWindowUsage($this->id, null, 'hourly');
+    }
+
+    /**
+     * Reset API quota (called hourly)
+     */
+    public function resetApiQuota(): void
+    {
+        $this->current_api_usage = 0;
+        $this->api_quota_reset_at = now()->addHour();
+        $this->save();
+    }
+
+    /**
+     * Generate API key for user
+     */
+    public function generateApiKey(): string
+    {
+        $apiKey = 'bmp_' . bin2hex(random_bytes(20)); // BasketManager Pro prefix
+        $this->api_key_hash = hash('sha256', $apiKey);
+        $this->api_access_enabled = true;
+        $this->save();
+        
+        return $apiKey;
+    }
+
+    /**
+     * Verify API key
+     */
+    public function verifyApiKey(string $apiKey): bool
+    {
+        if (!$this->api_access_enabled) {
+            return false;
+        }
+        
+        $hashedKey = hash('sha256', $apiKey);
+        return $this->api_key_hash === $hashedKey;
+    }
+
+    /**
+     * Update API key last used timestamp
+     */
+    public function updateApiKeyUsage(): void
+    {
+        $this->api_key_last_used_at = now();
+        $this->save();
+    }
+
+    /**
+     * Revoke API key
+     */
+    public function revokeApiKey(): void
+    {
+        $this->api_key_hash = null;
+        $this->api_access_enabled = false;
+        $this->api_key_last_used_at = null;
+        $this->save();
+    }
+
+    /**
+     * Get user's API usage statistics
+     */
+    public function getApiUsageStats(string $period = 'last_30_days'): array
+    {
+        $start = match($period) {
+            'today' => now()->startOfDay(),
+            'yesterday' => now()->subDay()->startOfDay(),
+            'last_7_days' => now()->subDays(7),
+            'last_30_days' => now()->subDays(30),
+            'current_month' => now()->startOfMonth(),
+            'last_month' => now()->subMonth()->startOfMonth(),
+            default => now()->subDays(30),
+        };
+        
+        $end = match($period) {
+            'yesterday' => now()->subDay()->endOfDay(),
+            'last_month' => now()->subMonth()->endOfMonth(),
+            default => now(),
+        };
+        
+        return ApiUsageTracking::getUserUsageSummary($this->id, $start, $end);
+    }
+
+    /**
+     * Check if user can access a specific API feature
+     */
+    public function canAccessApiFeature(string $feature): bool
+    {
+        $subscription = $this->getSubscription();
+        return $subscription->hasFeature($feature);
+    }
+
+    /**
+     * Get subscription tier display name
+     */
+    public function getSubscriptionTierName(): string
+    {
+        return match($this->subscription_tier) {
+            'free' => 'Free',
+            'basic' => 'Basic',
+            'premium' => 'Premium', 
+            'enterprise' => 'Enterprise',
+            'unlimited' => 'Unlimited',
+            default => 'Free',
+        };
+    }
+
+    /**
+     * Check if user is on premium tier or higher
+     */
+    public function isPremiumUser(): bool
+    {
+        return in_array($this->subscription_tier, ['premium', 'enterprise', 'unlimited']);
+    }
+
+    /**
+     * Check if user is on enterprise tier or higher
+     */
+    public function isEnterpriseUser(): bool
+    {
+        return in_array($this->subscription_tier, ['enterprise', 'unlimited']);
+    }
+
+    /**
+     * Calculate overage costs for current usage
+     */
+    public function calculateOverageCosts(): float
+    {
+        $limits = $this->getApiLimits();
+        $usage = $this->getCurrentApiUsage();
+        
+        $excessRequests = max(0, $usage['total_requests'] - $limits['requests_per_hour']);
+        
+        if ($excessRequests > 0) {
+            $subscription = $this->getSubscription();
+            return $subscription->calculateOverageCost($excessRequests);
+        }
+        
+        return 0.0;
     }
 }

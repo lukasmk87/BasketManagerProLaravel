@@ -1,0 +1,2013 @@
+/**
+ * BasketManager Pro API JavaScript SDK
+ * 
+ * Enterprise Basketball Club Management API with multi-tenant architecture, real-time scoring, and comprehensive statistics.
+ * 
+ * API Version: 4.0
+ * SDK Version: 1.0.0
+ * Generated: {date('Y-m-d H:i:s')} UTC
+ * 
+ * @package BasketManagerPro
+ * @author Auto-generated from OpenAPI specification
+ * @link https://basketmanager-pro.com/api/documentation
+ */
+
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD
+        define(['axios'], factory);
+    } else if (typeof module === 'object' && module.exports) {
+        // Node.js/CommonJS
+        module.exports = factory(require('axios'));
+    } else {
+        // Browser global
+        root.BasketManagerPro = factory(root.axios);
+    }
+}(typeof self !== 'undefined' ? self : this, function (axios) {
+    'use strict';
+    /**
+     * BasketManager Pro API Client
+     */
+    class BasketManagerProClient {
+        /**
+         * Initialize the API client
+         * 
+         * @param {string} apiKey - Your API key
+         * @param {string} baseUrl - Optional custom base URL
+         * @param {Object} options - Additional axios options
+         */
+        constructor(apiKey, baseUrl = 'http://localhost/api', options = {}) {
+            this.apiKey = apiKey;
+            this.baseUrl = baseUrl.replace(/\/$/, '');
+            this.sdkVersion = '1.0.0';
+
+            // Create axios instance
+            this.http = axios.create({
+                baseURL: this.baseUrl,
+                timeout: 30000,
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'User-Agent': `BasketManagerPro-JS-SDK/${this.sdkVersion}`
+                },
+                ...options
+            });
+
+            // Add response interceptor for error handling
+            this.http.interceptors.response.use(
+                response => response,
+                error => this.handleError(error)
+            );
+
+            // Initialize resource classes
+            this.teams = new Teams(this);
+            this.players = new Players(this);
+            this.games = new Games(this);
+            this.clubs = new Clubs(this);
+            this.tournaments = new Tournaments(this);
+            this.training = new Training(this);
+            this.videos = new Videos(this);
+            this.analytics = new Analytics(this);
+        }
+
+        /**
+         * Make HTTP request to the API
+         * 
+         * @param {string} method - HTTP method
+         * @param {string} endpoint - API endpoint
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async request(method, endpoint, options = {}) {
+            try {
+                const response = await this.http.request({
+                    method: method.toUpperCase(),
+                    url: endpoint,
+                    ...options
+                });
+                
+                return response.data;
+            } catch (error) {
+                throw this.handleError(error);
+            }
+        }
+
+        /**
+         * Handle API errors
+         * 
+         * @param {Error} error - The error object
+         * @returns {ApiException} Formatted error
+         */
+        handleError(error) {
+            if (!error.response) {
+                return new ApiException('Network error: ' + error.message);
+            }
+
+            const status = error.response.status;
+            const data = error.response.data;
+            const message = data?.message || 'Unknown API error';
+            const errors = data?.errors || {};
+
+            switch (status) {
+                case 400:
+                    return new BadRequestException(message, errors);
+                case 401:
+                    return new UnauthorizedException(message);
+                case 403:
+                    return new ForbiddenException(message);
+                case 404:
+                    return new NotFoundException(message);
+                case 422:
+                    return new ValidationException(message, errors);
+                case 429:
+                    return new RateLimitException(message);
+                default:
+                    return new ApiException(message, status, errors);
+            }
+        }
+
+        /**
+         * Update API key
+         * 
+         * @param {string} apiKey - New API key
+         */
+        setApiKey(apiKey) {
+            this.apiKey = apiKey;
+            this.http.defaults.headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+
+        /**
+         * Get SDK version
+         * 
+         * @returns {string} SDK version
+         */
+        getSdkVersion() {
+            return this.sdkVersion;
+        }
+
+        /**
+         * Get API base URL
+         * 
+         * @returns {string} Base URL
+         */
+        getBaseUrl() {
+            return this.baseUrl;
+        }
+
+        /**
+         * Test API connection
+         * 
+         * @returns {Promise<Object>} API status information
+         */
+        async ping() {
+            return await this.request('GET', '/v4/documentation/ping');
+        }
+    }
+
+    /**
+     * Authentication resource
+     */
+    class Authentication {
+        constructor(client) {
+            this.client = client;
+        }
+
+        /**
+         * Login auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthLogin() {
+            return await this.client.request('POST', `/api/auth/login`, {});
+        }
+
+        /**
+         * Register auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthRegister() {
+            return await this.client.request('POST', `/api/auth/register`, {});
+        }
+
+        /**
+         * Logout auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthLogout() {
+            return await this.client.request('POST', `/api/auth/logout`, {});
+        }
+
+        /**
+         * Refresh auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthRefresh() {
+            return await this.client.request('POST', `/api/auth/refresh`, {});
+        }
+
+        /**
+         * User auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getauthUser() {
+            return await this.client.request('GET', `/api/auth/user`, {});
+        }
+
+        /**
+         * User auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headauthUser() {
+            return await this.client.request('HEAD', `/api/auth/user`, {});
+        }
+
+    }
+
+    /**
+     * Teams resource
+     */
+    class Teams {
+        constructor(client) {
+            this.client = client;
+        }
+
+        /**
+         * List all team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamIndex(options = {}) {
+            return await this.client.request('GET', `/api/teams`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/teams`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postteamStore(options = {}) {
+            return await this.client.request('POST', `/api/teams`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamShow(team) {
+            return await this.client.request('GET', `/api/teams/${team}`, {});
+        }
+
+        /**
+         * Get specific team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamShow(team) {
+            return await this.client.request('HEAD', `/api/teams/${team}`, {});
+        }
+
+        /**
+         * Update team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putteamUpdate(team, options = {}) {
+            return await this.client.request('PUT', `/api/teams/${team}`, { data: options.data || options });
+        }
+
+        /**
+         * Update team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchteamUpdate(team, options = {}) {
+            return await this.client.request('PATCH', `/api/teams/${team}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deleteteamDestroy(team) {
+            return await this.client.request('DELETE', `/api/teams/${team}`, {});
+        }
+
+        /**
+         * Players team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamPlayers(team) {
+            return await this.client.request('GET', `/api/teams/${team}/players`, {});
+        }
+
+        /**
+         * Players team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamPlayers(team) {
+            return await this.client.request('HEAD', `/api/teams/${team}/players`, {});
+        }
+
+        /**
+         * Games team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamGames(team) {
+            return await this.client.request('GET', `/api/teams/${team}/games`, {});
+        }
+
+        /**
+         * Games team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamGames(team) {
+            return await this.client.request('HEAD', `/api/teams/${team}/games`, {});
+        }
+
+        /**
+         * Statistics team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamStatistics(team) {
+            return await this.client.request('GET', `/api/teams/${team}/statistics`, {});
+        }
+
+        /**
+         * Statistics team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamStatistics(team) {
+            return await this.client.request('HEAD', `/api/teams/${team}/statistics`, {});
+        }
+
+        /**
+         * Get specific team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamShow(team) {
+            return await this.client.request('GET', `/api/public/teams/${team}`, {});
+        }
+
+        /**
+         * Get specific team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamShow(team) {
+            return await this.client.request('HEAD', `/api/public/teams/${team}`, {});
+        }
+
+        /**
+         * Players team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamPlayers(team) {
+            return await this.client.request('GET', `/api/public/teams/${team}/players`, {});
+        }
+
+        /**
+         * Players team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamPlayers(team) {
+            return await this.client.request('HEAD', `/api/public/teams/${team}/players`, {});
+        }
+
+        /**
+         * Games team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamGames(team) {
+            return await this.client.request('GET', `/api/public/teams/${team}/games`, {});
+        }
+
+        /**
+         * Games team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamGames(team) {
+            return await this.client.request('HEAD', `/api/public/teams/${team}/games`, {});
+        }
+
+    }
+
+    /**
+     * Players resource
+     */
+    class Players {
+        constructor(client) {
+            this.client = client;
+        }
+
+        /**
+         * List all player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerIndex(options = {}) {
+            return await this.client.request('GET', `/api/players`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/players`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postplayerStore(options = {}) {
+            return await this.client.request('POST', `/api/players`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerShow(player) {
+            return await this.client.request('GET', `/api/players/${player}`, {});
+        }
+
+        /**
+         * Get specific player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerShow(player) {
+            return await this.client.request('HEAD', `/api/players/${player}`, {});
+        }
+
+        /**
+         * Update player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putplayerUpdate(player, options = {}) {
+            return await this.client.request('PUT', `/api/players/${player}`, { data: options.data || options });
+        }
+
+        /**
+         * Update player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchplayerUpdate(player, options = {}) {
+            return await this.client.request('PATCH', `/api/players/${player}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deleteplayerDestroy(player) {
+            return await this.client.request('DELETE', `/api/players/${player}`, {});
+        }
+
+        /**
+         * Statistics player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerStatistics(player) {
+            return await this.client.request('GET', `/api/players/${player}/statistics`, {});
+        }
+
+        /**
+         * Statistics player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerStatistics(player) {
+            return await this.client.request('HEAD', `/api/players/${player}/statistics`, {});
+        }
+
+        /**
+         * Games player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerGames(player) {
+            return await this.client.request('GET', `/api/players/${player}/games`, {});
+        }
+
+        /**
+         * Games player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerGames(player) {
+            return await this.client.request('HEAD', `/api/players/${player}/games`, {});
+        }
+
+        /**
+         * Transfer player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postplayerTransfer(player) {
+            return await this.client.request('POST', `/api/players/${player}/transfer`, {});
+        }
+
+    }
+
+    /**
+     * Games resource
+     */
+    class Games {
+        constructor(client) {
+            this.client = client;
+        }
+
+        /**
+         * List all game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameIndex(options = {}) {
+            return await this.client.request('GET', `/api/games`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/games`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postgameStore(options = {}) {
+            return await this.client.request('POST', `/api/games`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameShow(game) {
+            return await this.client.request('GET', `/api/games/${game}`, {});
+        }
+
+        /**
+         * Get specific game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameShow(game) {
+            return await this.client.request('HEAD', `/api/games/${game}`, {});
+        }
+
+        /**
+         * Update game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putgameUpdate(game, options = {}) {
+            return await this.client.request('PUT', `/api/games/${game}`, { data: options.data || options });
+        }
+
+        /**
+         * Update game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchgameUpdate(game, options = {}) {
+            return await this.client.request('PATCH', `/api/games/${game}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletegameDestroy(game) {
+            return await this.client.request('DELETE', `/api/games/${game}`, {});
+        }
+
+        /**
+         * Statistics game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameStatistics(game) {
+            return await this.client.request('GET', `/api/games/${game}/statistics`, {});
+        }
+
+        /**
+         * Statistics game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameStatistics(game) {
+            return await this.client.request('HEAD', `/api/games/${game}/statistics`, {});
+        }
+
+        /**
+         * Start game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postgameStart(game) {
+            return await this.client.request('POST', `/api/games/${game}/start`, {});
+        }
+
+        /**
+         * Finish game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postgameFinish(game) {
+            return await this.client.request('POST', `/api/games/${game}/finish`, {});
+        }
+
+        /**
+         * LiveScore game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameLiveScore(game) {
+            return await this.client.request('GET', `/api/games/${game}/live-score`, {});
+        }
+
+        /**
+         * LiveScore game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameLiveScore(game) {
+            return await this.client.request('HEAD', `/api/games/${game}/live-score`, {});
+        }
+
+        /**
+         * List all gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameStatisticIndex(options = {}) {
+            return await this.client.request('GET', `/api/game-statistics`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameStatisticIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/game-statistics`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postgameStatisticStore(options = {}) {
+            return await this.client.request('POST', `/api/game-statistics`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameStatisticShow(gameStatistic) {
+            return await this.client.request('GET', `/api/game-statistics/${gameStatistic}`, {});
+        }
+
+        /**
+         * Get specific gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameStatisticShow(gameStatistic) {
+            return await this.client.request('HEAD', `/api/game-statistics/${gameStatistic}`, {});
+        }
+
+        /**
+         * Update gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putgameStatisticUpdate(gameStatistic, options = {}) {
+            return await this.client.request('PUT', `/api/game-statistics/${gameStatistic}`, { data: options.data || options });
+        }
+
+        /**
+         * Update gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchgameStatisticUpdate(gameStatistic, options = {}) {
+            return await this.client.request('PATCH', `/api/game-statistics/${gameStatistic}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletegameStatisticDestroy(gameStatistic) {
+            return await this.client.request('DELETE', `/api/game-statistics/${gameStatistic}`, {});
+        }
+
+        /**
+         * BulkStore gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postgameStatisticBulkStore() {
+            return await this.client.request('POST', `/api/game-statistics/bulk`, {});
+        }
+
+        /**
+         * PlayerGameStats gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameStatisticPlayerGameStats(game, player) {
+            return await this.client.request('GET', `/api/game-statistics/${game}/player/${player}`, {});
+        }
+
+        /**
+         * PlayerGameStats gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameStatisticPlayerGameStats(game, player) {
+            return await this.client.request('HEAD', `/api/game-statistics/${game}/player/${player}`, {});
+        }
+
+        /**
+         * Get specific game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameShow(game) {
+            return await this.client.request('GET', `/api/public/games/${game}`, {});
+        }
+
+        /**
+         * Get specific game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameShow(game) {
+            return await this.client.request('HEAD', `/api/public/games/${game}`, {});
+        }
+
+        /**
+         * LiveScore game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameLiveScore(game) {
+            return await this.client.request('GET', `/api/public/games/${game}/live-score`, {});
+        }
+
+        /**
+         * LiveScore game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameLiveScore(game) {
+            return await this.client.request('HEAD', `/api/public/games/${game}/live-score`, {});
+        }
+
+    }
+
+    /**
+     * Tournaments resource
+     */
+    class Tournaments {
+        constructor(client) {
+            this.client = client;
+        }
+
+        /**
+         * List all tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettournamentIndex(options = {}) {
+            return await this.client.request('GET', `/api/tournaments`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtournamentIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/tournaments`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttournamentStore(options = {}) {
+            return await this.client.request('POST', `/api/tournaments`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettournamentShow(tournament) {
+            return await this.client.request('GET', `/api/tournaments/${tournament}`, {});
+        }
+
+        /**
+         * Get specific tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtournamentShow(tournament) {
+            return await this.client.request('HEAD', `/api/tournaments/${tournament}`, {});
+        }
+
+        /**
+         * Update tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async puttournamentUpdate(tournament, options = {}) {
+            return await this.client.request('PUT', `/api/tournaments/${tournament}`, { data: options.data || options });
+        }
+
+        /**
+         * Update tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchtournamentUpdate(tournament, options = {}) {
+            return await this.client.request('PATCH', `/api/tournaments/${tournament}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletetournamentDestroy(tournament) {
+            return await this.client.request('DELETE', `/api/tournaments/${tournament}`, {});
+        }
+
+        /**
+         * AddTeam tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttournamentAddTeam(tournament, team) {
+            return await this.client.request('POST', `/api/tournaments/${tournament}/teams/${team}`, {});
+        }
+
+        /**
+         * RemoveTeam tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletetournamentRemoveTeam(tournament, team) {
+            return await this.client.request('DELETE', `/api/tournaments/${tournament}/teams/${team}`, {});
+        }
+
+        /**
+         * GenerateBracket tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttournamentGenerateBracket(tournament) {
+            return await this.client.request('POST', `/api/tournaments/${tournament}/generate-bracket`, {});
+        }
+
+        /**
+         * AdvanceBracket tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttournamentAdvanceBracket(tournament) {
+            return await this.client.request('POST', `/api/tournaments/${tournament}/advance-bracket`, {});
+        }
+
+        /**
+         * Bracket tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettournamentBracket(tournament) {
+            return await this.client.request('GET', `/api/tournaments/${tournament}/bracket`, {});
+        }
+
+        /**
+         * Bracket tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtournamentBracket(tournament) {
+            return await this.client.request('HEAD', `/api/tournaments/${tournament}/bracket`, {});
+        }
+
+        /**
+         * Standings tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettournamentStandings(tournament) {
+            return await this.client.request('GET', `/api/tournaments/${tournament}/standings`, {});
+        }
+
+        /**
+         * Standings tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtournamentStandings(tournament) {
+            return await this.client.request('HEAD', `/api/tournaments/${tournament}/standings`, {});
+        }
+
+        /**
+         * Start tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttournamentStart(tournament) {
+            return await this.client.request('POST', `/api/tournaments/${tournament}/start`, {});
+        }
+
+        /**
+         * Finish tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttournamentFinish(tournament) {
+            return await this.client.request('POST', `/api/tournaments/${tournament}/finish`, {});
+        }
+
+        /**
+         * Get specific tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettournamentShow(tournament) {
+            return await this.client.request('GET', `/api/public/tournaments/${tournament}`, {});
+        }
+
+        /**
+         * Get specific tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtournamentShow(tournament) {
+            return await this.client.request('HEAD', `/api/public/tournaments/${tournament}`, {});
+        }
+
+        /**
+         * Bracket tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettournamentBracket(tournament) {
+            return await this.client.request('GET', `/api/public/tournaments/${tournament}/bracket`, {});
+        }
+
+        /**
+         * Bracket tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtournamentBracket(tournament) {
+            return await this.client.request('HEAD', `/api/public/tournaments/${tournament}/bracket`, {});
+        }
+
+        /**
+         * Standings tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettournamentStandings(tournament) {
+            return await this.client.request('GET', `/api/public/tournaments/${tournament}/standings`, {});
+        }
+
+        /**
+         * Standings tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtournamentStandings(tournament) {
+            return await this.client.request('HEAD', `/api/public/tournaments/${tournament}/standings`, {});
+        }
+
+    }
+
+    /**
+     * Training resource
+     */
+    class Training {
+        constructor(client) {
+            this.client = client;
+        }
+
+        /**
+         * List all training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettrainingIndex(options = {}) {
+            return await this.client.request('GET', `/api/trainings`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtrainingIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/trainings`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttrainingStore(options = {}) {
+            return await this.client.request('POST', `/api/trainings`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettrainingShow(training) {
+            return await this.client.request('GET', `/api/trainings/${training}`, {});
+        }
+
+        /**
+         * Get specific training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtrainingShow(training) {
+            return await this.client.request('HEAD', `/api/trainings/${training}`, {});
+        }
+
+        /**
+         * Update training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async puttrainingUpdate(training, options = {}) {
+            return await this.client.request('PUT', `/api/trainings/${training}`, { data: options.data || options });
+        }
+
+        /**
+         * Update training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchtrainingUpdate(training, options = {}) {
+            return await this.client.request('PATCH', `/api/trainings/${training}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletetrainingDestroy(training) {
+            return await this.client.request('DELETE', `/api/trainings/${training}`, {});
+        }
+
+        /**
+         * Drills training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettrainingDrills(training) {
+            return await this.client.request('GET', `/api/trainings/${training}/drills`, {});
+        }
+
+        /**
+         * Drills training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtrainingDrills(training) {
+            return await this.client.request('HEAD', `/api/trainings/${training}/drills`, {});
+        }
+
+        /**
+         * AttachDrill training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttrainingAttachDrill(training, drill) {
+            return await this.client.request('POST', `/api/trainings/${training}/drills/${drill}/attach`, {});
+        }
+
+        /**
+         * DetachDrill training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletetrainingDetachDrill(training, drill) {
+            return await this.client.request('DELETE', `/api/trainings/${training}/drills/${drill}/detach`, {});
+        }
+
+        /**
+         * TeamTrainings training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettrainingTeamTrainings(team) {
+            return await this.client.request('GET', `/api/teams/${team}/trainings`, {});
+        }
+
+        /**
+         * TeamTrainings training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtrainingTeamTrainings(team) {
+            return await this.client.request('HEAD', `/api/teams/${team}/trainings`, {});
+        }
+
+        /**
+         * Duplicate training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttrainingDuplicate(training) {
+            return await this.client.request('POST', `/api/trainings/${training}/duplicate`, {});
+        }
+
+        /**
+         * List all drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getdrillIndex(options = {}) {
+            return await this.client.request('GET', `/api/drills`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headdrillIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/drills`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postdrillStore(options = {}) {
+            return await this.client.request('POST', `/api/drills`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getdrillShow(drill) {
+            return await this.client.request('GET', `/api/drills/${drill}`, {});
+        }
+
+        /**
+         * Get specific drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headdrillShow(drill) {
+            return await this.client.request('HEAD', `/api/drills/${drill}`, {});
+        }
+
+        /**
+         * Update drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putdrillUpdate(drill, options = {}) {
+            return await this.client.request('PUT', `/api/drills/${drill}`, { data: options.data || options });
+        }
+
+        /**
+         * Update drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchdrillUpdate(drill, options = {}) {
+            return await this.client.request('PATCH', `/api/drills/${drill}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletedrillDestroy(drill) {
+            return await this.client.request('DELETE', `/api/drills/${drill}`, {});
+        }
+
+        /**
+         * Search drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getdrillSearch() {
+            return await this.client.request('GET', `/api/drills/search`, {});
+        }
+
+        /**
+         * Search drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headdrillSearch() {
+            return await this.client.request('HEAD', `/api/drills/search`, {});
+        }
+
+        /**
+         * Categories drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getdrillCategories() {
+            return await this.client.request('GET', `/api/drills/categories`, {});
+        }
+
+        /**
+         * Categories drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headdrillCategories() {
+            return await this.client.request('HEAD', `/api/drills/categories`, {});
+        }
+
+        /**
+         * ByCategory drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getdrillByCategory(category) {
+            return await this.client.request('GET', `/api/drills/category/${category}`, {});
+        }
+
+        /**
+         * ByCategory drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headdrillByCategory(category) {
+            return await this.client.request('HEAD', `/api/drills/category/${category}`, {});
+        }
+
+    }
+
+    /**
+     * Analytics resource
+     */
+    class Analytics {
+        constructor(client) {
+            this.client = client;
+        }
+
+        /**
+         * GetDashboardOverview mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsGetDashboardOverview() {
+            return await this.client.request('GET', `/api/ml-analytics/dashboard-overview`, {});
+        }
+
+        /**
+         * GetDashboardOverview mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsGetDashboardOverview() {
+            return await this.client.request('HEAD', `/api/ml-analytics/dashboard-overview`, {});
+        }
+
+        /**
+         * GetPlayerPerformanceDashboard mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsGetPlayerPerformanceDashboard() {
+            return await this.client.request('GET', `/api/ml-analytics/performance-dashboard`, {});
+        }
+
+        /**
+         * GetPlayerPerformanceDashboard mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsGetPlayerPerformanceDashboard() {
+            return await this.client.request('HEAD', `/api/ml-analytics/performance-dashboard`, {});
+        }
+
+        /**
+         * GetInjuryRiskDashboard mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsGetInjuryRiskDashboard() {
+            return await this.client.request('GET', `/api/ml-analytics/injury-dashboard`, {});
+        }
+
+        /**
+         * GetInjuryRiskDashboard mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsGetInjuryRiskDashboard() {
+            return await this.client.request('HEAD', `/api/ml-analytics/injury-dashboard`, {});
+        }
+
+        /**
+         * GetExperimentDashboard mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsGetExperimentDashboard() {
+            return await this.client.request('GET', `/api/ml-analytics/experiment-dashboard`, {});
+        }
+
+        /**
+         * GetExperimentDashboard mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsGetExperimentDashboard() {
+            return await this.client.request('HEAD', `/api/ml-analytics/experiment-dashboard`, {});
+        }
+
+        /**
+         * GetPredictionsTimeline mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsGetPredictionsTimeline() {
+            return await this.client.request('GET', `/api/ml-analytics/predictions-timeline`, {});
+        }
+
+        /**
+         * GetPredictionsTimeline mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsGetPredictionsTimeline() {
+            return await this.client.request('HEAD', `/api/ml-analytics/predictions-timeline`, {});
+        }
+
+        /**
+         * GetModelAccuracy mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsGetModelAccuracy() {
+            return await this.client.request('GET', `/api/ml-analytics/model-accuracy`, {});
+        }
+
+        /**
+         * GetModelAccuracy mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsGetModelAccuracy() {
+            return await this.client.request('HEAD', `/api/ml-analytics/model-accuracy`, {});
+        }
+
+        /**
+         * GetPredictionComparison mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsGetPredictionComparison() {
+            return await this.client.request('GET', `/api/ml-analytics/prediction-comparison`, {});
+        }
+
+        /**
+         * GetPredictionComparison mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsGetPredictionComparison() {
+            return await this.client.request('HEAD', `/api/ml-analytics/prediction-comparison`, {});
+        }
+
+    }
+
+    /**
+     * Videos resource
+     */
+    class Videos {
+        constructor(client) {
+            this.client = client;
+        }
+
+        /**
+         * List all videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getvideoFileIndex(options = {}) {
+            return await this.client.request('GET', `/api/videos`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headvideoFileIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/videos`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postvideoFileStore(options = {}) {
+            return await this.client.request('POST', `/api/videos`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getvideoFileShow(video) {
+            return await this.client.request('GET', `/api/videos/${video}`, {});
+        }
+
+        /**
+         * Get specific videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headvideoFileShow(video) {
+            return await this.client.request('HEAD', `/api/videos/${video}`, {});
+        }
+
+        /**
+         * Update videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putvideoFileUpdate(video, options = {}) {
+            return await this.client.request('PUT', `/api/videos/${video}`, { data: options.data || options });
+        }
+
+        /**
+         * Update videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchvideoFileUpdate(video, options = {}) {
+            return await this.client.request('PATCH', `/api/videos/${video}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletevideoFileDestroy(video) {
+            return await this.client.request('DELETE', `/api/videos/${video}`, {});
+        }
+
+        /**
+         * Process videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postvideoFileProcess(video) {
+            return await this.client.request('POST', `/api/videos/${video}/process`, {});
+        }
+
+        /**
+         * Download videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getvideoFileDownload(video) {
+            return await this.client.request('GET', `/api/videos/${video}/download`, {});
+        }
+
+        /**
+         * Download videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headvideoFileDownload(video) {
+            return await this.client.request('HEAD', `/api/videos/${video}/download`, {});
+        }
+
+        /**
+         * Stream videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getvideoFileStream(video) {
+            return await this.client.request('GET', `/api/videos/${video}/stream`, {});
+        }
+
+        /**
+         * Stream videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headvideoFileStream(video) {
+            return await this.client.request('HEAD', `/api/videos/${video}/stream`, {});
+        }
+
+        /**
+         * Analyze videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postvideoFileAnalyze(video) {
+            return await this.client.request('POST', `/api/videos/${video}/analyze`, {});
+        }
+
+        /**
+         * List all videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getvideoAnnotationIndex(options = {}) {
+            return await this.client.request('GET', `/api/video-annotations`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headvideoAnnotationIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/video-annotations`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postvideoAnnotationStore(options = {}) {
+            return await this.client.request('POST', `/api/video-annotations`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getvideoAnnotationShow(videoAnnotation) {
+            return await this.client.request('GET', `/api/video-annotations/${videoAnnotation}`, {});
+        }
+
+        /**
+         * Get specific videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headvideoAnnotationShow(videoAnnotation) {
+            return await this.client.request('HEAD', `/api/video-annotations/${videoAnnotation}`, {});
+        }
+
+        /**
+         * Update videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putvideoAnnotationUpdate(videoAnnotation, options = {}) {
+            return await this.client.request('PUT', `/api/video-annotations/${videoAnnotation}`, { data: options.data || options });
+        }
+
+        /**
+         * Update videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchvideoAnnotationUpdate(videoAnnotation, options = {}) {
+            return await this.client.request('PATCH', `/api/video-annotations/${videoAnnotation}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletevideoAnnotationDestroy(videoAnnotation) {
+            return await this.client.request('DELETE', `/api/video-annotations/${videoAnnotation}`, {});
+        }
+
+        /**
+         * VideoAnnotations videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getvideoAnnotationVideoAnnotations(video) {
+            return await this.client.request('GET', `/api/videos/${video}/annotations`, {});
+        }
+
+        /**
+         * VideoAnnotations videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headvideoAnnotationVideoAnnotations(video) {
+            return await this.client.request('HEAD', `/api/videos/${video}/annotations`, {});
+        }
+
+        /**
+         * BulkStore videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postvideoAnnotationBulkStore(video) {
+            return await this.client.request('POST', `/api/videos/${video}/annotations/bulk`, {});
+        }
+
+    }
+
+    /**
+     * Multi-tenant resource
+     */
+    class MultiTenant {
+        constructor(client) {
+            this.client = client;
+        }
+
+    }
+
+    /**
+     * Webhooks resource
+     */
+    class Webhooks {
+        constructor(client) {
+            this.client = client;
+        }
+
+    }
+
+    /**
+     * External APIs resource
+     */
+    class ExternalAPIs {
+        constructor(client) {
+            this.client = client;
+        }
+
+    }
+
+    /**
+     * Base API Exception
+     */
+    class ApiException extends Error {
+        constructor(message, status = 0, errors = {}) {
+            super(message);
+            this.name = 'ApiException';
+            this.status = status;
+            this.errors = errors;
+        }
+    }
+
+    /**
+     * Bad Request Exception (400)
+     */
+    class BadRequestException extends ApiException {
+        constructor(message, errors = {}) {
+            super(message, 400, errors);
+            this.name = 'BadRequestException';
+        }
+    }
+
+    /**
+     * Unauthorized Exception (401)
+     */
+    class UnauthorizedException extends ApiException {
+        constructor(message) {
+            super(message, 401);
+            this.name = 'UnauthorizedException';
+        }
+    }
+
+    /**
+     * Forbidden Exception (403)
+     */
+    class ForbiddenException extends ApiException {
+        constructor(message) {
+            super(message, 403);
+            this.name = 'ForbiddenException';
+        }
+    }
+
+    /**
+     * Not Found Exception (404)
+     */
+    class NotFoundException extends ApiException {
+        constructor(message) {
+            super(message, 404);
+            this.name = 'NotFoundException';
+        }
+    }
+
+    /**
+     * Validation Exception (422)
+     */
+    class ValidationException extends ApiException {
+        constructor(message, errors = {}) {
+            super(message, 422, errors);
+            this.name = 'ValidationException';
+        }
+    }
+
+    /**
+     * Rate Limit Exception (429)
+     */
+    class RateLimitException extends ApiException {
+        constructor(message) {
+            super(message, 429);
+            this.name = 'RateLimitException';
+        }
+    }
+
+    // Export the client and exceptions
+    return {
+        BasketManagerProClient,
+        ApiException,
+        BadRequestException,
+        UnauthorizedException,
+        ForbiddenException,
+        NotFoundException,
+        ValidationException,
+        RateLimitException
+    };
+
+}));
+
+/**
+ * Usage Example:
+ * 
+ * // Node.js/CommonJS
+ * const { BasketManagerProClient } = require('./basketmanager-pro-sdk');
+ * const client = new BasketManagerProClient('your-api-key');
+ * 
+ * // ES6 Modules
+ * import { BasketManagerProClient } from './basketmanager-pro-sdk.js';
+ * const client = new BasketManagerProClient('your-api-key');
+ * 
+ * // Browser
+ * <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+ * <script src="basketmanager-pro-sdk.js"></script>
+ * <script>
+ *   const client = new BasketManagerPro.BasketManagerProClient('your-api-key');
+ * </script>
+ * 
+ * // Examples
+ * try {
+ *   // List teams
+ *   const teams = await client.teams.index({ page: 1, per_page: 20 });
+ *   console.log('Teams:', teams);
+ * 
+ *   // Get specific team
+ *   const team = await client.teams.show(1);
+ *   console.log('Team:', team);
+ * 
+ *   // Create new player
+ *   const newPlayer = await client.players.store({
+ *     first_name: 'John',
+ *     last_name: 'Doe',
+ *     jersey_number: 23,
+ *     position: 'SF',
+ *     team_id: 1
+ *   });
+ *   console.log('New player:', newPlayer);
+ * 
+ *   // Get live game data
+ *   const liveGame = await client.games.liveScore(123);
+ *   console.log('Live score:', liveGame);
+ * 
+ * } catch (error) {
+ *   if (error instanceof ValidationException) {
+ *     console.error('Validation errors:', error.errors);
+ *   } else {
+ *     console.error('API error:', error.message);
+ *   }
+ * }
+ */
