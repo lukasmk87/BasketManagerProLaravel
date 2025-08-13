@@ -106,6 +106,9 @@ Route::middleware([
     });
 });
 
+// Include subscription routes
+require __DIR__ . '/subscription.php';
+
 // Include Jetstream Routes (Inertia stack)
 if (file_exists(base_path('vendor/laravel/jetstream/routes/inertia.php'))) {
     require base_path('vendor/laravel/jetstream/routes/inertia.php');

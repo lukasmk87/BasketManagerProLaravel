@@ -10,6 +10,7 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "inertiajs/inertia-laravel": "^2.0",
         "intervention/image": "^3.11",
+        "laravel/cashier": "^15.7",
         "laravel/framework": "^12.0",
         "laravel/jetstream": "^5.3",
         "laravel/sanctum": "^4.0",
@@ -22,6 +23,7 @@
         "spatie/laravel-backup": "^9.3",
         "spatie/laravel-medialibrary": "*",
         "spatie/laravel-permission": "^6.21",
+        "stripe/stripe-php": "^16.2",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {
