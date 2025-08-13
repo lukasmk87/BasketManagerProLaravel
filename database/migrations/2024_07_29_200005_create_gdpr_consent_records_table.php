@@ -50,8 +50,7 @@ return new class extends Migration
             
             $table->timestamps();
             
-            // Indexes
-            $table->index(['consentable_type', 'consentable_id']);
+            // Indexes (morphs already creates consentable_type, consentable_id index)
             $table->index(['consent_type', 'consent_given']);
             $table->index(['is_minor', 'parental_consent_verified']);
             $table->index('expires_at');

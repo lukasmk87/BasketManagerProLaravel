@@ -20,12 +20,9 @@ class EmergencyContact extends Model
     protected $fillable = [
         'uuid',
         'user_id',
-        'player_id', // New PRD field
-        'name', // Legacy field
-        'contact_name', // New PRD field
+        'name',
         'relationship',
-        'primary_phone', // Legacy field
-        'phone_number', // New PRD field
+        'primary_phone',
         'secondary_phone',
         'email',
         'address_street',
@@ -33,31 +30,21 @@ class EmergencyContact extends Model
         'address_state',
         'address_zip',
         'address_country',
-        'latitude', // New PRD field
-        'longitude', // New PRD field
-        'distance_to_venue_km', // New PRD field
         'preferred_contact_method',
         'language',
         'is_primary',
         'is_active',
         'priority_order',
         'availability_schedule',
-        'available_24_7', // New PRD field
         'work_phone',
         'work_hours',
-        'alternate_contact_info', // New PRD field
         'can_authorize_medical_treatment',
-        'medical_decisions_authorized', // New PRD field
         'has_medical_power_of_attorney',
-        'has_medical_training', // New PRD field
         'medical_authorization_notes',
-        'authorization_notes', // New PRD field
-        'authorization_expires_at', // New PRD field
         'is_legal_guardian',
         'can_make_decisions',
         'legal_relationship',
         'can_pickup_player',
-        'emergency_pickup_authorized', // New PRD field
         'pickup_notes',
         'qr_code_token',
         'qr_code_generated_at',
@@ -87,12 +74,9 @@ class EmergencyContact extends Model
         'consent_to_share_medical_info',
         'consent_given_at',
         'consent_expires_at',
-        'consent_given_by_user_id', // New PRD field
-        'consent_details', // New PRD field
         'gdpr_consent',
         'gdpr_consent_at',
         'data_processing_consent',
-        'encrypted_fields', // New PRD field
         'metadata',
         'notes',
     ];
@@ -105,20 +89,12 @@ class EmergencyContact extends Model
         'is_primary' => 'boolean',
         'is_active' => 'boolean',
         'priority_order' => 'integer',
-        'latitude' => 'decimal:8',
-        'longitude' => 'decimal:8',
-        'distance_to_venue_km' => 'integer',
         'availability_schedule' => 'array',
-        'available_24_7' => 'boolean',
         'can_authorize_medical_treatment' => 'boolean',
-        'medical_decisions_authorized' => 'boolean',
         'has_medical_power_of_attorney' => 'boolean',
-        'has_medical_training' => 'boolean',
-        'authorization_expires_at' => 'date',
         'is_legal_guardian' => 'boolean',
         'can_make_decisions' => 'boolean',
         'can_pickup_player' => 'boolean',
-        'emergency_pickup_authorized' => 'boolean',
         'qr_code_generated_at' => 'datetime',
         'qr_code_expires_at' => 'datetime',
         'qr_code_active' => 'boolean',

@@ -87,7 +87,7 @@ return new class extends Migration
             $table->timestamps();
             
             // Indexes
-            $table->index(['subject_type', 'subject_id']);
+            // morphs('subject') already creates subject_type, subject_id index
             $table->index(['request_type', 'status']);
             $table->index('received_at');
             $table->index('deadline_date');
