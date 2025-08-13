@@ -90,7 +90,6 @@ return new class extends Migration
             $table->softDeletes();
             
             // Indexes for performance
-            $table->index('is_active');
             $table->index('subscription_tier');
             $table->index('created_at');
             $table->index(['is_active', 'subscription_tier']);

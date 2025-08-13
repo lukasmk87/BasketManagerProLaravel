@@ -17,6 +17,20 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/subscription.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/checkout.php'));
+            \Illuminate\Support\Facades\Route::middleware('api')
+                ->group(base_path('routes/webhooks.php'));
+            \Illuminate\Support\Facades\Route::middleware('api')
+                ->group(base_path('routes/federation.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/pwa.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/notifications.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

@@ -1,0 +1,164 @@
+{
+  "name": "BasketManager Pro",
+  "short_name": "BasketManager",
+  "description": "Professional Basketball Club Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a202c",
+  "theme_color": "#2d3748",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "de-DE",
+  
+  "icons": [
+    {
+      "src": "/images/logo-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  
+  "screenshots": [
+    {
+      "src": "/images/screenshots/dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Dashboard Overview"
+    },
+    {
+      "src": "/images/screenshots/mobile-dashboard.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Mobile Dashboard"
+    },
+    {
+      "src": "/images/screenshots/game-scoring.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide", 
+      "label": "Live Game Scoring"
+    },
+    {
+      "src": "/images/screenshots/player-stats.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Player Statistics"
+    }
+  ],
+  
+  "categories": ["sports", "productivity", "business"],
+  
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to main dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/images/shortcuts/dashboard.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Live Game",
+      "short_name": "Live Game",
+      "description": "Start live game scoring",
+      "url": "/games/live",
+      "icons": [
+        {
+          "src": "/images/shortcuts/live-game.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Players",
+      "short_name": "Players",
+      "description": "Manage players",
+      "url": "/players",
+      "icons": [
+        {
+          "src": "/images/shortcuts/players.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Training",
+      "short_name": "Training",
+      "description": "Training sessions",
+      "url": "/training",
+      "icons": [
+        {
+          "src": "/images/shortcuts/training.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  
+  "protocol_handlers": [
+    {
+      "protocol": "web+basketmanager",
+      "url": "/handle?type=%s"
+    }
+  ],
+  
+  "prefer_related_applications": false,
+  
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
+  
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

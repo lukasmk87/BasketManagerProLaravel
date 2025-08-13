@@ -84,6 +84,10 @@ class Tenant extends Model
         'onboarded_at',
         'notes',
         'tags',
+        'subscription_status',
+        'payment_status',
+        'payment_failed_at',
+        'last_payment_at',
     ];
 
     /**
@@ -531,6 +535,21 @@ class Tenant extends Model
     public function onboarder()
     {
         return $this->belongsTo(User::class, 'onboarded_by');
+    }
+    
+    public function webhookEvents()
+    {
+        return $this->hasMany(WebhookEvent::class);
+    }
+    
+    public function dbbIntegrations()
+    {
+        return $this->hasMany(DBBIntegration::class);
+    }
+    
+    public function fibaIntegrations()
+    {
+        return $this->hasMany(FIBAIntegration::class);
     }
 
     /**

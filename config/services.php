@@ -35,4 +35,40 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'model' => App\Models\User::class,
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook' => [
+            'secret' => env('STRIPE_WEBHOOK_SECRET'),
+            'tolerance' => env('STRIPE_WEBHOOK_TOLERANCE', 300),
+        ],
+        'prices' => [
+            'basic_monthly' => env('STRIPE_PRICE_BASIC_MONTHLY'),
+            'basic_yearly' => env('STRIPE_PRICE_BASIC_YEARLY'),
+            'professional_monthly' => env('STRIPE_PRICE_PROFESSIONAL_MONTHLY'),
+            'professional_yearly' => env('STRIPE_PRICE_PROFESSIONAL_YEARLY'),
+            'enterprise_monthly' => env('STRIPE_PRICE_ENTERPRISE_MONTHLY'),
+            'enterprise_yearly' => env('STRIPE_PRICE_ENTERPRISE_YEARLY'),
+        ],
+    ],
+
+    'dbb' => [
+        'base_url' => env('DBB_API_BASE_URL', 'https://api.basketball-bund.de/v2'),
+        'api_key' => env('DBB_API_KEY'),
+        'api_secret' => env('DBB_API_SECRET'),
+        'timeout' => env('DBB_API_TIMEOUT', 30),
+        'retries' => env('DBB_API_RETRIES', 3),
+        'cache_ttl' => env('DBB_CACHE_TTL', 3600),
+    ],
+
+    'fiba' => [
+        'base_url' => env('FIBA_API_BASE_URL', 'https://api.fiba.basketball/v3'),
+        'api_key' => env('FIBA_API_KEY'),
+        'api_secret' => env('FIBA_API_SECRET'),
+        'timeout' => env('FIBA_API_TIMEOUT', 30),
+        'retries' => env('FIBA_API_RETRIES', 3),
+        'cache_ttl' => env('FIBA_CACHE_TTL', 7200),
+    ],
+
 ];

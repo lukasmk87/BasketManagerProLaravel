@@ -193,6 +193,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(RateLimitException::class);
     }
 
+    /**
+     * Get the user's push notification subscriptions.
+     */
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
     // ============================
     // SCOPES
     // ============================
