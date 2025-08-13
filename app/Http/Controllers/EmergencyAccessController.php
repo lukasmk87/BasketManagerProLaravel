@@ -6,6 +6,7 @@ use App\Models\TeamEmergencyAccess;
 use App\Models\EmergencyContact;
 use App\Models\Player;
 use App\Services\EmergencyAccessService;
+use App\Services\SecurityMonitoringService;
 use App\Events\EmergencyAccessUsed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +17,8 @@ use Inertia\Response;
 class EmergencyAccessController extends Controller
 {
     public function __construct(
-        private EmergencyAccessService $emergencyAccessService
+        private EmergencyAccessService $emergencyAccessService,
+        private SecurityMonitoringService $securityMonitoringService
     ) {}
 
     /**
@@ -30,11 +32,32 @@ class EmergencyAccessController extends Controller
             ->first();
 
         if (!$access) {
+            // Monitor invalid access attempts
+            $this->securityMonitoringService->detectSecurityEvent(request(), 'emergency_access_anomaly', [
+                'access_key' => $accessKey,
+                'anomaly_type' => 'invalid_access_key',
+                'resource' => 'emergency_access_form',
+            ]);
+            
             return Inertia::render('Emergency/AccessExpired');
         }
 
+        // Monitor emergency access patterns for anomalies
+        $this->securityMonitoringService->monitorEmergencyAccess(request(), $accessKey, [
+            'action' => 'access_form_view',
+            'team_id' => $access->team_id,
+        ]);
+
         // Rate limiting per access key
         if (RateLimiter::tooManyAttempts($accessKey, 10)) {
+            // Monitor rate limit violations
+            $this->securityMonitoringService->detectSecurityEvent(request(), 'rate_limit_exceeded', [
+                'resource' => 'emergency_access',
+                'access_key' => $accessKey,
+                'limit_type' => 'access_form',
+                'retry_after' => RateLimiter::availableIn($accessKey),
+            ]);
+            
             return Inertia::render('Emergency/AccessLimited', [
                 'retryAfter' => RateLimiter::availableIn($accessKey)
             ]);
@@ -73,13 +96,40 @@ class EmergencyAccessController extends Controller
             $access = $this->emergencyAccessService->validateAccess($accessKey);
 
             if (!$access) {
+                // Monitor invalid access attempts
+                $this->securityMonitoringService->detectSecurityEvent($request, 'emergency_access_anomaly', [
+                    'access_key' => $accessKey,
+                    'anomaly_type' => 'invalid_or_expired_access',
+                    'action' => 'process_access',
+                    'urgency_level' => $request->input('urgency_level'),
+                ]);
+                
                 return response()->json(['error' => 'Access expired or invalid'], 404);
             }
 
             // Check usage limits
             if (!$access->canBeUsed()) {
+                // Monitor usage limit violations
+                $this->securityMonitoringService->detectSecurityEvent($request, 'emergency_access_anomaly', [
+                    'access_key' => $accessKey,
+                    'anomaly_type' => 'usage_limit_exceeded',
+                    'current_uses' => $access->current_uses ?? 0,
+                    'max_uses' => $access->max_uses ?? 'unlimited',
+                    'team_id' => $access->team_id,
+                ]);
+                
                 return response()->json(['error' => 'Usage limit exceeded or access expired'], 403);
             }
+
+            // Enhanced emergency access monitoring with context
+            $this->securityMonitoringService->monitorEmergencyAccess($request, $accessKey, [
+                'action' => 'emergency_access_granted',
+                'urgency_level' => $request->input('urgency_level'),
+                'reason' => $request->input('reason'),
+                'contact_person' => $request->input('contact_person'),
+                'team_id' => $access->team_id,
+                'access_count' => $access->current_uses + 1,
+            ]);
 
             // Rate limiting
             RateLimiter::hit($accessKey, 3600); // 1 hour window
@@ -87,9 +137,28 @@ class EmergencyAccessController extends Controller
             // Process the emergency access
             $emergencyData = $this->emergencyAccessService->processEmergencyAccess($access, $request);
 
+            // Log successful access with security context
+            Log::info('Emergency access granted', [
+                'event_type' => 'emergency_access_success',
+                'access_key' => $accessKey,
+                'team_id' => $access->team_id,
+                'urgency_level' => $request->input('urgency_level'),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
             return Inertia::render('Emergency/ContactsList', $emergencyData);
 
         } catch (\Exception $e) {
+            // Monitor system failures during emergency access
+            $this->securityMonitoringService->detectSecurityEvent($request, 'emergency_access_anomaly', [
+                'access_key' => $accessKey,
+                'anomaly_type' => 'system_failure_during_access',
+                'error_message' => $e->getMessage(),
+                'error_type' => get_class($e),
+                'urgency_level' => $request->input('urgency_level'),
+            ]);
+            
             Log::error('Emergency access failed', [
                 'access_key' => $accessKey,
                 'error' => $e->getMessage(),
@@ -117,8 +186,24 @@ class EmergencyAccessController extends Controller
             ->first();
 
         if (!$access) {
+            // Monitor invalid direct access attempts
+            $this->securityMonitoringService->detectSecurityEvent(request(), 'emergency_access_anomaly', [
+                'access_key' => $accessKey,
+                'anomaly_type' => 'invalid_direct_access',
+                'resource' => 'emergency_direct_access',
+            ]);
+            
             return Inertia::render('Emergency/AccessExpired');
         }
+
+        // Monitor direct emergency access (higher severity since it bypasses forms)
+        $this->securityMonitoringService->detectSecurityEvent(request(), 'emergency_access_anomaly', [
+            'access_key' => $accessKey,
+            'anomaly_type' => 'direct_access_bypassed_form',
+            'team_id' => $access->team_id,
+            'access_type' => 'direct_critical_access',
+            'bypassed_security' => true,
+        ]);
 
         // For critical situations, skip the form and show contacts immediately
         $emergencyContacts = $access->team->players

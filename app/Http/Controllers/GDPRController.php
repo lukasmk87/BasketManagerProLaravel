@@ -6,6 +6,7 @@ use App\Models\GdprConsentRecord;
 use App\Models\GdprDataProcessingRecord;
 use App\Models\GdprDataSubjectRequest;
 use App\Services\GDPRComplianceService;
+use App\Services\SecurityMonitoringService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -17,10 +18,14 @@ use Carbon\Carbon;
 class GDPRController extends Controller
 {
     protected GDPRComplianceService $gdprService;
+    protected SecurityMonitoringService $securityMonitoringService;
 
-    public function __construct(GDPRComplianceService $gdprService)
-    {
+    public function __construct(
+        GDPRComplianceService $gdprService,
+        SecurityMonitoringService $securityMonitoringService
+    ) {
         $this->gdprService = $gdprService;
+        $this->securityMonitoringService = $securityMonitoringService;
         $this->middleware(['auth', 'verified']);
         $this->middleware('permission:manage-gdpr')->except(['showPublicRequestForm', 'submitPublicRequest']);
     }
@@ -135,7 +140,25 @@ class GDPRController extends Controller
             switch ($request->action) {
                 case 'process':
                     if (!$gdprRequest->identity_verified) {
+                        // Monitor processing without identity verification
+                        $this->securityMonitoringService->monitorGDPRCompliance(auth()->user(), 'data_processing', [
+                            'violation_type' => 'processing_without_verification',
+                            'request_id' => $gdprRequest->request_id,
+                            'request_type' => $gdprRequest->request_type,
+                            'admin_attempted' => true,
+                        ]);
+                        
                         return back()->withErrors(['error' => 'Identity verification required before processing']);
+                    }
+
+                    // Monitor for excessive data export requests
+                    if ($gdprRequest->request_type === 'data_export') {
+                        $this->securityMonitoringService->monitorGDPRCompliance(auth()->user(), 'data_export', [
+                            'request_id' => $gdprRequest->request_id,
+                            'subject_type' => $gdprRequest->subject_type,
+                            'subject_id' => $gdprRequest->subject_id,
+                            'admin_processing' => true,
+                        ]);
                     }
 
                     $result = $this->gdprService->processDataSubjectRequest($gdprRequest);
@@ -240,6 +263,25 @@ class GDPRController extends Controller
         if (!$exportFile || !Storage::disk('private')->exists($exportFile)) {
             abort(404, 'Export file not found');
         }
+
+        // Monitor GDPR data export access
+        $this->securityMonitoringService->monitorGDPRCompliance(auth()->user(), 'data_export', [
+            'request_id' => $gdprRequest->request_id,
+            'export_file' => $exportFile,
+            'subject_type' => $gdprRequest->subject_type,
+            'subject_id' => $gdprRequest->subject_id,
+            'download_action' => true,
+            'admin_download' => true,
+        ]);
+
+        // Monitor for unusual data export patterns
+        $this->securityMonitoringService->detectSecurityEvent(request(), 'data_export_unusual', [
+            'resource' => 'gdpr_export_download',
+            'request_id' => $gdprRequest->request_id,
+            'file_path' => $exportFile,
+            'admin_user' => auth()->id(),
+            'request_type' => $gdprRequest->request_type,
+        ]);
 
         // Log download for audit trail
         Log::info("GDPR export downloaded", [
