@@ -132,11 +132,11 @@ class StripeWebhookController extends CashierWebhookController
 
             // Customer events
             case 'customer.created':
-                $this->handleCustomerCreated($event->data->object, $tenant);
+                $this->handleCustomerCreatedForTenant($event->data->object, $tenant);
                 break;
             
             case 'customer.updated':
-                $this->handleCustomerUpdated($event->data->object, $tenant);
+                $this->handleCustomerUpdatedForTenant($event->data->object, $tenant);
                 break;
 
             // Checkout events
@@ -359,13 +359,13 @@ class StripeWebhookController extends CashierWebhookController
     }
 
     /**
-     * Handle customer created event
+     * Handle customer created event for tenant context
      *
      * @param \Stripe\Customer $customer
      * @param Tenant|null $tenant
      * @return void
      */
-    protected function handleCustomerCreated(\Stripe\Customer $customer, ?Tenant $tenant): void
+    protected function handleCustomerCreatedForTenant(\Stripe\Customer $customer, ?Tenant $tenant): void
     {
         Log::info('Customer created', [
             'customer_id' => $customer->id,
@@ -375,13 +375,13 @@ class StripeWebhookController extends CashierWebhookController
     }
 
     /**
-     * Handle customer updated event
+     * Handle customer updated event for tenant context
      *
      * @param \Stripe\Customer $customer
      * @param Tenant|null $tenant
      * @return void
      */
-    protected function handleCustomerUpdated(\Stripe\Customer $customer, ?Tenant $tenant): void
+    protected function handleCustomerUpdatedForTenant(\Stripe\Customer $customer, ?Tenant $tenant): void
     {
         Log::info('Customer updated', [
             'customer_id' => $customer->id,
