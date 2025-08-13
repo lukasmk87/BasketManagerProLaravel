@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
             // Create roles and permissions first
             $this->call(RoleAndPermissionSeeder::class);
             
+            // Create tenants first (needed for multi-tenant setup)
+            $this->call(TenantSeeder::class);
+            
             // Basic test user
             User::firstOrCreate(
                 ['email' => 'test@example.com'],

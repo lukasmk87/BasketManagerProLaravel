@@ -13,6 +13,22 @@ class TenantSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create production tenant
+        Tenant::factory()->enterprise()->create([
+            'name' => 'BasketManager Pro',
+            'slug' => 'basketmanager-pro',
+            'domain' => 'basketmanager-pro.de',
+            'billing_email' => 'info@basketmanager-pro.de',
+        ]);
+
+        // Create staging tenant for development/testing
+        Tenant::factory()->professional()->create([
+            'name' => 'BasketManager Pro Staging',
+            'slug' => 'staging',
+            'domain' => 'staging.basketmanager-pro.de',
+            'billing_email' => 'staging@basketmanager-pro.de',
+        ]);
+
         // Create demo tenant on free trial
         Tenant::factory()->create([
             'name' => 'Demo Basketball Club',
