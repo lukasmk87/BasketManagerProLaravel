@@ -161,7 +161,7 @@ class Tenant extends Model
         
         static::updated(function ($tenant) {
             // Clear tenant cache when updated
-            Cache::tags(["tenant:{$tenant->id}"])->flush();
+            Cache::forget("tenant:id:{$tenant->id}");
             Cache::forget("tenant:domain:{$tenant->domain}");
             Cache::forget("tenant:subdomain:{$tenant->subdomain}");
             Cache::forget("tenant:slug:{$tenant->slug}");

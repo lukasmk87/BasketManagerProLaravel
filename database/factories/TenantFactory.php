@@ -50,24 +50,13 @@ class TenantFactory extends Factory
             'is_suspended' => false,
             'suspension_reason' => null,
             'features' => $tier === 'enterprise' ? ['custom_feature_1', 'custom_feature_2'] : null,
-            'settings' => [
-                'theme' => $this->faker->randomElement(['light', 'dark', 'auto']),
-                'language' => $this->faker->randomElement(['de', 'en']),
-                'notifications' => [
-                    'email' => true,
-                    'push' => $tier !== 'free',
-                ],
-            ],
+            'settings' => null, // Will be set after model creation to avoid encryption issues during seeding
             'branding' => [
                 'primary_color' => $this->faker->hexColor(),
                 'secondary_color' => $this->faker->hexColor(),
                 'logo_url' => $this->faker->imageUrl(200, 200, 'sports'),
             ],
-            'security_settings' => [
-                'require_2fa' => $tier === 'enterprise',
-                'ip_whitelist_enabled' => false,
-                'session_timeout' => 60,
-            ],
+            'security_settings' => null, // Will be set after model creation to avoid encryption issues during seeding
             'max_users' => $tierLimits['users'] ?? 10,
             'max_teams' => $tierLimits['teams'] ?? 5,
             'max_storage_gb' => $tierLimits['storage_gb'] ?? 10,
@@ -222,6 +211,25 @@ class TenantFactory extends Factory
     public function configure(): static
     {
         return $this->afterCreating(function (Tenant $tenant) {
+            // Set encrypted settings after model creation
+            $tier = $tenant->subscription_tier;
+            
+            $tenant->updateSettings([
+                'theme' => $this->faker->randomElement(['light', 'dark', 'auto']),
+                'language' => $this->faker->randomElement(['de', 'en']),
+                'notifications' => [
+                    'email' => true,
+                    'push' => $tier !== 'free',
+                ],
+            ]);
+            
+            // Set security settings
+            $tenant->security_settings = [
+                'require_2fa' => $tier === 'enterprise',
+                'ip_whitelist_enabled' => false,
+                'session_timeout' => 60,
+            ];
+            
             // Update tenant counts after creation
             $tenant->current_users_count = $tenant->users()->count();
             $tenant->current_teams_count = $tenant->teams()->count();

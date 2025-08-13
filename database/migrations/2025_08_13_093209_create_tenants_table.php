@@ -37,9 +37,9 @@ return new class extends Migration
             
             // Features & Settings
             $table->json('features')->nullable(); // Custom feature flags
-            $table->json('settings')->nullable(); // Tenant-specific settings (encrypted)
+            $table->text('settings')->nullable(); // Tenant-specific settings (encrypted)
             $table->json('branding')->nullable(); // Logo, colors, etc.
-            $table->json('security_settings')->nullable(); // 2FA requirements, IP restrictions, etc. (encrypted)
+            $table->text('security_settings')->nullable(); // 2FA requirements, IP restrictions, etc. (encrypted)
             
             // Limits & Usage
             $table->integer('max_users')->default(10);
