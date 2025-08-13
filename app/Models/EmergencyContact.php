@@ -20,9 +20,12 @@ class EmergencyContact extends Model
     protected $fillable = [
         'uuid',
         'user_id',
-        'name',
+        'player_id', // New PRD field
+        'name', // Legacy field
+        'contact_name', // New PRD field
         'relationship',
-        'primary_phone',
+        'primary_phone', // Legacy field
+        'phone_number', // New PRD field
         'secondary_phone',
         'email',
         'address_street',
@@ -30,21 +33,31 @@ class EmergencyContact extends Model
         'address_state',
         'address_zip',
         'address_country',
+        'latitude', // New PRD field
+        'longitude', // New PRD field
+        'distance_to_venue_km', // New PRD field
         'preferred_contact_method',
         'language',
         'is_primary',
         'is_active',
         'priority_order',
         'availability_schedule',
+        'available_24_7', // New PRD field
         'work_phone',
         'work_hours',
+        'alternate_contact_info', // New PRD field
         'can_authorize_medical_treatment',
+        'medical_decisions_authorized', // New PRD field
         'has_medical_power_of_attorney',
+        'has_medical_training', // New PRD field
         'medical_authorization_notes',
+        'authorization_notes', // New PRD field
+        'authorization_expires_at', // New PRD field
         'is_legal_guardian',
         'can_make_decisions',
         'legal_relationship',
         'can_pickup_player',
+        'emergency_pickup_authorized', // New PRD field
         'pickup_notes',
         'qr_code_token',
         'qr_code_generated_at',
@@ -74,9 +87,12 @@ class EmergencyContact extends Model
         'consent_to_share_medical_info',
         'consent_given_at',
         'consent_expires_at',
+        'consent_given_by_user_id', // New PRD field
+        'consent_details', // New PRD field
         'gdpr_consent',
         'gdpr_consent_at',
         'data_processing_consent',
+        'encrypted_fields', // New PRD field
         'metadata',
         'notes',
     ];
@@ -89,12 +105,20 @@ class EmergencyContact extends Model
         'is_primary' => 'boolean',
         'is_active' => 'boolean',
         'priority_order' => 'integer',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'distance_to_venue_km' => 'integer',
         'availability_schedule' => 'array',
+        'available_24_7' => 'boolean',
         'can_authorize_medical_treatment' => 'boolean',
+        'medical_decisions_authorized' => 'boolean',
         'has_medical_power_of_attorney' => 'boolean',
+        'has_medical_training' => 'boolean',
+        'authorization_expires_at' => 'date',
         'is_legal_guardian' => 'boolean',
         'can_make_decisions' => 'boolean',
         'can_pickup_player' => 'boolean',
+        'emergency_pickup_authorized' => 'boolean',
         'qr_code_generated_at' => 'datetime',
         'qr_code_expires_at' => 'datetime',
         'qr_code_active' => 'boolean',
@@ -113,10 +137,20 @@ class EmergencyContact extends Model
         'consent_to_share_medical_info' => 'boolean',
         'consent_given_at' => 'datetime',
         'consent_expires_at' => 'datetime',
+        'consent_given_by_user_id' => 'integer',
         'gdpr_consent' => 'boolean',
         'gdpr_consent_at' => 'datetime',
         'data_processing_consent' => 'array',
+        'encrypted_fields' => 'boolean',
         'metadata' => 'array',
+        // Encrypted fields for sensitive data (PRD requirement)
+        'phone_number' => 'encrypted',
+        'secondary_phone' => 'encrypted',
+        'email' => 'encrypted',
+        'medical_notes' => 'encrypted',
+        'emergency_instructions' => 'encrypted',
+        'alternate_contact_info' => 'encrypted',
+        'address_street' => 'encrypted',
     ];
 
     /**
@@ -124,6 +158,13 @@ class EmergencyContact extends Model
      */
     protected $hidden = [
         'qr_code_token',
+        'phone_number',
+        'secondary_phone', 
+        'email',
+        'medical_notes',
+        'emergency_instructions',
+        'alternate_contact_info',
+        'address_street',
     ];
 
     /**
@@ -150,6 +191,22 @@ class EmergencyContact extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the player this emergency contact belongs to (PRD requirement).
+     */
+    public function player(): BelongsTo
+    {
+        return $this->belongsTo(Player::class);
+    }
+
+    /**
+     * Get the user who gave consent for this contact.
+     */
+    public function consentGivenBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'consent_given_by_user_id');
     }
 
     // ============================
@@ -194,6 +251,38 @@ class EmergencyContact extends Model
     public function scopeByRelationship($query, string $relationship)
     {
         return $query->where('relationship', $relationship);
+    }
+
+    /**
+     * Scope a query to only include contacts with consent.
+     */
+    public function scopeWithConsent($query)
+    {
+        return $query->where('consent_to_contact', true);
+    }
+
+    /**
+     * Scope a query to only include available contacts.
+     */
+    public function scopeAvailableNow($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('available_24_7', true)
+              ->orWhere(function ($subQuery) {
+                  // Check if current time falls within availability hours
+                  $currentHour = now()->format('H:i');
+                  $subQuery->whereJsonContains('availability_schedule', $currentHour);
+              });
+        });
+    }
+
+    /**
+     * Scope a query to only include medically authorized contacts.
+     */
+    public function scopeMedicallyAuthorized($query)
+    {
+        return $query->where('can_authorize_medical_treatment', true)
+                     ->orWhere('medical_decisions_authorized', true);
     }
 
     // ============================
@@ -282,6 +371,42 @@ class EmergencyContact extends Model
     {
         return $this->last_contacted_at ? 
             $this->last_contacted_at->diffInDays(now()) : null;
+    }
+
+    /**
+     * Get formatted display phone number (PRD requirement).
+     */
+    public function getDisplayPhoneNumberAttribute(): ?string
+    {
+        $phone = $this->phone_number ?? $this->primary_phone;
+        if (!$phone) return null;
+        
+        // Format phone number for display (German format)
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        if (strlen($phone) >= 10) {
+            return substr($phone, 0, 4) . ' ' . substr($phone, 4, 3) . ' ' . substr($phone, 7);
+        }
+        return $phone;
+    }
+
+    /**
+     * Get emergency access information for QR codes (PRD requirement).
+     */
+    public function getEmergencyAccessInfoAttribute(): array
+    {
+        return [
+            'name' => $this->contact_name ?? $this->name,
+            'relationship' => $this->relationship,
+            'phone' => $this->display_phone_number,
+            'secondary_phone' => $this->secondary_phone ? $this->formatPhoneNumber($this->secondary_phone) : null,
+            'is_primary' => $this->is_primary,
+            'priority' => $this->priority_order,
+            'medical_training' => $this->has_medical_training,
+            'pickup_authorized' => $this->emergency_pickup_authorized ?? $this->can_pickup_player,
+            'medical_decisions' => $this->medical_decisions_authorized ?? $this->can_authorize_medical_treatment,
+            'available_24_7' => $this->available_24_7,
+            'special_instructions' => $this->emergency_instructions,
+        ];
     }
 
     // ============================
@@ -459,6 +584,82 @@ class EmergencyContact extends Model
     }
 
     /**
+     * Check if authorization is valid (PRD requirement).
+     */
+    public function isAuthorizationValid(): bool
+    {
+        if (!$this->authorization_expires_at) {
+            return true; // No expiration set
+        }
+        
+        return $this->authorization_expires_at->isFuture();
+    }
+
+    /**
+     * Check if contact needs verification (PRD requirement).
+     */
+    public function needsVerification(): bool
+    {
+        if (!$this->last_verified_at) {
+            return true;
+        }
+        
+        // Needs verification if last verified more than 6 months ago
+        return $this->last_verified_at->diffInMonths(now()) > 6;
+    }
+
+    /**
+     * Calculate distance to venue using Haversine formula (PRD requirement).
+     */
+    public function calculateDistanceToVenue(float $venueLat, float $venueLng): ?float
+    {
+        if (!$this->latitude || !$this->longitude) {
+            return null;
+        }
+        
+        // Haversine formula for calculating distance
+        $earthRadius = 6371; // km
+        
+        $dLat = deg2rad($venueLat - $this->latitude);
+        $dLng = deg2rad($venueLng - $this->longitude);
+        
+        $a = sin($dLat/2) * sin($dLat/2) +
+             cos(deg2rad($this->latitude)) * cos(deg2rad($venueLat)) *
+             sin($dLng/2) * sin($dLng/2);
+        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Check if contact is available at specific time (PRD requirement).
+     */
+    public function isAvailableAt(\DateTime $datetime): bool
+    {
+        if ($this->available_24_7) {
+            return true;
+        }
+        
+        if (!$this->availability_schedule) {
+            return false;
+        }
+        
+        $hour = $datetime->format('H:i');
+        return in_array($hour, $this->availability_schedule);
+    }
+
+    /**
+     * Update last contact result (PRD requirement).
+     */
+    public function updateLastContactResult(string $result): void
+    {
+        $this->update([
+            'last_contacted_at' => now(),
+            'last_contact_result' => $result,
+        ]);
+    }
+
+    /**
      * Get contact statistics.
      */
     public function getContactStats(): array
@@ -502,11 +703,79 @@ class EmergencyContact extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'name', 'relationship', 'primary_phone', 'email',
+                'contact_name', 'name', 'relationship', 'phone_number', 'primary_phone', 
                 'is_primary', 'is_active', 'can_authorize_medical_treatment',
-                'is_legal_guardian'
+                'medical_decisions_authorized', 'is_legal_guardian'
             ])
             ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Emergency contact {$eventName}")
+            ->dontLogIfAttributesChangedOnly(['last_contacted_at', 'last_contact_result']);
+    }
+
+    // ============================
+    // GDPR COMPLIANCE METHODS (PRD REQUIREMENT)
+    // ============================
+
+    /**
+     * Anonymize contact data per GDPR request (PRD requirement).
+     */
+    public function anonymize(): void
+    {
+        $this->update([
+            'contact_name' => 'Anonymized Contact',
+            'name' => 'Anonymized Contact',
+            'phone_number' => null,
+            'primary_phone' => null,
+            'secondary_phone' => null,
+            'email' => null,
+            'medical_notes' => null,
+            'emergency_instructions' => null,
+            'alternate_contact_info' => null,
+            'address_street' => null,
+            'notes' => 'Contact anonymized per GDPR request at ' . now()->toDateTimeString(),
+            'is_active' => false,
+        ]);
+    }
+
+    /**
+     * Export data for GDPR request (PRD requirement).
+     */
+    public function exportForGDPR(): array
+    {
+        return [
+            'contact_information' => [
+                'name' => $this->contact_name ?? $this->name,
+                'phone' => $this->phone_number ?? $this->primary_phone,
+                'secondary_phone' => $this->secondary_phone,
+                'email' => $this->email,
+                'relationship' => $this->relationship,
+            ],
+            'emergency_details' => [
+                'is_primary' => $this->is_primary,
+                'priority' => $this->priority_order,
+                'medical_notes' => $this->medical_notes,
+                'emergency_instructions' => $this->emergency_instructions,
+                'has_medical_training' => $this->has_medical_training,
+            ],
+            'authorization' => [
+                'emergency_pickup_authorized' => $this->emergency_pickup_authorized ?? $this->can_pickup_player,
+                'medical_decisions_authorized' => $this->medical_decisions_authorized ?? $this->can_authorize_medical_treatment,
+                'authorization_notes' => $this->authorization_notes ?? $this->medical_authorization_notes,
+            ],
+            'consent' => [
+                'consent_given' => $this->consent_to_contact,
+                'consent_given_at' => $this->consent_given_at,
+                'consent_details' => $this->consent_details,
+                'gdpr_consent' => $this->gdpr_consent,
+                'gdpr_consent_at' => $this->gdpr_consent_at,
+            ],
+            'metadata' => [
+                'created_at' => $this->created_at,
+                'updated_at' => $this->updated_at,
+                'last_verified_at' => $this->last_verified_at,
+                'last_contacted_at' => $this->last_contacted_at,
+            ],
+        ];
     }
 }

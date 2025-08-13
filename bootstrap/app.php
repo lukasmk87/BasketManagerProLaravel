@@ -30,6 +30,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->group(base_path('routes/pwa.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/notifications.php'));
+            // Emergency access routes (mixed web/api middleware)
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/emergency.php'));
+            // GDPR compliance routes (mixed web/api middleware)
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/gdpr.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
