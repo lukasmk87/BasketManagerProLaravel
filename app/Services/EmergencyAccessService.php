@@ -439,4 +439,115 @@ class EmergencyAccessService
             ->with(['team', 'createdBy'])
             ->get();
     }
+
+    /**
+     * Get offline emergency data for PWA caching
+     *
+     * @param TeamEmergencyAccess $access
+     * @return array
+     */
+    public function getOfflineEmergencyData(TeamEmergencyAccess $access): array
+    {
+        $emergencyContacts = $access->team->players
+            ->filter(fn($player) => $player->emergencyContacts->isNotEmpty())
+            ->map(function ($player) {
+                return [
+                    'player_id' => $player->id,
+                    'player_name' => $player->full_name,
+                    'jersey_number' => $player->jersey_number,
+                    'position' => $player->position,
+                    'contacts' => $player->emergencyContacts
+                        ->where('is_active', true)
+                        ->where('consent_given', true)
+                        ->sortBy('priority')
+                        ->map(function ($contact) {
+                            return [
+                                'id' => $contact->id,
+                                'name' => $contact->contact_name,
+                                'phone' => $contact->display_phone_number,
+                                'secondary_phone' => $contact->secondary_phone ? 
+                                    $this->formatPhoneNumber($contact->secondary_phone) : null,
+                                'relationship' => $contact->relationship,
+                                'is_primary' => $contact->is_primary,
+                                'priority' => $contact->priority,
+                                'medical_training' => $contact->has_medical_training,
+                                'pickup_authorized' => $contact->emergency_pickup_authorized,
+                                'medical_decisions' => $contact->medical_decisions_authorized,
+                                'available_24_7' => $contact->available_24_7,
+                                'special_instructions' => $contact->special_instructions,
+                            ];
+                        })->values()->toArray(),
+                ];
+            })->values()->toArray();
+
+        return [
+            'version' => '1.0.0',
+            'generated_at' => now()->toISOString(),
+            'access_key' => $access->access_key,
+            'team' => [
+                'id' => $access->team->id,
+                'name' => $access->team->name,
+                'club_name' => $access->team->club->name,
+            ],
+            'emergency_contacts' => $emergencyContacts,
+            'emergency_instructions' => $this->getEmergencyInstructions($access->team),
+            'offline_capabilities' => [
+                'contact_list_access' => true,
+                'phone_calling' => true,
+                'incident_reporting' => true,
+                'gps_location' => true,
+                'offline_sync' => true,
+            ],
+            'cache_strategy' => [
+                'contacts_cache_duration' => 86400, // 24 hours
+                'emergency_numbers_cache_duration' => 604800, // 1 week
+                'instructions_cache_duration' => 604800, // 1 week
+            ],
+        ];
+    }
+
+    /**
+     * Get emergency instructions for a team
+     *
+     * @param Team $team
+     * @return array
+     */
+    public function getEmergencyInstructions(Team $team): array
+    {
+        return [
+            'emergency_numbers' => [
+                'ambulance' => '112',
+                'fire' => '112',
+                'police' => '110',
+            ],
+            'team_specific' => [
+                'venue_address' => $team->primary_venue_address ?? 'Address not provided',
+                'nearest_hospital' => $team->nearest_hospital ?? 'Please locate nearest hospital',
+                'team_emergency_contact' => $team->emergency_contact_info ?? null,
+            ],
+            'instructions' => [
+                'Stay calm and assess the situation',
+                'Call emergency services (112) if life-threatening',
+                'Contact the person\'s emergency contacts',
+                'Provide clear location information',
+                'Stay with the person until help arrives',
+                'Document what happened for follow-up',
+            ],
+        ];
+    }
+
+    /**
+     * Format phone number for display
+     *
+     * @param string $phone
+     * @return string
+     */
+    private function formatPhoneNumber(string $phone): string
+    {
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        if (strlen($phone) >= 10) {
+            return substr($phone, 0, 4) . ' ' . substr($phone, 4, 3) . ' ' . substr($phone, 7);
+        }
+        return $phone;
+    }
 }

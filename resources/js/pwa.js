@@ -40,6 +40,9 @@ class BasketManagerPWA {
         // Setup basketball-specific features
         this.setupBasketballFeatures();
         
+        // Setup emergency features
+        this.setupEmergencyFeatures();
+        
         console.log('[PWA] PWA initialization complete');
     }
     
@@ -601,7 +604,343 @@ class BasketManagerPWA {
             this.queueOfflineData('training_data', trainingData);
         }
     }
+    
+    /**
+     * Setup emergency-specific PWA features
+     */
+    setupEmergencyFeatures() {
+        // Register emergency service worker if on emergency access page
+        if (window.location.pathname.includes('/emergency/')) {
+            this.registerEmergencyServiceWorker();
+        }
+        
+        // Setup emergency data caching
+        this.setupEmergencyDataCaching();
+        
+        // Setup emergency offline sync
+        this.setupEmergencyOfflineSync();
+        
+        console.log('[PWA] Emergency features initialized');
+    }
+    
+    /**
+     * Register emergency service worker
+     */
+    async registerEmergencyServiceWorker() {
+        // Check if this is emergency access with access key
+        const accessKey = this.extractAccessKeyFromURL();
+        if (!accessKey) return;
+        
+        try {
+            const registration = await navigator.serviceWorker.register(
+                `/emergency/pwa/sw/${accessKey}.js`,
+                { scope: `/emergency/` }
+            );
+            
+            console.log('[PWA] Emergency service worker registered:', registration);
+            
+            // Cache emergency data immediately
+            this.cacheEmergencyData(accessKey);
+            
+        } catch (error) {
+            console.error('[PWA] Emergency service worker registration failed:', error);
+        }
+    }
+    
+    /**
+     * Setup emergency data caching
+     */
+    setupEmergencyDataCaching() {
+        // Cache emergency contacts data
+        document.addEventListener('emergency-contacts-loaded', (event) => {
+            const contactsData = event.detail;
+            this.cacheEmergencyContactsData(contactsData);
+        });
+        
+        // Cache emergency instructions
+        document.addEventListener('emergency-instructions-loaded', (event) => {
+            const instructions = event.detail;
+            localStorage.setItem('emergency_instructions', JSON.stringify(instructions));
+        });
+    }
+    
+    /**
+     * Setup emergency offline sync
+     */
+    setupEmergencyOfflineSync() {
+        // Listen for emergency contact usage
+        document.addEventListener('emergency-contact-used', (event) => {
+            const contactUsage = event.detail;
+            this.queueEmergencyData('contact_usage', contactUsage);
+        });
+        
+        // Listen for emergency incident reports
+        document.addEventListener('emergency-incident-reported', (event) => {
+            const incident = event.detail;
+            this.queueEmergencyData('incident_report', incident);
+        });
+    }
+    
+    /**
+     * Cache emergency data
+     */
+    async cacheEmergencyData(accessKey) {
+        try {
+            const response = await fetch(`/emergency/pwa/cache/${accessKey}`);
+            const emergencyData = await response.json();
+            
+            // Store in localStorage for immediate access
+            localStorage.setItem('emergency_contacts_data', JSON.stringify(emergencyData));
+            localStorage.setItem('emergency_cache_timestamp', new Date().toISOString());
+            
+            // Send to service worker for advanced caching
+            if (this.serviceWorker) {
+                this.serviceWorker.active?.postMessage({
+                    type: 'CACHE_EMERGENCY_DATA',
+                    payload: emergencyData
+                });
+            }
+            
+            console.log('[PWA] Emergency data cached successfully');
+            
+        } catch (error) {
+            console.error('[PWA] Failed to cache emergency data:', error);
+        }
+    }
+    
+    /**
+     * Cache emergency contacts data
+     */
+    cacheEmergencyContactsData(contactsData) {
+        try {
+            localStorage.setItem('emergency_contacts', JSON.stringify(contactsData));
+            localStorage.setItem('emergency_contacts_timestamp', new Date().toISOString());
+            console.log('[PWA] Emergency contacts cached');
+        } catch (error) {
+            console.error('[PWA] Failed to cache emergency contacts:', error);
+        }
+    }
+    
+    /**
+     * Queue emergency data for sync
+     */
+    queueEmergencyData(type, data) {
+        const queueItem = {
+            id: this.generateId(),
+            type: `emergency_${type}`,
+            data: data,
+            timestamp: new Date().toISOString(),
+            priority: 'high' // Emergency data has high priority
+        };
+        
+        this.offlineQueue.unshift(queueItem); // Add to front of queue
+        this.saveOfflineQueue();
+        
+        console.log('[PWA] Emergency data queued:', queueItem);
+        
+        // Try to sync immediately if online
+        if (this.isOnline) {
+            this.syncEmergencyItem(queueItem);
+        }
+    }
+    
+    /**
+     * Sync emergency data item
+     */
+    async syncEmergencyItem(item) {
+        const endpoints = {
+            emergency_contact_usage: '/api/emergency/contact-accessed',
+            emergency_incident_report: '/api/emergency/incidents'
+        };
+        
+        const endpoint = endpoints[item.type];
+        if (!endpoint) {
+            console.error('[PWA] Unknown emergency sync type:', item.type);
+            return;
+        }
+        
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Emergency-Sync': 'true'
+                },
+                body: JSON.stringify(item.data)
+            });
+            
+            if (response.ok) {
+                this.removeFromOfflineQueue(item.id);
+                console.log('[PWA] Emergency item synced:', item.id);
+            } else {
+                throw new Error(`Sync failed: ${response.status}`);
+            }
+            
+        } catch (error) {
+            console.error('[PWA] Failed to sync emergency item:', error);
+            // Keep in queue for retry
+        }
+    }
+    
+    /**
+     * Get cached emergency data
+     */
+    getCachedEmergencyData() {
+        try {
+            const cached = localStorage.getItem('emergency_contacts_data');
+            const timestamp = localStorage.getItem('emergency_cache_timestamp');
+            
+            if (!cached || !timestamp) {
+                return null;
+            }
+            
+            // Check if cache is still valid (24 hours)
+            const cacheTime = new Date(timestamp);
+            const now = new Date();
+            const hoursDiff = (now - cacheTime) / (1000 * 60 * 60);
+            
+            if (hoursDiff > 24) {
+                console.log('[PWA] Emergency cache expired');
+                this.clearEmergencyCache();
+                return null;
+            }
+            
+            return JSON.parse(cached);
+            
+        } catch (error) {
+            console.error('[PWA] Failed to get cached emergency data:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * Clear emergency cache
+     */
+    clearEmergencyCache() {
+        localStorage.removeItem('emergency_contacts_data');
+        localStorage.removeItem('emergency_cache_timestamp');
+        localStorage.removeItem('emergency_contacts');
+        localStorage.removeItem('emergency_contacts_timestamp');
+        localStorage.removeItem('emergency_instructions');
+        console.log('[PWA] Emergency cache cleared');
+    }
+    
+    /**
+     * Show emergency notification
+     */
+    showEmergencyNotification(message, type = 'info', options = {}) {
+        const emergencyOptions = {
+            requireInteraction: true,
+            silent: false,
+            vibrate: [200, 100, 200],
+            ...options
+        };
+        
+        this.showNotification(`🚨 ${message}`, type);
+        
+        // Show browser notification if permission granted
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(`Emergency: ${message}`, {
+                icon: '/images/emergency-192.png',
+                badge: '/images/emergency-badge.png',
+                ...emergencyOptions
+            });
+        }
+    }
+    
+    /**
+     * Extract access key from URL
+     */
+    extractAccessKeyFromURL() {
+        const match = window.location.pathname.match(/\/emergency\/(?:pwa\/)?(?:access\/)?([a-zA-Z0-9]{32})/);
+        return match ? match[1] : null;
+    }
+    
+    /**
+     * Install emergency PWA
+     */
+    async installEmergencyPWA() {
+        const accessKey = this.extractAccessKeyFromURL();
+        if (!accessKey) {
+            console.error('[PWA] No access key found for emergency PWA installation');
+            return;
+        }
+        
+        try {
+            // Navigate to install page
+            window.location.href = `/emergency/pwa/install/${accessKey}`;
+        } catch (error) {
+            console.error('[PWA] Failed to install emergency PWA:', error);
+        }
+    }
 }
+
+// Emergency PWA utilities
+window.EmergencyPWA = {
+    /**
+     * Initialize emergency PWA features
+     */
+    init() {
+        if (window.basketManagerPWA) {
+            window.basketManagerPWA.setupEmergencyFeatures();
+        }
+    },
+    
+    /**
+     * Cache emergency data manually
+     */
+    async cacheData(accessKey) {
+        if (window.basketManagerPWA) {
+            await window.basketManagerPWA.cacheEmergencyData(accessKey);
+        }
+    },
+    
+    /**
+     * Get offline emergency data
+     */
+    getOfflineData() {
+        if (window.basketManagerPWA) {
+            return window.basketManagerPWA.getCachedEmergencyData();
+        }
+        return null;
+    },
+    
+    /**
+     * Report emergency incident offline
+     */
+    reportIncident(incidentData) {
+        if (window.basketManagerPWA) {
+            window.basketManagerPWA.queueEmergencyData('incident_report', incidentData);
+            return true;
+        }
+        return false;
+    },
+    
+    /**
+     * Log contact usage
+     */
+    logContactUsage(contactData) {
+        if (window.basketManagerPWA) {
+            window.basketManagerPWA.queueEmergencyData('contact_usage', contactData);
+        }
+    },
+    
+    /**
+     * Check if emergency data is cached
+     */
+    hasOfflineData() {
+        return !!localStorage.getItem('emergency_contacts_data');
+    },
+    
+    /**
+     * Clear emergency cache
+     */
+    clearCache() {
+        if (window.basketManagerPWA) {
+            window.basketManagerPWA.clearEmergencyCache();
+        }
+    }
+};
 
 // Initialize PWA when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {

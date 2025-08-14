@@ -1,0 +1,302 @@
+# BasketManager Pro - Emergency Services Docker Compose
+# High-availability deployment for emergency services
+
+version: '3.8'
+
+services:
+  # Emergency Services Application
+  emergency-app:
+    build:
+      context: .
+      dockerfile: docker/emergency/Dockerfile
+    container_name: basketmanager-emergency-app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    environment:
+      - APP_NAME="BasketManager Pro Emergency"
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://emergency.basketmanager.local
+      
+      # Database Configuration
+      - DB_CONNECTION=pgsql
+      - DB_HOST=emergency-postgres
+      - DB_PORT=5432
+      - DB_DATABASE=basketmanager_emergency
+      - DB_USERNAME=emergency_user
+      - DB_PASSWORD=${EMERGENCY_DB_PASSWORD}
+      
+      # Redis Configuration  
+      - REDIS_HOST=emergency-redis
+      - REDIS_PASSWORD=${EMERGENCY_REDIS_PASSWORD}
+      - REDIS_PORT=6379
+      
+      # Cache Configuration
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      
+      # Emergency Service Configuration
+      - EMERGENCY_CACHE_TTL=86400
+      - EMERGENCY_QR_STORAGE=public
+      - EMERGENCY_LOG_LEVEL=info
+      - EMERGENCY_RESPONSE_TIMEOUT=5
+      - EMERGENCY_MAX_CONCURRENT_ACCESS=100
+      
+      # Security Configuration
+      - APP_KEY=${APP_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - SANCTUM_STATEFUL_DOMAINS=emergency.basketmanager.local
+      
+      # Monitoring Configuration
+      - EMERGENCY_MONITORING_ENABLED=true
+      - EMERGENCY_ALERTS_WEBHOOK=${EMERGENCY_ALERTS_WEBHOOK}
+      - EMERGENCY_METRICS_INTERVAL=60
+      
+    volumes:
+      - ./storage/app/public:/var/www/html/storage/app/public
+      - ./storage/logs:/var/www/html/storage/logs
+      - emergency-qr-codes:/var/www/html/storage/app/public/emergency_qr
+      - emergency-ssl-certs:/etc/ssl/certs
+      - emergency-ssl-private:/etc/ssl/private
+    depends_on:
+      - emergency-postgres
+      - emergency-redis
+    networks:
+      - emergency-network
+    healthcheck:
+      test: ["/usr/local/bin/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 30s
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 60s
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+
+  # PostgreSQL Database for Emergency Services
+  emergency-postgres:
+    image: postgres:15-alpine
+    container_name: basketmanager-emergency-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=basketmanager_emergency
+      - POSTGRES_USER=emergency_user
+      - POSTGRES_PASSWORD=${EMERGENCY_DB_PASSWORD}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - emergency-postgres-data:/var/lib/postgresql/data
+      - ./database/sql/emergency_init.sql:/docker-entrypoint-initdb.d/01-emergency-init.sql
+      - ./database/sql/emergency_indexes.sql:/docker-entrypoint-initdb.d/02-emergency-indexes.sql
+    ports:
+      - "5433:5432"
+    networks:
+      - emergency-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emergency_user -d basketmanager_emergency"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Redis Cache for Emergency Services
+  emergency-redis:
+    image: redis:7-alpine
+    container_name: basketmanager-emergency-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${EMERGENCY_REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru --save 60 1000 --appendonly yes
+    ports:
+      - "6380:6379"
+    volumes:
+      - emergency-redis-data:/data
+      - ./docker/emergency/redis.conf:/etc/redis/redis.conf
+    networks:
+      - emergency-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Nginx Load Balancer for Emergency Services
+  emergency-nginx:
+    image: nginx:alpine
+    container_name: basketmanager-emergency-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/emergency/nginx-lb.conf:/etc/nginx/nginx.conf
+      - emergency-ssl-certs:/etc/ssl/certs:ro
+      - emergency-ssl-private:/etc/ssl/private:ro
+      - emergency-nginx-logs:/var/log/nginx
+    depends_on:
+      - emergency-app
+    networks:
+      - emergency-network
+      - public-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.25'
+
+  # Emergency Monitoring Service
+  emergency-monitor:
+    build:
+      context: .
+      dockerfile: docker/emergency/Dockerfile.monitor
+    container_name: basketmanager-emergency-monitor
+    restart: unless-stopped
+    environment:
+      - EMERGENCY_MONITOR_INTERVAL=30
+      - EMERGENCY_ALERT_WEBHOOK=${EMERGENCY_ALERTS_WEBHOOK}
+      - EMERGENCY_DB_HOST=emergency-postgres
+      - EMERGENCY_REDIS_HOST=emergency-redis
+    volumes:
+      - emergency-monitor-logs:/var/log/emergency
+      - ./storage/emergency-metrics:/var/lib/emergency/metrics
+    depends_on:
+      - emergency-postgres
+      - emergency-redis
+    networks:
+      - emergency-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+
+  # Emergency Backup Service
+  emergency-backup:
+    image: postgres:15-alpine
+    container_name: basketmanager-emergency-backup
+    restart: unless-stopped
+    environment:
+      - PGUSER=emergency_user
+      - PGPASSWORD=${EMERGENCY_DB_PASSWORD}
+      - PGHOST=emergency-postgres
+      - PGDATABASE=basketmanager_emergency
+      - BACKUP_SCHEDULE=0 2 * * *  # Daily at 2 AM
+      - BACKUP_RETENTION_DAYS=30
+    volumes:
+      - emergency-backups:/backups
+      - ./docker/emergency/backup-script.sh:/usr/local/bin/backup.sh:ro
+    depends_on:
+      - emergency-postgres
+    networks:
+      - emergency-network
+    command: >
+      sh -c "
+        apk add --no-cache dcron &&
+        echo '0 2 * * * /usr/local/bin/backup.sh' | crontab - &&
+        crond -f
+      "
+
+  # Emergency Log Aggregator
+  emergency-logs:
+    image: fluent/fluent-bit:latest
+    container_name: basketmanager-emergency-logs
+    restart: unless-stopped
+    volumes:
+      - ./docker/emergency/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - emergency-nginx-logs:/var/log/nginx:ro
+      - ./storage/logs:/var/log/laravel:ro
+      - emergency-app-logs:/var/log/emergency:ro
+    ports:
+      - "24224:24224"
+    networks:
+      - emergency-network
+    depends_on:
+      - emergency-app
+
+# Networks
+networks:
+  emergency-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  public-network:
+    external: true
+
+# Persistent Volumes
+volumes:
+  emergency-postgres-data:
+    driver: local
+  emergency-redis-data:
+    driver: local
+  emergency-qr-codes:
+    driver: local
+  emergency-ssl-certs:
+    driver: local
+  emergency-ssl-private:
+    driver: local
+  emergency-backups:
+    driver: local
+  emergency-nginx-logs:
+    driver: local
+  emergency-app-logs:
+    driver: local
+  emergency-monitor-logs:
+    driver: local
+
+# Emergency Services Configuration
+configs:
+  emergency-nginx-config:
+    file: ./docker/emergency/nginx-lb.conf
+  emergency-app-config:
+    file: ./docker/emergency/app.conf
+
+# Emergency Secrets (use Docker Secrets in production)
+secrets:
+  emergency-db-password:
+    external: true
+  emergency-redis-password:
+    external: true
+  emergency-app-key:
+    external: true

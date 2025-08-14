@@ -325,3 +325,179 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     });
     
 });
+
+// Emergency PWA Routes (no authentication required for emergency access)
+Route::prefix('emergency/pwa')->name('emergency.pwa.')->group(function () {
+    
+    // Emergency PWA Manifest
+    Route::get('/manifest/{accessKey}', [PWAController::class, 'emergencyManifest'])
+        ->name('manifest')
+        ->where('accessKey', '[a-zA-Z0-9]{32}');
+    
+    // Emergency Service Worker
+    Route::get('/sw/{accessKey}.js', [PWAController::class, 'emergencyServiceWorker'])
+        ->name('service-worker')
+        ->where('accessKey', '[a-zA-Z0-9]{32}');
+    
+    // PWA Installation Prompt
+    Route::get('/install/{accessKey}', [PWAController::class, 'emergencyInstallPrompt'])
+        ->name('install')
+        ->where('accessKey', '[a-zA-Z0-9]{32}');
+    
+    // Offline Emergency Interface
+    Route::get('/offline/{accessKey}', [PWAController::class, 'emergencyOfflineInterface'])
+        ->name('offline')
+        ->where('accessKey', '[a-zA-Z0-9]{32}');
+    
+    // Cache Emergency Data
+    Route::get('/cache/{accessKey}', [PWAController::class, 'cacheEmergencyData'])
+        ->name('cache')
+        ->where('accessKey', '[a-zA-Z0-9]{32}');
+    
+});
+
+// Emergency API endpoints for offline sync
+Route::prefix('api/emergency')->name('api.emergency.')->group(function () {
+    
+    // Incident reporting from offline PWA
+    Route::post('/incidents', function (\Illuminate\Http\Request $request) {
+        $request->validate([
+            'access_key' => 'required|string|size:32',
+            'incident_type' => 'required|in:injury,medical_emergency,accident,missing_person,behavioral_incident,facility_emergency,weather_emergency,other',
+            'severity' => 'required|in:minor,moderate,severe,critical',
+            'description' => 'required|string|max:2000',
+            'location' => 'required|string|max:500',
+            'player_id' => 'nullable|exists:players,id',
+            'coordinates' => 'nullable|array',
+            'timestamp' => 'required|date',
+        ]);
+
+        try {
+            // Verify access key
+            $access = \App\Models\TeamEmergencyAccess::where('access_key', $request->input('access_key'))
+                ->where('is_active', true)
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if (!$access) {
+                return response()->json(['error' => 'Invalid or expired access key'], 401);
+            }
+
+            // Create incident
+            $incidentId = 'EMG-' . date('Y') . '-' . str_pad(\App\Models\EmergencyIncident::count() + 1, 4, '0', STR_PAD_LEFT);
+            
+            $incident = \App\Models\EmergencyIncident::create([
+                'incident_id' => $incidentId,
+                'team_id' => $access->team_id,
+                'player_id' => $request->input('player_id'),
+                'incident_type' => $request->input('incident_type'),
+                'severity' => $request->input('severity'),
+                'description' => $request->input('description'),
+                'occurred_at' => $request->input('timestamp'),
+                'location' => $request->input('location'),
+                'coordinates' => $request->input('coordinates'),
+                'reported_by_user_id' => 1, // System user for PWA reports
+                'reported_at' => now(),
+                'status' => 'active',
+            ]);
+
+            // Log emergency access usage
+            app(\App\Services\EmergencyAccessService::class)->logEmergencyAccess($access, $request);
+
+            // Send notifications for severe/critical incidents
+            if (in_array($incident->severity, ['severe', 'critical'])) {
+                app(\App\Services\NotificationService::class)->sendEmergencyAlert($incident);
+            }
+
+            \Illuminate\Support\Facades\Log::channel('emergency')->info('Emergency incident reported via PWA', [
+                'incident_id' => $incident->incident_id,
+                'access_key' => $access->access_key,
+                'team_id' => $access->team_id,
+                'severity' => $incident->severity,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'incident_id' => $incident->incident_id,
+                'message' => 'Emergency incident reported successfully',
+                'created_at' => $incident->created_at->toISOString(),
+            ]);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create emergency incident via PWA', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to report incident',
+            ], 500);
+        }
+    })->name('create-incident');
+    
+    // Contact usage tracking
+    Route::post('/contact-accessed', function (\Illuminate\Http\Request $request) {
+        $request->validate([
+            'access_key' => 'required|string|size:32',
+            'contact_id' => 'required|exists:emergency_contacts,id',
+            'action' => 'required|in:called,sms_sent,viewed',
+            'timestamp' => 'required|date',
+        ]);
+
+        try {
+            // Verify access key
+            $access = \App\Models\TeamEmergencyAccess::where('access_key', $request->input('access_key'))
+                ->where('is_active', true)
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if (!$access) {
+                return response()->json(['error' => 'Invalid or expired access key'], 401);
+            }
+
+            // Log contact access
+            $contact = \App\Models\EmergencyContact::find($request->input('contact_id'));
+            
+            if ($contact && $contact->player->team_id === $access->team_id) {
+                // Update usage log
+                $usageLog = $access->usage_log ?? [];
+                $usageLog[] = [
+                    'type' => 'contact_accessed',
+                    'contact_id' => $contact->id,
+                    'contact_name' => $contact->contact_name,
+                    'player_name' => $contact->player->full_name,
+                    'action' => $request->input('action'),
+                    'timestamp' => $request->input('timestamp'),
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ];
+
+                $access->update([
+                    'usage_log' => $usageLog,
+                    'last_used_at' => now(),
+                ]);
+
+                // Update contact's last contacted info if it was a call
+                if ($request->input('action') === 'called') {
+                    $contact->update([
+                        'last_contacted_at' => now(),
+                        'last_contact_result' => 'attempted',
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Contact access logged',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to log contact access',
+            ], 500);
+        }
+    })->name('log-contact-access');
+    
+});
