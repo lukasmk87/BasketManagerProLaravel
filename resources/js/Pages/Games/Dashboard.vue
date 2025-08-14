@@ -30,6 +30,7 @@
                                 :is-live="true"
                                 @view-live-scoring="goToLiveScoring"
                                 @view-details="goToGameDetails"
+                                @view-shot-chart="showShotChart"
                             />
                         </div>
                     </div>
@@ -63,6 +64,7 @@
                                 :is-live="false"
                                 @view-live-scoring="goToLiveScoring"
                                 @view-details="goToGameDetails"
+                                @view-shot-chart="showShotChart"
                             />
                         </div>
                         
@@ -75,6 +77,33 @@
                                 Es sind keine Spiele für heute geplant.
                             </p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Shot Charts Section -->
+                <div v-if="selectedGameForChart" class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                    <div class="p-6 lg:p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                                🎯 Shot Chart - {{ selectedGameForChart.home_team?.name }} vs {{ selectedGameForChart.away_team?.name }}
+                            </h3>
+                            <button
+                                @click="closeShotChart"
+                                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <ShotChart
+                            :game-actions="shotChartData"
+                            :player-id="selectedPlayerForChart"
+                            :team-id="selectedTeamForChart"
+                            :realtime="selectedGameForChart.status === 'live'"
+                            @shot-selected="onShotSelected"
+                        />
                     </div>
                 </div>
 
@@ -92,6 +121,7 @@
                                 :game="game"
                                 :is-finished="true"
                                 @view-details="goToGameDetails"
+                                @view-shot-chart="showShotChart"
                             />
                         </div>
                         
@@ -163,7 +193,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import GameCard from './Partials/GameCard.vue'
+import ShotChart from '@/Components/Basketball/ShotChart.vue'
 import { subscribeToLiveGames } from '@/echo'
+import axios from 'axios'
 
 // Props
 const props = defineProps({
@@ -173,6 +205,12 @@ const props = defineProps({
 // Reactive data
 const loading = ref(false)
 const localGames = ref(props.games || [])
+
+// Shot Chart data
+const selectedGameForChart = ref(null)
+const selectedPlayerForChart = ref(null)
+const selectedTeamForChart = ref(null)
+const shotChartData = ref([])
 
 // Computed properties
 const liveGames = computed(() => {
@@ -238,6 +276,44 @@ const goToLiveScoring = (game) => {
 const goToGameDetails = (game) => {
     // TODO: Implement game details page
     console.log('View game details:', game)
+}
+
+// Shot Chart Methods
+const showShotChart = async (game, playerId = null, teamId = null) => {
+    selectedGameForChart.value = game
+    selectedPlayerForChart.value = playerId
+    selectedTeamForChart.value = teamId
+    
+    await loadShotChartData(game.id, playerId, teamId)
+}
+
+const closeShotChart = () => {
+    selectedGameForChart.value = null
+    selectedPlayerForChart.value = null
+    selectedTeamForChart.value = null
+    shotChartData.value = []
+}
+
+const loadShotChartData = async (gameId, playerId = null, teamId = null) => {
+    try {
+        const params = {}
+        if (playerId) params.player_id = playerId
+        if (teamId) params.team_id = teamId
+        
+        const response = await axios.get(`/api/v2/games/${gameId}/shot-chart`, {
+            params
+        })
+        
+        shotChartData.value = response.data.shots || []
+    } catch (error) {
+        console.error('Error loading shot chart data:', error)
+        shotChartData.value = []
+    }
+}
+
+const onShotSelected = (shot) => {
+    console.log('Shot selected:', shot)
+    // Could open a modal with shot details, player info, etc.
 }
 
 // Lifecycle

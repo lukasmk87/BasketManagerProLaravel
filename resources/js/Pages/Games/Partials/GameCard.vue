@@ -117,9 +117,19 @@
                 <span v-else>▶️ Starten</span>
             </button>
             
+            <!-- Shot Chart Button - nur für live und beendete Spiele -->
+            <button
+                v-if="isLive || isFinished"
+                @click="$emit('view-shot-chart', game)"
+                class="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-md text-xs font-medium flex items-center justify-center"
+            >
+                🎯 Shot Chart
+            </button>
+            
             <button
                 @click="$emit('view-details', game)"
-                class="flex-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-3 py-2 rounded-md text-xs font-medium"
+                :class="isLive || isFinished ? 'flex-none px-4' : 'flex-1'"
+                class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-3 py-2 rounded-md text-xs font-medium"
             >
                 📊 Details
             </button>
@@ -144,7 +154,7 @@ const props = defineProps({
 })
 
 // Emits
-defineEmits(['view-live-scoring', 'view-details'])
+defineEmits(['view-live-scoring', 'view-details', 'view-shot-chart'])
 
 // Computed properties
 const statusText = computed(() => {

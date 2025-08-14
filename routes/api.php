@@ -83,6 +83,11 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/api/v1.php';
 });
 
+// Version 2.0 routes (Shot Charts & Enhanced Features)
+Route::prefix('v2')->group(function () {
+    require __DIR__ . '/api/v2.php';
+});
+
 // Version 4.0 routes (current)
 Route::prefix('v4')->group(function () {
     require __DIR__ . '/api/v4.php';
