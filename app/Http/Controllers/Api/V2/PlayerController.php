@@ -79,7 +79,9 @@ class PlayerController extends Controller
                 if (in_array($sortField, $allowedSortFields)) {
                     $query->orderBy($sortField, $sortDirection);
                 } elseif ($sortField === 'name') {
-                    $query->orderBy('first_name', $sortDirection)->orderBy('last_name', $sortDirection);
+                    $query->join('users', 'players.user_id', '=', 'users.id')
+                          ->orderBy('users.name', $sortDirection)
+                          ->select('players.*');
                 }
             })
             ->latest()

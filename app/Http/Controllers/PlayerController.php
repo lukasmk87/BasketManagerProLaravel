@@ -25,6 +25,7 @@ class PlayerController extends Controller
         // Get players based on user permissions
         $players = Player::query()
             ->with(['team.club', 'user'])
+            ->join('users', 'players.user_id', '=', 'users.id')
             ->when($user->hasRole('admin') || $user->hasRole('super-admin'), function ($query) {
                 // Admin users see all players
                 return $query;
@@ -39,7 +40,8 @@ class PlayerController extends Controller
                 });
             })
             ->orderBy('jersey_number')
-            ->orderBy('last_name')
+            ->orderBy('users.name')
+            ->select('players.*')
             ->paginate(20);
 
         return Inertia::render('Players/Index', [

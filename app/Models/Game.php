@@ -162,7 +162,7 @@ class Game extends Model implements HasMedia
      */
     public function homeTeam(): BelongsTo
     {
-        return $this->belongsTo(BasketballTeam::class, 'home_team_id');
+        return $this->belongsTo(Team::class, 'home_team_id');
     }
 
     /**
@@ -170,7 +170,7 @@ class Game extends Model implements HasMedia
      */
     public function awayTeam(): BelongsTo
     {
-        return $this->belongsTo(BasketballTeam::class, 'away_team_id');
+        return $this->belongsTo(Team::class, 'away_team_id');
     }
 
     /**
@@ -306,7 +306,7 @@ class Game extends Model implements HasMedia
     /**
      * Get the winning team.
      */
-    public function getWinnerAttribute(): ?BasketballTeam
+    public function getWinnerAttribute(): ?Team
     {
         if ($this->status !== 'finished') {
             return null;
@@ -324,7 +324,7 @@ class Game extends Model implements HasMedia
     /**
      * Get the losing team.
      */
-    public function getLoserAttribute(): ?BasketballTeam
+    public function getLoserAttribute(): ?Team
     {
         if ($this->status !== 'finished') {
             return null;
@@ -606,7 +606,7 @@ class Game extends Model implements HasMedia
     /**
      * Get the opponent team for a given team.
      */
-    public function getOpponentTeam(BasketballTeam $team): BasketballTeam
+    public function getOpponentTeam(Team $team): Team
     {
         if ($this->home_team_id === $team->id) {
             return $this->awayTeam;
@@ -620,7 +620,7 @@ class Game extends Model implements HasMedia
     /**
      * Check if a team is the home team.
      */
-    public function isHomeTeam(BasketballTeam $team): bool
+    public function isHomeTeam(Team $team): bool
     {
         return $this->home_team_id === $team->id;
     }
@@ -628,7 +628,7 @@ class Game extends Model implements HasMedia
     /**
      * Check if a team is the away team.
      */
-    public function isAwayTeam(BasketballTeam $team): bool
+    public function isAwayTeam(Team $team): bool
     {
         return $this->away_team_id === $team->id;
     }
@@ -636,7 +636,7 @@ class Game extends Model implements HasMedia
     /**
      * Get the team for a given side.
      */
-    public function getTeamForSide(string $side): BasketballTeam
+    public function getTeamForSide(string $side): Team
     {
         return $side === 'home' ? $this->homeTeam : $this->awayTeam;
     }

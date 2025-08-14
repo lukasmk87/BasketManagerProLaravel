@@ -207,10 +207,18 @@ class Team extends JetstreamTeam implements HasMedia
     /**
      * Get all games for this team (home and away).
      */
-    public function allGames()
+    public function games()
     {
         return Game::where('home_team_id', $this->id)
                    ->orWhere('away_team_id', $this->id);
+    }
+
+    /**
+     * Get all games for this team (home and away) - alias for backward compatibility.
+     */
+    public function allGames()
+    {
+        return $this->games();
     }
 
     // ============================
