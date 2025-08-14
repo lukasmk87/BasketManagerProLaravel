@@ -156,7 +156,7 @@ class ClubService
             }
 
             // Check if club has active players
-            $activePlayers = $club->players()->where('status', 'active')->count();
+            $activePlayers = $club->players()->where('players.status', 'active')->count();
             if ($activePlayers > 0) {
                 throw new \InvalidArgumentException('Club kann nicht gelöscht werden, da noch aktive Spieler vorhanden sind.');
             }
@@ -319,18 +319,26 @@ class ClubService
             COUNT(DISTINCT league) as leagues_participated
         ')->first();
 
-        $playerStats = $club->players()->selectRaw('
-            COUNT(*) as total_players,
-            SUM(CASE WHEN status = "active" THEN 1 ELSE 0 END) as active_players,
-            AVG(CASE WHEN users.birth_date IS NOT NULL THEN YEAR(CURDATE()) - YEAR(users.birth_date) END) as avg_player_age
-        ')
-        ->leftJoin('users', 'players.user_id', '=', 'users.id')
-        ->first();
+        $playerStats = \App\Models\Player::query()
+            ->selectRaw('
+                COUNT(*) as total_players,
+                SUM(CASE WHEN players.status = "active" THEN 1 ELSE 0 END) as active_players,
+                AVG(CASE WHEN users.date_of_birth IS NOT NULL THEN YEAR(CURDATE()) - YEAR(users.date_of_birth) END) as avg_player_age
+            ')
+            ->join('teams', 'teams.id', '=', 'players.team_id')
+            ->leftJoin('users', 'players.user_id', '=', 'users.id')
+            ->where('teams.club_id', $club->id)
+            ->whereNull('players.deleted_at')
+            ->whereNull('teams.deleted_at')
+            ->first();
 
-        $memberStats = $club->users()->selectRaw('
-            COUNT(*) as total_members,
-            SUM(CASE WHEN pivot_is_active = 1 THEN 1 ELSE 0 END) as active_members
-        ')->first();
+        $memberStats = DB::table('club_user')
+            ->selectRaw('
+                COUNT(*) as total_members,
+                SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_members
+            ')
+            ->where('club_id', $club->id)
+            ->first();
 
         // Game statistics
         $gameStats = $club->teams()
@@ -368,8 +376,12 @@ class ClubService
             'teams_created_this_month' => $club->teams()
                 ->whereBetween('created_at', [now()->startOfMonth(), now()])
                 ->count(),
-            'players_joined_this_month' => $club->players()
-                ->whereBetween('joined_at', [now()->startOfMonth(), now()])
+            'players_joined_this_month' => \App\Models\Player::query()
+                ->join('teams', 'teams.id', '=', 'players.team_id')
+                ->where('teams.club_id', $club->id)
+                ->whereBetween('players.created_at', [now()->startOfMonth(), now()])
+                ->whereNull('players.deleted_at')
+                ->whereNull('teams.deleted_at')
                 ->count(),
             'games_this_month' => $club->teams()
                 ->join('games', function ($join) {

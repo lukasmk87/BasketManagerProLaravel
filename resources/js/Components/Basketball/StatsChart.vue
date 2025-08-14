@@ -284,9 +284,10 @@ defineExpose({
         </div>
         
         <!-- Chart Canvas -->
-        <div v-else class="relative" :style="{ height: height + 'px', width: width ? width + 'px' : '100%' }">
+        <div class="relative" :style="{ height: height + 'px', width: width ? width + 'px' : '100%' }">
             <canvas 
                 ref="canvasRef"
+                v-show="!loading && !error"
                 :height="height"
                 :width="width"
                 class="max-w-full">

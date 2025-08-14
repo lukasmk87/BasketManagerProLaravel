@@ -178,10 +178,14 @@ class Club extends Model implements HasMedia
     /**
      * Get games involving this club's teams.
      */
-    public function games()
+    public function getGames()
     {
-        return Game::whereIn('home_team_id', $this->teams()->pluck('id'))
-            ->orWhereIn('away_team_id', $this->teams()->pluck('id'));
+        $teamIds = $this->teams()->pluck('id')->toArray();
+        if (empty($teamIds)) {
+            return Game::whereRaw('1 = 0'); // Empty result set
+        }
+        return Game::whereIn('home_team_id', $teamIds)
+            ->orWhereIn('away_team_id', $teamIds);
     }
 
     // ============================
@@ -370,9 +374,9 @@ class Club extends Model implements HasMedia
             'total_teams' => $this->teams_count,
             'total_players' => $this->players_count,
             'total_coaches' => $this->coaches()->count(),
-            'total_games' => $this->games()->count(),
-            'games_won' => $this->games()->where('result', 'home_win')->count() + 
-                          $this->games()->where('result', 'away_win')->count(),
+            'total_games' => $this->getGames()->count(),
+            'games_won' => $this->getGames()->where('result', 'home_win')->count() + 
+                          $this->getGames()->where('result', 'away_win')->count(),
             'founded_years_ago' => $this->age,
             'is_active' => $this->is_active,
             'is_verified' => $this->is_verified,
@@ -467,12 +471,4 @@ class Club extends Model implements HasMedia
     // ============================
     // ROUTE MODEL BINDING
     // ============================
-
-    /**
-     * Get the route key for the model.
-     */
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
 }
