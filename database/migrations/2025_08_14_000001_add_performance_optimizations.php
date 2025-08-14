@@ -39,28 +39,27 @@ return new class extends Migration
         // === GAMES TABLE OPTIMIZATIONS ===
         Schema::table('games', function (Blueprint $table) {
             // Game scheduling and status
-            $table->index(['status', 'played_at'], 'idx_status_played'); // Live/upcoming games
+            $table->index(['status', 'scheduled_at'], 'idx_status_scheduled'); // Live/upcoming games
             $table->index(['season', 'status'], 'idx_season_status'); // Season analysis
-            $table->index(['home_team_id', 'played_at'], 'idx_home_team_date'); // Team schedule
-            $table->index(['away_team_id', 'played_at'], 'idx_away_team_date'); // Team schedule
+            $table->index(['home_team_id', 'scheduled_at'], 'idx_home_team_date'); // Team schedule
+            $table->index(['away_team_id', 'scheduled_at'], 'idx_away_team_date'); // Team schedule
             
             // Score analysis
             $table->index(['home_team_score', 'away_team_score'], 'idx_game_scores'); // Score analysis
             
             // Multi-team queries
-            $table->index(['home_team_id', 'away_team_id', 'played_at'], 'idx_teams_date');
+            $table->index(['home_team_id', 'away_team_id', 'scheduled_at'], 'idx_teams_date');
         });
 
         // === PLAYERS TABLE OPTIMIZATIONS ===
         Schema::table('players', function (Blueprint $table) {
             // Player search and filtering
             $table->index(['team_id', 'status'], 'idx_team_status'); // Active players per team
-            $table->index(['position', 'status'], 'idx_position_status'); // Position-based queries
+            $table->index(['primary_position', 'status'], 'idx_position_status'); // Position-based queries
             $table->index(['jersey_number', 'team_id'], 'idx_jersey_team'); // Unique jersey per team
             
             // Performance analysis
-            $table->index(['height', 'weight'], 'idx_physical_stats'); // Physical analysis
-            $table->index(['date_of_birth'], 'idx_age_analysis'); // Age-based analysis
+            $table->index(['height_cm', 'weight_kg'], 'idx_physical_stats'); // Physical analysis
         });
 
         // === TEAMS TABLE OPTIMIZATIONS ===
@@ -73,25 +72,24 @@ return new class extends Migration
         // === ML MODELS TABLE OPTIMIZATIONS ===
         Schema::table('ml_models', function (Blueprint $table) {
             $table->index(['type', 'status'], 'idx_model_type_status'); // Model selection
-            $table->index(['cv_score'], 'idx_cv_score'); // Best models first
-            $table->index(['trained_at', 'status'], 'idx_trained_status'); // Recent models
-            $table->index(['experiment_id', 'cv_score'], 'idx_experiment_performance'); // Experiment comparison
+            $table->index(['accuracy'], 'idx_accuracy'); // Best models first
+            $table->index(['last_trained_at', 'status'], 'idx_trained_status'); // Recent models
         });
 
         // === API USAGE TRACKING OPTIMIZATIONS ===
         Schema::table('api_usage_tracking', function (Blueprint $table) {
-            $table->index(['tenant_id', 'created_at'], 'idx_tenant_usage_time'); // Tenant usage over time
-            $table->index(['endpoint', 'created_at'], 'idx_endpoint_usage_time'); // Endpoint popularity
             $table->index(['user_id', 'created_at'], 'idx_user_usage_time'); // User activity
+            $table->index(['endpoint', 'created_at'], 'idx_endpoint_usage_time'); // Endpoint popularity
+            $table->index(['response_status', 'created_at'], 'idx_status_time'); // Error tracking
             
-            // Rate limiting optimization
-            $table->index(['tenant_id', 'endpoint', 'created_at'], 'idx_tenant_endpoint_time');
+            // Rate limiting optimization  
+            $table->index(['ip_address', 'endpoint', 'created_at'], 'idx_ip_endpoint_time');
         });
 
         // === EMERGENCY CONTACTS OPTIMIZATIONS ===
         Schema::table('emergency_contacts', function (Blueprint $table) {
-            $table->index(['player_id', 'priority'], 'idx_player_priority'); // Primary contacts first
-            $table->index(['phone', 'is_verified'], 'idx_phone_verified'); // Contact verification
+            $table->index(['user_id', 'priority_order'], 'idx_user_priority'); // Primary contacts first
+            $table->index(['primary_phone', 'phone_verified'], 'idx_phone_verified'); // Contact verification
         });
 
         // === TENANTS TABLE OPTIMIZATIONS ===
@@ -108,7 +106,7 @@ return new class extends Migration
             SELECT 
                 ga.player_id,
                 ga.game_id,
-                g.played_at,
+                g.scheduled_at,
                 g.season,
                 SUM(CASE WHEN ga.action_type LIKE '%_made' THEN ga.points ELSE 0 END) as points,
                 SUM(CASE WHEN ga.action_type IN ('rebound_offensive', 'rebound_defensive') THEN 1 ELSE 0 END) as rebounds,
@@ -126,7 +124,7 @@ return new class extends Migration
             FROM game_actions ga
             JOIN games g ON ga.game_id = g.id
             WHERE g.status = 'finished'
-            GROUP BY ga.player_id, ga.game_id, g.played_at, g.season
+            GROUP BY ga.player_id, ga.game_id, g.scheduled_at, g.season
         ");
 
         // Team Performance View
@@ -135,7 +133,7 @@ return new class extends Migration
             SELECT 
                 ga.team_id,
                 ga.game_id,
-                g.played_at,
+                g.scheduled_at,
                 g.season,
                 SUM(CASE WHEN ga.action_type LIKE '%_made' THEN ga.points ELSE 0 END) as points_scored,
                 SUM(CASE WHEN ga.action_type IN ('rebound_offensive', 'rebound_defensive') THEN 1 ELSE 0 END) as total_rebounds,
@@ -157,7 +155,7 @@ return new class extends Migration
             FROM game_actions ga
             JOIN games g ON ga.game_id = g.id
             WHERE g.status = 'finished'
-            GROUP BY ga.team_id, ga.game_id, g.played_at, g.season
+            GROUP BY ga.team_id, ga.game_id, g.scheduled_at, g.season
         ");
 
         // Shot Chart Aggregation View
@@ -242,22 +240,8 @@ return new class extends Migration
         ");
 
         // === PARTITIONING SETUP FOR LARGE TABLES ===
-        
-        // Partition game_actions by month for better performance
-        DB::statement("
-            ALTER TABLE game_actions 
-            PARTITION BY RANGE (TO_DAYS(recorded_at)) (
-                PARTITION p_2024_q1 VALUES LESS THAN (TO_DAYS('2024-04-01')),
-                PARTITION p_2024_q2 VALUES LESS THAN (TO_DAYS('2024-07-01')),
-                PARTITION p_2024_q3 VALUES LESS THAN (TO_DAYS('2024-10-01')),
-                PARTITION p_2024_q4 VALUES LESS THAN (TO_DAYS('2025-01-01')),
-                PARTITION p_2025_q1 VALUES LESS THAN (TO_DAYS('2025-04-01')),
-                PARTITION p_2025_q2 VALUES LESS THAN (TO_DAYS('2025-07-01')),
-                PARTITION p_2025_q3 VALUES LESS THAN (TO_DAYS('2025-10-01')),
-                PARTITION p_2025_q4 VALUES LESS THAN (TO_DAYS('2026-01-01')),
-                PARTITION p_future VALUES LESS THAN MAXVALUE
-            );
-        ");
+        // Note: Partitioning removed due to foreign key constraints compatibility issues
+        // Can be implemented later if needed with proper foreign key handling
     }
 
     /**
@@ -274,8 +258,8 @@ return new class extends Migration
         DB::statement("DROP VIEW IF EXISTS team_game_statistics");
         DB::statement("DROP VIEW IF EXISTS shot_chart_summary");
 
-        // Remove partitioning (MySQL 8.0+)
-        DB::statement("ALTER TABLE game_actions REMOVE PARTITIONING");
+        // Remove partitioning (MySQL 8.0+) - not implemented in up() method
+        // DB::statement("ALTER TABLE game_actions REMOVE PARTITIONING");
 
         // Drop indexes from game_actions
         Schema::table('game_actions', function (Blueprint $table) {
@@ -294,7 +278,7 @@ return new class extends Migration
 
         // Drop indexes from games
         Schema::table('games', function (Blueprint $table) {
-            $table->dropIndex('idx_status_played');
+            $table->dropIndex('idx_status_scheduled');
             $table->dropIndex('idx_season_status');
             $table->dropIndex('idx_home_team_date');
             $table->dropIndex('idx_away_team_date');
@@ -308,7 +292,6 @@ return new class extends Migration
             $table->dropIndex('idx_position_status');
             $table->dropIndex('idx_jersey_team');
             $table->dropIndex('idx_physical_stats');
-            $table->dropIndex('idx_age_analysis');
         });
 
         // Drop indexes from teams
@@ -321,22 +304,21 @@ return new class extends Migration
         // Drop indexes from ml_models
         Schema::table('ml_models', function (Blueprint $table) {
             $table->dropIndex('idx_model_type_status');
-            $table->dropIndex('idx_cv_score');
+            $table->dropIndex('idx_accuracy');
             $table->dropIndex('idx_trained_status');
-            $table->dropIndex('idx_experiment_performance');
         });
 
         // Drop indexes from api_usage_tracking
         Schema::table('api_usage_tracking', function (Blueprint $table) {
-            $table->dropIndex('idx_tenant_usage_time');
-            $table->dropIndex('idx_endpoint_usage_time');
             $table->dropIndex('idx_user_usage_time');
-            $table->dropIndex('idx_tenant_endpoint_time');
+            $table->dropIndex('idx_endpoint_usage_time');
+            $table->dropIndex('idx_status_time');
+            $table->dropIndex('idx_ip_endpoint_time');
         });
 
         // Drop indexes from emergency_contacts
         Schema::table('emergency_contacts', function (Blueprint $table) {
-            $table->dropIndex('idx_player_priority');
+            $table->dropIndex('idx_user_priority');
             $table->dropIndex('idx_phone_verified');
         });
 

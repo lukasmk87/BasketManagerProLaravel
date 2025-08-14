@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
@@ -10,6 +9,7 @@ use App\Models\Game;
 use App\Models\Player;
 use App\Models\Team;
 use App\Models\GameAction;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Basketball-spezifischer Cache Service
@@ -36,11 +36,9 @@ class BasketballCacheService
     const SEARCH_PREFIX = 'search:';
     const GAME_SUMMARY_PREFIX = 'game_summary:';
 
-    private $redis;
-
     public function __construct()
     {
-        $this->redis = Redis::connection('cache');
+        // Constructor vereinfacht - nutzt Laravel Cache-Facade statt direkter Redis-Verbindung
     }
 
     /**
@@ -50,22 +48,20 @@ class BasketballCacheService
     {
         $key = self::LIVE_GAME_PREFIX . $gameId;
         
-        // Verwende Redis Pipeline für atomische Updates
-        $this->redis->pipeline(function ($pipe) use ($key, $data) {
-            $pipe->hmset($key, [
-                'game_id' => $data['game_id'],
-                'home_score' => $data['home_score'],
-                'away_score' => $data['away_score'],
-                'period' => $data['period'],
-                'time_remaining' => $data['time_remaining'],
-                'status' => $data['status'],
-                'last_action' => json_encode($data['last_action'] ?? []),
-                'home_stats' => json_encode($data['home_stats'] ?? []),
-                'away_stats' => json_encode($data['away_stats'] ?? []),
-                'updated_at' => now()->toISOString()
-            ]);
-            $pipe->expire($key, self::LIVE_GAME_TTL);
-        });
+        $cacheData = [
+            'game_id' => $data['game_id'],
+            'home_score' => $data['home_score'],
+            'away_score' => $data['away_score'],
+            'period' => $data['period'],
+            'time_remaining' => $data['time_remaining'],
+            'status' => $data['status'],
+            'last_action' => $data['last_action'] ?? [],
+            'home_stats' => $data['home_stats'] ?? [],
+            'away_stats' => $data['away_stats'] ?? [],
+            'updated_at' => now()->toISOString()
+        ];
+
+        Cache::put($key, $cacheData, self::LIVE_GAME_TTL);
 
         // Broadcast-Event für Real-time Updates
         $this->broadcastLiveUpdate($gameId, $data);
@@ -74,18 +70,7 @@ class BasketballCacheService
     public function getLiveGameData(int $gameId): ?array
     {
         $key = self::LIVE_GAME_PREFIX . $gameId;
-        $data = $this->redis->hgetall($key);
-        
-        if (empty($data)) {
-            return null;
-        }
-
-        // JSON-Felder decodieren
-        $data['last_action'] = json_decode($data['last_action'] ?? '[]', true);
-        $data['home_stats'] = json_decode($data['home_stats'] ?? '[]', true);
-        $data['away_stats'] = json_decode($data['away_stats'] ?? '[]', true);
-
-        return $data;
+        return Cache::get($key);
     }
 
     /**
@@ -95,15 +80,12 @@ class BasketballCacheService
     {
         $key = self::PLAYER_STATS_PREFIX . "{$playerId}:{$season}:{$type}";
         
-        // L1 Cache: Redis Hash für schnelle Zugriffe
-        $this->redis->hmset($key, array_merge($stats, [
+        $cacheData = array_merge($stats, [
             'cached_at' => now()->toISOString(),
             'cache_version' => 'v1'
-        ]));
-        $this->redis->expire($key, self::PLAYER_STATS_TTL);
+        ]);
 
-        // L2 Cache: Laravel Cache für Backup
-        Cache::put($key, $stats, self::PLAYER_STATS_TTL);
+        Cache::put($key, $cacheData, self::PLAYER_STATS_TTL);
 
         // Zusätzliche Indizierung für schnelle Suche
         $this->indexPlayerForSearch($playerId, $stats);
@@ -113,15 +95,13 @@ class BasketballCacheService
     {
         $key = self::PLAYER_STATS_PREFIX . "{$playerId}:{$season}:{$type}";
         
-        // L1 Cache Check
-        $stats = $this->redis->hgetall($key);
-        if (!empty($stats)) {
+        $stats = Cache::get($key);
+        if ($stats) {
+            // Bereinige Cache-Metadaten für Rückgabe
             unset($stats['cached_at'], $stats['cache_version']);
-            return $stats;
         }
-
-        // L2 Cache Fallback
-        return Cache::get($key);
+        
+        return $stats;
     }
 
     /**
@@ -135,14 +115,16 @@ class BasketballCacheService
         // Komprimierte Shot-Daten
         $compressedData = $this->compressShotData($shots);
         
-        $this->redis->setex($key, self::SHOT_CHART_TTL, json_encode([
+        $cacheData = [
             'player_id' => $playerId,
             'filters' => $filters,
             'shots' => $compressedData,
             'total_shots' => count($shots),
             'made_shots' => count(array_filter($shots, fn($s) => $s['is_successful'])),
             'cached_at' => now()->toISOString()
-        ]));
+        ];
+        
+        Cache::put($key, $cacheData, self::SHOT_CHART_TTL);
 
         // Räumlicher Index für Hot Zones
         $this->indexShotZones($playerId, $shots);
@@ -153,12 +135,11 @@ class BasketballCacheService
         $filterKey = md5(json_encode($filters));
         $key = self::SHOT_CHART_PREFIX . "{$playerId}:{$filterKey}";
         
-        $data = $this->redis->get($key);
+        $data = Cache::get($key);
         
         if ($data) {
-            $decoded = json_decode($data, true);
-            $decoded['shots'] = $this->decompressShotData($decoded['shots']);
-            return $decoded;
+            $data['shots'] = $this->decompressShotData($data['shots']);
+            return $data;
         }
 
         return null;
@@ -172,78 +153,79 @@ class BasketballCacheService
         $key = self::TEAM_STATS_PREFIX . "{$teamId}:{$period}";
         
         // Current Performance
-        $this->redis->hmset($key, array_merge($performance, [
+        $cacheData = array_merge($performance, [
             'team_id' => $teamId,
             'period' => $period,
             'updated_at' => now()->toISOString()
-        ]));
-        $this->redis->expire($key, self::TEAM_STATS_TTL);
+        ]);
+        
+        Cache::put($key, $cacheData, self::TEAM_STATS_TTL);
 
-        // Performance Trending (letzte 10 Datenpunkte)
+        // Performance Trending (letzte 10 Datenpunkte als Array)
         $trendKey = self::TEAM_STATS_PREFIX . "trend:{$teamId}";
-        $this->redis->lpush($trendKey, json_encode([
+        $currentTrend = Cache::get($trendKey, []);
+        
+        // Neuen Datenpunkt hinzufügen
+        $newDataPoint = [
             'timestamp' => now()->toISOString(),
             'wins' => $performance['wins'] ?? 0,
             'losses' => $performance['losses'] ?? 0,
             'points_avg' => $performance['points_avg'] ?? 0,
             'opponent_points_avg' => $performance['opponent_points_avg'] ?? 0
-        ]));
-        $this->redis->ltrim($trendKey, 0, 9); // Keep only last 10
-        $this->redis->expire($trendKey, self::TEAM_STATS_TTL);
+        ];
+        
+        // Am Anfang des Arrays hinzufügen und auf 10 Elemente begrenzen
+        array_unshift($currentTrend, $newDataPoint);
+        $currentTrend = array_slice($currentTrend, 0, 10);
+        
+        Cache::put($trendKey, $currentTrend, self::TEAM_STATS_TTL);
     }
 
     public function getTeamPerformanceTrend(int $teamId): array
     {
         $trendKey = self::TEAM_STATS_PREFIX . "trend:{$teamId}";
-        $trendData = $this->redis->lrange($trendKey, 0, -1);
-        
-        return array_map(fn($data) => json_decode($data, true), $trendData);
+        return Cache::get($trendKey, []);
     }
 
     /**
-     * Dynamic Leaderboards mit Sorted Sets
+     * Dynamic Leaderboards mit Array-basierter Sortierung
      */
     public function updateLeaderboard(string $category, int $playerId, float $score, array $metadata = []): void
     {
         $key = self::LEADERBOARD_PREFIX . $category;
         
-        // Sorted Set für Rankings
-        $this->redis->zadd($key, $score, $playerId);
-        $this->redis->expire($key, self::LEADERBOARD_TTL);
-
-        // Metadata für Leaderboard-Einträge
-        $metaKey = $key . ':meta:' . $playerId;
-        $this->redis->hmset($metaKey, array_merge($metadata, [
+        // Aktuelles Leaderboard laden
+        $leaderboard = Cache::get($key, []);
+        
+        // Player-Eintrag aktualisieren oder hinzufügen
+        $leaderboard[$playerId] = array_merge($metadata, [
+            'player_id' => $playerId,
             'score' => $score,
             'updated_at' => now()->toISOString()
-        ]));
-        $this->redis->expire($metaKey, self::LEADERBOARD_TTL);
+        ]);
+        
+        // Nach Score sortieren (absteigend)
+        uasort($leaderboard, fn($a, $b) => $b['score'] <=> $a['score']);
+        
+        Cache::put($key, $leaderboard, self::LEADERBOARD_TTL);
     }
 
     public function getLeaderboard(string $category, int $limit = 10, int $offset = 0): array
     {
         $key = self::LEADERBOARD_PREFIX . $category;
         
-        // Top-Performers mit Scores
-        $rankings = $this->redis->zrevrange($key, $offset, $offset + $limit - 1, 'WITHSCORES');
+        $leaderboard = Cache::get($key, []);
         
-        $leaderboard = [];
-        for ($i = 0; $i < count($rankings); $i += 2) {
-            $playerId = $rankings[$i];
-            $score = $rankings[$i + 1];
-            
-            // Metadata abrufen
-            $metaKey = $key . ':meta:' . $playerId;
-            $metadata = $this->redis->hgetall($metaKey);
-            
-            $leaderboard[] = array_merge($metadata, [
-                'player_id' => $playerId,
-                'score' => $score,
-                'rank' => $offset + ($i / 2) + 1
-            ]);
+        // Pagination anwenden und Rank hinzufügen
+        $sliced = array_slice($leaderboard, $offset, $limit, true);
+        
+        $result = [];
+        $rank = $offset + 1;
+        foreach ($sliced as $entry) {
+            $result[] = array_merge($entry, ['rank' => $rank++]);
         }
         
-        return $leaderboard;
+        return $result;
     }
 
     /**
@@ -253,16 +235,16 @@ class BasketballCacheService
     {
         $key = self::GAME_SUMMARY_PREFIX . $gameId;
         
-        // JSON mit Kompression
-        $compressedSummary = gzcompress(json_encode($summary), 6);
+        // JSON mit Kompression für große Datenmengen
+        $compressedSummary = base64_encode(gzcompress(json_encode($summary), 6));
         
-        $this->redis->setex($key, self::HISTORICAL_TTL, base64_encode($compressedSummary));
+        Cache::put($key, $compressedSummary, self::HISTORICAL_TTL);
     }
 
     public function getGameSummary(int $gameId): ?array
     {
         $key = self::GAME_SUMMARY_PREFIX . $gameId;
-        $compressed = $this->redis->get($key);
+        $compressed = Cache::get($key);
         
         if ($compressed) {
             $decompressed = gzuncompress(base64_decode($compressed));
@@ -279,21 +261,21 @@ class BasketballCacheService
     {
         $key = self::SEARCH_PREFIX . $type . ':' . md5(strtolower($query));
         
-        $this->redis->setex($key, self::SEARCH_TTL, json_encode([
+        $cacheData = [
             'query' => $query,
             'type' => $type,
             'results' => $results,
             'count' => count($results),
             'cached_at' => now()->toISOString()
-        ]));
+        ];
+        
+        Cache::put($key, $cacheData, self::SEARCH_TTL);
     }
 
     public function getSearchResults(string $query, string $type): ?array
     {
         $key = self::SEARCH_PREFIX . $type . ':' . md5(strtolower($query));
-        $data = $this->redis->get($key);
-        
-        return $data ? json_decode($data, true) : null;
+        return Cache::get($key);
     }
 
     /**
@@ -301,12 +283,11 @@ class BasketballCacheService
      */
     public function invalidatePlayerCache(int $playerId): void
     {
-        $pattern = self::PLAYER_STATS_PREFIX . $playerId . ':*';
-        $this->deleteByPattern($pattern);
+        // Player-spezifische Cache-Keys löschen
+        $this->forgetCacheByPrefix(self::PLAYER_STATS_PREFIX . $playerId);
         
         // Auch Shot Chart Cache invalidieren
-        $shotPattern = self::SHOT_CHART_PREFIX . $playerId . ':*';
-        $this->deleteByPattern($shotPattern);
+        $this->forgetCacheByPrefix(self::SHOT_CHART_PREFIX . $playerId);
 
         // Leaderboards aktualisieren
         $this->invalidateLeaderboards();
@@ -314,39 +295,31 @@ class BasketballCacheService
 
     public function invalidateTeamCache(int $teamId): void
     {
-        $pattern = self::TEAM_STATS_PREFIX . $teamId . ':*';
-        $this->deleteByPattern($pattern);
+        $this->forgetCacheByPrefix(self::TEAM_STATS_PREFIX . $teamId);
     }
 
     public function invalidateGameCache(int $gameId): void
     {
-        $this->redis->del(self::LIVE_GAME_PREFIX . $gameId);
-        $this->redis->del(self::GAME_SUMMARY_PREFIX . $gameId);
+        Cache::forget(self::LIVE_GAME_PREFIX . $gameId);
+        Cache::forget(self::GAME_SUMMARY_PREFIX . $gameId);
     }
 
     public function invalidateLeaderboards(): void
     {
-        $pattern = self::LEADERBOARD_PREFIX . '*';
-        $this->deleteByPattern($pattern);
+        $this->forgetCacheByPrefix(self::LEADERBOARD_PREFIX);
     }
 
     /**
-     * Cache Analytics
+     * Cache Analytics (vereinfacht für Laravel Cache)
      */
     public function getCacheAnalytics(): array
     {
-        $info = $this->redis->info('memory');
-        $keyspace = $this->redis->info('keyspace');
-        
         $analytics = [
-            'memory_usage' => [
-                'used' => $info['used_memory_human'] ?? 'N/A',
-                'peak' => $info['used_memory_peak_human'] ?? 'N/A',
-                'fragmentation_ratio' => $info['mem_fragmentation_ratio'] ?? 0
-            ],
-            'keyspace' => $keyspace,
-            'hit_ratio' => $this->calculateHitRatio(),
-            'cache_distribution' => $this->getCacheDistribution()
+            'cache_driver' => config('cache.default'),
+            'cache_store' => Cache::getStore(),
+            'status' => 'active',
+            'cache_distribution' => $this->getCacheDistribution(),
+            'note' => 'Detailed analytics available only with Redis driver'
         ];
 
         return $analytics;
@@ -357,20 +330,17 @@ class BasketballCacheService
      */
     public function bulkCachePlayerStats(array $playersData): void
     {
-        $this->redis->pipeline(function ($pipe) use ($playersData) {
-            foreach ($playersData as $playerData) {
-                $key = self::PLAYER_STATS_PREFIX . $playerData['player_id'] . ':' . $playerData['season'] . ':bulk';
-                $pipe->hmset($key, $playerData['stats']);
-                $pipe->expire($key, self::PLAYER_STATS_TTL);
-            }
-        });
+        foreach ($playersData as $playerData) {
+            $key = self::PLAYER_STATS_PREFIX . $playerData['player_id'] . ':' . $playerData['season'] . ':bulk';
+            Cache::put($key, $playerData['stats'], self::PLAYER_STATS_TTL);
+        }
     }
 
     public function bulkInvalidate(array $patterns): int
     {
         $deleted = 0;
         foreach ($patterns as $pattern) {
-            $deleted += $this->deleteByPattern($pattern);
+            $deleted += $this->forgetCacheByPrefix($pattern);
         }
         return $deleted;
     }
@@ -452,8 +422,11 @@ class BasketballCacheService
             'avg_assists' => $stats['avg_assists'] ?? 0
         ];
         
-        $this->redis->hset($searchKey, $playerId, json_encode($playerData));
-        $this->redis->expire($searchKey, self::SEARCH_TTL);
+        // Aktuellen Search Index laden
+        $currentIndex = Cache::get($searchKey, []);
+        $currentIndex[$playerId] = $playerData;
+        
+        Cache::put($searchKey, $currentIndex, self::SEARCH_TTL);
     }
 
     private function indexShotZones(int $playerId, array $shots): void
@@ -471,62 +444,70 @@ class BasketballCacheService
         }
 
         $zoneKey = 'shot_zones:' . $playerId;
+        $zoneData = [];
+        
         foreach ($zones as $zone => $stats) {
             $percentage = $stats['attempted'] > 0 ? ($stats['made'] / $stats['attempted']) * 100 : 0;
-            $this->redis->hset($zoneKey, $zone, json_encode(array_merge($stats, ['percentage' => $percentage])));
+            $zoneData[$zone] = array_merge($stats, ['percentage' => $percentage]);
         }
-        $this->redis->expire($zoneKey, self::SHOT_CHART_TTL);
+        
+        Cache::put($zoneKey, $zoneData, self::SHOT_CHART_TTL);
     }
 
     private function broadcastLiveUpdate(int $gameId, array $data): void
     {
-        // Publish to Redis Channel for real-time updates
-        $this->redis->publish('live_games', json_encode([
+        // Log real-time update (Laravel Broadcasting kann später hinzugefügt werden)
+        Log::info('Live game update', [
             'type' => 'score_update',
             'game_id' => $gameId,
             'data' => $data,
             'timestamp' => now()->toISOString()
-        ]));
+        ]);
+        
+        // TODO: Implement Laravel Broadcasting when needed
+        // broadcast(new GameScoreUpdated($gameId, $data));
     }
 
-    private function deleteByPattern(string $pattern): int
+    private function forgetCacheByPrefix(string $prefix): int
     {
-        $keys = $this->redis->keys($pattern);
+        // Da Laravel Cache keine Pattern-basierten Löschungen unterstützt,
+        // verwenden wir eine einfache Implementierung mit bekannten Suffixen
+        $deleted = 0;
+        $suffixes = ['season', 'career', 'trend', 'bulk', 'meta'];
         
-        if (empty($keys)) {
-            return 0;
+        // Versuche verschiedene bekannte Kombinationen zu löschen
+        foreach ($suffixes as $suffix) {
+            $key = $prefix . ':' . $suffix;
+            if (Cache::forget($key)) {
+                $deleted++;
+            }
         }
-
-        return $this->redis->del($keys);
+        
+        // Auch den Prefix allein versuchen
+        if (Cache::forget($prefix)) {
+            $deleted++;
+        }
+        
+        return $deleted;
     }
 
     private function calculateHitRatio(): float
     {
-        $stats = $this->redis->info('stats');
-        $hits = $stats['keyspace_hits'] ?? 0;
-        $misses = $stats['keyspace_misses'] ?? 0;
-        $total = $hits + $misses;
-        
-        return $total > 0 ? round(($hits / $total) * 100, 2) : 0;
+        // Hit-Ratio nur für Redis verfügbar
+        return 0.0;
     }
 
     private function getCacheDistribution(): array
     {
-        $prefixes = [
-            'live_game' => self::LIVE_GAME_PREFIX,
-            'player_stats' => self::PLAYER_STATS_PREFIX,
-            'team_stats' => self::TEAM_STATS_PREFIX,
-            'shot_chart' => self::SHOT_CHART_PREFIX,
-            'leaderboard' => self::LEADERBOARD_PREFIX,
-            'search' => self::SEARCH_PREFIX
+        // Cache-Distribution vereinfacht für Laravel Cache
+        return [
+            'live_game' => 'N/A',
+            'player_stats' => 'N/A', 
+            'team_stats' => 'N/A',
+            'shot_chart' => 'N/A',
+            'leaderboard' => 'N/A',
+            'search' => 'N/A',
+            'note' => 'Key counting not available with current cache driver'
         ];
-
-        $distribution = [];
-        foreach ($prefixes as $name => $prefix) {
-            $keys = $this->redis->keys($prefix . '*');
-            $distribution[$name] = count($keys);
-        }
-
-        return $distribution;
     }
 }
