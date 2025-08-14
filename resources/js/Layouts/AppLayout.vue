@@ -51,6 +51,36 @@ const logout = () => {
                                 <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
                                     Dashboard
                                 </NavLink>
+                                
+                                <!-- Clubs -->
+                                <NavLink :href="route('clubs.index')" :active="route().current('clubs.*')">
+                                    Clubs
+                                </NavLink>
+                                
+                                <!-- Teams -->
+                                <NavLink :href="route('teams.index')" :active="route().current('teams.*')">
+                                    Teams
+                                </NavLink>
+                                
+                                <!-- Spieler -->
+                                <NavLink :href="route('players.index')" :active="route().current('players.*')">
+                                    Spieler
+                                </NavLink>
+                                
+                                <!-- Spiele -->
+                                <NavLink :href="route('games.index')" :active="route().current('games.*')">
+                                    Spiele
+                                </NavLink>
+                                
+                                <!-- Training -->
+                                <NavLink :href="route('training.index')" :active="route().current('training.*')">
+                                    Training
+                                </NavLink>
+                                
+                                <!-- Statistiken -->
+                                <NavLink :href="route('statistics.index')" :active="route().current('statistics.*')">
+                                    Statistiken
+                                </NavLink>
                             </div>
                         </div>
 
@@ -193,6 +223,36 @@ const logout = () => {
                     <div class="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Dashboard
+                        </ResponsiveNavLink>
+                        
+                        <!-- Clubs -->
+                        <ResponsiveNavLink :href="route('clubs.index')" :active="route().current('clubs.*')">
+                            Clubs
+                        </ResponsiveNavLink>
+                        
+                        <!-- Teams -->
+                        <ResponsiveNavLink :href="route('teams.index')" :active="route().current('teams.*')">
+                            Teams
+                        </ResponsiveNavLink>
+                        
+                        <!-- Spieler -->
+                        <ResponsiveNavLink :href="route('players.index')" :active="route().current('players.*')">
+                            Spieler
+                        </ResponsiveNavLink>
+                        
+                        <!-- Spiele -->
+                        <ResponsiveNavLink :href="route('games.index')" :active="route().current('games.*')">
+                            Spiele
+                        </ResponsiveNavLink>
+                        
+                        <!-- Training -->
+                        <ResponsiveNavLink :href="route('training.index')" :active="route().current('training.*')">
+                            Training
+                        </ResponsiveNavLink>
+                        
+                        <!-- Statistiken -->
+                        <ResponsiveNavLink :href="route('statistics.index')" :active="route().current('statistics.*')">
+                            Statistiken
                         </ResponsiveNavLink>
                     </div>
 

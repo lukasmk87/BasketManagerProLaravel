@@ -26,6 +26,34 @@ Route::middleware([
 ])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
+    // Clubs Routes
+    Route::resource('clubs', \App\Http\Controllers\ClubController::class);
+    
+    // Teams Routes
+    Route::resource('teams', \App\Http\Controllers\TeamController::class);
+    
+    // Players Routes
+    Route::resource('players', \App\Http\Controllers\PlayerController::class);
+    
+    // Games Routes
+    Route::resource('games', \App\Http\Controllers\GameController::class);
+    
+    // Training Routes
+    Route::prefix('training')->name('training.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\TrainingController::class, 'index'])->name('index');
+        Route::get('/sessions', [\App\Http\Controllers\TrainingController::class, 'sessions'])->name('sessions');
+        Route::get('/drills', [\App\Http\Controllers\TrainingController::class, 'drills'])->name('drills');
+        Route::get('/sessions/{session}', [\App\Http\Controllers\TrainingController::class, 'showSession'])->name('sessions.show');
+    });
+    
+    // Statistics Routes
+    Route::prefix('statistics')->name('statistics.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\StatisticsController::class, 'index'])->name('index');
+        Route::get('/teams', [\App\Http\Controllers\StatisticsController::class, 'teams'])->name('teams');
+        Route::get('/players', [\App\Http\Controllers\StatisticsController::class, 'players'])->name('players');
+        Route::get('/games', [\App\Http\Controllers\StatisticsController::class, 'games'])->name('games');
+    });
+    
     // Live Scoring Routes
     Route::prefix('games')->name('games.')->group(function () {
         Route::get('/{game}/live-scoring', [\App\Http\Controllers\LiveScoringController::class, 'show'])
