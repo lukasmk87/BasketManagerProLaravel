@@ -506,35 +506,6 @@ class EmergencyAccessService
         ];
     }
 
-    /**
-     * Get emergency instructions for a team
-     *
-     * @param Team $team
-     * @return array
-     */
-    public function getEmergencyInstructions(Team $team): array
-    {
-        return [
-            'emergency_numbers' => [
-                'ambulance' => '112',
-                'fire' => '112',
-                'police' => '110',
-            ],
-            'team_specific' => [
-                'venue_address' => $team->primary_venue_address ?? 'Address not provided',
-                'nearest_hospital' => $team->nearest_hospital ?? 'Please locate nearest hospital',
-                'team_emergency_contact' => $team->emergency_contact_info ?? null,
-            ],
-            'instructions' => [
-                'Stay calm and assess the situation',
-                'Call emergency services (112) if life-threatening',
-                'Contact the person\'s emergency contacts',
-                'Provide clear location information',
-                'Stay with the person until help arrives',
-                'Document what happened for follow-up',
-            ],
-        ];
-    }
 
     /**
      * Format phone number for display
