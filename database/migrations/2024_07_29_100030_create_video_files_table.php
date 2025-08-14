@@ -107,7 +107,10 @@ return new class extends Migration
             $table->index(['uploaded_by_user_id', 'visibility']);
             $table->index(['processing_status', 'created_at']);
             $table->index('recorded_at');
-            $table->fullText(['title', 'description']);
+            // Fulltext index only for MySQL/PostgreSQL, not SQLite
+            if (config('database.default') !== 'sqlite') {
+                $table->fullText(['title', 'description']);
+            }
         });
     }
 

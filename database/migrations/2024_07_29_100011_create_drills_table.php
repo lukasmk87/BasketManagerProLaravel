@@ -91,7 +91,11 @@ return new class extends Migration
             $table->index(['age_group', 'status']);
             $table->index(['is_public', 'status']);
             $table->index('usage_count');
-            $table->fullText(['name', 'description', 'search_keywords']);
+            
+            // Fulltext index only for MySQL/PostgreSQL, not SQLite
+            if (config('database.default') !== 'sqlite') {
+                $table->fullText(['name', 'description', 'search_keywords']);
+            }
         });
     }
 

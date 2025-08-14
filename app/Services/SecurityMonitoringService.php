@@ -201,7 +201,7 @@ class SecurityMonitoringService
     /**
      * Monitor authentication failures
      */
-    public function monitorAuthenticationFailures(Request $request, string $email = null): void
+    public function monitorAuthenticationFailures(Request $request, ?string $email = null): void
     {
         $ip = $request->ip();
         $cacheKey = "auth_failures:{$ip}";

@@ -70,7 +70,7 @@ class RateLimitException(ApiException):
 class BasketManagerProClient:
     """BasketManager Pro API Client"""
     
-    def __init__(self, api_key: str, base_url: str = "http://localhost/api", timeout: int = 30):
+    def __init__(self, api_key: str, base_url: str = "https://staging.basketmanager-pro.de//api", timeout: int = 30):
         """
         Initialize the API client
         
@@ -201,7 +201,7 @@ class Authentication:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/auth/login"
+        endpoint = f"/api/v1/auth/login"
         return self.client.request('POST', endpoint, **kwargs)
 
     def postauth_register(self, ) -> Dict[str, Any]:
@@ -211,7 +211,7 @@ class Authentication:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/auth/register"
+        endpoint = f"/api/v1/auth/register"
         return self.client.request('POST', endpoint, **kwargs)
 
     def postauth_logout(self, ) -> Dict[str, Any]:
@@ -221,7 +221,7 @@ class Authentication:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/auth/logout"
+        endpoint = f"/api/v1/auth/logout"
         return self.client.request('POST', endpoint, **kwargs)
 
     def postauth_refresh(self, ) -> Dict[str, Any]:
@@ -231,7 +231,7 @@ class Authentication:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/auth/refresh"
+        endpoint = f"/api/v1/auth/refresh"
         return self.client.request('POST', endpoint, **kwargs)
 
     def getauth_user(self, ) -> Dict[str, Any]:
@@ -241,7 +241,7 @@ class Authentication:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/auth/user"
+        endpoint = f"/api/v1/auth/user"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headauth_user(self, ) -> Dict[str, Any]:
@@ -251,8 +251,108 @@ class Authentication:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/auth/user"
+        endpoint = f"/api/v1/auth/user"
         return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postauth_login(self, ) -> Dict[str, Any]:
+        """
+        Login auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/login"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postauth_register(self, ) -> Dict[str, Any]:
+        """
+        Register auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/register"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postauth_logout(self, ) -> Dict[str, Any]:
+        """
+        Logout auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/logout"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postauth_refresh(self, ) -> Dict[str, Any]:
+        """
+        Refresh auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/refresh"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getauth_user(self, ) -> Dict[str, Any]:
+        """
+        User auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/user"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headauth_user(self, ) -> Dict[str, Any]:
+        """
+        User auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/user"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postauth_forgot_password(self, ) -> Dict[str, Any]:
+        """
+        ForgotPassword auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/forgot-password"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postauth_reset_password(self, ) -> Dict[str, Any]:
+        """
+        ResetPassword auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/reset-password"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postauth_verify_email(self, ) -> Dict[str, Any]:
+        """
+        VerifyEmail auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/verify-email"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postauth_resend_verification(self, ) -> Dict[str, Any]:
+        """
+        ResendVerification auth
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/auth/resend-verification"
+        return self.client.request('POST', endpoint, **kwargs)
 
 
 class Teams:
@@ -268,7 +368,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams"
+        endpoint = f"/api/v1/teams"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headteam_index(self, **kwargs) -> Dict[str, Any]:
@@ -278,7 +378,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams"
+        endpoint = f"/api/v1/teams"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def postteam_store(self, **kwargs) -> Dict[str, Any]:
@@ -288,7 +388,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams"
+        endpoint = f"/api/v1/teams"
         return self.client.request('POST', endpoint, **kwargs)
 
     def getteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -298,7 +398,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}"
+        endpoint = f"/api/v1/teams/{team}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -308,7 +408,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}"
+        endpoint = f"/api/v1/teams/{team}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def putteam_update(self, team: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -318,7 +418,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}"
+        endpoint = f"/api/v1/teams/{team}"
         return self.client.request('PUT', endpoint, **kwargs)
 
     def patchteam_update(self, team: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -328,18 +428,8 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}"
+        endpoint = f"/api/v1/teams/{team}"
         return self.client.request('PATCH', endpoint, **kwargs)
-
-    def deleteteam_destroy(self, team: Union[int, str]) -> Dict[str, Any]:
-        """
-        Delete team
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/teams/{team}"
-        return self.client.request('DELETE', endpoint, **kwargs)
 
     def getteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
         """
@@ -348,7 +438,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}/players"
+        endpoint = f"/api/v1/teams/{team}/players"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -358,7 +448,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}/players"
+        endpoint = f"/api/v1/teams/{team}/players"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -368,7 +458,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}/games"
+        endpoint = f"/api/v1/teams/{team}/games"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -378,27 +468,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}/games"
-        return self.client.request('HEAD', endpoint, **kwargs)
-
-    def getteam_statistics(self, team: Union[int, str]) -> Dict[str, Any]:
-        """
-        Statistics team
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/teams/{team}/statistics"
-        return self.client.request('GET', endpoint, **kwargs)
-
-    def headteam_statistics(self, team: Union[int, str]) -> Dict[str, Any]:
-        """
-        Statistics team
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/teams/{team}/statistics"
+        endpoint = f"/api/v1/teams/{team}/games"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -408,7 +478,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/teams/{team}"
+        endpoint = f"/api/v1/public/teams/{team}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -418,7 +488,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/teams/{team}"
+        endpoint = f"/api/v1/public/teams/{team}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -428,7 +498,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/teams/{team}/players"
+        endpoint = f"/api/v1/public/teams/{team}/players"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -438,7 +508,107 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/teams/{team}/players"
+        endpoint = f"/api/v1/public/teams/{team}/players"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postteam_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putteam_update(self, team: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchteam_update(self, team: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deleteteam_destroy(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def getteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Players team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}/players"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Players team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}/players"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -448,7 +618,7 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/teams/{team}/games"
+        endpoint = f"/api/v4/teams/{team}/games"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -458,7 +628,157 @@ class Teams:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/teams/{team}/games"
+        endpoint = f"/api/v4/teams/{team}/games"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_statistics(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}/statistics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_statistics(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}/statistics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_analytics(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Analytics team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}/analytics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_analytics(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Analytics team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}/analytics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postteam_invite_player(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        InvitePlayer team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}/invite-player"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getteam_performance_trends(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        PerformanceTrends team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}/performance-trends"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_performance_trends(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        PerformanceTrends team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/teams/{team}/performance-trends"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/teams/{team}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_show(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/teams/{team}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Players team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/teams/{team}/players"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_players(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Players team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/teams/{team}/players"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/teams/{team}/games"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_games(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/teams/{team}/games"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getteam_public_stats(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        PublicStats team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/teams/{team}/public-stats"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headteam_public_stats(self, team: Union[int, str]) -> Dict[str, Any]:
+        """
+        PublicStats team
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/teams/{team}/public-stats"
         return self.client.request('HEAD', endpoint, **kwargs)
 
 
@@ -475,7 +795,7 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players"
+        endpoint = f"/api/v1/players"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headplayer_index(self, **kwargs) -> Dict[str, Any]:
@@ -485,7 +805,7 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players"
+        endpoint = f"/api/v1/players"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def postplayer_store(self, **kwargs) -> Dict[str, Any]:
@@ -495,7 +815,7 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players"
+        endpoint = f"/api/v1/players"
         return self.client.request('POST', endpoint, **kwargs)
 
     def getplayer_show(self, player: Union[int, str]) -> Dict[str, Any]:
@@ -505,7 +825,7 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players/{player}"
+        endpoint = f"/api/v1/players/{player}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headplayer_show(self, player: Union[int, str]) -> Dict[str, Any]:
@@ -515,7 +835,7 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players/{player}"
+        endpoint = f"/api/v1/players/{player}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def putplayer_update(self, player: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -525,7 +845,7 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players/{player}"
+        endpoint = f"/api/v1/players/{player}"
         return self.client.request('PUT', endpoint, **kwargs)
 
     def patchplayer_update(self, player: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -535,38 +855,8 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players/{player}"
+        endpoint = f"/api/v1/players/{player}"
         return self.client.request('PATCH', endpoint, **kwargs)
-
-    def deleteplayer_destroy(self, player: Union[int, str]) -> Dict[str, Any]:
-        """
-        Delete player
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/players/{player}"
-        return self.client.request('DELETE', endpoint, **kwargs)
-
-    def getplayer_statistics(self, player: Union[int, str]) -> Dict[str, Any]:
-        """
-        Statistics player
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/players/{player}/statistics"
-        return self.client.request('GET', endpoint, **kwargs)
-
-    def headplayer_statistics(self, player: Union[int, str]) -> Dict[str, Any]:
-        """
-        Statistics player
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/players/{player}/statistics"
-        return self.client.request('HEAD', endpoint, **kwargs)
 
     def getplayer_games(self, player: Union[int, str]) -> Dict[str, Any]:
         """
@@ -575,7 +865,7 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players/{player}/games"
+        endpoint = f"/api/v1/players/{player}/games"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headplayer_games(self, player: Union[int, str]) -> Dict[str, Any]:
@@ -585,7 +875,127 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players/{player}/games"
+        endpoint = f"/api/v1/players/{player}/games"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getplayer_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postplayer_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getplayer_show(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_show(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putplayer_update(self, player: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchplayer_update(self, player: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deleteplayer_destroy(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def getplayer_statistics(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/statistics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_statistics(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Statistics player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/statistics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getplayer_games(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/games"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_games(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Games player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/games"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def postplayer_transfer(self, player: Union[int, str]) -> Dict[str, Any]:
@@ -595,8 +1005,68 @@ class Players:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/players/{player}/transfer"
+        endpoint = f"/api/v4/players/{player}/transfer"
         return self.client.request('POST', endpoint, **kwargs)
+
+    def getplayer_analytics(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Analytics player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/analytics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_analytics(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        Analytics player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/analytics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getplayer_injury_risk(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        InjuryRisk player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/injury-risk"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_injury_risk(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        InjuryRisk player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/injury-risk"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getplayer_performance_predictions(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        PerformancePredictions player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/performance-predictions"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headplayer_performance_predictions(self, player: Union[int, str]) -> Dict[str, Any]:
+        """
+        PerformancePredictions player
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/players/{player}/performance-predictions"
+        return self.client.request('HEAD', endpoint, **kwargs)
 
 
 class Games:
@@ -612,7 +1082,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/games"
+        endpoint = f"/api/v1/games"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headgame_index(self, **kwargs) -> Dict[str, Any]:
@@ -622,7 +1092,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/games"
+        endpoint = f"/api/v1/games"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def postgame_store(self, **kwargs) -> Dict[str, Any]:
@@ -632,7 +1102,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/games"
+        endpoint = f"/api/v1/games"
         return self.client.request('POST', endpoint, **kwargs)
 
     def getgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
@@ -642,7 +1112,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/games/{game}"
+        endpoint = f"/api/v1/games/{game}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
@@ -652,7 +1122,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/games/{game}"
+        endpoint = f"/api/v1/games/{game}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def putgame_update(self, game: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -662,7 +1132,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/games/{game}"
+        endpoint = f"/api/v1/games/{game}"
         return self.client.request('PUT', endpoint, **kwargs)
 
     def patchgame_update(self, game: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -672,58 +1142,8 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/games/{game}"
+        endpoint = f"/api/v1/games/{game}"
         return self.client.request('PATCH', endpoint, **kwargs)
-
-    def deletegame_destroy(self, game: Union[int, str]) -> Dict[str, Any]:
-        """
-        Delete game
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/games/{game}"
-        return self.client.request('DELETE', endpoint, **kwargs)
-
-    def getgame_statistics(self, game: Union[int, str]) -> Dict[str, Any]:
-        """
-        Statistics game
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/games/{game}/statistics"
-        return self.client.request('GET', endpoint, **kwargs)
-
-    def headgame_statistics(self, game: Union[int, str]) -> Dict[str, Any]:
-        """
-        Statistics game
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/games/{game}/statistics"
-        return self.client.request('HEAD', endpoint, **kwargs)
-
-    def postgame_start(self, game: Union[int, str]) -> Dict[str, Any]:
-        """
-        Start game
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/games/{game}/start"
-        return self.client.request('POST', endpoint, **kwargs)
-
-    def postgame_finish(self, game: Union[int, str]) -> Dict[str, Any]:
-        """
-        Finish game
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/games/{game}/finish"
-        return self.client.request('POST', endpoint, **kwargs)
 
     def getgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
         """
@@ -732,7 +1152,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/games/{game}/live-score"
+        endpoint = f"/api/v1/games/{game}/live-score"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
@@ -742,117 +1162,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/games/{game}/live-score"
-        return self.client.request('HEAD', endpoint, **kwargs)
-
-    def getgame_statistic_index(self, **kwargs) -> Dict[str, Any]:
-        """
-        List all gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics"
-        return self.client.request('GET', endpoint, **kwargs)
-
-    def headgame_statistic_index(self, **kwargs) -> Dict[str, Any]:
-        """
-        List all gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics"
-        return self.client.request('HEAD', endpoint, **kwargs)
-
-    def postgame_statistic_store(self, **kwargs) -> Dict[str, Any]:
-        """
-        Create new gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics"
-        return self.client.request('POST', endpoint, **kwargs)
-
-    def getgame_statistic_show(self, game_statistic: Union[int, str]) -> Dict[str, Any]:
-        """
-        Get specific gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics/{game_statistic}"
-        return self.client.request('GET', endpoint, **kwargs)
-
-    def headgame_statistic_show(self, game_statistic: Union[int, str]) -> Dict[str, Any]:
-        """
-        Get specific gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics/{game_statistic}"
-        return self.client.request('HEAD', endpoint, **kwargs)
-
-    def putgame_statistic_update(self, game_statistic: Union[int, str], **kwargs) -> Dict[str, Any]:
-        """
-        Update gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics/{game_statistic}"
-        return self.client.request('PUT', endpoint, **kwargs)
-
-    def patchgame_statistic_update(self, game_statistic: Union[int, str], **kwargs) -> Dict[str, Any]:
-        """
-        Update gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics/{game_statistic}"
-        return self.client.request('PATCH', endpoint, **kwargs)
-
-    def deletegame_statistic_destroy(self, game_statistic: Union[int, str]) -> Dict[str, Any]:
-        """
-        Delete gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics/{game_statistic}"
-        return self.client.request('DELETE', endpoint, **kwargs)
-
-    def postgame_statistic_bulk_store(self, ) -> Dict[str, Any]:
-        """
-        BulkStore gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics/bulk"
-        return self.client.request('POST', endpoint, **kwargs)
-
-    def getgame_statistic_player_game_stats(self, game: Union[int, str], player: Union[int, str]) -> Dict[str, Any]:
-        """
-        PlayerGameStats gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics/{game}/player/{player}"
-        return self.client.request('GET', endpoint, **kwargs)
-
-    def headgame_statistic_player_game_stats(self, game: Union[int, str], player: Union[int, str]) -> Dict[str, Any]:
-        """
-        PlayerGameStats gamestatistic
-        
-        Returns:
-            Response data as dictionary
-        """
-        endpoint = f"/api/game-statistics/{game}/player/{player}"
+        endpoint = f"/api/v1/games/{game}/live-score"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
@@ -862,7 +1172,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/games/{game}"
+        endpoint = f"/api/v1/public/games/{game}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
@@ -872,7 +1182,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/games/{game}"
+        endpoint = f"/api/v1/public/games/{game}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
@@ -882,7 +1192,7 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/games/{game}/live-score"
+        endpoint = f"/api/v1/public/games/{game}/live-score"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
@@ -892,7 +1202,327 @@ class Games:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/games/{game}/live-score"
+        endpoint = f"/api/v1/public/games/{game}/live-score"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getgame_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postgame_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putgame_update(self, game: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchgame_update(self, game: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletegame_destroy(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def getgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveScore game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}/live-score"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveScore game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}/live-score"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getgame_real_time_data(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        RealTimeData game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}/real-time-data"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_real_time_data(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        RealTimeData game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}/real-time-data"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postgame_start_broadcast(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        StartBroadcast game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/games/{game}/broadcast"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getgame_statistic_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_statistic_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postgame_statistic_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getgame_statistic_show(self, game_statistic: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/{game_statistic}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_statistic_show(self, game_statistic: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/{game_statistic}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putgame_statistic_update(self, game_statistic: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/{game_statistic}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchgame_statistic_update(self, game_statistic: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/{game_statistic}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletegame_statistic_destroy(self, game_statistic: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/{game_statistic}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def postgame_statistic_bulk_store(self, ) -> Dict[str, Any]:
+        """
+        BulkStore gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/bulk"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getgame_statistic_player_game_stats(self, game: Union[int, str], player: Union[int, str]) -> Dict[str, Any]:
+        """
+        PlayerGameStats gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/{game}/player/{player}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_statistic_player_game_stats(self, game: Union[int, str], player: Union[int, str]) -> Dict[str, Any]:
+        """
+        PlayerGameStats gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/{game}/player/{player}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getgame_statistic_advanced_metrics(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        AdvancedMetrics gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/{game}/advanced-metrics"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_statistic_advanced_metrics(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        AdvancedMetrics gamestatistic
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/game-statistics/{game}/advanced-metrics"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/games/{game}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_show(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/games/{game}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveScore game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/games/{game}/live-score"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_live_score(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveScore game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/games/{game}/live-score"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getgame_live_feed(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveFeed game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/games/{game}/live-feed"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headgame_live_feed(self, game: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveFeed game
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/games/{game}/live-feed"
         return self.client.request('HEAD', endpoint, **kwargs)
 
 
@@ -909,7 +1539,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments"
+        endpoint = f"/api/v4/tournaments"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtournament_index(self, **kwargs) -> Dict[str, Any]:
@@ -919,7 +1549,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments"
+        endpoint = f"/api/v4/tournaments"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def posttournament_store(self, **kwargs) -> Dict[str, Any]:
@@ -929,7 +1559,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments"
+        endpoint = f"/api/v4/tournaments"
         return self.client.request('POST', endpoint, **kwargs)
 
     def gettournament_show(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -939,7 +1569,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}"
+        endpoint = f"/api/v4/tournaments/{tournament}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtournament_show(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -949,7 +1579,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}"
+        endpoint = f"/api/v4/tournaments/{tournament}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def puttournament_update(self, tournament: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -959,7 +1589,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}"
+        endpoint = f"/api/v4/tournaments/{tournament}"
         return self.client.request('PUT', endpoint, **kwargs)
 
     def patchtournament_update(self, tournament: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -969,7 +1599,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}"
+        endpoint = f"/api/v4/tournaments/{tournament}"
         return self.client.request('PATCH', endpoint, **kwargs)
 
     def deletetournament_destroy(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -979,7 +1609,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}"
+        endpoint = f"/api/v4/tournaments/{tournament}"
         return self.client.request('DELETE', endpoint, **kwargs)
 
     def posttournament_add_team(self, tournament: Union[int, str], team: Union[int, str]) -> Dict[str, Any]:
@@ -989,7 +1619,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/teams/{team}"
+        endpoint = f"/api/v4/tournaments/{tournament}/teams/{team}"
         return self.client.request('POST', endpoint, **kwargs)
 
     def deletetournament_remove_team(self, tournament: Union[int, str], team: Union[int, str]) -> Dict[str, Any]:
@@ -999,7 +1629,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/teams/{team}"
+        endpoint = f"/api/v4/tournaments/{tournament}/teams/{team}"
         return self.client.request('DELETE', endpoint, **kwargs)
 
     def posttournament_generate_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1009,7 +1639,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/generate-bracket"
+        endpoint = f"/api/v4/tournaments/{tournament}/generate-bracket"
         return self.client.request('POST', endpoint, **kwargs)
 
     def posttournament_advance_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1019,7 +1649,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/advance-bracket"
+        endpoint = f"/api/v4/tournaments/{tournament}/advance-bracket"
         return self.client.request('POST', endpoint, **kwargs)
 
     def gettournament_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1029,7 +1659,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/bracket"
+        endpoint = f"/api/v4/tournaments/{tournament}/bracket"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtournament_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1039,7 +1669,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/bracket"
+        endpoint = f"/api/v4/tournaments/{tournament}/bracket"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def gettournament_standings(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1049,7 +1679,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/standings"
+        endpoint = f"/api/v4/tournaments/{tournament}/standings"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtournament_standings(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1059,7 +1689,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/standings"
+        endpoint = f"/api/v4/tournaments/{tournament}/standings"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def posttournament_start(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1069,7 +1699,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/start"
+        endpoint = f"/api/v4/tournaments/{tournament}/start"
         return self.client.request('POST', endpoint, **kwargs)
 
     def posttournament_finish(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1079,7 +1709,37 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/tournaments/{tournament}/finish"
+        endpoint = f"/api/v4/tournaments/{tournament}/finish"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def gettournament_predictions(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Predictions tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/tournaments/{tournament}/predictions"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtournament_predictions(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        Predictions tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/tournaments/{tournament}/predictions"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def posttournament_setup_live_stream(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        SetupLiveStream tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/tournaments/{tournament}/live-stream"
         return self.client.request('POST', endpoint, **kwargs)
 
     def gettournament_show(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1089,7 +1749,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/tournaments/{tournament}"
+        endpoint = f"/api/v4/public/tournaments/{tournament}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtournament_show(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1099,7 +1759,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/tournaments/{tournament}"
+        endpoint = f"/api/v4/public/tournaments/{tournament}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def gettournament_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1109,7 +1769,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/tournaments/{tournament}/bracket"
+        endpoint = f"/api/v4/public/tournaments/{tournament}/bracket"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtournament_bracket(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1119,7 +1779,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/tournaments/{tournament}/bracket"
+        endpoint = f"/api/v4/public/tournaments/{tournament}/bracket"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def gettournament_standings(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1129,7 +1789,7 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/tournaments/{tournament}/standings"
+        endpoint = f"/api/v4/public/tournaments/{tournament}/standings"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtournament_standings(self, tournament: Union[int, str]) -> Dict[str, Any]:
@@ -1139,7 +1799,27 @@ class Tournaments:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/public/tournaments/{tournament}/standings"
+        endpoint = f"/api/v4/public/tournaments/{tournament}/standings"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def gettournament_live_feed(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveFeed tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/tournaments/{tournament}/live-feed"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headtournament_live_feed(self, tournament: Union[int, str]) -> Dict[str, Any]:
+        """
+        LiveFeed tournament
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/public/tournaments/{tournament}/live-feed"
         return self.client.request('HEAD', endpoint, **kwargs)
 
 
@@ -1156,7 +1836,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings"
+        endpoint = f"/api/v4/trainings"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtraining_index(self, **kwargs) -> Dict[str, Any]:
@@ -1166,7 +1846,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings"
+        endpoint = f"/api/v4/trainings"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def posttraining_store(self, **kwargs) -> Dict[str, Any]:
@@ -1176,7 +1856,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings"
+        endpoint = f"/api/v4/trainings"
         return self.client.request('POST', endpoint, **kwargs)
 
     def gettraining_show(self, training: Union[int, str]) -> Dict[str, Any]:
@@ -1186,7 +1866,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}"
+        endpoint = f"/api/v4/trainings/{training}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtraining_show(self, training: Union[int, str]) -> Dict[str, Any]:
@@ -1196,7 +1876,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}"
+        endpoint = f"/api/v4/trainings/{training}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def puttraining_update(self, training: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -1206,7 +1886,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}"
+        endpoint = f"/api/v4/trainings/{training}"
         return self.client.request('PUT', endpoint, **kwargs)
 
     def patchtraining_update(self, training: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -1216,7 +1896,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}"
+        endpoint = f"/api/v4/trainings/{training}"
         return self.client.request('PATCH', endpoint, **kwargs)
 
     def deletetraining_destroy(self, training: Union[int, str]) -> Dict[str, Any]:
@@ -1226,7 +1906,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}"
+        endpoint = f"/api/v4/trainings/{training}"
         return self.client.request('DELETE', endpoint, **kwargs)
 
     def gettraining_drills(self, training: Union[int, str]) -> Dict[str, Any]:
@@ -1236,7 +1916,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}/drills"
+        endpoint = f"/api/v4/trainings/{training}/drills"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtraining_drills(self, training: Union[int, str]) -> Dict[str, Any]:
@@ -1246,7 +1926,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}/drills"
+        endpoint = f"/api/v4/trainings/{training}/drills"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def posttraining_attach_drill(self, training: Union[int, str], drill: Union[int, str]) -> Dict[str, Any]:
@@ -1256,7 +1936,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}/drills/{drill}/attach"
+        endpoint = f"/api/v4/trainings/{training}/drills/{drill}/attach"
         return self.client.request('POST', endpoint, **kwargs)
 
     def deletetraining_detach_drill(self, training: Union[int, str], drill: Union[int, str]) -> Dict[str, Any]:
@@ -1266,7 +1946,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}/drills/{drill}/detach"
+        endpoint = f"/api/v4/trainings/{training}/drills/{drill}/detach"
         return self.client.request('DELETE', endpoint, **kwargs)
 
     def gettraining_team_trainings(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -1276,7 +1956,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}/trainings"
+        endpoint = f"/api/v4/teams/{team}/trainings"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headtraining_team_trainings(self, team: Union[int, str]) -> Dict[str, Any]:
@@ -1286,7 +1966,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/teams/{team}/trainings"
+        endpoint = f"/api/v4/teams/{team}/trainings"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def posttraining_duplicate(self, training: Union[int, str]) -> Dict[str, Any]:
@@ -1296,7 +1976,17 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/trainings/{training}/duplicate"
+        endpoint = f"/api/v4/trainings/{training}/duplicate"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def posttraining_ai_recommendations(self, training: Union[int, str]) -> Dict[str, Any]:
+        """
+        AiRecommendations training
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/trainings/{training}/ai-recommendations"
         return self.client.request('POST', endpoint, **kwargs)
 
     def getdrill_index(self, **kwargs) -> Dict[str, Any]:
@@ -1306,7 +1996,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills"
+        endpoint = f"/api/v4/drills"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headdrill_index(self, **kwargs) -> Dict[str, Any]:
@@ -1316,7 +2006,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills"
+        endpoint = f"/api/v4/drills"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def postdrill_store(self, **kwargs) -> Dict[str, Any]:
@@ -1326,7 +2016,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills"
+        endpoint = f"/api/v4/drills"
         return self.client.request('POST', endpoint, **kwargs)
 
     def getdrill_show(self, drill: Union[int, str]) -> Dict[str, Any]:
@@ -1336,7 +2026,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/{drill}"
+        endpoint = f"/api/v4/drills/{drill}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headdrill_show(self, drill: Union[int, str]) -> Dict[str, Any]:
@@ -1346,7 +2036,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/{drill}"
+        endpoint = f"/api/v4/drills/{drill}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def putdrill_update(self, drill: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -1356,7 +2046,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/{drill}"
+        endpoint = f"/api/v4/drills/{drill}"
         return self.client.request('PUT', endpoint, **kwargs)
 
     def patchdrill_update(self, drill: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -1366,7 +2056,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/{drill}"
+        endpoint = f"/api/v4/drills/{drill}"
         return self.client.request('PATCH', endpoint, **kwargs)
 
     def deletedrill_destroy(self, drill: Union[int, str]) -> Dict[str, Any]:
@@ -1376,7 +2066,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/{drill}"
+        endpoint = f"/api/v4/drills/{drill}"
         return self.client.request('DELETE', endpoint, **kwargs)
 
     def getdrill_search(self, ) -> Dict[str, Any]:
@@ -1386,7 +2076,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/search"
+        endpoint = f"/api/v4/drills/search"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headdrill_search(self, ) -> Dict[str, Any]:
@@ -1396,7 +2086,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/search"
+        endpoint = f"/api/v4/drills/search"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getdrill_categories(self, ) -> Dict[str, Any]:
@@ -1406,7 +2096,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/categories"
+        endpoint = f"/api/v4/drills/categories"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headdrill_categories(self, ) -> Dict[str, Any]:
@@ -1416,7 +2106,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/categories"
+        endpoint = f"/api/v4/drills/categories"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getdrill_by_category(self, category: Union[int, str]) -> Dict[str, Any]:
@@ -1426,7 +2116,7 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/category/{category}"
+        endpoint = f"/api/v4/drills/category/{category}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headdrill_by_category(self, category: Union[int, str]) -> Dict[str, Any]:
@@ -1436,8 +2126,38 @@ class Training:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/drills/category/{category}"
+        endpoint = f"/api/v4/drills/category/{category}"
         return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getdrill_ai_generated(self, ) -> Dict[str, Any]:
+        """
+        AiGenerated drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/drills/ai-generated"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headdrill_ai_generated(self, ) -> Dict[str, Any]:
+        """
+        AiGenerated drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/drills/ai-generated"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postdrill_rate_effectiveness(self, drill: Union[int, str]) -> Dict[str, Any]:
+        """
+        RateEffectiveness drill
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/drills/{drill}/effectiveness-rating"
+        return self.client.request('POST', endpoint, **kwargs)
 
 
 class Analytics:
@@ -1453,7 +2173,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/dashboard-overview"
+        endpoint = f"/api/v4/ml-analytics/dashboard-overview"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headm_l_analytics_get_dashboard_overview(self, ) -> Dict[str, Any]:
@@ -1463,7 +2183,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/dashboard-overview"
+        endpoint = f"/api/v4/ml-analytics/dashboard-overview"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getm_l_analytics_get_player_performance_dashboard(self, ) -> Dict[str, Any]:
@@ -1473,7 +2193,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/performance-dashboard"
+        endpoint = f"/api/v4/ml-analytics/performance-dashboard"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headm_l_analytics_get_player_performance_dashboard(self, ) -> Dict[str, Any]:
@@ -1483,7 +2203,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/performance-dashboard"
+        endpoint = f"/api/v4/ml-analytics/performance-dashboard"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getm_l_analytics_get_injury_risk_dashboard(self, ) -> Dict[str, Any]:
@@ -1493,7 +2213,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/injury-dashboard"
+        endpoint = f"/api/v4/ml-analytics/injury-dashboard"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headm_l_analytics_get_injury_risk_dashboard(self, ) -> Dict[str, Any]:
@@ -1503,7 +2223,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/injury-dashboard"
+        endpoint = f"/api/v4/ml-analytics/injury-dashboard"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getm_l_analytics_get_experiment_dashboard(self, ) -> Dict[str, Any]:
@@ -1513,7 +2233,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/experiment-dashboard"
+        endpoint = f"/api/v4/ml-analytics/experiment-dashboard"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headm_l_analytics_get_experiment_dashboard(self, ) -> Dict[str, Any]:
@@ -1523,7 +2243,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/experiment-dashboard"
+        endpoint = f"/api/v4/ml-analytics/experiment-dashboard"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getm_l_analytics_get_predictions_timeline(self, ) -> Dict[str, Any]:
@@ -1533,7 +2253,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/predictions-timeline"
+        endpoint = f"/api/v4/ml-analytics/predictions-timeline"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headm_l_analytics_get_predictions_timeline(self, ) -> Dict[str, Any]:
@@ -1543,7 +2263,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/predictions-timeline"
+        endpoint = f"/api/v4/ml-analytics/predictions-timeline"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getm_l_analytics_get_model_accuracy(self, ) -> Dict[str, Any]:
@@ -1553,7 +2273,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/model-accuracy"
+        endpoint = f"/api/v4/ml-analytics/model-accuracy"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headm_l_analytics_get_model_accuracy(self, ) -> Dict[str, Any]:
@@ -1563,7 +2283,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/model-accuracy"
+        endpoint = f"/api/v4/ml-analytics/model-accuracy"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getm_l_analytics_get_prediction_comparison(self, ) -> Dict[str, Any]:
@@ -1573,7 +2293,7 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/prediction-comparison"
+        endpoint = f"/api/v4/ml-analytics/prediction-comparison"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headm_l_analytics_get_prediction_comparison(self, ) -> Dict[str, Any]:
@@ -1583,7 +2303,77 @@ class Analytics:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/ml-analytics/prediction-comparison"
+        endpoint = f"/api/v4/ml-analytics/prediction-comparison"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getm_l_analytics_team_chemistry_analysis(self, ) -> Dict[str, Any]:
+        """
+        TeamChemistryAnalysis mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/ml-analytics/team-chemistry-analysis"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_team_chemistry_analysis(self, ) -> Dict[str, Any]:
+        """
+        TeamChemistryAnalysis mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/ml-analytics/team-chemistry-analysis"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def getm_l_analytics_opponent_scouting(self, ) -> Dict[str, Any]:
+        """
+        OpponentScouting mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/ml-analytics/opponent-scouting"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_opponent_scouting(self, ) -> Dict[str, Any]:
+        """
+        OpponentScouting mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/ml-analytics/opponent-scouting"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postm_l_analytics_train_custom_model(self, ) -> Dict[str, Any]:
+        """
+        TrainCustomModel mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/ml-analytics/custom-model/train"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getm_l_analytics_explain_prediction(self, prediction: Union[int, str]) -> Dict[str, Any]:
+        """
+        ExplainPrediction mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/ml-analytics/prediction-explanations/{prediction}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headm_l_analytics_explain_prediction(self, prediction: Union[int, str]) -> Dict[str, Any]:
+        """
+        ExplainPrediction mlanalytics
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/ml-analytics/prediction-explanations/{prediction}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
 
@@ -1600,7 +2390,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos"
+        endpoint = f"/api/v4/videos"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headvideo_file_index(self, **kwargs) -> Dict[str, Any]:
@@ -1610,7 +2400,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos"
+        endpoint = f"/api/v4/videos"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def postvideo_file_store(self, **kwargs) -> Dict[str, Any]:
@@ -1620,7 +2410,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos"
+        endpoint = f"/api/v4/videos"
         return self.client.request('POST', endpoint, **kwargs)
 
     def getvideo_file_show(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1630,7 +2420,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}"
+        endpoint = f"/api/v4/videos/{video}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headvideo_file_show(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1640,7 +2430,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}"
+        endpoint = f"/api/v4/videos/{video}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def putvideo_file_update(self, video: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -1650,7 +2440,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}"
+        endpoint = f"/api/v4/videos/{video}"
         return self.client.request('PUT', endpoint, **kwargs)
 
     def patchvideo_file_update(self, video: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -1660,7 +2450,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}"
+        endpoint = f"/api/v4/videos/{video}"
         return self.client.request('PATCH', endpoint, **kwargs)
 
     def deletevideo_file_destroy(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1670,7 +2460,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}"
+        endpoint = f"/api/v4/videos/{video}"
         return self.client.request('DELETE', endpoint, **kwargs)
 
     def postvideo_file_process(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1680,7 +2470,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}/process"
+        endpoint = f"/api/v4/videos/{video}/process"
         return self.client.request('POST', endpoint, **kwargs)
 
     def getvideo_file_download(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1690,7 +2480,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}/download"
+        endpoint = f"/api/v4/videos/{video}/download"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headvideo_file_download(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1700,7 +2490,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}/download"
+        endpoint = f"/api/v4/videos/{video}/download"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def getvideo_file_stream(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1710,7 +2500,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}/stream"
+        endpoint = f"/api/v4/videos/{video}/stream"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headvideo_file_stream(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1720,7 +2510,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}/stream"
+        endpoint = f"/api/v4/videos/{video}/stream"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def postvideo_file_analyze(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1730,8 +2520,38 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}/analyze"
+        endpoint = f"/api/v4/videos/{video}/analyze"
         return self.client.request('POST', endpoint, **kwargs)
+
+    def postvideo_file_ai_analysis(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        AiAnalysis videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/videos/{video}/ai-analysis"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getvideo_file_auto_highlights(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        AutoHighlights videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/videos/{video}/highlights"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headvideo_file_auto_highlights(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        AutoHighlights videofile
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/videos/{video}/highlights"
+        return self.client.request('HEAD', endpoint, **kwargs)
 
     def getvideo_annotation_index(self, **kwargs) -> Dict[str, Any]:
         """
@@ -1740,7 +2560,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/video-annotations"
+        endpoint = f"/api/v4/video-annotations"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headvideo_annotation_index(self, **kwargs) -> Dict[str, Any]:
@@ -1750,7 +2570,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/video-annotations"
+        endpoint = f"/api/v4/video-annotations"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def postvideo_annotation_store(self, **kwargs) -> Dict[str, Any]:
@@ -1760,7 +2580,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/video-annotations"
+        endpoint = f"/api/v4/video-annotations"
         return self.client.request('POST', endpoint, **kwargs)
 
     def getvideo_annotation_show(self, video_annotation: Union[int, str]) -> Dict[str, Any]:
@@ -1770,7 +2590,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/video-annotations/{video_annotation}"
+        endpoint = f"/api/v4/video-annotations/{video_annotation}"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headvideo_annotation_show(self, video_annotation: Union[int, str]) -> Dict[str, Any]:
@@ -1780,7 +2600,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/video-annotations/{video_annotation}"
+        endpoint = f"/api/v4/video-annotations/{video_annotation}"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def putvideo_annotation_update(self, video_annotation: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -1790,7 +2610,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/video-annotations/{video_annotation}"
+        endpoint = f"/api/v4/video-annotations/{video_annotation}"
         return self.client.request('PUT', endpoint, **kwargs)
 
     def patchvideo_annotation_update(self, video_annotation: Union[int, str], **kwargs) -> Dict[str, Any]:
@@ -1800,7 +2620,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/video-annotations/{video_annotation}"
+        endpoint = f"/api/v4/video-annotations/{video_annotation}"
         return self.client.request('PATCH', endpoint, **kwargs)
 
     def deletevideo_annotation_destroy(self, video_annotation: Union[int, str]) -> Dict[str, Any]:
@@ -1810,7 +2630,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/video-annotations/{video_annotation}"
+        endpoint = f"/api/v4/video-annotations/{video_annotation}"
         return self.client.request('DELETE', endpoint, **kwargs)
 
     def getvideo_annotation_video_annotations(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1820,7 +2640,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}/annotations"
+        endpoint = f"/api/v4/videos/{video}/annotations"
         return self.client.request('GET', endpoint, **kwargs)
 
     def headvideo_annotation_video_annotations(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1830,7 +2650,7 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}/annotations"
+        endpoint = f"/api/v4/videos/{video}/annotations"
         return self.client.request('HEAD', endpoint, **kwargs)
 
     def postvideo_annotation_bulk_store(self, video: Union[int, str]) -> Dict[str, Any]:
@@ -1840,7 +2660,17 @@ class Videos:
         Returns:
             Response data as dictionary
         """
-        endpoint = f"/api/videos/{video}/annotations/bulk"
+        endpoint = f"/api/v4/videos/{video}/annotations/bulk"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def postvideo_annotation_ai_generate(self, video: Union[int, str]) -> Dict[str, Any]:
+        """
+        AiGenerate videoannotation
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/videos/{video}/annotations/ai-generate"
         return self.client.request('POST', endpoint, **kwargs)
 
 
@@ -1856,6 +2686,126 @@ class Webhooks:
     
     def __init__(self, client: BasketManagerProClient):
         self.client = client
+
+    def getv4_webhook_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headv4_webhook_index(self, **kwargs) -> Dict[str, Any]:
+        """
+        List all webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postv4_webhook_store(self, **kwargs) -> Dict[str, Any]:
+        """
+        Create new webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getv4_webhook_show(self, webhook: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks/{webhook}"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headv4_webhook_show(self, webhook: Union[int, str]) -> Dict[str, Any]:
+        """
+        Get specific webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks/{webhook}"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def putv4_webhook_update(self, webhook: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks/{webhook}"
+        return self.client.request('PUT', endpoint, **kwargs)
+
+    def patchv4_webhook_update(self, webhook: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """
+        Update webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks/{webhook}"
+        return self.client.request('PATCH', endpoint, **kwargs)
+
+    def deletev4_webhook_destroy(self, webhook: Union[int, str]) -> Dict[str, Any]:
+        """
+        Delete webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks/{webhook}"
+        return self.client.request('DELETE', endpoint, **kwargs)
+
+    def postv4_webhook_test(self, webhook: Union[int, str]) -> Dict[str, Any]:
+        """
+        Test webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks/{webhook}/test"
+        return self.client.request('POST', endpoint, **kwargs)
+
+    def getv4_webhook_deliveries(self, webhook: Union[int, str]) -> Dict[str, Any]:
+        """
+        Deliveries webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks/{webhook}/deliveries"
+        return self.client.request('GET', endpoint, **kwargs)
+
+    def headv4_webhook_deliveries(self, webhook: Union[int, str]) -> Dict[str, Any]:
+        """
+        Deliveries webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks/{webhook}/deliveries"
+        return self.client.request('HEAD', endpoint, **kwargs)
+
+    def postv4_webhook_redeliver(self, webhook: Union[int, str], delivery: Union[int, str]) -> Dict[str, Any]:
+        """
+        Redeliver webhook
+        
+        Returns:
+            Response data as dictionary
+        """
+        endpoint = f"/api/v4/webhooks/{webhook}/deliveries/{delivery}/redeliver"
+        return self.client.request('POST', endpoint, **kwargs)
 
 
 class ExternalAPIs:

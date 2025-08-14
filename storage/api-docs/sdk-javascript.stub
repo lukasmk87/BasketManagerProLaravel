@@ -36,7 +36,7 @@
          * @param {string} baseUrl - Optional custom base URL
          * @param {Object} options - Additional axios options
          */
-        constructor(apiKey, baseUrl = 'http://localhost/api', options = {}) {
+        constructor(apiKey, baseUrl = 'https://staging.basketmanager-pro.de//api', options = {}) {
             this.apiKey = apiKey;
             this.baseUrl = baseUrl.replace(/\/$/, '');
             this.sdkVersion = '1.0.0';
@@ -180,7 +180,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postauthLogin() {
-            return await this.client.request('POST', `/api/auth/login`, {});
+            return await this.client.request('POST', `/api/v1/auth/login`, {});
         }
 
         /**
@@ -190,7 +190,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postauthRegister() {
-            return await this.client.request('POST', `/api/auth/register`, {});
+            return await this.client.request('POST', `/api/v1/auth/register`, {});
         }
 
         /**
@@ -200,7 +200,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postauthLogout() {
-            return await this.client.request('POST', `/api/auth/logout`, {});
+            return await this.client.request('POST', `/api/v1/auth/logout`, {});
         }
 
         /**
@@ -210,7 +210,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postauthRefresh() {
-            return await this.client.request('POST', `/api/auth/refresh`, {});
+            return await this.client.request('POST', `/api/v1/auth/refresh`, {});
         }
 
         /**
@@ -220,7 +220,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getauthUser() {
-            return await this.client.request('GET', `/api/auth/user`, {});
+            return await this.client.request('GET', `/api/v1/auth/user`, {});
         }
 
         /**
@@ -230,7 +230,107 @@
          * @returns {Promise<Object>} Response data
          */
         async headauthUser() {
-            return await this.client.request('HEAD', `/api/auth/user`, {});
+            return await this.client.request('HEAD', `/api/v1/auth/user`, {});
+        }
+
+        /**
+         * Login auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthLogin() {
+            return await this.client.request('POST', `/api/v4/auth/login`, {});
+        }
+
+        /**
+         * Register auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthRegister() {
+            return await this.client.request('POST', `/api/v4/auth/register`, {});
+        }
+
+        /**
+         * Logout auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthLogout() {
+            return await this.client.request('POST', `/api/v4/auth/logout`, {});
+        }
+
+        /**
+         * Refresh auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthRefresh() {
+            return await this.client.request('POST', `/api/v4/auth/refresh`, {});
+        }
+
+        /**
+         * User auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getauthUser() {
+            return await this.client.request('GET', `/api/v4/auth/user`, {});
+        }
+
+        /**
+         * User auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headauthUser() {
+            return await this.client.request('HEAD', `/api/v4/auth/user`, {});
+        }
+
+        /**
+         * ForgotPassword auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthForgotPassword() {
+            return await this.client.request('POST', `/api/v4/auth/forgot-password`, {});
+        }
+
+        /**
+         * ResetPassword auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthResetPassword() {
+            return await this.client.request('POST', `/api/v4/auth/reset-password`, {});
+        }
+
+        /**
+         * VerifyEmail auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthVerifyEmail() {
+            return await this.client.request('POST', `/api/v4/auth/verify-email`, {});
+        }
+
+        /**
+         * ResendVerification auth
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postauthResendVerification() {
+            return await this.client.request('POST', `/api/v4/auth/resend-verification`, {});
         }
 
     }
@@ -250,7 +350,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getteamIndex(options = {}) {
-            return await this.client.request('GET', `/api/teams`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('GET', `/api/v1/teams`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -260,7 +360,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headteamIndex(options = {}) {
-            return await this.client.request('HEAD', `/api/teams`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('HEAD', `/api/v1/teams`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -270,7 +370,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postteamStore(options = {}) {
-            return await this.client.request('POST', `/api/teams`, { data: options.data || options });
+            return await this.client.request('POST', `/api/v1/teams`, { data: options.data || options });
         }
 
         /**
@@ -280,7 +380,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getteamShow(team) {
-            return await this.client.request('GET', `/api/teams/${team}`, {});
+            return await this.client.request('GET', `/api/v1/teams/${team}`, {});
         }
 
         /**
@@ -290,7 +390,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headteamShow(team) {
-            return await this.client.request('HEAD', `/api/teams/${team}`, {});
+            return await this.client.request('HEAD', `/api/v1/teams/${team}`, {});
         }
 
         /**
@@ -300,7 +400,7 @@
          * @returns {Promise<Object>} Response data
          */
         async putteamUpdate(team, options = {}) {
-            return await this.client.request('PUT', `/api/teams/${team}`, { data: options.data || options });
+            return await this.client.request('PUT', `/api/v1/teams/${team}`, { data: options.data || options });
         }
 
         /**
@@ -310,17 +410,7 @@
          * @returns {Promise<Object>} Response data
          */
         async patchteamUpdate(team, options = {}) {
-            return await this.client.request('PATCH', `/api/teams/${team}`, { data: options.data || options });
-        }
-
-        /**
-         * Delete team
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async deleteteamDestroy(team) {
-            return await this.client.request('DELETE', `/api/teams/${team}`, {});
+            return await this.client.request('PATCH', `/api/v1/teams/${team}`, { data: options.data || options });
         }
 
         /**
@@ -330,7 +420,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getteamPlayers(team) {
-            return await this.client.request('GET', `/api/teams/${team}/players`, {});
+            return await this.client.request('GET', `/api/v1/teams/${team}/players`, {});
         }
 
         /**
@@ -340,7 +430,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headteamPlayers(team) {
-            return await this.client.request('HEAD', `/api/teams/${team}/players`, {});
+            return await this.client.request('HEAD', `/api/v1/teams/${team}/players`, {});
         }
 
         /**
@@ -350,7 +440,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getteamGames(team) {
-            return await this.client.request('GET', `/api/teams/${team}/games`, {});
+            return await this.client.request('GET', `/api/v1/teams/${team}/games`, {});
         }
 
         /**
@@ -360,27 +450,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headteamGames(team) {
-            return await this.client.request('HEAD', `/api/teams/${team}/games`, {});
-        }
-
-        /**
-         * Statistics team
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async getteamStatistics(team) {
-            return await this.client.request('GET', `/api/teams/${team}/statistics`, {});
-        }
-
-        /**
-         * Statistics team
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async headteamStatistics(team) {
-            return await this.client.request('HEAD', `/api/teams/${team}/statistics`, {});
+            return await this.client.request('HEAD', `/api/v1/teams/${team}/games`, {});
         }
 
         /**
@@ -390,7 +460,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getteamShow(team) {
-            return await this.client.request('GET', `/api/public/teams/${team}`, {});
+            return await this.client.request('GET', `/api/v1/public/teams/${team}`, {});
         }
 
         /**
@@ -400,7 +470,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headteamShow(team) {
-            return await this.client.request('HEAD', `/api/public/teams/${team}`, {});
+            return await this.client.request('HEAD', `/api/v1/public/teams/${team}`, {});
         }
 
         /**
@@ -410,7 +480,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getteamPlayers(team) {
-            return await this.client.request('GET', `/api/public/teams/${team}/players`, {});
+            return await this.client.request('GET', `/api/v1/public/teams/${team}/players`, {});
         }
 
         /**
@@ -420,7 +490,107 @@
          * @returns {Promise<Object>} Response data
          */
         async headteamPlayers(team) {
-            return await this.client.request('HEAD', `/api/public/teams/${team}/players`, {});
+            return await this.client.request('HEAD', `/api/v1/public/teams/${team}/players`, {});
+        }
+
+        /**
+         * List all team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamIndex(options = {}) {
+            return await this.client.request('GET', `/api/v4/teams`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/v4/teams`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postteamStore(options = {}) {
+            return await this.client.request('POST', `/api/v4/teams`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamShow(team) {
+            return await this.client.request('GET', `/api/v4/teams/${team}`, {});
+        }
+
+        /**
+         * Get specific team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamShow(team) {
+            return await this.client.request('HEAD', `/api/v4/teams/${team}`, {});
+        }
+
+        /**
+         * Update team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putteamUpdate(team, options = {}) {
+            return await this.client.request('PUT', `/api/v4/teams/${team}`, { data: options.data || options });
+        }
+
+        /**
+         * Update team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchteamUpdate(team, options = {}) {
+            return await this.client.request('PATCH', `/api/v4/teams/${team}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deleteteamDestroy(team) {
+            return await this.client.request('DELETE', `/api/v4/teams/${team}`, {});
+        }
+
+        /**
+         * Players team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamPlayers(team) {
+            return await this.client.request('GET', `/api/v4/teams/${team}/players`, {});
+        }
+
+        /**
+         * Players team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamPlayers(team) {
+            return await this.client.request('HEAD', `/api/v4/teams/${team}/players`, {});
         }
 
         /**
@@ -430,7 +600,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getteamGames(team) {
-            return await this.client.request('GET', `/api/public/teams/${team}/games`, {});
+            return await this.client.request('GET', `/api/v4/teams/${team}/games`, {});
         }
 
         /**
@@ -440,7 +610,157 @@
          * @returns {Promise<Object>} Response data
          */
         async headteamGames(team) {
-            return await this.client.request('HEAD', `/api/public/teams/${team}/games`, {});
+            return await this.client.request('HEAD', `/api/v4/teams/${team}/games`, {});
+        }
+
+        /**
+         * Statistics team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamStatistics(team) {
+            return await this.client.request('GET', `/api/v4/teams/${team}/statistics`, {});
+        }
+
+        /**
+         * Statistics team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamStatistics(team) {
+            return await this.client.request('HEAD', `/api/v4/teams/${team}/statistics`, {});
+        }
+
+        /**
+         * Analytics team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamAnalytics(team) {
+            return await this.client.request('GET', `/api/v4/teams/${team}/analytics`, {});
+        }
+
+        /**
+         * Analytics team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamAnalytics(team) {
+            return await this.client.request('HEAD', `/api/v4/teams/${team}/analytics`, {});
+        }
+
+        /**
+         * InvitePlayer team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postteamInvitePlayer(team) {
+            return await this.client.request('POST', `/api/v4/teams/${team}/invite-player`, {});
+        }
+
+        /**
+         * PerformanceTrends team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamPerformanceTrends(team) {
+            return await this.client.request('GET', `/api/v4/teams/${team}/performance-trends`, {});
+        }
+
+        /**
+         * PerformanceTrends team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamPerformanceTrends(team) {
+            return await this.client.request('HEAD', `/api/v4/teams/${team}/performance-trends`, {});
+        }
+
+        /**
+         * Get specific team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamShow(team) {
+            return await this.client.request('GET', `/api/v4/public/teams/${team}`, {});
+        }
+
+        /**
+         * Get specific team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamShow(team) {
+            return await this.client.request('HEAD', `/api/v4/public/teams/${team}`, {});
+        }
+
+        /**
+         * Players team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamPlayers(team) {
+            return await this.client.request('GET', `/api/v4/public/teams/${team}/players`, {});
+        }
+
+        /**
+         * Players team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamPlayers(team) {
+            return await this.client.request('HEAD', `/api/v4/public/teams/${team}/players`, {});
+        }
+
+        /**
+         * Games team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamGames(team) {
+            return await this.client.request('GET', `/api/v4/public/teams/${team}/games`, {});
+        }
+
+        /**
+         * Games team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamGames(team) {
+            return await this.client.request('HEAD', `/api/v4/public/teams/${team}/games`, {});
+        }
+
+        /**
+         * PublicStats team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getteamPublicStats(team) {
+            return await this.client.request('GET', `/api/v4/public/teams/${team}/public-stats`, {});
+        }
+
+        /**
+         * PublicStats team
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headteamPublicStats(team) {
+            return await this.client.request('HEAD', `/api/v4/public/teams/${team}/public-stats`, {});
         }
 
     }
@@ -460,7 +780,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getplayerIndex(options = {}) {
-            return await this.client.request('GET', `/api/players`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('GET', `/api/v1/players`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -470,7 +790,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headplayerIndex(options = {}) {
-            return await this.client.request('HEAD', `/api/players`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('HEAD', `/api/v1/players`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -480,7 +800,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postplayerStore(options = {}) {
-            return await this.client.request('POST', `/api/players`, { data: options.data || options });
+            return await this.client.request('POST', `/api/v1/players`, { data: options.data || options });
         }
 
         /**
@@ -490,7 +810,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getplayerShow(player) {
-            return await this.client.request('GET', `/api/players/${player}`, {});
+            return await this.client.request('GET', `/api/v1/players/${player}`, {});
         }
 
         /**
@@ -500,7 +820,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headplayerShow(player) {
-            return await this.client.request('HEAD', `/api/players/${player}`, {});
+            return await this.client.request('HEAD', `/api/v1/players/${player}`, {});
         }
 
         /**
@@ -510,7 +830,7 @@
          * @returns {Promise<Object>} Response data
          */
         async putplayerUpdate(player, options = {}) {
-            return await this.client.request('PUT', `/api/players/${player}`, { data: options.data || options });
+            return await this.client.request('PUT', `/api/v1/players/${player}`, { data: options.data || options });
         }
 
         /**
@@ -520,37 +840,7 @@
          * @returns {Promise<Object>} Response data
          */
         async patchplayerUpdate(player, options = {}) {
-            return await this.client.request('PATCH', `/api/players/${player}`, { data: options.data || options });
-        }
-
-        /**
-         * Delete player
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async deleteplayerDestroy(player) {
-            return await this.client.request('DELETE', `/api/players/${player}`, {});
-        }
-
-        /**
-         * Statistics player
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async getplayerStatistics(player) {
-            return await this.client.request('GET', `/api/players/${player}/statistics`, {});
-        }
-
-        /**
-         * Statistics player
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async headplayerStatistics(player) {
-            return await this.client.request('HEAD', `/api/players/${player}/statistics`, {});
+            return await this.client.request('PATCH', `/api/v1/players/${player}`, { data: options.data || options });
         }
 
         /**
@@ -560,7 +850,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getplayerGames(player) {
-            return await this.client.request('GET', `/api/players/${player}/games`, {});
+            return await this.client.request('GET', `/api/v1/players/${player}/games`, {});
         }
 
         /**
@@ -570,7 +860,127 @@
          * @returns {Promise<Object>} Response data
          */
         async headplayerGames(player) {
-            return await this.client.request('HEAD', `/api/players/${player}/games`, {});
+            return await this.client.request('HEAD', `/api/v1/players/${player}/games`, {});
+        }
+
+        /**
+         * List all player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerIndex(options = {}) {
+            return await this.client.request('GET', `/api/v4/players`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/v4/players`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postplayerStore(options = {}) {
+            return await this.client.request('POST', `/api/v4/players`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerShow(player) {
+            return await this.client.request('GET', `/api/v4/players/${player}`, {});
+        }
+
+        /**
+         * Get specific player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerShow(player) {
+            return await this.client.request('HEAD', `/api/v4/players/${player}`, {});
+        }
+
+        /**
+         * Update player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putplayerUpdate(player, options = {}) {
+            return await this.client.request('PUT', `/api/v4/players/${player}`, { data: options.data || options });
+        }
+
+        /**
+         * Update player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchplayerUpdate(player, options = {}) {
+            return await this.client.request('PATCH', `/api/v4/players/${player}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deleteplayerDestroy(player) {
+            return await this.client.request('DELETE', `/api/v4/players/${player}`, {});
+        }
+
+        /**
+         * Statistics player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerStatistics(player) {
+            return await this.client.request('GET', `/api/v4/players/${player}/statistics`, {});
+        }
+
+        /**
+         * Statistics player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerStatistics(player) {
+            return await this.client.request('HEAD', `/api/v4/players/${player}/statistics`, {});
+        }
+
+        /**
+         * Games player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerGames(player) {
+            return await this.client.request('GET', `/api/v4/players/${player}/games`, {});
+        }
+
+        /**
+         * Games player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerGames(player) {
+            return await this.client.request('HEAD', `/api/v4/players/${player}/games`, {});
         }
 
         /**
@@ -580,7 +990,67 @@
          * @returns {Promise<Object>} Response data
          */
         async postplayerTransfer(player) {
-            return await this.client.request('POST', `/api/players/${player}/transfer`, {});
+            return await this.client.request('POST', `/api/v4/players/${player}/transfer`, {});
+        }
+
+        /**
+         * Analytics player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerAnalytics(player) {
+            return await this.client.request('GET', `/api/v4/players/${player}/analytics`, {});
+        }
+
+        /**
+         * Analytics player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerAnalytics(player) {
+            return await this.client.request('HEAD', `/api/v4/players/${player}/analytics`, {});
+        }
+
+        /**
+         * InjuryRisk player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerInjuryRisk(player) {
+            return await this.client.request('GET', `/api/v4/players/${player}/injury-risk`, {});
+        }
+
+        /**
+         * InjuryRisk player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerInjuryRisk(player) {
+            return await this.client.request('HEAD', `/api/v4/players/${player}/injury-risk`, {});
+        }
+
+        /**
+         * PerformancePredictions player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getplayerPerformancePredictions(player) {
+            return await this.client.request('GET', `/api/v4/players/${player}/performance-predictions`, {});
+        }
+
+        /**
+         * PerformancePredictions player
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headplayerPerformancePredictions(player) {
+            return await this.client.request('HEAD', `/api/v4/players/${player}/performance-predictions`, {});
         }
 
     }
@@ -600,7 +1070,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getgameIndex(options = {}) {
-            return await this.client.request('GET', `/api/games`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('GET', `/api/v1/games`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -610,7 +1080,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headgameIndex(options = {}) {
-            return await this.client.request('HEAD', `/api/games`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('HEAD', `/api/v1/games`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -620,7 +1090,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postgameStore(options = {}) {
-            return await this.client.request('POST', `/api/games`, { data: options.data || options });
+            return await this.client.request('POST', `/api/v1/games`, { data: options.data || options });
         }
 
         /**
@@ -630,7 +1100,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getgameShow(game) {
-            return await this.client.request('GET', `/api/games/${game}`, {});
+            return await this.client.request('GET', `/api/v1/games/${game}`, {});
         }
 
         /**
@@ -640,7 +1110,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headgameShow(game) {
-            return await this.client.request('HEAD', `/api/games/${game}`, {});
+            return await this.client.request('HEAD', `/api/v1/games/${game}`, {});
         }
 
         /**
@@ -650,7 +1120,7 @@
          * @returns {Promise<Object>} Response data
          */
         async putgameUpdate(game, options = {}) {
-            return await this.client.request('PUT', `/api/games/${game}`, { data: options.data || options });
+            return await this.client.request('PUT', `/api/v1/games/${game}`, { data: options.data || options });
         }
 
         /**
@@ -660,57 +1130,7 @@
          * @returns {Promise<Object>} Response data
          */
         async patchgameUpdate(game, options = {}) {
-            return await this.client.request('PATCH', `/api/games/${game}`, { data: options.data || options });
-        }
-
-        /**
-         * Delete game
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async deletegameDestroy(game) {
-            return await this.client.request('DELETE', `/api/games/${game}`, {});
-        }
-
-        /**
-         * Statistics game
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async getgameStatistics(game) {
-            return await this.client.request('GET', `/api/games/${game}/statistics`, {});
-        }
-
-        /**
-         * Statistics game
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async headgameStatistics(game) {
-            return await this.client.request('HEAD', `/api/games/${game}/statistics`, {});
-        }
-
-        /**
-         * Start game
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async postgameStart(game) {
-            return await this.client.request('POST', `/api/games/${game}/start`, {});
-        }
-
-        /**
-         * Finish game
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async postgameFinish(game) {
-            return await this.client.request('POST', `/api/games/${game}/finish`, {});
+            return await this.client.request('PATCH', `/api/v1/games/${game}`, { data: options.data || options });
         }
 
         /**
@@ -720,7 +1140,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getgameLiveScore(game) {
-            return await this.client.request('GET', `/api/games/${game}/live-score`, {});
+            return await this.client.request('GET', `/api/v1/games/${game}/live-score`, {});
         }
 
         /**
@@ -730,117 +1150,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headgameLiveScore(game) {
-            return await this.client.request('HEAD', `/api/games/${game}/live-score`, {});
-        }
-
-        /**
-         * List all gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async getgameStatisticIndex(options = {}) {
-            return await this.client.request('GET', `/api/game-statistics`, this.buildQueryOptions(options, ["page","per_page","search"]));
-        }
-
-        /**
-         * List all gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async headgameStatisticIndex(options = {}) {
-            return await this.client.request('HEAD', `/api/game-statistics`, this.buildQueryOptions(options, ["page","per_page","search"]));
-        }
-
-        /**
-         * Create new gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async postgameStatisticStore(options = {}) {
-            return await this.client.request('POST', `/api/game-statistics`, { data: options.data || options });
-        }
-
-        /**
-         * Get specific gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async getgameStatisticShow(gameStatistic) {
-            return await this.client.request('GET', `/api/game-statistics/${gameStatistic}`, {});
-        }
-
-        /**
-         * Get specific gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async headgameStatisticShow(gameStatistic) {
-            return await this.client.request('HEAD', `/api/game-statistics/${gameStatistic}`, {});
-        }
-
-        /**
-         * Update gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async putgameStatisticUpdate(gameStatistic, options = {}) {
-            return await this.client.request('PUT', `/api/game-statistics/${gameStatistic}`, { data: options.data || options });
-        }
-
-        /**
-         * Update gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async patchgameStatisticUpdate(gameStatistic, options = {}) {
-            return await this.client.request('PATCH', `/api/game-statistics/${gameStatistic}`, { data: options.data || options });
-        }
-
-        /**
-         * Delete gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async deletegameStatisticDestroy(gameStatistic) {
-            return await this.client.request('DELETE', `/api/game-statistics/${gameStatistic}`, {});
-        }
-
-        /**
-         * BulkStore gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async postgameStatisticBulkStore() {
-            return await this.client.request('POST', `/api/game-statistics/bulk`, {});
-        }
-
-        /**
-         * PlayerGameStats gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async getgameStatisticPlayerGameStats(game, player) {
-            return await this.client.request('GET', `/api/game-statistics/${game}/player/${player}`, {});
-        }
-
-        /**
-         * PlayerGameStats gamestatistic
-         * 
-         * @param {Object} options - Request options
-         * @returns {Promise<Object>} Response data
-         */
-        async headgameStatisticPlayerGameStats(game, player) {
-            return await this.client.request('HEAD', `/api/game-statistics/${game}/player/${player}`, {});
+            return await this.client.request('HEAD', `/api/v1/games/${game}/live-score`, {});
         }
 
         /**
@@ -850,7 +1160,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getgameShow(game) {
-            return await this.client.request('GET', `/api/public/games/${game}`, {});
+            return await this.client.request('GET', `/api/v1/public/games/${game}`, {});
         }
 
         /**
@@ -860,7 +1170,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headgameShow(game) {
-            return await this.client.request('HEAD', `/api/public/games/${game}`, {});
+            return await this.client.request('HEAD', `/api/v1/public/games/${game}`, {});
         }
 
         /**
@@ -870,7 +1180,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getgameLiveScore(game) {
-            return await this.client.request('GET', `/api/public/games/${game}/live-score`, {});
+            return await this.client.request('GET', `/api/v1/public/games/${game}/live-score`, {});
         }
 
         /**
@@ -880,7 +1190,327 @@
          * @returns {Promise<Object>} Response data
          */
         async headgameLiveScore(game) {
-            return await this.client.request('HEAD', `/api/public/games/${game}/live-score`, {});
+            return await this.client.request('HEAD', `/api/v1/public/games/${game}/live-score`, {});
+        }
+
+        /**
+         * List all game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameIndex(options = {}) {
+            return await this.client.request('GET', `/api/v4/games`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/v4/games`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postgameStore(options = {}) {
+            return await this.client.request('POST', `/api/v4/games`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameShow(game) {
+            return await this.client.request('GET', `/api/v4/games/${game}`, {});
+        }
+
+        /**
+         * Get specific game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameShow(game) {
+            return await this.client.request('HEAD', `/api/v4/games/${game}`, {});
+        }
+
+        /**
+         * Update game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putgameUpdate(game, options = {}) {
+            return await this.client.request('PUT', `/api/v4/games/${game}`, { data: options.data || options });
+        }
+
+        /**
+         * Update game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchgameUpdate(game, options = {}) {
+            return await this.client.request('PATCH', `/api/v4/games/${game}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletegameDestroy(game) {
+            return await this.client.request('DELETE', `/api/v4/games/${game}`, {});
+        }
+
+        /**
+         * LiveScore game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameLiveScore(game) {
+            return await this.client.request('GET', `/api/v4/games/${game}/live-score`, {});
+        }
+
+        /**
+         * LiveScore game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameLiveScore(game) {
+            return await this.client.request('HEAD', `/api/v4/games/${game}/live-score`, {});
+        }
+
+        /**
+         * RealTimeData game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameRealTimeData(game) {
+            return await this.client.request('GET', `/api/v4/games/${game}/real-time-data`, {});
+        }
+
+        /**
+         * RealTimeData game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameRealTimeData(game) {
+            return await this.client.request('HEAD', `/api/v4/games/${game}/real-time-data`, {});
+        }
+
+        /**
+         * StartBroadcast game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postgameStartBroadcast(game) {
+            return await this.client.request('POST', `/api/v4/games/${game}/broadcast`, {});
+        }
+
+        /**
+         * List all gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameStatisticIndex(options = {}) {
+            return await this.client.request('GET', `/api/v4/game-statistics`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameStatisticIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/v4/game-statistics`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postgameStatisticStore(options = {}) {
+            return await this.client.request('POST', `/api/v4/game-statistics`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameStatisticShow(gameStatistic) {
+            return await this.client.request('GET', `/api/v4/game-statistics/${gameStatistic}`, {});
+        }
+
+        /**
+         * Get specific gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameStatisticShow(gameStatistic) {
+            return await this.client.request('HEAD', `/api/v4/game-statistics/${gameStatistic}`, {});
+        }
+
+        /**
+         * Update gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putgameStatisticUpdate(gameStatistic, options = {}) {
+            return await this.client.request('PUT', `/api/v4/game-statistics/${gameStatistic}`, { data: options.data || options });
+        }
+
+        /**
+         * Update gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchgameStatisticUpdate(gameStatistic, options = {}) {
+            return await this.client.request('PATCH', `/api/v4/game-statistics/${gameStatistic}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletegameStatisticDestroy(gameStatistic) {
+            return await this.client.request('DELETE', `/api/v4/game-statistics/${gameStatistic}`, {});
+        }
+
+        /**
+         * BulkStore gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postgameStatisticBulkStore() {
+            return await this.client.request('POST', `/api/v4/game-statistics/bulk`, {});
+        }
+
+        /**
+         * PlayerGameStats gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameStatisticPlayerGameStats(game, player) {
+            return await this.client.request('GET', `/api/v4/game-statistics/${game}/player/${player}`, {});
+        }
+
+        /**
+         * PlayerGameStats gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameStatisticPlayerGameStats(game, player) {
+            return await this.client.request('HEAD', `/api/v4/game-statistics/${game}/player/${player}`, {});
+        }
+
+        /**
+         * AdvancedMetrics gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameStatisticAdvancedMetrics(game) {
+            return await this.client.request('GET', `/api/v4/game-statistics/${game}/advanced-metrics`, {});
+        }
+
+        /**
+         * AdvancedMetrics gamestatistic
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameStatisticAdvancedMetrics(game) {
+            return await this.client.request('HEAD', `/api/v4/game-statistics/${game}/advanced-metrics`, {});
+        }
+
+        /**
+         * Get specific game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameShow(game) {
+            return await this.client.request('GET', `/api/v4/public/games/${game}`, {});
+        }
+
+        /**
+         * Get specific game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameShow(game) {
+            return await this.client.request('HEAD', `/api/v4/public/games/${game}`, {});
+        }
+
+        /**
+         * LiveScore game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameLiveScore(game) {
+            return await this.client.request('GET', `/api/v4/public/games/${game}/live-score`, {});
+        }
+
+        /**
+         * LiveScore game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameLiveScore(game) {
+            return await this.client.request('HEAD', `/api/v4/public/games/${game}/live-score`, {});
+        }
+
+        /**
+         * LiveFeed game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getgameLiveFeed(game) {
+            return await this.client.request('GET', `/api/v4/public/games/${game}/live-feed`, {});
+        }
+
+        /**
+         * LiveFeed game
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headgameLiveFeed(game) {
+            return await this.client.request('HEAD', `/api/v4/public/games/${game}/live-feed`, {});
         }
 
     }
@@ -900,7 +1530,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettournamentIndex(options = {}) {
-            return await this.client.request('GET', `/api/tournaments`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('GET', `/api/v4/tournaments`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -910,7 +1540,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtournamentIndex(options = {}) {
-            return await this.client.request('HEAD', `/api/tournaments`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('HEAD', `/api/v4/tournaments`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -920,7 +1550,7 @@
          * @returns {Promise<Object>} Response data
          */
         async posttournamentStore(options = {}) {
-            return await this.client.request('POST', `/api/tournaments`, { data: options.data || options });
+            return await this.client.request('POST', `/api/v4/tournaments`, { data: options.data || options });
         }
 
         /**
@@ -930,7 +1560,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettournamentShow(tournament) {
-            return await this.client.request('GET', `/api/tournaments/${tournament}`, {});
+            return await this.client.request('GET', `/api/v4/tournaments/${tournament}`, {});
         }
 
         /**
@@ -940,7 +1570,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtournamentShow(tournament) {
-            return await this.client.request('HEAD', `/api/tournaments/${tournament}`, {});
+            return await this.client.request('HEAD', `/api/v4/tournaments/${tournament}`, {});
         }
 
         /**
@@ -950,7 +1580,7 @@
          * @returns {Promise<Object>} Response data
          */
         async puttournamentUpdate(tournament, options = {}) {
-            return await this.client.request('PUT', `/api/tournaments/${tournament}`, { data: options.data || options });
+            return await this.client.request('PUT', `/api/v4/tournaments/${tournament}`, { data: options.data || options });
         }
 
         /**
@@ -960,7 +1590,7 @@
          * @returns {Promise<Object>} Response data
          */
         async patchtournamentUpdate(tournament, options = {}) {
-            return await this.client.request('PATCH', `/api/tournaments/${tournament}`, { data: options.data || options });
+            return await this.client.request('PATCH', `/api/v4/tournaments/${tournament}`, { data: options.data || options });
         }
 
         /**
@@ -970,7 +1600,7 @@
          * @returns {Promise<Object>} Response data
          */
         async deletetournamentDestroy(tournament) {
-            return await this.client.request('DELETE', `/api/tournaments/${tournament}`, {});
+            return await this.client.request('DELETE', `/api/v4/tournaments/${tournament}`, {});
         }
 
         /**
@@ -980,7 +1610,7 @@
          * @returns {Promise<Object>} Response data
          */
         async posttournamentAddTeam(tournament, team) {
-            return await this.client.request('POST', `/api/tournaments/${tournament}/teams/${team}`, {});
+            return await this.client.request('POST', `/api/v4/tournaments/${tournament}/teams/${team}`, {});
         }
 
         /**
@@ -990,7 +1620,7 @@
          * @returns {Promise<Object>} Response data
          */
         async deletetournamentRemoveTeam(tournament, team) {
-            return await this.client.request('DELETE', `/api/tournaments/${tournament}/teams/${team}`, {});
+            return await this.client.request('DELETE', `/api/v4/tournaments/${tournament}/teams/${team}`, {});
         }
 
         /**
@@ -1000,7 +1630,7 @@
          * @returns {Promise<Object>} Response data
          */
         async posttournamentGenerateBracket(tournament) {
-            return await this.client.request('POST', `/api/tournaments/${tournament}/generate-bracket`, {});
+            return await this.client.request('POST', `/api/v4/tournaments/${tournament}/generate-bracket`, {});
         }
 
         /**
@@ -1010,7 +1640,7 @@
          * @returns {Promise<Object>} Response data
          */
         async posttournamentAdvanceBracket(tournament) {
-            return await this.client.request('POST', `/api/tournaments/${tournament}/advance-bracket`, {});
+            return await this.client.request('POST', `/api/v4/tournaments/${tournament}/advance-bracket`, {});
         }
 
         /**
@@ -1020,7 +1650,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettournamentBracket(tournament) {
-            return await this.client.request('GET', `/api/tournaments/${tournament}/bracket`, {});
+            return await this.client.request('GET', `/api/v4/tournaments/${tournament}/bracket`, {});
         }
 
         /**
@@ -1030,7 +1660,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtournamentBracket(tournament) {
-            return await this.client.request('HEAD', `/api/tournaments/${tournament}/bracket`, {});
+            return await this.client.request('HEAD', `/api/v4/tournaments/${tournament}/bracket`, {});
         }
 
         /**
@@ -1040,7 +1670,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettournamentStandings(tournament) {
-            return await this.client.request('GET', `/api/tournaments/${tournament}/standings`, {});
+            return await this.client.request('GET', `/api/v4/tournaments/${tournament}/standings`, {});
         }
 
         /**
@@ -1050,7 +1680,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtournamentStandings(tournament) {
-            return await this.client.request('HEAD', `/api/tournaments/${tournament}/standings`, {});
+            return await this.client.request('HEAD', `/api/v4/tournaments/${tournament}/standings`, {});
         }
 
         /**
@@ -1060,7 +1690,7 @@
          * @returns {Promise<Object>} Response data
          */
         async posttournamentStart(tournament) {
-            return await this.client.request('POST', `/api/tournaments/${tournament}/start`, {});
+            return await this.client.request('POST', `/api/v4/tournaments/${tournament}/start`, {});
         }
 
         /**
@@ -1070,7 +1700,37 @@
          * @returns {Promise<Object>} Response data
          */
         async posttournamentFinish(tournament) {
-            return await this.client.request('POST', `/api/tournaments/${tournament}/finish`, {});
+            return await this.client.request('POST', `/api/v4/tournaments/${tournament}/finish`, {});
+        }
+
+        /**
+         * Predictions tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettournamentPredictions(tournament) {
+            return await this.client.request('GET', `/api/v4/tournaments/${tournament}/predictions`, {});
+        }
+
+        /**
+         * Predictions tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtournamentPredictions(tournament) {
+            return await this.client.request('HEAD', `/api/v4/tournaments/${tournament}/predictions`, {});
+        }
+
+        /**
+         * SetupLiveStream tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttournamentSetupLiveStream(tournament) {
+            return await this.client.request('POST', `/api/v4/tournaments/${tournament}/live-stream`, {});
         }
 
         /**
@@ -1080,7 +1740,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettournamentShow(tournament) {
-            return await this.client.request('GET', `/api/public/tournaments/${tournament}`, {});
+            return await this.client.request('GET', `/api/v4/public/tournaments/${tournament}`, {});
         }
 
         /**
@@ -1090,7 +1750,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtournamentShow(tournament) {
-            return await this.client.request('HEAD', `/api/public/tournaments/${tournament}`, {});
+            return await this.client.request('HEAD', `/api/v4/public/tournaments/${tournament}`, {});
         }
 
         /**
@@ -1100,7 +1760,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettournamentBracket(tournament) {
-            return await this.client.request('GET', `/api/public/tournaments/${tournament}/bracket`, {});
+            return await this.client.request('GET', `/api/v4/public/tournaments/${tournament}/bracket`, {});
         }
 
         /**
@@ -1110,7 +1770,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtournamentBracket(tournament) {
-            return await this.client.request('HEAD', `/api/public/tournaments/${tournament}/bracket`, {});
+            return await this.client.request('HEAD', `/api/v4/public/tournaments/${tournament}/bracket`, {});
         }
 
         /**
@@ -1120,7 +1780,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettournamentStandings(tournament) {
-            return await this.client.request('GET', `/api/public/tournaments/${tournament}/standings`, {});
+            return await this.client.request('GET', `/api/v4/public/tournaments/${tournament}/standings`, {});
         }
 
         /**
@@ -1130,7 +1790,27 @@
          * @returns {Promise<Object>} Response data
          */
         async headtournamentStandings(tournament) {
-            return await this.client.request('HEAD', `/api/public/tournaments/${tournament}/standings`, {});
+            return await this.client.request('HEAD', `/api/v4/public/tournaments/${tournament}/standings`, {});
+        }
+
+        /**
+         * LiveFeed tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async gettournamentLiveFeed(tournament) {
+            return await this.client.request('GET', `/api/v4/public/tournaments/${tournament}/live-feed`, {});
+        }
+
+        /**
+         * LiveFeed tournament
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headtournamentLiveFeed(tournament) {
+            return await this.client.request('HEAD', `/api/v4/public/tournaments/${tournament}/live-feed`, {});
         }
 
     }
@@ -1150,7 +1830,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettrainingIndex(options = {}) {
-            return await this.client.request('GET', `/api/trainings`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('GET', `/api/v4/trainings`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -1160,7 +1840,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtrainingIndex(options = {}) {
-            return await this.client.request('HEAD', `/api/trainings`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('HEAD', `/api/v4/trainings`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -1170,7 +1850,7 @@
          * @returns {Promise<Object>} Response data
          */
         async posttrainingStore(options = {}) {
-            return await this.client.request('POST', `/api/trainings`, { data: options.data || options });
+            return await this.client.request('POST', `/api/v4/trainings`, { data: options.data || options });
         }
 
         /**
@@ -1180,7 +1860,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettrainingShow(training) {
-            return await this.client.request('GET', `/api/trainings/${training}`, {});
+            return await this.client.request('GET', `/api/v4/trainings/${training}`, {});
         }
 
         /**
@@ -1190,7 +1870,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtrainingShow(training) {
-            return await this.client.request('HEAD', `/api/trainings/${training}`, {});
+            return await this.client.request('HEAD', `/api/v4/trainings/${training}`, {});
         }
 
         /**
@@ -1200,7 +1880,7 @@
          * @returns {Promise<Object>} Response data
          */
         async puttrainingUpdate(training, options = {}) {
-            return await this.client.request('PUT', `/api/trainings/${training}`, { data: options.data || options });
+            return await this.client.request('PUT', `/api/v4/trainings/${training}`, { data: options.data || options });
         }
 
         /**
@@ -1210,7 +1890,7 @@
          * @returns {Promise<Object>} Response data
          */
         async patchtrainingUpdate(training, options = {}) {
-            return await this.client.request('PATCH', `/api/trainings/${training}`, { data: options.data || options });
+            return await this.client.request('PATCH', `/api/v4/trainings/${training}`, { data: options.data || options });
         }
 
         /**
@@ -1220,7 +1900,7 @@
          * @returns {Promise<Object>} Response data
          */
         async deletetrainingDestroy(training) {
-            return await this.client.request('DELETE', `/api/trainings/${training}`, {});
+            return await this.client.request('DELETE', `/api/v4/trainings/${training}`, {});
         }
 
         /**
@@ -1230,7 +1910,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettrainingDrills(training) {
-            return await this.client.request('GET', `/api/trainings/${training}/drills`, {});
+            return await this.client.request('GET', `/api/v4/trainings/${training}/drills`, {});
         }
 
         /**
@@ -1240,7 +1920,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtrainingDrills(training) {
-            return await this.client.request('HEAD', `/api/trainings/${training}/drills`, {});
+            return await this.client.request('HEAD', `/api/v4/trainings/${training}/drills`, {});
         }
 
         /**
@@ -1250,7 +1930,7 @@
          * @returns {Promise<Object>} Response data
          */
         async posttrainingAttachDrill(training, drill) {
-            return await this.client.request('POST', `/api/trainings/${training}/drills/${drill}/attach`, {});
+            return await this.client.request('POST', `/api/v4/trainings/${training}/drills/${drill}/attach`, {});
         }
 
         /**
@@ -1260,7 +1940,7 @@
          * @returns {Promise<Object>} Response data
          */
         async deletetrainingDetachDrill(training, drill) {
-            return await this.client.request('DELETE', `/api/trainings/${training}/drills/${drill}/detach`, {});
+            return await this.client.request('DELETE', `/api/v4/trainings/${training}/drills/${drill}/detach`, {});
         }
 
         /**
@@ -1270,7 +1950,7 @@
          * @returns {Promise<Object>} Response data
          */
         async gettrainingTeamTrainings(team) {
-            return await this.client.request('GET', `/api/teams/${team}/trainings`, {});
+            return await this.client.request('GET', `/api/v4/teams/${team}/trainings`, {});
         }
 
         /**
@@ -1280,7 +1960,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headtrainingTeamTrainings(team) {
-            return await this.client.request('HEAD', `/api/teams/${team}/trainings`, {});
+            return await this.client.request('HEAD', `/api/v4/teams/${team}/trainings`, {});
         }
 
         /**
@@ -1290,7 +1970,17 @@
          * @returns {Promise<Object>} Response data
          */
         async posttrainingDuplicate(training) {
-            return await this.client.request('POST', `/api/trainings/${training}/duplicate`, {});
+            return await this.client.request('POST', `/api/v4/trainings/${training}/duplicate`, {});
+        }
+
+        /**
+         * AiRecommendations training
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async posttrainingAiRecommendations(training) {
+            return await this.client.request('POST', `/api/v4/trainings/${training}/ai-recommendations`, {});
         }
 
         /**
@@ -1300,7 +1990,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getdrillIndex(options = {}) {
-            return await this.client.request('GET', `/api/drills`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('GET', `/api/v4/drills`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -1310,7 +2000,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headdrillIndex(options = {}) {
-            return await this.client.request('HEAD', `/api/drills`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('HEAD', `/api/v4/drills`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -1320,7 +2010,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postdrillStore(options = {}) {
-            return await this.client.request('POST', `/api/drills`, { data: options.data || options });
+            return await this.client.request('POST', `/api/v4/drills`, { data: options.data || options });
         }
 
         /**
@@ -1330,7 +2020,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getdrillShow(drill) {
-            return await this.client.request('GET', `/api/drills/${drill}`, {});
+            return await this.client.request('GET', `/api/v4/drills/${drill}`, {});
         }
 
         /**
@@ -1340,7 +2030,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headdrillShow(drill) {
-            return await this.client.request('HEAD', `/api/drills/${drill}`, {});
+            return await this.client.request('HEAD', `/api/v4/drills/${drill}`, {});
         }
 
         /**
@@ -1350,7 +2040,7 @@
          * @returns {Promise<Object>} Response data
          */
         async putdrillUpdate(drill, options = {}) {
-            return await this.client.request('PUT', `/api/drills/${drill}`, { data: options.data || options });
+            return await this.client.request('PUT', `/api/v4/drills/${drill}`, { data: options.data || options });
         }
 
         /**
@@ -1360,7 +2050,7 @@
          * @returns {Promise<Object>} Response data
          */
         async patchdrillUpdate(drill, options = {}) {
-            return await this.client.request('PATCH', `/api/drills/${drill}`, { data: options.data || options });
+            return await this.client.request('PATCH', `/api/v4/drills/${drill}`, { data: options.data || options });
         }
 
         /**
@@ -1370,7 +2060,7 @@
          * @returns {Promise<Object>} Response data
          */
         async deletedrillDestroy(drill) {
-            return await this.client.request('DELETE', `/api/drills/${drill}`, {});
+            return await this.client.request('DELETE', `/api/v4/drills/${drill}`, {});
         }
 
         /**
@@ -1380,7 +2070,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getdrillSearch() {
-            return await this.client.request('GET', `/api/drills/search`, {});
+            return await this.client.request('GET', `/api/v4/drills/search`, {});
         }
 
         /**
@@ -1390,7 +2080,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headdrillSearch() {
-            return await this.client.request('HEAD', `/api/drills/search`, {});
+            return await this.client.request('HEAD', `/api/v4/drills/search`, {});
         }
 
         /**
@@ -1400,7 +2090,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getdrillCategories() {
-            return await this.client.request('GET', `/api/drills/categories`, {});
+            return await this.client.request('GET', `/api/v4/drills/categories`, {});
         }
 
         /**
@@ -1410,7 +2100,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headdrillCategories() {
-            return await this.client.request('HEAD', `/api/drills/categories`, {});
+            return await this.client.request('HEAD', `/api/v4/drills/categories`, {});
         }
 
         /**
@@ -1420,7 +2110,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getdrillByCategory(category) {
-            return await this.client.request('GET', `/api/drills/category/${category}`, {});
+            return await this.client.request('GET', `/api/v4/drills/category/${category}`, {});
         }
 
         /**
@@ -1430,7 +2120,37 @@
          * @returns {Promise<Object>} Response data
          */
         async headdrillByCategory(category) {
-            return await this.client.request('HEAD', `/api/drills/category/${category}`, {});
+            return await this.client.request('HEAD', `/api/v4/drills/category/${category}`, {});
+        }
+
+        /**
+         * AiGenerated drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getdrillAiGenerated() {
+            return await this.client.request('GET', `/api/v4/drills/ai-generated`, {});
+        }
+
+        /**
+         * AiGenerated drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headdrillAiGenerated() {
+            return await this.client.request('HEAD', `/api/v4/drills/ai-generated`, {});
+        }
+
+        /**
+         * RateEffectiveness drill
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postdrillRateEffectiveness(drill) {
+            return await this.client.request('POST', `/api/v4/drills/${drill}/effectiveness-rating`, {});
         }
 
     }
@@ -1450,7 +2170,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getmLAnalyticsGetDashboardOverview() {
-            return await this.client.request('GET', `/api/ml-analytics/dashboard-overview`, {});
+            return await this.client.request('GET', `/api/v4/ml-analytics/dashboard-overview`, {});
         }
 
         /**
@@ -1460,7 +2180,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headmLAnalyticsGetDashboardOverview() {
-            return await this.client.request('HEAD', `/api/ml-analytics/dashboard-overview`, {});
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/dashboard-overview`, {});
         }
 
         /**
@@ -1470,7 +2190,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getmLAnalyticsGetPlayerPerformanceDashboard() {
-            return await this.client.request('GET', `/api/ml-analytics/performance-dashboard`, {});
+            return await this.client.request('GET', `/api/v4/ml-analytics/performance-dashboard`, {});
         }
 
         /**
@@ -1480,7 +2200,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headmLAnalyticsGetPlayerPerformanceDashboard() {
-            return await this.client.request('HEAD', `/api/ml-analytics/performance-dashboard`, {});
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/performance-dashboard`, {});
         }
 
         /**
@@ -1490,7 +2210,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getmLAnalyticsGetInjuryRiskDashboard() {
-            return await this.client.request('GET', `/api/ml-analytics/injury-dashboard`, {});
+            return await this.client.request('GET', `/api/v4/ml-analytics/injury-dashboard`, {});
         }
 
         /**
@@ -1500,7 +2220,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headmLAnalyticsGetInjuryRiskDashboard() {
-            return await this.client.request('HEAD', `/api/ml-analytics/injury-dashboard`, {});
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/injury-dashboard`, {});
         }
 
         /**
@@ -1510,7 +2230,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getmLAnalyticsGetExperimentDashboard() {
-            return await this.client.request('GET', `/api/ml-analytics/experiment-dashboard`, {});
+            return await this.client.request('GET', `/api/v4/ml-analytics/experiment-dashboard`, {});
         }
 
         /**
@@ -1520,7 +2240,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headmLAnalyticsGetExperimentDashboard() {
-            return await this.client.request('HEAD', `/api/ml-analytics/experiment-dashboard`, {});
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/experiment-dashboard`, {});
         }
 
         /**
@@ -1530,7 +2250,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getmLAnalyticsGetPredictionsTimeline() {
-            return await this.client.request('GET', `/api/ml-analytics/predictions-timeline`, {});
+            return await this.client.request('GET', `/api/v4/ml-analytics/predictions-timeline`, {});
         }
 
         /**
@@ -1540,7 +2260,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headmLAnalyticsGetPredictionsTimeline() {
-            return await this.client.request('HEAD', `/api/ml-analytics/predictions-timeline`, {});
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/predictions-timeline`, {});
         }
 
         /**
@@ -1550,7 +2270,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getmLAnalyticsGetModelAccuracy() {
-            return await this.client.request('GET', `/api/ml-analytics/model-accuracy`, {});
+            return await this.client.request('GET', `/api/v4/ml-analytics/model-accuracy`, {});
         }
 
         /**
@@ -1560,7 +2280,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headmLAnalyticsGetModelAccuracy() {
-            return await this.client.request('HEAD', `/api/ml-analytics/model-accuracy`, {});
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/model-accuracy`, {});
         }
 
         /**
@@ -1570,7 +2290,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getmLAnalyticsGetPredictionComparison() {
-            return await this.client.request('GET', `/api/ml-analytics/prediction-comparison`, {});
+            return await this.client.request('GET', `/api/v4/ml-analytics/prediction-comparison`, {});
         }
 
         /**
@@ -1580,7 +2300,77 @@
          * @returns {Promise<Object>} Response data
          */
         async headmLAnalyticsGetPredictionComparison() {
-            return await this.client.request('HEAD', `/api/ml-analytics/prediction-comparison`, {});
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/prediction-comparison`, {});
+        }
+
+        /**
+         * TeamChemistryAnalysis mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsTeamChemistryAnalysis() {
+            return await this.client.request('GET', `/api/v4/ml-analytics/team-chemistry-analysis`, {});
+        }
+
+        /**
+         * TeamChemistryAnalysis mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsTeamChemistryAnalysis() {
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/team-chemistry-analysis`, {});
+        }
+
+        /**
+         * OpponentScouting mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsOpponentScouting() {
+            return await this.client.request('GET', `/api/v4/ml-analytics/opponent-scouting`, {});
+        }
+
+        /**
+         * OpponentScouting mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsOpponentScouting() {
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/opponent-scouting`, {});
+        }
+
+        /**
+         * TrainCustomModel mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postmLAnalyticsTrainCustomModel() {
+            return await this.client.request('POST', `/api/v4/ml-analytics/custom-model/train`, {});
+        }
+
+        /**
+         * ExplainPrediction mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getmLAnalyticsExplainPrediction(prediction) {
+            return await this.client.request('GET', `/api/v4/ml-analytics/prediction-explanations/${prediction}`, {});
+        }
+
+        /**
+         * ExplainPrediction mlanalytics
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headmLAnalyticsExplainPrediction(prediction) {
+            return await this.client.request('HEAD', `/api/v4/ml-analytics/prediction-explanations/${prediction}`, {});
         }
 
     }
@@ -1600,7 +2390,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getvideoFileIndex(options = {}) {
-            return await this.client.request('GET', `/api/videos`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('GET', `/api/v4/videos`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -1610,7 +2400,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headvideoFileIndex(options = {}) {
-            return await this.client.request('HEAD', `/api/videos`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('HEAD', `/api/v4/videos`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -1620,7 +2410,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postvideoFileStore(options = {}) {
-            return await this.client.request('POST', `/api/videos`, { data: options.data || options });
+            return await this.client.request('POST', `/api/v4/videos`, { data: options.data || options });
         }
 
         /**
@@ -1630,7 +2420,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getvideoFileShow(video) {
-            return await this.client.request('GET', `/api/videos/${video}`, {});
+            return await this.client.request('GET', `/api/v4/videos/${video}`, {});
         }
 
         /**
@@ -1640,7 +2430,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headvideoFileShow(video) {
-            return await this.client.request('HEAD', `/api/videos/${video}`, {});
+            return await this.client.request('HEAD', `/api/v4/videos/${video}`, {});
         }
 
         /**
@@ -1650,7 +2440,7 @@
          * @returns {Promise<Object>} Response data
          */
         async putvideoFileUpdate(video, options = {}) {
-            return await this.client.request('PUT', `/api/videos/${video}`, { data: options.data || options });
+            return await this.client.request('PUT', `/api/v4/videos/${video}`, { data: options.data || options });
         }
 
         /**
@@ -1660,7 +2450,7 @@
          * @returns {Promise<Object>} Response data
          */
         async patchvideoFileUpdate(video, options = {}) {
-            return await this.client.request('PATCH', `/api/videos/${video}`, { data: options.data || options });
+            return await this.client.request('PATCH', `/api/v4/videos/${video}`, { data: options.data || options });
         }
 
         /**
@@ -1670,7 +2460,7 @@
          * @returns {Promise<Object>} Response data
          */
         async deletevideoFileDestroy(video) {
-            return await this.client.request('DELETE', `/api/videos/${video}`, {});
+            return await this.client.request('DELETE', `/api/v4/videos/${video}`, {});
         }
 
         /**
@@ -1680,7 +2470,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postvideoFileProcess(video) {
-            return await this.client.request('POST', `/api/videos/${video}/process`, {});
+            return await this.client.request('POST', `/api/v4/videos/${video}/process`, {});
         }
 
         /**
@@ -1690,7 +2480,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getvideoFileDownload(video) {
-            return await this.client.request('GET', `/api/videos/${video}/download`, {});
+            return await this.client.request('GET', `/api/v4/videos/${video}/download`, {});
         }
 
         /**
@@ -1700,7 +2490,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headvideoFileDownload(video) {
-            return await this.client.request('HEAD', `/api/videos/${video}/download`, {});
+            return await this.client.request('HEAD', `/api/v4/videos/${video}/download`, {});
         }
 
         /**
@@ -1710,7 +2500,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getvideoFileStream(video) {
-            return await this.client.request('GET', `/api/videos/${video}/stream`, {});
+            return await this.client.request('GET', `/api/v4/videos/${video}/stream`, {});
         }
 
         /**
@@ -1720,7 +2510,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headvideoFileStream(video) {
-            return await this.client.request('HEAD', `/api/videos/${video}/stream`, {});
+            return await this.client.request('HEAD', `/api/v4/videos/${video}/stream`, {});
         }
 
         /**
@@ -1730,7 +2520,37 @@
          * @returns {Promise<Object>} Response data
          */
         async postvideoFileAnalyze(video) {
-            return await this.client.request('POST', `/api/videos/${video}/analyze`, {});
+            return await this.client.request('POST', `/api/v4/videos/${video}/analyze`, {});
+        }
+
+        /**
+         * AiAnalysis videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postvideoFileAiAnalysis(video) {
+            return await this.client.request('POST', `/api/v4/videos/${video}/ai-analysis`, {});
+        }
+
+        /**
+         * AutoHighlights videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getvideoFileAutoHighlights(video) {
+            return await this.client.request('GET', `/api/v4/videos/${video}/highlights`, {});
+        }
+
+        /**
+         * AutoHighlights videofile
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headvideoFileAutoHighlights(video) {
+            return await this.client.request('HEAD', `/api/v4/videos/${video}/highlights`, {});
         }
 
         /**
@@ -1740,7 +2560,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getvideoAnnotationIndex(options = {}) {
-            return await this.client.request('GET', `/api/video-annotations`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('GET', `/api/v4/video-annotations`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -1750,7 +2570,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headvideoAnnotationIndex(options = {}) {
-            return await this.client.request('HEAD', `/api/video-annotations`, this.buildQueryOptions(options, ["page","per_page","search"]));
+            return await this.client.request('HEAD', `/api/v4/video-annotations`, this.buildQueryOptions(options, ["page","per_page","search"]));
         }
 
         /**
@@ -1760,7 +2580,7 @@
          * @returns {Promise<Object>} Response data
          */
         async postvideoAnnotationStore(options = {}) {
-            return await this.client.request('POST', `/api/video-annotations`, { data: options.data || options });
+            return await this.client.request('POST', `/api/v4/video-annotations`, { data: options.data || options });
         }
 
         /**
@@ -1770,7 +2590,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getvideoAnnotationShow(videoAnnotation) {
-            return await this.client.request('GET', `/api/video-annotations/${videoAnnotation}`, {});
+            return await this.client.request('GET', `/api/v4/video-annotations/${videoAnnotation}`, {});
         }
 
         /**
@@ -1780,7 +2600,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headvideoAnnotationShow(videoAnnotation) {
-            return await this.client.request('HEAD', `/api/video-annotations/${videoAnnotation}`, {});
+            return await this.client.request('HEAD', `/api/v4/video-annotations/${videoAnnotation}`, {});
         }
 
         /**
@@ -1790,7 +2610,7 @@
          * @returns {Promise<Object>} Response data
          */
         async putvideoAnnotationUpdate(videoAnnotation, options = {}) {
-            return await this.client.request('PUT', `/api/video-annotations/${videoAnnotation}`, { data: options.data || options });
+            return await this.client.request('PUT', `/api/v4/video-annotations/${videoAnnotation}`, { data: options.data || options });
         }
 
         /**
@@ -1800,7 +2620,7 @@
          * @returns {Promise<Object>} Response data
          */
         async patchvideoAnnotationUpdate(videoAnnotation, options = {}) {
-            return await this.client.request('PATCH', `/api/video-annotations/${videoAnnotation}`, { data: options.data || options });
+            return await this.client.request('PATCH', `/api/v4/video-annotations/${videoAnnotation}`, { data: options.data || options });
         }
 
         /**
@@ -1810,7 +2630,7 @@
          * @returns {Promise<Object>} Response data
          */
         async deletevideoAnnotationDestroy(videoAnnotation) {
-            return await this.client.request('DELETE', `/api/video-annotations/${videoAnnotation}`, {});
+            return await this.client.request('DELETE', `/api/v4/video-annotations/${videoAnnotation}`, {});
         }
 
         /**
@@ -1820,7 +2640,7 @@
          * @returns {Promise<Object>} Response data
          */
         async getvideoAnnotationVideoAnnotations(video) {
-            return await this.client.request('GET', `/api/videos/${video}/annotations`, {});
+            return await this.client.request('GET', `/api/v4/videos/${video}/annotations`, {});
         }
 
         /**
@@ -1830,7 +2650,7 @@
          * @returns {Promise<Object>} Response data
          */
         async headvideoAnnotationVideoAnnotations(video) {
-            return await this.client.request('HEAD', `/api/videos/${video}/annotations`, {});
+            return await this.client.request('HEAD', `/api/v4/videos/${video}/annotations`, {});
         }
 
         /**
@@ -1840,7 +2660,17 @@
          * @returns {Promise<Object>} Response data
          */
         async postvideoAnnotationBulkStore(video) {
-            return await this.client.request('POST', `/api/videos/${video}/annotations/bulk`, {});
+            return await this.client.request('POST', `/api/v4/videos/${video}/annotations/bulk`, {});
+        }
+
+        /**
+         * AiGenerate videoannotation
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postvideoAnnotationAiGenerate(video) {
+            return await this.client.request('POST', `/api/v4/videos/${video}/annotations/ai-generate`, {});
         }
 
     }
@@ -1861,6 +2691,126 @@
     class Webhooks {
         constructor(client) {
             this.client = client;
+        }
+
+        /**
+         * List all webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getv4WebhookIndex(options = {}) {
+            return await this.client.request('GET', `/api/v4/webhooks`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * List all webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headv4WebhookIndex(options = {}) {
+            return await this.client.request('HEAD', `/api/v4/webhooks`, this.buildQueryOptions(options, ["page","per_page","search"]));
+        }
+
+        /**
+         * Create new webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postv4WebhookStore(options = {}) {
+            return await this.client.request('POST', `/api/v4/webhooks`, { data: options.data || options });
+        }
+
+        /**
+         * Get specific webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getv4WebhookShow(webhook) {
+            return await this.client.request('GET', `/api/v4/webhooks/${webhook}`, {});
+        }
+
+        /**
+         * Get specific webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headv4WebhookShow(webhook) {
+            return await this.client.request('HEAD', `/api/v4/webhooks/${webhook}`, {});
+        }
+
+        /**
+         * Update webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async putv4WebhookUpdate(webhook, options = {}) {
+            return await this.client.request('PUT', `/api/v4/webhooks/${webhook}`, { data: options.data || options });
+        }
+
+        /**
+         * Update webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async patchv4WebhookUpdate(webhook, options = {}) {
+            return await this.client.request('PATCH', `/api/v4/webhooks/${webhook}`, { data: options.data || options });
+        }
+
+        /**
+         * Delete webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async deletev4WebhookDestroy(webhook) {
+            return await this.client.request('DELETE', `/api/v4/webhooks/${webhook}`, {});
+        }
+
+        /**
+         * Test webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postv4WebhookTest(webhook) {
+            return await this.client.request('POST', `/api/v4/webhooks/${webhook}/test`, {});
+        }
+
+        /**
+         * Deliveries webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async getv4WebhookDeliveries(webhook) {
+            return await this.client.request('GET', `/api/v4/webhooks/${webhook}/deliveries`, {});
+        }
+
+        /**
+         * Deliveries webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async headv4WebhookDeliveries(webhook) {
+            return await this.client.request('HEAD', `/api/v4/webhooks/${webhook}/deliveries`, {});
+        }
+
+        /**
+         * Redeliver webhook
+         * 
+         * @param {Object} options - Request options
+         * @returns {Promise<Object>} Response data
+         */
+        async postv4WebhookRedeliver(webhook, delivery) {
+            return await this.client.request('POST', `/api/v4/webhooks/${webhook}/deliveries/${delivery}/redeliver`, {});
         }
 
     }

@@ -47,7 +47,7 @@ class BasketManagerProClient
      * @param string $baseUrl Optional custom base URL
      * @param array $options Additional GuzzleHttp client options
      */
-    public function __construct(string $apiKey, string $baseUrl = 'http://localhost/api', array $options = [])
+    public function __construct(string $apiKey, string $baseUrl = 'https://staging.basketmanager-pro.de//api', array $options = [])
     {
         $this->apiKey = $apiKey;
         $this->baseUrl = rtrim($baseUrl, '/');
@@ -195,7 +195,7 @@ class Authentication
      */
     public function postauthLogin(): array
     {
-        return $this->client->request('POST', "/api/auth/login", []);
+        return $this->client->request('POST', "/api/v1/auth/login", []);
     }
     /**
      * Register auth
@@ -206,7 +206,7 @@ class Authentication
      */
     public function postauthRegister(): array
     {
-        return $this->client->request('POST', "/api/auth/register", []);
+        return $this->client->request('POST', "/api/v1/auth/register", []);
     }
     /**
      * Logout auth
@@ -217,7 +217,7 @@ class Authentication
      */
     public function postauthLogout(): array
     {
-        return $this->client->request('POST', "/api/auth/logout", []);
+        return $this->client->request('POST', "/api/v1/auth/logout", []);
     }
     /**
      * Refresh auth
@@ -228,7 +228,7 @@ class Authentication
      */
     public function postauthRefresh(): array
     {
-        return $this->client->request('POST', "/api/auth/refresh", []);
+        return $this->client->request('POST', "/api/v1/auth/refresh", []);
     }
     /**
      * User auth
@@ -239,7 +239,7 @@ class Authentication
      */
     public function getauthUser(): array
     {
-        return $this->client->request('GET', "/api/auth/user", []);
+        return $this->client->request('GET', "/api/v1/auth/user", []);
     }
     /**
      * User auth
@@ -250,7 +250,117 @@ class Authentication
      */
     public function headauthUser(): array
     {
-        return $this->client->request('HEAD', "/api/auth/user", []);
+        return $this->client->request('HEAD', "/api/v1/auth/user", []);
+    }
+    /**
+     * Login auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postauthLogin(): array
+    {
+        return $this->client->request('POST', "/api/v4/auth/login", []);
+    }
+    /**
+     * Register auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postauthRegister(): array
+    {
+        return $this->client->request('POST', "/api/v4/auth/register", []);
+    }
+    /**
+     * Logout auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postauthLogout(): array
+    {
+        return $this->client->request('POST', "/api/v4/auth/logout", []);
+    }
+    /**
+     * Refresh auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postauthRefresh(): array
+    {
+        return $this->client->request('POST', "/api/v4/auth/refresh", []);
+    }
+    /**
+     * User auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getauthUser(): array
+    {
+        return $this->client->request('GET', "/api/v4/auth/user", []);
+    }
+    /**
+     * User auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headauthUser(): array
+    {
+        return $this->client->request('HEAD', "/api/v4/auth/user", []);
+    }
+    /**
+     * ForgotPassword auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postauthForgotPassword(): array
+    {
+        return $this->client->request('POST', "/api/v4/auth/forgot-password", []);
+    }
+    /**
+     * ResetPassword auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postauthResetPassword(): array
+    {
+        return $this->client->request('POST', "/api/v4/auth/reset-password", []);
+    }
+    /**
+     * VerifyEmail auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postauthVerifyEmail(): array
+    {
+        return $this->client->request('POST', "/api/v4/auth/verify-email", []);
+    }
+    /**
+     * ResendVerification auth
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postauthResendVerification(): array
+    {
+        return $this->client->request('POST', "/api/v4/auth/resend-verification", []);
     }
 }
 
@@ -275,7 +385,7 @@ class Teams
      */
     public function getteamIndex(array $options = []): array
     {
-        return $this->client->request('GET', "/api/teams", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('GET', "/api/v1/teams", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * List all team
@@ -286,7 +396,7 @@ class Teams
      */
     public function headteamIndex(array $options = []): array
     {
-        return $this->client->request('HEAD', "/api/teams", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('HEAD', "/api/v1/teams", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * Create new team
@@ -297,7 +407,7 @@ class Teams
      */
     public function postteamStore(array $options = []): array
     {
-        return $this->client->request('POST', "/api/teams", $this->buildRequestOptions($options));
+        return $this->client->request('POST', "/api/v1/teams", $this->buildRequestOptions($options));
     }
     /**
      * Get specific team
@@ -308,7 +418,7 @@ class Teams
      */
     public function getteamShow($team): array
     {
-        return $this->client->request('GET', "/api/teams/" . $team . "", []);
+        return $this->client->request('GET', "/api/v1/teams/" . $team . "", []);
     }
     /**
      * Get specific team
@@ -319,7 +429,7 @@ class Teams
      */
     public function headteamShow($team): array
     {
-        return $this->client->request('HEAD', "/api/teams/" . $team . "", []);
+        return $this->client->request('HEAD', "/api/v1/teams/" . $team . "", []);
     }
     /**
      * Update team
@@ -330,7 +440,7 @@ class Teams
      */
     public function putteamUpdate($team, array $options = []): array
     {
-        return $this->client->request('PUT', "/api/teams/" . $team . "", $this->buildRequestOptions($options));
+        return $this->client->request('PUT', "/api/v1/teams/" . $team . "", $this->buildRequestOptions($options));
     }
     /**
      * Update team
@@ -341,18 +451,7 @@ class Teams
      */
     public function patchteamUpdate($team, array $options = []): array
     {
-        return $this->client->request('PATCH', "/api/teams/" . $team . "", $this->buildRequestOptions($options));
-    }
-    /**
-     * Delete team
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function deleteteamDestroy($team): array
-    {
-        return $this->client->request('DELETE', "/api/teams/" . $team . "", []);
+        return $this->client->request('PATCH', "/api/v1/teams/" . $team . "", $this->buildRequestOptions($options));
     }
     /**
      * Players team
@@ -363,7 +462,7 @@ class Teams
      */
     public function getteamPlayers($team): array
     {
-        return $this->client->request('GET', "/api/teams/" . $team . "/players", []);
+        return $this->client->request('GET', "/api/v1/teams/" . $team . "/players", []);
     }
     /**
      * Players team
@@ -374,7 +473,7 @@ class Teams
      */
     public function headteamPlayers($team): array
     {
-        return $this->client->request('HEAD', "/api/teams/" . $team . "/players", []);
+        return $this->client->request('HEAD', "/api/v1/teams/" . $team . "/players", []);
     }
     /**
      * Games team
@@ -385,7 +484,7 @@ class Teams
      */
     public function getteamGames($team): array
     {
-        return $this->client->request('GET', "/api/teams/" . $team . "/games", []);
+        return $this->client->request('GET', "/api/v1/teams/" . $team . "/games", []);
     }
     /**
      * Games team
@@ -396,29 +495,7 @@ class Teams
      */
     public function headteamGames($team): array
     {
-        return $this->client->request('HEAD', "/api/teams/" . $team . "/games", []);
-    }
-    /**
-     * Statistics team
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function getteamStatistics($team): array
-    {
-        return $this->client->request('GET', "/api/teams/" . $team . "/statistics", []);
-    }
-    /**
-     * Statistics team
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function headteamStatistics($team): array
-    {
-        return $this->client->request('HEAD', "/api/teams/" . $team . "/statistics", []);
+        return $this->client->request('HEAD', "/api/v1/teams/" . $team . "/games", []);
     }
     /**
      * Get specific team
@@ -429,7 +506,7 @@ class Teams
      */
     public function getteamShow($team): array
     {
-        return $this->client->request('GET', "/api/public/teams/" . $team . "", []);
+        return $this->client->request('GET', "/api/v1/public/teams/" . $team . "", []);
     }
     /**
      * Get specific team
@@ -440,7 +517,7 @@ class Teams
      */
     public function headteamShow($team): array
     {
-        return $this->client->request('HEAD', "/api/public/teams/" . $team . "", []);
+        return $this->client->request('HEAD', "/api/v1/public/teams/" . $team . "", []);
     }
     /**
      * Players team
@@ -451,7 +528,7 @@ class Teams
      */
     public function getteamPlayers($team): array
     {
-        return $this->client->request('GET', "/api/public/teams/" . $team . "/players", []);
+        return $this->client->request('GET', "/api/v1/public/teams/" . $team . "/players", []);
     }
     /**
      * Players team
@@ -462,7 +539,117 @@ class Teams
      */
     public function headteamPlayers($team): array
     {
-        return $this->client->request('HEAD', "/api/public/teams/" . $team . "/players", []);
+        return $this->client->request('HEAD', "/api/v1/public/teams/" . $team . "/players", []);
+    }
+    /**
+     * List all team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamIndex(array $options = []): array
+    {
+        return $this->client->request('GET', "/api/v4/teams", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * List all team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamIndex(array $options = []): array
+    {
+        return $this->client->request('HEAD', "/api/v4/teams", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * Create new team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postteamStore(array $options = []): array
+    {
+        return $this->client->request('POST', "/api/v4/teams", $this->buildRequestOptions($options));
+    }
+    /**
+     * Get specific team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamShow($team): array
+    {
+        return $this->client->request('GET', "/api/v4/teams/" . $team . "", []);
+    }
+    /**
+     * Get specific team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamShow($team): array
+    {
+        return $this->client->request('HEAD', "/api/v4/teams/" . $team . "", []);
+    }
+    /**
+     * Update team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function putteamUpdate($team, array $options = []): array
+    {
+        return $this->client->request('PUT', "/api/v4/teams/" . $team . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Update team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function patchteamUpdate($team, array $options = []): array
+    {
+        return $this->client->request('PATCH', "/api/v4/teams/" . $team . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Delete team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function deleteteamDestroy($team): array
+    {
+        return $this->client->request('DELETE', "/api/v4/teams/" . $team . "", []);
+    }
+    /**
+     * Players team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamPlayers($team): array
+    {
+        return $this->client->request('GET', "/api/v4/teams/" . $team . "/players", []);
+    }
+    /**
+     * Players team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamPlayers($team): array
+    {
+        return $this->client->request('HEAD', "/api/v4/teams/" . $team . "/players", []);
     }
     /**
      * Games team
@@ -473,7 +660,7 @@ class Teams
      */
     public function getteamGames($team): array
     {
-        return $this->client->request('GET', "/api/public/teams/" . $team . "/games", []);
+        return $this->client->request('GET', "/api/v4/teams/" . $team . "/games", []);
     }
     /**
      * Games team
@@ -484,7 +671,172 @@ class Teams
      */
     public function headteamGames($team): array
     {
-        return $this->client->request('HEAD', "/api/public/teams/" . $team . "/games", []);
+        return $this->client->request('HEAD', "/api/v4/teams/" . $team . "/games", []);
+    }
+    /**
+     * Statistics team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamStatistics($team): array
+    {
+        return $this->client->request('GET', "/api/v4/teams/" . $team . "/statistics", []);
+    }
+    /**
+     * Statistics team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamStatistics($team): array
+    {
+        return $this->client->request('HEAD', "/api/v4/teams/" . $team . "/statistics", []);
+    }
+    /**
+     * Analytics team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamAnalytics($team): array
+    {
+        return $this->client->request('GET', "/api/v4/teams/" . $team . "/analytics", []);
+    }
+    /**
+     * Analytics team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamAnalytics($team): array
+    {
+        return $this->client->request('HEAD', "/api/v4/teams/" . $team . "/analytics", []);
+    }
+    /**
+     * InvitePlayer team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postteamInvitePlayer($team): array
+    {
+        return $this->client->request('POST', "/api/v4/teams/" . $team . "/invite-player", []);
+    }
+    /**
+     * PerformanceTrends team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamPerformanceTrends($team): array
+    {
+        return $this->client->request('GET', "/api/v4/teams/" . $team . "/performance-trends", []);
+    }
+    /**
+     * PerformanceTrends team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamPerformanceTrends($team): array
+    {
+        return $this->client->request('HEAD', "/api/v4/teams/" . $team . "/performance-trends", []);
+    }
+    /**
+     * Get specific team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamShow($team): array
+    {
+        return $this->client->request('GET', "/api/v4/public/teams/" . $team . "", []);
+    }
+    /**
+     * Get specific team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamShow($team): array
+    {
+        return $this->client->request('HEAD', "/api/v4/public/teams/" . $team . "", []);
+    }
+    /**
+     * Players team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamPlayers($team): array
+    {
+        return $this->client->request('GET', "/api/v4/public/teams/" . $team . "/players", []);
+    }
+    /**
+     * Players team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamPlayers($team): array
+    {
+        return $this->client->request('HEAD', "/api/v4/public/teams/" . $team . "/players", []);
+    }
+    /**
+     * Games team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamGames($team): array
+    {
+        return $this->client->request('GET', "/api/v4/public/teams/" . $team . "/games", []);
+    }
+    /**
+     * Games team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamGames($team): array
+    {
+        return $this->client->request('HEAD', "/api/v4/public/teams/" . $team . "/games", []);
+    }
+    /**
+     * PublicStats team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getteamPublicStats($team): array
+    {
+        return $this->client->request('GET', "/api/v4/public/teams/" . $team . "/public-stats", []);
+    }
+    /**
+     * PublicStats team
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headteamPublicStats($team): array
+    {
+        return $this->client->request('HEAD', "/api/v4/public/teams/" . $team . "/public-stats", []);
     }
 }
 
@@ -509,7 +861,7 @@ class Players
      */
     public function getplayerIndex(array $options = []): array
     {
-        return $this->client->request('GET', "/api/players", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('GET', "/api/v1/players", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * List all player
@@ -520,7 +872,7 @@ class Players
      */
     public function headplayerIndex(array $options = []): array
     {
-        return $this->client->request('HEAD', "/api/players", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('HEAD', "/api/v1/players", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * Create new player
@@ -531,7 +883,7 @@ class Players
      */
     public function postplayerStore(array $options = []): array
     {
-        return $this->client->request('POST', "/api/players", $this->buildRequestOptions($options));
+        return $this->client->request('POST', "/api/v1/players", $this->buildRequestOptions($options));
     }
     /**
      * Get specific player
@@ -542,7 +894,7 @@ class Players
      */
     public function getplayerShow($player): array
     {
-        return $this->client->request('GET', "/api/players/" . $player . "", []);
+        return $this->client->request('GET', "/api/v1/players/" . $player . "", []);
     }
     /**
      * Get specific player
@@ -553,7 +905,7 @@ class Players
      */
     public function headplayerShow($player): array
     {
-        return $this->client->request('HEAD', "/api/players/" . $player . "", []);
+        return $this->client->request('HEAD', "/api/v1/players/" . $player . "", []);
     }
     /**
      * Update player
@@ -564,7 +916,7 @@ class Players
      */
     public function putplayerUpdate($player, array $options = []): array
     {
-        return $this->client->request('PUT', "/api/players/" . $player . "", $this->buildRequestOptions($options));
+        return $this->client->request('PUT', "/api/v1/players/" . $player . "", $this->buildRequestOptions($options));
     }
     /**
      * Update player
@@ -575,40 +927,7 @@ class Players
      */
     public function patchplayerUpdate($player, array $options = []): array
     {
-        return $this->client->request('PATCH', "/api/players/" . $player . "", $this->buildRequestOptions($options));
-    }
-    /**
-     * Delete player
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function deleteplayerDestroy($player): array
-    {
-        return $this->client->request('DELETE', "/api/players/" . $player . "", []);
-    }
-    /**
-     * Statistics player
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function getplayerStatistics($player): array
-    {
-        return $this->client->request('GET', "/api/players/" . $player . "/statistics", []);
-    }
-    /**
-     * Statistics player
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function headplayerStatistics($player): array
-    {
-        return $this->client->request('HEAD', "/api/players/" . $player . "/statistics", []);
+        return $this->client->request('PATCH', "/api/v1/players/" . $player . "", $this->buildRequestOptions($options));
     }
     /**
      * Games player
@@ -619,7 +938,7 @@ class Players
      */
     public function getplayerGames($player): array
     {
-        return $this->client->request('GET', "/api/players/" . $player . "/games", []);
+        return $this->client->request('GET', "/api/v1/players/" . $player . "/games", []);
     }
     /**
      * Games player
@@ -630,7 +949,139 @@ class Players
      */
     public function headplayerGames($player): array
     {
-        return $this->client->request('HEAD', "/api/players/" . $player . "/games", []);
+        return $this->client->request('HEAD', "/api/v1/players/" . $player . "/games", []);
+    }
+    /**
+     * List all player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getplayerIndex(array $options = []): array
+    {
+        return $this->client->request('GET', "/api/v4/players", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * List all player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headplayerIndex(array $options = []): array
+    {
+        return $this->client->request('HEAD', "/api/v4/players", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * Create new player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postplayerStore(array $options = []): array
+    {
+        return $this->client->request('POST', "/api/v4/players", $this->buildRequestOptions($options));
+    }
+    /**
+     * Get specific player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getplayerShow($player): array
+    {
+        return $this->client->request('GET', "/api/v4/players/" . $player . "", []);
+    }
+    /**
+     * Get specific player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headplayerShow($player): array
+    {
+        return $this->client->request('HEAD', "/api/v4/players/" . $player . "", []);
+    }
+    /**
+     * Update player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function putplayerUpdate($player, array $options = []): array
+    {
+        return $this->client->request('PUT', "/api/v4/players/" . $player . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Update player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function patchplayerUpdate($player, array $options = []): array
+    {
+        return $this->client->request('PATCH', "/api/v4/players/" . $player . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Delete player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function deleteplayerDestroy($player): array
+    {
+        return $this->client->request('DELETE', "/api/v4/players/" . $player . "", []);
+    }
+    /**
+     * Statistics player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getplayerStatistics($player): array
+    {
+        return $this->client->request('GET', "/api/v4/players/" . $player . "/statistics", []);
+    }
+    /**
+     * Statistics player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headplayerStatistics($player): array
+    {
+        return $this->client->request('HEAD', "/api/v4/players/" . $player . "/statistics", []);
+    }
+    /**
+     * Games player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getplayerGames($player): array
+    {
+        return $this->client->request('GET', "/api/v4/players/" . $player . "/games", []);
+    }
+    /**
+     * Games player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headplayerGames($player): array
+    {
+        return $this->client->request('HEAD', "/api/v4/players/" . $player . "/games", []);
     }
     /**
      * Transfer player
@@ -641,7 +1092,73 @@ class Players
      */
     public function postplayerTransfer($player): array
     {
-        return $this->client->request('POST', "/api/players/" . $player . "/transfer", []);
+        return $this->client->request('POST', "/api/v4/players/" . $player . "/transfer", []);
+    }
+    /**
+     * Analytics player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getplayerAnalytics($player): array
+    {
+        return $this->client->request('GET', "/api/v4/players/" . $player . "/analytics", []);
+    }
+    /**
+     * Analytics player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headplayerAnalytics($player): array
+    {
+        return $this->client->request('HEAD', "/api/v4/players/" . $player . "/analytics", []);
+    }
+    /**
+     * InjuryRisk player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getplayerInjuryRisk($player): array
+    {
+        return $this->client->request('GET', "/api/v4/players/" . $player . "/injury-risk", []);
+    }
+    /**
+     * InjuryRisk player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headplayerInjuryRisk($player): array
+    {
+        return $this->client->request('HEAD', "/api/v4/players/" . $player . "/injury-risk", []);
+    }
+    /**
+     * PerformancePredictions player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getplayerPerformancePredictions($player): array
+    {
+        return $this->client->request('GET', "/api/v4/players/" . $player . "/performance-predictions", []);
+    }
+    /**
+     * PerformancePredictions player
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headplayerPerformancePredictions($player): array
+    {
+        return $this->client->request('HEAD', "/api/v4/players/" . $player . "/performance-predictions", []);
     }
 }
 
@@ -666,7 +1183,7 @@ class Games
      */
     public function getgameIndex(array $options = []): array
     {
-        return $this->client->request('GET', "/api/games", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('GET', "/api/v1/games", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * List all game
@@ -677,7 +1194,7 @@ class Games
      */
     public function headgameIndex(array $options = []): array
     {
-        return $this->client->request('HEAD', "/api/games", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('HEAD', "/api/v1/games", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * Create new game
@@ -688,7 +1205,7 @@ class Games
      */
     public function postgameStore(array $options = []): array
     {
-        return $this->client->request('POST', "/api/games", $this->buildRequestOptions($options));
+        return $this->client->request('POST', "/api/v1/games", $this->buildRequestOptions($options));
     }
     /**
      * Get specific game
@@ -699,7 +1216,7 @@ class Games
      */
     public function getgameShow($game): array
     {
-        return $this->client->request('GET', "/api/games/" . $game . "", []);
+        return $this->client->request('GET', "/api/v1/games/" . $game . "", []);
     }
     /**
      * Get specific game
@@ -710,7 +1227,7 @@ class Games
      */
     public function headgameShow($game): array
     {
-        return $this->client->request('HEAD', "/api/games/" . $game . "", []);
+        return $this->client->request('HEAD', "/api/v1/games/" . $game . "", []);
     }
     /**
      * Update game
@@ -721,7 +1238,7 @@ class Games
      */
     public function putgameUpdate($game, array $options = []): array
     {
-        return $this->client->request('PUT', "/api/games/" . $game . "", $this->buildRequestOptions($options));
+        return $this->client->request('PUT', "/api/v1/games/" . $game . "", $this->buildRequestOptions($options));
     }
     /**
      * Update game
@@ -732,62 +1249,7 @@ class Games
      */
     public function patchgameUpdate($game, array $options = []): array
     {
-        return $this->client->request('PATCH', "/api/games/" . $game . "", $this->buildRequestOptions($options));
-    }
-    /**
-     * Delete game
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function deletegameDestroy($game): array
-    {
-        return $this->client->request('DELETE', "/api/games/" . $game . "", []);
-    }
-    /**
-     * Statistics game
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function getgameStatistics($game): array
-    {
-        return $this->client->request('GET', "/api/games/" . $game . "/statistics", []);
-    }
-    /**
-     * Statistics game
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function headgameStatistics($game): array
-    {
-        return $this->client->request('HEAD', "/api/games/" . $game . "/statistics", []);
-    }
-    /**
-     * Start game
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function postgameStart($game): array
-    {
-        return $this->client->request('POST', "/api/games/" . $game . "/start", []);
-    }
-    /**
-     * Finish game
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function postgameFinish($game): array
-    {
-        return $this->client->request('POST', "/api/games/" . $game . "/finish", []);
+        return $this->client->request('PATCH', "/api/v1/games/" . $game . "", $this->buildRequestOptions($options));
     }
     /**
      * LiveScore game
@@ -798,7 +1260,7 @@ class Games
      */
     public function getgameLiveScore($game): array
     {
-        return $this->client->request('GET', "/api/games/" . $game . "/live-score", []);
+        return $this->client->request('GET', "/api/v1/games/" . $game . "/live-score", []);
     }
     /**
      * LiveScore game
@@ -809,128 +1271,7 @@ class Games
      */
     public function headgameLiveScore($game): array
     {
-        return $this->client->request('HEAD', "/api/games/" . $game . "/live-score", []);
-    }
-    /**
-     * List all gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function getgameStatisticIndex(array $options = []): array
-    {
-        return $this->client->request('GET', "/api/game-statistics", $this->buildQueryOptions($options, ["page","per_page","search"]));
-    }
-    /**
-     * List all gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function headgameStatisticIndex(array $options = []): array
-    {
-        return $this->client->request('HEAD', "/api/game-statistics", $this->buildQueryOptions($options, ["page","per_page","search"]));
-    }
-    /**
-     * Create new gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function postgameStatisticStore(array $options = []): array
-    {
-        return $this->client->request('POST', "/api/game-statistics", $this->buildRequestOptions($options));
-    }
-    /**
-     * Get specific gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function getgameStatisticShow($gameStatistic): array
-    {
-        return $this->client->request('GET', "/api/game-statistics/" . $gameStatistic . "", []);
-    }
-    /**
-     * Get specific gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function headgameStatisticShow($gameStatistic): array
-    {
-        return $this->client->request('HEAD', "/api/game-statistics/" . $gameStatistic . "", []);
-    }
-    /**
-     * Update gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function putgameStatisticUpdate($gameStatistic, array $options = []): array
-    {
-        return $this->client->request('PUT', "/api/game-statistics/" . $gameStatistic . "", $this->buildRequestOptions($options));
-    }
-    /**
-     * Update gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function patchgameStatisticUpdate($gameStatistic, array $options = []): array
-    {
-        return $this->client->request('PATCH', "/api/game-statistics/" . $gameStatistic . "", $this->buildRequestOptions($options));
-    }
-    /**
-     * Delete gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function deletegameStatisticDestroy($gameStatistic): array
-    {
-        return $this->client->request('DELETE', "/api/game-statistics/" . $gameStatistic . "", []);
-    }
-    /**
-     * BulkStore gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function postgameStatisticBulkStore(): array
-    {
-        return $this->client->request('POST', "/api/game-statistics/bulk", []);
-    }
-    /**
-     * PlayerGameStats gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function getgameStatisticPlayerGameStats($game, $player): array
-    {
-        return $this->client->request('GET', "/api/game-statistics/" . $game . "/player/" . $player . "", []);
-    }
-    /**
-     * PlayerGameStats gamestatistic
-     * 
-     * @param array $options Request options
-     * @return array Response data
-     * @throws ApiException
-     */
-    public function headgameStatisticPlayerGameStats($game, $player): array
-    {
-        return $this->client->request('HEAD', "/api/game-statistics/" . $game . "/player/" . $player . "", []);
+        return $this->client->request('HEAD', "/api/v1/games/" . $game . "/live-score", []);
     }
     /**
      * Get specific game
@@ -941,7 +1282,7 @@ class Games
      */
     public function getgameShow($game): array
     {
-        return $this->client->request('GET', "/api/public/games/" . $game . "", []);
+        return $this->client->request('GET', "/api/v1/public/games/" . $game . "", []);
     }
     /**
      * Get specific game
@@ -952,7 +1293,7 @@ class Games
      */
     public function headgameShow($game): array
     {
-        return $this->client->request('HEAD', "/api/public/games/" . $game . "", []);
+        return $this->client->request('HEAD', "/api/v1/public/games/" . $game . "", []);
     }
     /**
      * LiveScore game
@@ -963,7 +1304,7 @@ class Games
      */
     public function getgameLiveScore($game): array
     {
-        return $this->client->request('GET', "/api/public/games/" . $game . "/live-score", []);
+        return $this->client->request('GET', "/api/v1/public/games/" . $game . "/live-score", []);
     }
     /**
      * LiveScore game
@@ -974,7 +1315,359 @@ class Games
      */
     public function headgameLiveScore($game): array
     {
-        return $this->client->request('HEAD', "/api/public/games/" . $game . "/live-score", []);
+        return $this->client->request('HEAD', "/api/v1/public/games/" . $game . "/live-score", []);
+    }
+    /**
+     * List all game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameIndex(array $options = []): array
+    {
+        return $this->client->request('GET', "/api/v4/games", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * List all game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameIndex(array $options = []): array
+    {
+        return $this->client->request('HEAD', "/api/v4/games", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * Create new game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postgameStore(array $options = []): array
+    {
+        return $this->client->request('POST', "/api/v4/games", $this->buildRequestOptions($options));
+    }
+    /**
+     * Get specific game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameShow($game): array
+    {
+        return $this->client->request('GET', "/api/v4/games/" . $game . "", []);
+    }
+    /**
+     * Get specific game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameShow($game): array
+    {
+        return $this->client->request('HEAD', "/api/v4/games/" . $game . "", []);
+    }
+    /**
+     * Update game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function putgameUpdate($game, array $options = []): array
+    {
+        return $this->client->request('PUT', "/api/v4/games/" . $game . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Update game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function patchgameUpdate($game, array $options = []): array
+    {
+        return $this->client->request('PATCH', "/api/v4/games/" . $game . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Delete game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function deletegameDestroy($game): array
+    {
+        return $this->client->request('DELETE', "/api/v4/games/" . $game . "", []);
+    }
+    /**
+     * LiveScore game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameLiveScore($game): array
+    {
+        return $this->client->request('GET', "/api/v4/games/" . $game . "/live-score", []);
+    }
+    /**
+     * LiveScore game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameLiveScore($game): array
+    {
+        return $this->client->request('HEAD', "/api/v4/games/" . $game . "/live-score", []);
+    }
+    /**
+     * RealTimeData game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameRealTimeData($game): array
+    {
+        return $this->client->request('GET', "/api/v4/games/" . $game . "/real-time-data", []);
+    }
+    /**
+     * RealTimeData game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameRealTimeData($game): array
+    {
+        return $this->client->request('HEAD', "/api/v4/games/" . $game . "/real-time-data", []);
+    }
+    /**
+     * StartBroadcast game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postgameStartBroadcast($game): array
+    {
+        return $this->client->request('POST', "/api/v4/games/" . $game . "/broadcast", []);
+    }
+    /**
+     * List all gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameStatisticIndex(array $options = []): array
+    {
+        return $this->client->request('GET', "/api/v4/game-statistics", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * List all gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameStatisticIndex(array $options = []): array
+    {
+        return $this->client->request('HEAD', "/api/v4/game-statistics", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * Create new gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postgameStatisticStore(array $options = []): array
+    {
+        return $this->client->request('POST', "/api/v4/game-statistics", $this->buildRequestOptions($options));
+    }
+    /**
+     * Get specific gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameStatisticShow($gameStatistic): array
+    {
+        return $this->client->request('GET', "/api/v4/game-statistics/" . $gameStatistic . "", []);
+    }
+    /**
+     * Get specific gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameStatisticShow($gameStatistic): array
+    {
+        return $this->client->request('HEAD', "/api/v4/game-statistics/" . $gameStatistic . "", []);
+    }
+    /**
+     * Update gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function putgameStatisticUpdate($gameStatistic, array $options = []): array
+    {
+        return $this->client->request('PUT', "/api/v4/game-statistics/" . $gameStatistic . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Update gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function patchgameStatisticUpdate($gameStatistic, array $options = []): array
+    {
+        return $this->client->request('PATCH', "/api/v4/game-statistics/" . $gameStatistic . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Delete gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function deletegameStatisticDestroy($gameStatistic): array
+    {
+        return $this->client->request('DELETE', "/api/v4/game-statistics/" . $gameStatistic . "", []);
+    }
+    /**
+     * BulkStore gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postgameStatisticBulkStore(): array
+    {
+        return $this->client->request('POST', "/api/v4/game-statistics/bulk", []);
+    }
+    /**
+     * PlayerGameStats gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameStatisticPlayerGameStats($game, $player): array
+    {
+        return $this->client->request('GET', "/api/v4/game-statistics/" . $game . "/player/" . $player . "", []);
+    }
+    /**
+     * PlayerGameStats gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameStatisticPlayerGameStats($game, $player): array
+    {
+        return $this->client->request('HEAD', "/api/v4/game-statistics/" . $game . "/player/" . $player . "", []);
+    }
+    /**
+     * AdvancedMetrics gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameStatisticAdvancedMetrics($game): array
+    {
+        return $this->client->request('GET', "/api/v4/game-statistics/" . $game . "/advanced-metrics", []);
+    }
+    /**
+     * AdvancedMetrics gamestatistic
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameStatisticAdvancedMetrics($game): array
+    {
+        return $this->client->request('HEAD', "/api/v4/game-statistics/" . $game . "/advanced-metrics", []);
+    }
+    /**
+     * Get specific game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameShow($game): array
+    {
+        return $this->client->request('GET', "/api/v4/public/games/" . $game . "", []);
+    }
+    /**
+     * Get specific game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameShow($game): array
+    {
+        return $this->client->request('HEAD', "/api/v4/public/games/" . $game . "", []);
+    }
+    /**
+     * LiveScore game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameLiveScore($game): array
+    {
+        return $this->client->request('GET', "/api/v4/public/games/" . $game . "/live-score", []);
+    }
+    /**
+     * LiveScore game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameLiveScore($game): array
+    {
+        return $this->client->request('HEAD', "/api/v4/public/games/" . $game . "/live-score", []);
+    }
+    /**
+     * LiveFeed game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getgameLiveFeed($game): array
+    {
+        return $this->client->request('GET', "/api/v4/public/games/" . $game . "/live-feed", []);
+    }
+    /**
+     * LiveFeed game
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headgameLiveFeed($game): array
+    {
+        return $this->client->request('HEAD', "/api/v4/public/games/" . $game . "/live-feed", []);
     }
 }
 
@@ -999,7 +1692,7 @@ class Tournaments
      */
     public function gettournamentIndex(array $options = []): array
     {
-        return $this->client->request('GET', "/api/tournaments", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('GET', "/api/v4/tournaments", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * List all tournament
@@ -1010,7 +1703,7 @@ class Tournaments
      */
     public function headtournamentIndex(array $options = []): array
     {
-        return $this->client->request('HEAD', "/api/tournaments", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('HEAD', "/api/v4/tournaments", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * Create new tournament
@@ -1021,7 +1714,7 @@ class Tournaments
      */
     public function posttournamentStore(array $options = []): array
     {
-        return $this->client->request('POST', "/api/tournaments", $this->buildRequestOptions($options));
+        return $this->client->request('POST', "/api/v4/tournaments", $this->buildRequestOptions($options));
     }
     /**
      * Get specific tournament
@@ -1032,7 +1725,7 @@ class Tournaments
      */
     public function gettournamentShow($tournament): array
     {
-        return $this->client->request('GET', "/api/tournaments/" . $tournament . "", []);
+        return $this->client->request('GET', "/api/v4/tournaments/" . $tournament . "", []);
     }
     /**
      * Get specific tournament
@@ -1043,7 +1736,7 @@ class Tournaments
      */
     public function headtournamentShow($tournament): array
     {
-        return $this->client->request('HEAD', "/api/tournaments/" . $tournament . "", []);
+        return $this->client->request('HEAD', "/api/v4/tournaments/" . $tournament . "", []);
     }
     /**
      * Update tournament
@@ -1054,7 +1747,7 @@ class Tournaments
      */
     public function puttournamentUpdate($tournament, array $options = []): array
     {
-        return $this->client->request('PUT', "/api/tournaments/" . $tournament . "", $this->buildRequestOptions($options));
+        return $this->client->request('PUT', "/api/v4/tournaments/" . $tournament . "", $this->buildRequestOptions($options));
     }
     /**
      * Update tournament
@@ -1065,7 +1758,7 @@ class Tournaments
      */
     public function patchtournamentUpdate($tournament, array $options = []): array
     {
-        return $this->client->request('PATCH', "/api/tournaments/" . $tournament . "", $this->buildRequestOptions($options));
+        return $this->client->request('PATCH', "/api/v4/tournaments/" . $tournament . "", $this->buildRequestOptions($options));
     }
     /**
      * Delete tournament
@@ -1076,7 +1769,7 @@ class Tournaments
      */
     public function deletetournamentDestroy($tournament): array
     {
-        return $this->client->request('DELETE', "/api/tournaments/" . $tournament . "", []);
+        return $this->client->request('DELETE', "/api/v4/tournaments/" . $tournament . "", []);
     }
     /**
      * AddTeam tournament
@@ -1087,7 +1780,7 @@ class Tournaments
      */
     public function posttournamentAddTeam($tournament, $team): array
     {
-        return $this->client->request('POST', "/api/tournaments/" . $tournament . "/teams/" . $team . "", []);
+        return $this->client->request('POST', "/api/v4/tournaments/" . $tournament . "/teams/" . $team . "", []);
     }
     /**
      * RemoveTeam tournament
@@ -1098,7 +1791,7 @@ class Tournaments
      */
     public function deletetournamentRemoveTeam($tournament, $team): array
     {
-        return $this->client->request('DELETE', "/api/tournaments/" . $tournament . "/teams/" . $team . "", []);
+        return $this->client->request('DELETE', "/api/v4/tournaments/" . $tournament . "/teams/" . $team . "", []);
     }
     /**
      * GenerateBracket tournament
@@ -1109,7 +1802,7 @@ class Tournaments
      */
     public function posttournamentGenerateBracket($tournament): array
     {
-        return $this->client->request('POST', "/api/tournaments/" . $tournament . "/generate-bracket", []);
+        return $this->client->request('POST', "/api/v4/tournaments/" . $tournament . "/generate-bracket", []);
     }
     /**
      * AdvanceBracket tournament
@@ -1120,7 +1813,7 @@ class Tournaments
      */
     public function posttournamentAdvanceBracket($tournament): array
     {
-        return $this->client->request('POST', "/api/tournaments/" . $tournament . "/advance-bracket", []);
+        return $this->client->request('POST', "/api/v4/tournaments/" . $tournament . "/advance-bracket", []);
     }
     /**
      * Bracket tournament
@@ -1131,7 +1824,7 @@ class Tournaments
      */
     public function gettournamentBracket($tournament): array
     {
-        return $this->client->request('GET', "/api/tournaments/" . $tournament . "/bracket", []);
+        return $this->client->request('GET', "/api/v4/tournaments/" . $tournament . "/bracket", []);
     }
     /**
      * Bracket tournament
@@ -1142,7 +1835,7 @@ class Tournaments
      */
     public function headtournamentBracket($tournament): array
     {
-        return $this->client->request('HEAD', "/api/tournaments/" . $tournament . "/bracket", []);
+        return $this->client->request('HEAD', "/api/v4/tournaments/" . $tournament . "/bracket", []);
     }
     /**
      * Standings tournament
@@ -1153,7 +1846,7 @@ class Tournaments
      */
     public function gettournamentStandings($tournament): array
     {
-        return $this->client->request('GET', "/api/tournaments/" . $tournament . "/standings", []);
+        return $this->client->request('GET', "/api/v4/tournaments/" . $tournament . "/standings", []);
     }
     /**
      * Standings tournament
@@ -1164,7 +1857,7 @@ class Tournaments
      */
     public function headtournamentStandings($tournament): array
     {
-        return $this->client->request('HEAD', "/api/tournaments/" . $tournament . "/standings", []);
+        return $this->client->request('HEAD', "/api/v4/tournaments/" . $tournament . "/standings", []);
     }
     /**
      * Start tournament
@@ -1175,7 +1868,7 @@ class Tournaments
      */
     public function posttournamentStart($tournament): array
     {
-        return $this->client->request('POST', "/api/tournaments/" . $tournament . "/start", []);
+        return $this->client->request('POST', "/api/v4/tournaments/" . $tournament . "/start", []);
     }
     /**
      * Finish tournament
@@ -1186,7 +1879,40 @@ class Tournaments
      */
     public function posttournamentFinish($tournament): array
     {
-        return $this->client->request('POST', "/api/tournaments/" . $tournament . "/finish", []);
+        return $this->client->request('POST', "/api/v4/tournaments/" . $tournament . "/finish", []);
+    }
+    /**
+     * Predictions tournament
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function gettournamentPredictions($tournament): array
+    {
+        return $this->client->request('GET', "/api/v4/tournaments/" . $tournament . "/predictions", []);
+    }
+    /**
+     * Predictions tournament
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headtournamentPredictions($tournament): array
+    {
+        return $this->client->request('HEAD', "/api/v4/tournaments/" . $tournament . "/predictions", []);
+    }
+    /**
+     * SetupLiveStream tournament
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function posttournamentSetupLiveStream($tournament): array
+    {
+        return $this->client->request('POST', "/api/v4/tournaments/" . $tournament . "/live-stream", []);
     }
     /**
      * Get specific tournament
@@ -1197,7 +1923,7 @@ class Tournaments
      */
     public function gettournamentShow($tournament): array
     {
-        return $this->client->request('GET', "/api/public/tournaments/" . $tournament . "", []);
+        return $this->client->request('GET', "/api/v4/public/tournaments/" . $tournament . "", []);
     }
     /**
      * Get specific tournament
@@ -1208,7 +1934,7 @@ class Tournaments
      */
     public function headtournamentShow($tournament): array
     {
-        return $this->client->request('HEAD', "/api/public/tournaments/" . $tournament . "", []);
+        return $this->client->request('HEAD', "/api/v4/public/tournaments/" . $tournament . "", []);
     }
     /**
      * Bracket tournament
@@ -1219,7 +1945,7 @@ class Tournaments
      */
     public function gettournamentBracket($tournament): array
     {
-        return $this->client->request('GET', "/api/public/tournaments/" . $tournament . "/bracket", []);
+        return $this->client->request('GET', "/api/v4/public/tournaments/" . $tournament . "/bracket", []);
     }
     /**
      * Bracket tournament
@@ -1230,7 +1956,7 @@ class Tournaments
      */
     public function headtournamentBracket($tournament): array
     {
-        return $this->client->request('HEAD', "/api/public/tournaments/" . $tournament . "/bracket", []);
+        return $this->client->request('HEAD', "/api/v4/public/tournaments/" . $tournament . "/bracket", []);
     }
     /**
      * Standings tournament
@@ -1241,7 +1967,7 @@ class Tournaments
      */
     public function gettournamentStandings($tournament): array
     {
-        return $this->client->request('GET', "/api/public/tournaments/" . $tournament . "/standings", []);
+        return $this->client->request('GET', "/api/v4/public/tournaments/" . $tournament . "/standings", []);
     }
     /**
      * Standings tournament
@@ -1252,7 +1978,29 @@ class Tournaments
      */
     public function headtournamentStandings($tournament): array
     {
-        return $this->client->request('HEAD', "/api/public/tournaments/" . $tournament . "/standings", []);
+        return $this->client->request('HEAD', "/api/v4/public/tournaments/" . $tournament . "/standings", []);
+    }
+    /**
+     * LiveFeed tournament
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function gettournamentLiveFeed($tournament): array
+    {
+        return $this->client->request('GET', "/api/v4/public/tournaments/" . $tournament . "/live-feed", []);
+    }
+    /**
+     * LiveFeed tournament
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headtournamentLiveFeed($tournament): array
+    {
+        return $this->client->request('HEAD', "/api/v4/public/tournaments/" . $tournament . "/live-feed", []);
     }
 }
 
@@ -1277,7 +2025,7 @@ class Training
      */
     public function gettrainingIndex(array $options = []): array
     {
-        return $this->client->request('GET', "/api/trainings", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('GET', "/api/v4/trainings", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * List all training
@@ -1288,7 +2036,7 @@ class Training
      */
     public function headtrainingIndex(array $options = []): array
     {
-        return $this->client->request('HEAD', "/api/trainings", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('HEAD', "/api/v4/trainings", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * Create new training
@@ -1299,7 +2047,7 @@ class Training
      */
     public function posttrainingStore(array $options = []): array
     {
-        return $this->client->request('POST', "/api/trainings", $this->buildRequestOptions($options));
+        return $this->client->request('POST', "/api/v4/trainings", $this->buildRequestOptions($options));
     }
     /**
      * Get specific training
@@ -1310,7 +2058,7 @@ class Training
      */
     public function gettrainingShow($training): array
     {
-        return $this->client->request('GET', "/api/trainings/" . $training . "", []);
+        return $this->client->request('GET', "/api/v4/trainings/" . $training . "", []);
     }
     /**
      * Get specific training
@@ -1321,7 +2069,7 @@ class Training
      */
     public function headtrainingShow($training): array
     {
-        return $this->client->request('HEAD', "/api/trainings/" . $training . "", []);
+        return $this->client->request('HEAD', "/api/v4/trainings/" . $training . "", []);
     }
     /**
      * Update training
@@ -1332,7 +2080,7 @@ class Training
      */
     public function puttrainingUpdate($training, array $options = []): array
     {
-        return $this->client->request('PUT', "/api/trainings/" . $training . "", $this->buildRequestOptions($options));
+        return $this->client->request('PUT', "/api/v4/trainings/" . $training . "", $this->buildRequestOptions($options));
     }
     /**
      * Update training
@@ -1343,7 +2091,7 @@ class Training
      */
     public function patchtrainingUpdate($training, array $options = []): array
     {
-        return $this->client->request('PATCH', "/api/trainings/" . $training . "", $this->buildRequestOptions($options));
+        return $this->client->request('PATCH', "/api/v4/trainings/" . $training . "", $this->buildRequestOptions($options));
     }
     /**
      * Delete training
@@ -1354,7 +2102,7 @@ class Training
      */
     public function deletetrainingDestroy($training): array
     {
-        return $this->client->request('DELETE', "/api/trainings/" . $training . "", []);
+        return $this->client->request('DELETE', "/api/v4/trainings/" . $training . "", []);
     }
     /**
      * Drills training
@@ -1365,7 +2113,7 @@ class Training
      */
     public function gettrainingDrills($training): array
     {
-        return $this->client->request('GET', "/api/trainings/" . $training . "/drills", []);
+        return $this->client->request('GET', "/api/v4/trainings/" . $training . "/drills", []);
     }
     /**
      * Drills training
@@ -1376,7 +2124,7 @@ class Training
      */
     public function headtrainingDrills($training): array
     {
-        return $this->client->request('HEAD', "/api/trainings/" . $training . "/drills", []);
+        return $this->client->request('HEAD', "/api/v4/trainings/" . $training . "/drills", []);
     }
     /**
      * AttachDrill training
@@ -1387,7 +2135,7 @@ class Training
      */
     public function posttrainingAttachDrill($training, $drill): array
     {
-        return $this->client->request('POST', "/api/trainings/" . $training . "/drills/" . $drill . "/attach", []);
+        return $this->client->request('POST', "/api/v4/trainings/" . $training . "/drills/" . $drill . "/attach", []);
     }
     /**
      * DetachDrill training
@@ -1398,7 +2146,7 @@ class Training
      */
     public function deletetrainingDetachDrill($training, $drill): array
     {
-        return $this->client->request('DELETE', "/api/trainings/" . $training . "/drills/" . $drill . "/detach", []);
+        return $this->client->request('DELETE', "/api/v4/trainings/" . $training . "/drills/" . $drill . "/detach", []);
     }
     /**
      * TeamTrainings training
@@ -1409,7 +2157,7 @@ class Training
      */
     public function gettrainingTeamTrainings($team): array
     {
-        return $this->client->request('GET', "/api/teams/" . $team . "/trainings", []);
+        return $this->client->request('GET', "/api/v4/teams/" . $team . "/trainings", []);
     }
     /**
      * TeamTrainings training
@@ -1420,7 +2168,7 @@ class Training
      */
     public function headtrainingTeamTrainings($team): array
     {
-        return $this->client->request('HEAD', "/api/teams/" . $team . "/trainings", []);
+        return $this->client->request('HEAD', "/api/v4/teams/" . $team . "/trainings", []);
     }
     /**
      * Duplicate training
@@ -1431,7 +2179,18 @@ class Training
      */
     public function posttrainingDuplicate($training): array
     {
-        return $this->client->request('POST', "/api/trainings/" . $training . "/duplicate", []);
+        return $this->client->request('POST', "/api/v4/trainings/" . $training . "/duplicate", []);
+    }
+    /**
+     * AiRecommendations training
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function posttrainingAiRecommendations($training): array
+    {
+        return $this->client->request('POST', "/api/v4/trainings/" . $training . "/ai-recommendations", []);
     }
     /**
      * List all drill
@@ -1442,7 +2201,7 @@ class Training
      */
     public function getdrillIndex(array $options = []): array
     {
-        return $this->client->request('GET', "/api/drills", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('GET', "/api/v4/drills", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * List all drill
@@ -1453,7 +2212,7 @@ class Training
      */
     public function headdrillIndex(array $options = []): array
     {
-        return $this->client->request('HEAD', "/api/drills", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('HEAD', "/api/v4/drills", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * Create new drill
@@ -1464,7 +2223,7 @@ class Training
      */
     public function postdrillStore(array $options = []): array
     {
-        return $this->client->request('POST', "/api/drills", $this->buildRequestOptions($options));
+        return $this->client->request('POST', "/api/v4/drills", $this->buildRequestOptions($options));
     }
     /**
      * Get specific drill
@@ -1475,7 +2234,7 @@ class Training
      */
     public function getdrillShow($drill): array
     {
-        return $this->client->request('GET', "/api/drills/" . $drill . "", []);
+        return $this->client->request('GET', "/api/v4/drills/" . $drill . "", []);
     }
     /**
      * Get specific drill
@@ -1486,7 +2245,7 @@ class Training
      */
     public function headdrillShow($drill): array
     {
-        return $this->client->request('HEAD', "/api/drills/" . $drill . "", []);
+        return $this->client->request('HEAD', "/api/v4/drills/" . $drill . "", []);
     }
     /**
      * Update drill
@@ -1497,7 +2256,7 @@ class Training
      */
     public function putdrillUpdate($drill, array $options = []): array
     {
-        return $this->client->request('PUT', "/api/drills/" . $drill . "", $this->buildRequestOptions($options));
+        return $this->client->request('PUT', "/api/v4/drills/" . $drill . "", $this->buildRequestOptions($options));
     }
     /**
      * Update drill
@@ -1508,7 +2267,7 @@ class Training
      */
     public function patchdrillUpdate($drill, array $options = []): array
     {
-        return $this->client->request('PATCH', "/api/drills/" . $drill . "", $this->buildRequestOptions($options));
+        return $this->client->request('PATCH', "/api/v4/drills/" . $drill . "", $this->buildRequestOptions($options));
     }
     /**
      * Delete drill
@@ -1519,7 +2278,7 @@ class Training
      */
     public function deletedrillDestroy($drill): array
     {
-        return $this->client->request('DELETE', "/api/drills/" . $drill . "", []);
+        return $this->client->request('DELETE', "/api/v4/drills/" . $drill . "", []);
     }
     /**
      * Search drill
@@ -1530,7 +2289,7 @@ class Training
      */
     public function getdrillSearch(): array
     {
-        return $this->client->request('GET', "/api/drills/search", []);
+        return $this->client->request('GET', "/api/v4/drills/search", []);
     }
     /**
      * Search drill
@@ -1541,7 +2300,7 @@ class Training
      */
     public function headdrillSearch(): array
     {
-        return $this->client->request('HEAD', "/api/drills/search", []);
+        return $this->client->request('HEAD', "/api/v4/drills/search", []);
     }
     /**
      * Categories drill
@@ -1552,7 +2311,7 @@ class Training
      */
     public function getdrillCategories(): array
     {
-        return $this->client->request('GET', "/api/drills/categories", []);
+        return $this->client->request('GET', "/api/v4/drills/categories", []);
     }
     /**
      * Categories drill
@@ -1563,7 +2322,7 @@ class Training
      */
     public function headdrillCategories(): array
     {
-        return $this->client->request('HEAD', "/api/drills/categories", []);
+        return $this->client->request('HEAD', "/api/v4/drills/categories", []);
     }
     /**
      * ByCategory drill
@@ -1574,7 +2333,7 @@ class Training
      */
     public function getdrillByCategory($category): array
     {
-        return $this->client->request('GET', "/api/drills/category/" . $category . "", []);
+        return $this->client->request('GET', "/api/v4/drills/category/" . $category . "", []);
     }
     /**
      * ByCategory drill
@@ -1585,7 +2344,40 @@ class Training
      */
     public function headdrillByCategory($category): array
     {
-        return $this->client->request('HEAD', "/api/drills/category/" . $category . "", []);
+        return $this->client->request('HEAD', "/api/v4/drills/category/" . $category . "", []);
+    }
+    /**
+     * AiGenerated drill
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getdrillAiGenerated(): array
+    {
+        return $this->client->request('GET', "/api/v4/drills/ai-generated", []);
+    }
+    /**
+     * AiGenerated drill
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headdrillAiGenerated(): array
+    {
+        return $this->client->request('HEAD', "/api/v4/drills/ai-generated", []);
+    }
+    /**
+     * RateEffectiveness drill
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postdrillRateEffectiveness($drill): array
+    {
+        return $this->client->request('POST', "/api/v4/drills/" . $drill . "/effectiveness-rating", []);
     }
 }
 
@@ -1610,7 +2402,7 @@ class Analytics
      */
     public function getmLAnalyticsGetDashboardOverview(): array
     {
-        return $this->client->request('GET', "/api/ml-analytics/dashboard-overview", []);
+        return $this->client->request('GET', "/api/v4/ml-analytics/dashboard-overview", []);
     }
     /**
      * GetDashboardOverview mlanalytics
@@ -1621,7 +2413,7 @@ class Analytics
      */
     public function headmLAnalyticsGetDashboardOverview(): array
     {
-        return $this->client->request('HEAD', "/api/ml-analytics/dashboard-overview", []);
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/dashboard-overview", []);
     }
     /**
      * GetPlayerPerformanceDashboard mlanalytics
@@ -1632,7 +2424,7 @@ class Analytics
      */
     public function getmLAnalyticsGetPlayerPerformanceDashboard(): array
     {
-        return $this->client->request('GET', "/api/ml-analytics/performance-dashboard", []);
+        return $this->client->request('GET', "/api/v4/ml-analytics/performance-dashboard", []);
     }
     /**
      * GetPlayerPerformanceDashboard mlanalytics
@@ -1643,7 +2435,7 @@ class Analytics
      */
     public function headmLAnalyticsGetPlayerPerformanceDashboard(): array
     {
-        return $this->client->request('HEAD', "/api/ml-analytics/performance-dashboard", []);
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/performance-dashboard", []);
     }
     /**
      * GetInjuryRiskDashboard mlanalytics
@@ -1654,7 +2446,7 @@ class Analytics
      */
     public function getmLAnalyticsGetInjuryRiskDashboard(): array
     {
-        return $this->client->request('GET', "/api/ml-analytics/injury-dashboard", []);
+        return $this->client->request('GET', "/api/v4/ml-analytics/injury-dashboard", []);
     }
     /**
      * GetInjuryRiskDashboard mlanalytics
@@ -1665,7 +2457,7 @@ class Analytics
      */
     public function headmLAnalyticsGetInjuryRiskDashboard(): array
     {
-        return $this->client->request('HEAD', "/api/ml-analytics/injury-dashboard", []);
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/injury-dashboard", []);
     }
     /**
      * GetExperimentDashboard mlanalytics
@@ -1676,7 +2468,7 @@ class Analytics
      */
     public function getmLAnalyticsGetExperimentDashboard(): array
     {
-        return $this->client->request('GET', "/api/ml-analytics/experiment-dashboard", []);
+        return $this->client->request('GET', "/api/v4/ml-analytics/experiment-dashboard", []);
     }
     /**
      * GetExperimentDashboard mlanalytics
@@ -1687,7 +2479,7 @@ class Analytics
      */
     public function headmLAnalyticsGetExperimentDashboard(): array
     {
-        return $this->client->request('HEAD', "/api/ml-analytics/experiment-dashboard", []);
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/experiment-dashboard", []);
     }
     /**
      * GetPredictionsTimeline mlanalytics
@@ -1698,7 +2490,7 @@ class Analytics
      */
     public function getmLAnalyticsGetPredictionsTimeline(): array
     {
-        return $this->client->request('GET', "/api/ml-analytics/predictions-timeline", []);
+        return $this->client->request('GET', "/api/v4/ml-analytics/predictions-timeline", []);
     }
     /**
      * GetPredictionsTimeline mlanalytics
@@ -1709,7 +2501,7 @@ class Analytics
      */
     public function headmLAnalyticsGetPredictionsTimeline(): array
     {
-        return $this->client->request('HEAD', "/api/ml-analytics/predictions-timeline", []);
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/predictions-timeline", []);
     }
     /**
      * GetModelAccuracy mlanalytics
@@ -1720,7 +2512,7 @@ class Analytics
      */
     public function getmLAnalyticsGetModelAccuracy(): array
     {
-        return $this->client->request('GET', "/api/ml-analytics/model-accuracy", []);
+        return $this->client->request('GET', "/api/v4/ml-analytics/model-accuracy", []);
     }
     /**
      * GetModelAccuracy mlanalytics
@@ -1731,7 +2523,7 @@ class Analytics
      */
     public function headmLAnalyticsGetModelAccuracy(): array
     {
-        return $this->client->request('HEAD', "/api/ml-analytics/model-accuracy", []);
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/model-accuracy", []);
     }
     /**
      * GetPredictionComparison mlanalytics
@@ -1742,7 +2534,7 @@ class Analytics
      */
     public function getmLAnalyticsGetPredictionComparison(): array
     {
-        return $this->client->request('GET', "/api/ml-analytics/prediction-comparison", []);
+        return $this->client->request('GET', "/api/v4/ml-analytics/prediction-comparison", []);
     }
     /**
      * GetPredictionComparison mlanalytics
@@ -1753,7 +2545,84 @@ class Analytics
      */
     public function headmLAnalyticsGetPredictionComparison(): array
     {
-        return $this->client->request('HEAD', "/api/ml-analytics/prediction-comparison", []);
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/prediction-comparison", []);
+    }
+    /**
+     * TeamChemistryAnalysis mlanalytics
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getmLAnalyticsTeamChemistryAnalysis(): array
+    {
+        return $this->client->request('GET', "/api/v4/ml-analytics/team-chemistry-analysis", []);
+    }
+    /**
+     * TeamChemistryAnalysis mlanalytics
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headmLAnalyticsTeamChemistryAnalysis(): array
+    {
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/team-chemistry-analysis", []);
+    }
+    /**
+     * OpponentScouting mlanalytics
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getmLAnalyticsOpponentScouting(): array
+    {
+        return $this->client->request('GET', "/api/v4/ml-analytics/opponent-scouting", []);
+    }
+    /**
+     * OpponentScouting mlanalytics
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headmLAnalyticsOpponentScouting(): array
+    {
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/opponent-scouting", []);
+    }
+    /**
+     * TrainCustomModel mlanalytics
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postmLAnalyticsTrainCustomModel(): array
+    {
+        return $this->client->request('POST', "/api/v4/ml-analytics/custom-model/train", []);
+    }
+    /**
+     * ExplainPrediction mlanalytics
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getmLAnalyticsExplainPrediction($prediction): array
+    {
+        return $this->client->request('GET', "/api/v4/ml-analytics/prediction-explanations/" . $prediction . "", []);
+    }
+    /**
+     * ExplainPrediction mlanalytics
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headmLAnalyticsExplainPrediction($prediction): array
+    {
+        return $this->client->request('HEAD', "/api/v4/ml-analytics/prediction-explanations/" . $prediction . "", []);
     }
 }
 
@@ -1778,7 +2647,7 @@ class Videos
      */
     public function getvideoFileIndex(array $options = []): array
     {
-        return $this->client->request('GET', "/api/videos", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('GET', "/api/v4/videos", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * List all videofile
@@ -1789,7 +2658,7 @@ class Videos
      */
     public function headvideoFileIndex(array $options = []): array
     {
-        return $this->client->request('HEAD', "/api/videos", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('HEAD', "/api/v4/videos", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * Create new videofile
@@ -1800,7 +2669,7 @@ class Videos
      */
     public function postvideoFileStore(array $options = []): array
     {
-        return $this->client->request('POST', "/api/videos", $this->buildRequestOptions($options));
+        return $this->client->request('POST', "/api/v4/videos", $this->buildRequestOptions($options));
     }
     /**
      * Get specific videofile
@@ -1811,7 +2680,7 @@ class Videos
      */
     public function getvideoFileShow($video): array
     {
-        return $this->client->request('GET', "/api/videos/" . $video . "", []);
+        return $this->client->request('GET', "/api/v4/videos/" . $video . "", []);
     }
     /**
      * Get specific videofile
@@ -1822,7 +2691,7 @@ class Videos
      */
     public function headvideoFileShow($video): array
     {
-        return $this->client->request('HEAD', "/api/videos/" . $video . "", []);
+        return $this->client->request('HEAD', "/api/v4/videos/" . $video . "", []);
     }
     /**
      * Update videofile
@@ -1833,7 +2702,7 @@ class Videos
      */
     public function putvideoFileUpdate($video, array $options = []): array
     {
-        return $this->client->request('PUT', "/api/videos/" . $video . "", $this->buildRequestOptions($options));
+        return $this->client->request('PUT', "/api/v4/videos/" . $video . "", $this->buildRequestOptions($options));
     }
     /**
      * Update videofile
@@ -1844,7 +2713,7 @@ class Videos
      */
     public function patchvideoFileUpdate($video, array $options = []): array
     {
-        return $this->client->request('PATCH', "/api/videos/" . $video . "", $this->buildRequestOptions($options));
+        return $this->client->request('PATCH', "/api/v4/videos/" . $video . "", $this->buildRequestOptions($options));
     }
     /**
      * Delete videofile
@@ -1855,7 +2724,7 @@ class Videos
      */
     public function deletevideoFileDestroy($video): array
     {
-        return $this->client->request('DELETE', "/api/videos/" . $video . "", []);
+        return $this->client->request('DELETE', "/api/v4/videos/" . $video . "", []);
     }
     /**
      * Process videofile
@@ -1866,7 +2735,7 @@ class Videos
      */
     public function postvideoFileProcess($video): array
     {
-        return $this->client->request('POST', "/api/videos/" . $video . "/process", []);
+        return $this->client->request('POST', "/api/v4/videos/" . $video . "/process", []);
     }
     /**
      * Download videofile
@@ -1877,7 +2746,7 @@ class Videos
      */
     public function getvideoFileDownload($video): array
     {
-        return $this->client->request('GET', "/api/videos/" . $video . "/download", []);
+        return $this->client->request('GET', "/api/v4/videos/" . $video . "/download", []);
     }
     /**
      * Download videofile
@@ -1888,7 +2757,7 @@ class Videos
      */
     public function headvideoFileDownload($video): array
     {
-        return $this->client->request('HEAD', "/api/videos/" . $video . "/download", []);
+        return $this->client->request('HEAD', "/api/v4/videos/" . $video . "/download", []);
     }
     /**
      * Stream videofile
@@ -1899,7 +2768,7 @@ class Videos
      */
     public function getvideoFileStream($video): array
     {
-        return $this->client->request('GET', "/api/videos/" . $video . "/stream", []);
+        return $this->client->request('GET', "/api/v4/videos/" . $video . "/stream", []);
     }
     /**
      * Stream videofile
@@ -1910,7 +2779,7 @@ class Videos
      */
     public function headvideoFileStream($video): array
     {
-        return $this->client->request('HEAD', "/api/videos/" . $video . "/stream", []);
+        return $this->client->request('HEAD', "/api/v4/videos/" . $video . "/stream", []);
     }
     /**
      * Analyze videofile
@@ -1921,7 +2790,40 @@ class Videos
      */
     public function postvideoFileAnalyze($video): array
     {
-        return $this->client->request('POST', "/api/videos/" . $video . "/analyze", []);
+        return $this->client->request('POST', "/api/v4/videos/" . $video . "/analyze", []);
+    }
+    /**
+     * AiAnalysis videofile
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postvideoFileAiAnalysis($video): array
+    {
+        return $this->client->request('POST', "/api/v4/videos/" . $video . "/ai-analysis", []);
+    }
+    /**
+     * AutoHighlights videofile
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getvideoFileAutoHighlights($video): array
+    {
+        return $this->client->request('GET', "/api/v4/videos/" . $video . "/highlights", []);
+    }
+    /**
+     * AutoHighlights videofile
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headvideoFileAutoHighlights($video): array
+    {
+        return $this->client->request('HEAD', "/api/v4/videos/" . $video . "/highlights", []);
     }
     /**
      * List all videoannotation
@@ -1932,7 +2834,7 @@ class Videos
      */
     public function getvideoAnnotationIndex(array $options = []): array
     {
-        return $this->client->request('GET', "/api/video-annotations", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('GET', "/api/v4/video-annotations", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * List all videoannotation
@@ -1943,7 +2845,7 @@ class Videos
      */
     public function headvideoAnnotationIndex(array $options = []): array
     {
-        return $this->client->request('HEAD', "/api/video-annotations", $this->buildQueryOptions($options, ["page","per_page","search"]));
+        return $this->client->request('HEAD', "/api/v4/video-annotations", $this->buildQueryOptions($options, ["page","per_page","search"]));
     }
     /**
      * Create new videoannotation
@@ -1954,7 +2856,7 @@ class Videos
      */
     public function postvideoAnnotationStore(array $options = []): array
     {
-        return $this->client->request('POST', "/api/video-annotations", $this->buildRequestOptions($options));
+        return $this->client->request('POST', "/api/v4/video-annotations", $this->buildRequestOptions($options));
     }
     /**
      * Get specific videoannotation
@@ -1965,7 +2867,7 @@ class Videos
      */
     public function getvideoAnnotationShow($videoAnnotation): array
     {
-        return $this->client->request('GET', "/api/video-annotations/" . $videoAnnotation . "", []);
+        return $this->client->request('GET', "/api/v4/video-annotations/" . $videoAnnotation . "", []);
     }
     /**
      * Get specific videoannotation
@@ -1976,7 +2878,7 @@ class Videos
      */
     public function headvideoAnnotationShow($videoAnnotation): array
     {
-        return $this->client->request('HEAD', "/api/video-annotations/" . $videoAnnotation . "", []);
+        return $this->client->request('HEAD', "/api/v4/video-annotations/" . $videoAnnotation . "", []);
     }
     /**
      * Update videoannotation
@@ -1987,7 +2889,7 @@ class Videos
      */
     public function putvideoAnnotationUpdate($videoAnnotation, array $options = []): array
     {
-        return $this->client->request('PUT', "/api/video-annotations/" . $videoAnnotation . "", $this->buildRequestOptions($options));
+        return $this->client->request('PUT', "/api/v4/video-annotations/" . $videoAnnotation . "", $this->buildRequestOptions($options));
     }
     /**
      * Update videoannotation
@@ -1998,7 +2900,7 @@ class Videos
      */
     public function patchvideoAnnotationUpdate($videoAnnotation, array $options = []): array
     {
-        return $this->client->request('PATCH', "/api/video-annotations/" . $videoAnnotation . "", $this->buildRequestOptions($options));
+        return $this->client->request('PATCH', "/api/v4/video-annotations/" . $videoAnnotation . "", $this->buildRequestOptions($options));
     }
     /**
      * Delete videoannotation
@@ -2009,7 +2911,7 @@ class Videos
      */
     public function deletevideoAnnotationDestroy($videoAnnotation): array
     {
-        return $this->client->request('DELETE', "/api/video-annotations/" . $videoAnnotation . "", []);
+        return $this->client->request('DELETE', "/api/v4/video-annotations/" . $videoAnnotation . "", []);
     }
     /**
      * VideoAnnotations videoannotation
@@ -2020,7 +2922,7 @@ class Videos
      */
     public function getvideoAnnotationVideoAnnotations($video): array
     {
-        return $this->client->request('GET', "/api/videos/" . $video . "/annotations", []);
+        return $this->client->request('GET', "/api/v4/videos/" . $video . "/annotations", []);
     }
     /**
      * VideoAnnotations videoannotation
@@ -2031,7 +2933,7 @@ class Videos
      */
     public function headvideoAnnotationVideoAnnotations($video): array
     {
-        return $this->client->request('HEAD', "/api/videos/" . $video . "/annotations", []);
+        return $this->client->request('HEAD', "/api/v4/videos/" . $video . "/annotations", []);
     }
     /**
      * BulkStore videoannotation
@@ -2042,7 +2944,18 @@ class Videos
      */
     public function postvideoAnnotationBulkStore($video): array
     {
-        return $this->client->request('POST', "/api/videos/" . $video . "/annotations/bulk", []);
+        return $this->client->request('POST', "/api/v4/videos/" . $video . "/annotations/bulk", []);
+    }
+    /**
+     * AiGenerate videoannotation
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postvideoAnnotationAiGenerate($video): array
+    {
+        return $this->client->request('POST', "/api/v4/videos/" . $video . "/annotations/ai-generate", []);
     }
 }
 
@@ -2072,6 +2985,138 @@ class Webhooks
         $this->client = $client;
     }
 
+    /**
+     * List all webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getv4WebhookIndex(array $options = []): array
+    {
+        return $this->client->request('GET', "/api/v4/webhooks", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * List all webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headv4WebhookIndex(array $options = []): array
+    {
+        return $this->client->request('HEAD', "/api/v4/webhooks", $this->buildQueryOptions($options, ["page","per_page","search"]));
+    }
+    /**
+     * Create new webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postv4WebhookStore(array $options = []): array
+    {
+        return $this->client->request('POST', "/api/v4/webhooks", $this->buildRequestOptions($options));
+    }
+    /**
+     * Get specific webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getv4WebhookShow($webhook): array
+    {
+        return $this->client->request('GET', "/api/v4/webhooks/" . $webhook . "", []);
+    }
+    /**
+     * Get specific webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headv4WebhookShow($webhook): array
+    {
+        return $this->client->request('HEAD', "/api/v4/webhooks/" . $webhook . "", []);
+    }
+    /**
+     * Update webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function putv4WebhookUpdate($webhook, array $options = []): array
+    {
+        return $this->client->request('PUT', "/api/v4/webhooks/" . $webhook . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Update webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function patchv4WebhookUpdate($webhook, array $options = []): array
+    {
+        return $this->client->request('PATCH', "/api/v4/webhooks/" . $webhook . "", $this->buildRequestOptions($options));
+    }
+    /**
+     * Delete webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function deletev4WebhookDestroy($webhook): array
+    {
+        return $this->client->request('DELETE', "/api/v4/webhooks/" . $webhook . "", []);
+    }
+    /**
+     * Test webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postv4WebhookTest($webhook): array
+    {
+        return $this->client->request('POST', "/api/v4/webhooks/" . $webhook . "/test", []);
+    }
+    /**
+     * Deliveries webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function getv4WebhookDeliveries($webhook): array
+    {
+        return $this->client->request('GET', "/api/v4/webhooks/" . $webhook . "/deliveries", []);
+    }
+    /**
+     * Deliveries webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function headv4WebhookDeliveries($webhook): array
+    {
+        return $this->client->request('HEAD', "/api/v4/webhooks/" . $webhook . "/deliveries", []);
+    }
+    /**
+     * Redeliver webhook
+     * 
+     * @param array $options Request options
+     * @return array Response data
+     * @throws ApiException
+     */
+    public function postv4WebhookRedeliver($webhook, $delivery): array
+    {
+        return $this->client->request('POST', "/api/v4/webhooks/" . $webhook . "/deliveries/" . $delivery . "/redeliver", []);
+    }
 }
 
 /**
@@ -2473,6 +3518,13 @@ class User
     public string $last_login_at;
     public string $last_login_ip;
     public bool $is_active;
+    public string $subscription_tier;
+    public string $api_quota_reset_at;
+    public string $current_api_usage;
+    public string $api_key_hash;
+    public bool $api_access_enabled;
+    public string $api_key_last_used_at;
+    public array $rate_limit_cache;
     public string $created_at;
     public string $updated_at;
     public int $id;

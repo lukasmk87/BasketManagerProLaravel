@@ -107,7 +107,10 @@ return new class extends Migration
             $table->index(['category', 'gender']);
             $table->index(['registration_start', 'registration_end']);
             $table->index('is_public');
-            $table->fullText(['name', 'description']);
+            // Fulltext index only for MySQL/PostgreSQL, not SQLite
+            if (config('database.default') !== 'sqlite') {
+                $table->fullText(['name', 'description']);
+            }
         });
     }
 
