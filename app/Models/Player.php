@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -203,6 +204,14 @@ class Player extends Model implements HasMedia
     public function parent(): BelongsTo
     {
         return $this->belongsTo(User::class, 'parent_user_id');
+    }
+
+    /**
+     * Get all game actions performed by this player.
+     */
+    public function gameActions(): HasMany
+    {
+        return $this->hasMany(GameAction::class);
     }
 
     // ============================
