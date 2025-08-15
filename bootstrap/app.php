@@ -64,6 +64,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.version' => \App\Http\Middleware\ApiVersioningMiddleware::class,
             'feature.gate' => \App\Http\Middleware\EnforceFeatureGates::class,
             'tenant.rate_limit' => \App\Http\Middleware\TenantRateLimitMiddleware::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
