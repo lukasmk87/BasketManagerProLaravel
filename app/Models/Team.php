@@ -157,6 +157,14 @@ class Team extends JetstreamTeam implements HasMedia
     }
 
     /**
+     * Get the assistant coach of this team.
+     */
+    public function assistantCoach(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assistant_coach_id');
+    }
+
+    /**
      * Get the players on this team.
      */
     public function players(): HasMany
@@ -214,11 +222,16 @@ class Team extends JetstreamTeam implements HasMedia
     }
 
     /**
-     * Get all games for this team (home and away) - alias for backward compatibility.
+     * Get all games for this team as a proper relationship.
      */
     public function allGames()
     {
-        return $this->games();
+        $gameModel = new \App\Models\Game;
+        return $gameModel->newQuery()
+            ->where(function ($query) {
+                $query->where('home_team_id', $this->id)
+                      ->orWhere('away_team_id', $this->id);
+            });
     }
 
     // ============================
@@ -311,6 +324,14 @@ class Team extends JetstreamTeam implements HasMedia
     public function getPlayersSlotsAvailableAttribute(): int
     {
         return max(0, $this->max_players - $this->current_roster_size);
+    }
+
+    /**
+     * Get the total games count (home + away).
+     */
+    public function getGamesCountAttribute(): int
+    {
+        return ($this->home_games_count ?? 0) + ($this->away_games_count ?? 0);
     }
 
     /**
