@@ -6,13 +6,13 @@
                     Teams
                 </h2>
                 <div>
-                    <PrimaryButton 
+                    <Link 
                         v-if="can.create"
                         :href="route('teams.create')"
-                        as="Link"
+                        class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition ease-in-out duration-150"
                     >
                         Team erstellen
-                    </PrimaryButton>
+                    </Link>
                 </div>
             </div>
         </template>
@@ -129,13 +129,13 @@
                             <div class="text-gray-500 text-lg mb-4">
                                 Keine Teams gefunden
                             </div>
-                            <PrimaryButton 
+                            <Link 
                                 v-if="can.create"
                                 :href="route('teams.create')"
-                                as="Link"
+                                class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition ease-in-out duration-150"
                             >
                                 Erstes Team erstellen
-                            </PrimaryButton>
+                            </Link>
                         </div>
 
                         <!-- Pagination -->
@@ -155,7 +155,6 @@
 
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
-import PrimaryButton from '@/Components/PrimaryButton.vue'
 import { Link } from '@inertiajs/vue3'
 
 defineProps({
