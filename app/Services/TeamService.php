@@ -37,7 +37,7 @@ class TeamService
                 'min_age' => $data['min_age'] ?? null,
                 'max_age' => $data['max_age'] ?? null,
                 'head_coach_id' => $data['head_coach_id'] ?? null,
-                'assistant_coach_id' => $data['assistant_coach_id'] ?? null,
+                'assistant_coaches' => $data['assistant_coaches'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
                 'is_recruiting' => $data['is_recruiting'] ?? false,
                 'home_venue' => $data['home_venue'] ?? null,
@@ -63,9 +63,11 @@ class TeamService
                 $this->addCoachToTeam($team, $data['head_coach_id'], 'head_coach');
             }
 
-            // Add assistant coach as team member if specified
-            if (!empty($data['assistant_coach_id'])) {
-                $this->addCoachToTeam($team, $data['assistant_coach_id'], 'assistant_coach');
+            // Add assistant coaches as team members if specified
+            if (!empty($data['assistant_coaches']) && is_array($data['assistant_coaches'])) {
+                foreach ($data['assistant_coaches'] as $assistantCoachId) {
+                    $this->addCoachToTeam($team, $assistantCoachId, 'assistant_coach');
+                }
             }
 
             DB::commit();
@@ -76,7 +78,7 @@ class TeamService
                 'club_id' => $team->club_id
             ]);
 
-            return $team->fresh(['club', 'headCoach', 'assistantCoach']);
+            return $team->fresh(['club', 'headCoach']);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -108,12 +110,18 @@ class TeamService
                 }
             }
 
-            if (isset($data['assistant_coach_id']) && $data['assistant_coach_id'] !== $team->assistant_coach_id) {
-                if ($team->assistant_coach_id) {
-                    $this->removeCoachFromTeam($team, $team->assistant_coach_id, 'assistant_coach');
+            if (isset($data['assistant_coaches'])) {
+                // Remove existing assistant coaches
+                $currentAssistantCoaches = $team->assistant_coaches ?? [];
+                foreach ($currentAssistantCoaches as $assistantCoachId) {
+                    $this->removeCoachFromTeam($team, $assistantCoachId, 'assistant_coach');
                 }
-                if ($data['assistant_coach_id']) {
-                    $this->addCoachToTeam($team, $data['assistant_coach_id'], 'assistant_coach');
+                
+                // Add new assistant coaches
+                if (is_array($data['assistant_coaches'])) {
+                    foreach ($data['assistant_coaches'] as $assistantCoachId) {
+                        $this->addCoachToTeam($team, $assistantCoachId, 'assistant_coach');
+                    }
                 }
             }
 
@@ -124,7 +132,7 @@ class TeamService
                 'team_name' => $team->name
             ]);
 
-            return $team->fresh(['club', 'headCoach', 'assistantCoach']);
+            return $team->fresh(['club', 'headCoach']);
 
         } catch (\Exception $e) {
             DB::rollBack();

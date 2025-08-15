@@ -37,7 +37,7 @@ const hasActions = computed(() => Object.keys(availableActions.value).length > 0
                         <div class="flex flex-wrap justify-center gap-3">
                             <a v-for="(description, action) in availableActions" 
                                :key="action"
-                               :href="route(action === 'profile' ? 'profile.show' : action === 'settings' ? 'profile.show' : '#')"
+                               :href="action === 'profile' ? route('profile.show') : action === 'settings' ? route('profile.show') : '#'"
                                class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200">
                                 <svg v-if="action === 'profile'" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>

@@ -328,7 +328,7 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         // Coach has access to their teams
-        if ($team->head_coach_id === $this->id || $team->assistant_coach_id === $this->id) {
+        if ($team->head_coach_id === $this->id || in_array($this->id, $team->assistant_coaches ?? [])) {
             return true;
         }
 

@@ -46,7 +46,7 @@ class StatisticsController extends Controller
                     $q->whereHas('club.users', function ($subQ) use ($user) {
                         $subQ->where('user_id', $user->id);
                     })->orWhere('head_coach_id', $user->id)
-                    ->orWhere('assistant_coach_id', $user->id);
+                    ->orWhereJsonContains('assistant_coaches', $user->id);
                 });
             })
             ->get()
@@ -80,7 +80,7 @@ class StatisticsController extends Controller
             ->when(!$user->hasRole('admin') && !$user->hasRole('super-admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
-                      ->orWhere('assistant_coach_id', $user->id)
+                      ->orWhereJsonContains('assistant_coaches', $user->id)
                       ->orWhereHas('club.users', function ($subQ) use ($user) {
                           $subQ->where('user_id', $user->id);
                       });
@@ -119,13 +119,13 @@ class StatisticsController extends Controller
                 return $query->where(function ($q) use ($user) {
                     $q->whereHas('homeTeam', function ($subQ) use ($user) {
                         $subQ->where('head_coach_id', $user->id)
-                             ->orWhere('assistant_coach_id', $user->id)
+                             ->orWhereJsonContains('assistant_coaches', $user->id)
                              ->orWhereHas('club.users', function ($clubQ) use ($user) {
                                  $clubQ->where('user_id', $user->id);
                              });
                     })->orWhereHas('awayTeam', function ($subQ) use ($user) {
                         $subQ->where('head_coach_id', $user->id)
-                             ->orWhere('assistant_coach_id', $user->id)
+                             ->orWhereJsonContains('assistant_coaches', $user->id)
                              ->orWhereHas('club.users', function ($clubQ) use ($user) {
                                  $clubQ->where('user_id', $user->id);
                              });
@@ -183,7 +183,7 @@ class StatisticsController extends Controller
         } elseif ($user->hasRole(['trainer', 'head-coach', 'assistant-coach'])) {
             $userTeams = Team::where(function ($query) use ($user) {
                 $query->where('head_coach_id', $user->id)
-                      ->orWhere('assistant_coach_id', $user->id);
+                      ->orWhereJsonContains('assistant_coaches', $user->id);
             })->get();
         }
 

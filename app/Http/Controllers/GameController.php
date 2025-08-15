@@ -33,13 +33,13 @@ class GameController extends Controller
                 return $query->where(function ($q) use ($user) {
                     $q->whereHas('homeTeam', function ($subQ) use ($user) {
                         $subQ->where('head_coach_id', $user->id)
-                             ->orWhere('assistant_coach_id', $user->id)
+                             ->orWhereJsonContains('assistant_coaches', $user->id)
                              ->orWhereHas('club.users', function ($clubQ) use ($user) {
                                  $clubQ->where('user_id', $user->id);
                              });
                     })->orWhereHas('awayTeam', function ($subQ) use ($user) {
                         $subQ->where('head_coach_id', $user->id)
-                             ->orWhere('assistant_coach_id', $user->id)
+                             ->orWhereJsonContains('assistant_coaches', $user->id)
                              ->orWhereHas('club.users', function ($clubQ) use ($user) {
                                  $clubQ->where('user_id', $user->id);
                              });

@@ -28,7 +28,7 @@ class TrainingController extends Controller
             ->when(!$user->hasRole('admin') && !$user->hasRole('super-admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
-                      ->orWhere('assistant_coach_id', $user->id)
+                      ->orWhereJsonContains('assistant_coaches', $user->id)
                       ->orWhereHas('club.users', function ($subQ) use ($user) {
                           $subQ->where('user_id', $user->id);
                       });
@@ -44,7 +44,7 @@ class TrainingController extends Controller
             ->when(!$user->hasRole('admin') && !$user->hasRole('super-admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
-                      ->orWhere('assistant_coach_id', $user->id)
+                      ->orWhereJsonContains('assistant_coaches', $user->id)
                       ->orWhereHas('club.users', function ($subQ) use ($user) {
                           $subQ->where('user_id', $user->id);
                       });
@@ -72,7 +72,7 @@ class TrainingController extends Controller
             ->when(!$user->hasRole('admin') && !$user->hasRole('super-admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
-                      ->orWhere('assistant_coach_id', $user->id)
+                      ->orWhereJsonContains('assistant_coaches', $user->id)
                       ->orWhereHas('club.users', function ($subQ) use ($user) {
                           $subQ->where('user_id', $user->id);
                       });

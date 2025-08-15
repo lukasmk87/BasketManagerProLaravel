@@ -24,7 +24,7 @@ class TeamController extends Controller
         
         // Get teams based on user permissions
         $teams = Team::query()
-            ->with(['club', 'headCoach', 'assistantCoach'])
+            ->with(['club', 'headCoach'])
             ->withCount(['players', 'homeGames', 'awayGames'])
             ->when($user->hasRole('admin') || $user->hasRole('super-admin'), function ($query) {
                 // Admin users see all teams
@@ -35,7 +35,7 @@ class TeamController extends Controller
                     $q->whereHas('club.users', function ($subQ) use ($user) {
                         $subQ->where('user_id', $user->id);
                     })->orWhere('head_coach_id', $user->id)
-                    ->orWhere('assistant_coach_id', $user->id);
+                    ->orWhereJsonContains('assistant_coaches', $user->id);
                 });
             })
             ->orderBy('name')
