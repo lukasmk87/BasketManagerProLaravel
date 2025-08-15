@@ -919,8 +919,8 @@ const activeTab = ref('overview')
 
 // Tab Configuration with Heroicons
 const tabs = computed(() => {
-    const medicalAlerts = (player.value.medical_clearance_expired ? 1 : 0) + 
-                         (player.value.insurance_expired ? 1 : 0)
+    const medicalAlerts = (props.player.medical_clearance_expired ? 1 : 0) + 
+                         (props.player.insurance_expired ? 1 : 0)
     
     return [
         {
