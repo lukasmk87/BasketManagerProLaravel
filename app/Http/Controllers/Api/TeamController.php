@@ -101,8 +101,9 @@ class TeamController extends Controller
             'headCoach:id,name,email',
             'players.user:id,name,birth_date',
             'players' => function ($query) {
-                $query->where('status', 'active')
-                      ->orderBy('jersey_number');
+                $query->wherePivot('status', 'active')
+                      ->wherePivot('is_active', true)
+                      ->orderBy('player_team.jersey_number');
             },
         ]);
 
@@ -163,19 +164,20 @@ class TeamController extends Controller
 
         $players = $team->players()
             ->with(['user:id,name,birth_date'])
-            ->where('status', 'active')
-            ->orderBy('jersey_number')
+            ->wherePivot('status', 'active')
+            ->wherePivot('is_active', true)
+            ->orderBy('player_team.jersey_number')
             ->get()
             ->map(function ($player) {
                 return [
                     'id' => $player->id,
                     'name' => $player->user?->name ?? $player->full_name,
-                    'jersey_number' => $player->jersey_number,
-                    'position' => $player->primary_position,
+                    'jersey_number' => $player->pivot->jersey_number,
+                    'position' => $player->pivot->primary_position,
                     'age' => $player->user?->birth_date?->age,
-                    'is_captain' => $player->is_captain,
-                    'is_starter' => $player->is_starter,
-                    'status' => $player->status,
+                    'is_captain' => $player->pivot->is_captain,
+                    'is_starter' => $player->pivot->is_starter,
+                    'status' => $player->pivot->status,
                 ];
             });
 

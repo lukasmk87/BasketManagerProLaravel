@@ -156,7 +156,15 @@ class ClubService
             }
 
             // Check if club has active players
-            $activePlayers = $club->players()->where('players.status', 'active')->count();
+            $activePlayers = \App\Models\Player::query()
+                ->join('player_team', 'player_team.player_id', '=', 'players.id')
+                ->join('teams', 'teams.id', '=', 'player_team.team_id')
+                ->where('teams.club_id', $club->id)
+                ->where('player_team.is_active', true)
+                ->where('player_team.status', 'active')
+                ->whereNull('players.deleted_at')
+                ->whereNull('teams.deleted_at')
+                ->count();
             if ($activePlayers > 0) {
                 throw new \InvalidArgumentException('Club kann nicht gelöscht werden, da noch aktive Spieler vorhanden sind.');
             }
@@ -276,14 +284,15 @@ class ClubService
             $club->users()->detach($user->id);
 
             // Deactivate player records if any
-            $user->players()
-                ->whereHas('team', function ($query) use ($club) {
-                    $query->where('club_id', $club->id);
-                })
-                ->update([
-                    'status' => 'inactive',
-                    'left_at' => now()
-                ]);
+            $user->players()->each(function ($player) use ($club) {
+                $player->teams()
+                    ->where('club_id', $club->id)
+                    ->updateExistingPivot($player->teams()->where('club_id', $club->id)->pluck('teams.id'), [
+                        'status' => 'inactive',
+                        'is_active' => false,
+                        'left_at' => now()
+                    ]);
+            });
 
             DB::commit();
 
@@ -322,12 +331,14 @@ class ClubService
         $playerStats = \App\Models\Player::query()
             ->selectRaw('
                 COUNT(*) as total_players,
-                SUM(CASE WHEN players.status = "active" THEN 1 ELSE 0 END) as active_players,
+                SUM(CASE WHEN player_team.status = "active" THEN 1 ELSE 0 END) as active_players,
                 AVG(CASE WHEN users.date_of_birth IS NOT NULL THEN YEAR(CURDATE()) - YEAR(users.date_of_birth) END) as avg_player_age
             ')
-            ->join('teams', 'teams.id', '=', 'players.team_id')
+            ->join('player_team', 'player_team.player_id', '=', 'players.id')
+            ->join('teams', 'teams.id', '=', 'player_team.team_id')
             ->leftJoin('users', 'players.user_id', '=', 'users.id')
             ->where('teams.club_id', $club->id)
+            ->where('player_team.is_active', true)
             ->whereNull('players.deleted_at')
             ->whereNull('teams.deleted_at')
             ->first();
@@ -377,9 +388,11 @@ class ClubService
                 ->whereBetween('created_at', [now()->startOfMonth(), now()])
                 ->count(),
             'players_joined_this_month' => \App\Models\Player::query()
-                ->join('teams', 'teams.id', '=', 'players.team_id')
+                ->join('player_team', 'player_team.player_id', '=', 'players.id')
+                ->join('teams', 'teams.id', '=', 'player_team.team_id')
                 ->where('teams.club_id', $club->id)
-                ->whereBetween('players.created_at', [now()->startOfMonth(), now()])
+                ->where('player_team.is_active', true)
+                ->whereBetween('player_team.joined_at', [now()->startOfMonth(), now()])
                 ->whereNull('players.deleted_at')
                 ->whereNull('teams.deleted_at')
                 ->count(),

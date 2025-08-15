@@ -195,17 +195,19 @@ class MemoryOptimizationService
     {
         return $this->streamCsvExport(
             fn() => DB::table('players')
-                ->join('teams', 'players.team_id', '=', 'teams.id')
+                ->join('player_team', 'player_team.player_id', '=', 'players.id')
+                ->join('teams', 'teams.id', '=', 'player_team.team_id')
                 ->join('clubs', 'teams.club_id', '=', 'clubs.id')
                 ->where('clubs.tenant_id', $tenantId)
                 ->where('teams.season', $season)
+                ->where('player_team.is_active', true)
                 ->select([
                     'players.id',
                     'players.first_name',
                     'players.last_name',
                     'teams.name as team_name',
-                    'players.position',
-                    'players.jersey_number',
+                    'player_team.primary_position as position',
+                    'player_team.jersey_number',
                 ])
                 ->orderBy('teams.name')
                 ->orderBy('players.jersey_number'),

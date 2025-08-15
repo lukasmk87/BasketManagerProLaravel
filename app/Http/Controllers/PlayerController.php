@@ -24,14 +24,14 @@ class PlayerController extends Controller
         
         // Get players based on user permissions
         $players = Player::query()
-            ->with(['team.club', 'user'])
+            ->with(['teams.club', 'user'])
             ->join('users', 'players.user_id', '=', 'users.id')
             ->when($user->hasRole('admin') || $user->hasRole('super-admin'), function ($query) {
                 // Admin users see all players
                 return $query;
             }, function ($query) use ($user) {
                 // Other users see players from their teams/clubs
-                return $query->whereHas('team', function ($q) use ($user) {
+                return $query->whereHas('teams', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
                       ->orWhereJsonContains('assistant_coaches', $user->id)
                       ->orWhereHas('club.users', function ($subQ) use ($user) {
@@ -39,9 +39,12 @@ class PlayerController extends Controller
                       });
                 });
             })
-            ->orderBy('jersey_number')
+            ->leftJoin('player_team', 'players.id', '=', 'player_team.player_id')
+            ->where('player_team.is_active', true)
+            ->orderBy('player_team.jersey_number')
             ->orderBy('users.name')
             ->select('players.*')
+            ->distinct()
             ->paginate(20);
 
         return Inertia::render('Players/Index', [
@@ -158,8 +161,11 @@ class PlayerController extends Controller
         ]);
 
         // Check jersey number uniqueness within team
-        $existingPlayer = Player::where('team_id', $validated['team_id'])
-            ->where('jersey_number', $validated['jersey_number'])
+        $existingPlayer = Player::query()
+            ->join('player_team', 'players.id', '=', 'player_team.player_id')
+            ->where('player_team.team_id', $validated['team_id'])
+            ->where('player_team.jersey_number', $validated['jersey_number'])
+            ->where('player_team.is_active', true)
             ->first();
 
         if ($existingPlayer) {
@@ -183,7 +189,7 @@ class PlayerController extends Controller
 
         // Load all relevant relationships
         $player->load([
-            'team.club',
+            'teams.club',
             'user',
             'parent',
             'gameActions.game'
@@ -206,7 +212,7 @@ class PlayerController extends Controller
             'insurance_expired'
         ]);
 
-        $playerStats = $this->playerService->getPlayerStatistics($player, $player->team?->season);
+        $playerStats = $this->playerService->getPlayerStatistics($player, $player->primaryTeam()?->season);
 
         return Inertia::render('Players/Show', [
             'player' => $player,
@@ -327,9 +333,12 @@ class PlayerController extends Controller
         ]);
 
         // Check jersey number uniqueness within team (excluding current player)
-        $existingPlayer = Player::where('team_id', $validated['team_id'])
-            ->where('jersey_number', $validated['jersey_number'])
-            ->where('id', '!=', $player->id)
+        $existingPlayer = Player::query()
+            ->join('player_team', 'players.id', '=', 'player_team.player_id')
+            ->where('player_team.team_id', $validated['team_id'])
+            ->where('player_team.jersey_number', $validated['jersey_number'])
+            ->where('player_team.is_active', true)
+            ->where('players.id', '!=', $player->id)
             ->first();
 
         if ($existingPlayer) {
@@ -474,8 +483,8 @@ class PlayerController extends Controller
             'player' => [
                 'id' => $player->id,
                 'name' => $player->full_name,
-                'jersey_number' => $player->jersey_number,
-                'team' => $player->team?->name,
+                'jersey_number' => $player->primaryTeam()?->pivot->jersey_number,
+                'team' => $player->primaryTeam()?->name,
             ],
             'contacts' => $contacts,
             'medical_info' => [

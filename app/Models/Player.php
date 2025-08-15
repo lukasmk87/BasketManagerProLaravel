@@ -247,7 +247,10 @@ class Player extends Model implements HasMedia
      */
     public function scopeStarters($query)
     {
-        return $query->where('is_starter', true);
+        return $query->whereHas('teams', function ($q) {
+            $q->wherePivot('is_starter', true)
+              ->wherePivot('is_active', true);
+        });
     }
 
     /**
@@ -255,7 +258,10 @@ class Player extends Model implements HasMedia
      */
     public function scopeCaptains($query)
     {
-        return $query->where('is_captain', true);
+        return $query->whereHas('teams', function ($q) {
+            $q->wherePivot('is_captain', true)
+              ->wherePivot('is_active', true);
+        });
     }
 
     /**
@@ -263,7 +269,10 @@ class Player extends Model implements HasMedia
      */
     public function scopeByPosition($query, string $position)
     {
-        return $query->where('primary_position', $position);
+        return $query->whereHas('teams', function ($q) use ($position) {
+            $q->wherePivot('primary_position', $position)
+              ->wherePivot('is_active', true);
+        });
     }
 
     /**
@@ -295,7 +304,8 @@ class Player extends Model implements HasMedia
      */
     public function getDisplayNameAttribute(): string
     {
-        $number = $this->jersey_number ? "#{$this->jersey_number}" : '';
+        $primaryTeam = $this->primaryTeam();
+        $number = $primaryTeam?->pivot->jersey_number ? "#{$primaryTeam->pivot->jersey_number}" : '';
         return trim("{$number} {$this->user->name}");
     }
 
@@ -356,11 +366,15 @@ class Player extends Model implements HasMedia
      */
     public function getPointsPerGameAttribute(): float
     {
-        if ($this->games_played === 0) {
+        $primaryTeam = $this->primaryTeam();
+        $gamesPlayed = $primaryTeam?->pivot->games_played ?? 0;
+        $pointsScored = $primaryTeam?->pivot->points_scored ?? 0;
+        
+        if ($gamesPlayed === 0) {
             return 0.0;
         }
 
-        return round($this->points_scored / $this->games_played, 1);
+        return round($pointsScored / $gamesPlayed, 1);
     }
 
     /**
@@ -368,11 +382,14 @@ class Player extends Model implements HasMedia
      */
     public function getReboundsPerGameAttribute(): float
     {
-        if ($this->games_played === 0) {
+        $primaryTeam = $this->primaryTeam();
+        $gamesPlayed = $primaryTeam?->pivot->games_played ?? 0;
+        
+        if ($gamesPlayed === 0) {
             return 0.0;
         }
 
-        return round($this->rebounds_total / $this->games_played, 1);
+        return round($this->rebounds_total / $gamesPlayed, 1);
     }
 
     /**
@@ -380,11 +397,14 @@ class Player extends Model implements HasMedia
      */
     public function getAssistsPerGameAttribute(): float
     {
-        if ($this->games_played === 0) {
+        $primaryTeam = $this->primaryTeam();
+        $gamesPlayed = $primaryTeam?->pivot->games_played ?? 0;
+        
+        if ($gamesPlayed === 0) {
             return 0.0;
         }
 
-        return round($this->assists / $this->games_played, 1);
+        return round($this->assists / $gamesPlayed, 1);
     }
 
     /**
@@ -401,9 +421,14 @@ class Player extends Model implements HasMedia
      */
     public function getAllPositionsAttribute(): array
     {
-        $positions = $this->secondary_positions ?? [];
-        if ($this->primary_position) {
-            array_unshift($positions, $this->primary_position);
+        $primaryTeam = $this->primaryTeam();
+        if (!$primaryTeam) {
+            return [];
+        }
+        
+        $positions = $primaryTeam->pivot->secondary_positions ?? [];
+        if ($primaryTeam->pivot->primary_position) {
+            array_unshift($positions, $primaryTeam->pivot->primary_position);
         }
         return array_unique($positions);
     }
@@ -435,17 +460,19 @@ class Player extends Model implements HasMedia
      */
     public function getStatistics(): array
     {
+        $primaryTeam = $this->primaryTeam();
+        
         return [
-            'games_played' => $this->games_played,
-            'games_started' => $this->games_started,
-            'minutes_played' => $this->minutes_played,
+            'games_played' => $primaryTeam?->pivot->games_played ?? 0,
+            'games_started' => $primaryTeam?->pivot->games_started ?? 0,
+            'minutes_played' => $primaryTeam?->pivot->minutes_played ?? 0,
             'points_per_game' => $this->points_per_game,
             'rebounds_per_game' => $this->rebounds_per_game,
             'assists_per_game' => $this->assists_per_game,
             'field_goal_percentage' => $this->field_goal_percentage,
             'three_point_percentage' => $this->three_point_percentage,
             'free_throw_percentage' => $this->free_throw_percentage,
-            'total_points' => $this->points_scored,
+            'total_points' => $primaryTeam?->pivot->points_scored ?? 0,
             'total_rebounds' => $this->rebounds_total,
             'total_assists' => $this->assists,
             'steals' => $this->steals,

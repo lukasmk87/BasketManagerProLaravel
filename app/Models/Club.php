@@ -168,11 +168,21 @@ class Club extends Model implements HasMedia
     }
 
     /**
-     * Get club players through teams.
+     * Get club players through teams via pivot table.
      */
     public function players()
     {
-        return $this->hasManyThrough(Player::class, Team::class);
+        return $this->hasManyThrough(
+            Player::class,
+            Team::class,
+            'club_id',     // Foreign key on teams table
+            'id',          // Foreign key on players table  
+            'id',          // Local key on clubs table
+            'id'           // Local key on teams table
+        )->join('player_team', function ($join) {
+            $join->on('players.id', '=', 'player_team.player_id')
+                 ->on('teams.id', '=', 'player_team.team_id');
+        })->where('player_team.is_active', true);
     }
 
     /**

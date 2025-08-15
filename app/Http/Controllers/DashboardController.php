@@ -259,19 +259,20 @@ class DashboardController extends Controller
                 'team_statistics' => $teamStats,
                 'roster_overview' => $primaryTeam->players()
                     ->with('user:id,name,birth_date')
-                    ->where('status', 'active')
-                    ->orderBy('jersey_number')
+                    ->wherePivot('status', 'active')
+                    ->wherePivot('is_active', true)
+                    ->orderBy('player_team.jersey_number')
                     ->get()
                     ->map(function ($player) {
                         return [
                             'id' => $player->id,
                             'name' => $player->user?->name ?? $player->full_name,
-                            'jersey_number' => $player->jersey_number,
-                            'position' => $player->primary_position,
+                            'jersey_number' => $player->pivot->jersey_number,
+                            'position' => $player->pivot->primary_position,
                             'age' => $player->user?->birth_date?->age,
-                            'is_captain' => $player->is_captain,
-                            'is_starter' => $player->is_starter,
-                            'games_played' => $player->games_played,
+                            'is_captain' => $player->pivot->is_captain,
+                            'is_starter' => $player->pivot->is_starter,
+                            'games_played' => $player->pivot->games_played,
                             'points_per_game' => $player->points_per_game,
                         ];
                     }),
@@ -347,17 +348,18 @@ class DashboardController extends Controller
                 'personal_statistics' => $playerStats,
                 'team_roster' => $team->players()
                     ->with('user:id,name')
-                    ->where('status', 'active')
-                    ->orderBy('jersey_number')
+                    ->wherePivot('status', 'active')
+                    ->wherePivot('is_active', true)
+                    ->orderBy('player_team.jersey_number')
                     ->get()
                     ->map(function ($teammate) {
                         return [
                             'id' => $teammate->id,
                             'name' => $teammate->user?->name ?? $teammate->full_name,
-                            'jersey_number' => $teammate->jersey_number,
-                            'position' => $teammate->primary_position,
-                            'is_captain' => $teammate->is_captain,
-                            'is_starter' => $teammate->is_starter,
+                            'jersey_number' => $teammate->pivot->jersey_number,
+                            'position' => $teammate->pivot->primary_position,
+                            'is_captain' => $teammate->pivot->is_captain,
+                            'is_starter' => $teammate->pivot->is_starter,
                         ];
                     }),
                 'upcoming_games' => $team->allGames()
