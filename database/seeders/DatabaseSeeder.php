@@ -152,17 +152,37 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Create test player profile
+        // Create test player profile (without team-specific data)
         $testPlayer = \App\Models\Player::firstOrCreate(
             ['user_id' => $player->id],
             [
-                'team_id' => $testTeam->id,
-                'jersey_number' => 23,
-                'primary_position' => 'SF',
+                'uuid' => \Illuminate\Support\Str::uuid(),
                 'status' => 'active',
-                'is_starter' => true,
+                'years_experience' => 3,
+                'height_cm' => 195,
+                'weight_kg' => 85,
+                'dominant_hand' => 'right',
             ]
         );
+
+        // Attach player to team with team-specific data in pivot table
+        $testPlayer->teams()->syncWithoutDetaching([
+            $testTeam->id => [
+                'jersey_number' => 23,
+                'primary_position' => 'SF',
+                'is_active' => true,
+                'is_starter' => true,
+                'is_captain' => false,
+                'status' => 'active',
+                'joined_at' => now(),
+                'is_registered' => true,
+                'registered_at' => now(),
+                'games_played' => 0,
+                'games_started' => 0,
+                'minutes_played' => 0,
+                'points_scored' => 0,
+            ]
+        ]);
 
         // Create club memberships (sync to avoid duplicates)
         $testClub->users()->syncWithoutDetaching([

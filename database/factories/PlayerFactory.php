@@ -38,17 +38,13 @@ class PlayerFactory extends Factory
         return [
             'uuid' => $this->faker->uuid(),
             'user_id' => User::factory(),
-            'team_id' => Team::factory(),
             
-            // Jersey and position
-            'jersey_number' => $this->faker->unique()->numberBetween(1, 99),
-            'position' => $position,
-            'secondary_position' => $this->faker->optional(0.4)->randomElement($positions),
+            // Note: team-specific fields (jersey_number, primary_position, secondary_positions, 
+            // is_starter, is_captain) are now in the player_team pivot table
             
             // Physical attributes
-            'height' => $height,
-            'weight' => $this->faker->numberBetween(60, 140),
-            'wingspan' => $this->faker->optional(0.6)->numberBetween($height - 5, $height + 15),
+            'height_cm' => $height,
+            'weight_kg' => $this->faker->numberBetween(60, 140),
             'shoe_size' => $this->faker->numberBetween(38, 52),
             
             // Playing attributes
@@ -57,21 +53,17 @@ class PlayerFactory extends Factory
                 'aggressive', 'defensive', 'playmaker', 'shooter', 'athletic'
             ]),
             
-            // Status
+            // Status (general player status, not team-specific)
             'is_active' => $this->faker->boolean(95),
-            'is_starter' => $this->faker->boolean(30),
-            'is_captain' => $this->faker->boolean(10),
             'is_injured' => $this->faker->boolean(5),
             'status' => $this->faker->randomElement(['active', 'inactive', 'injured', 'suspended']),
+            'is_rookie' => $this->faker->boolean(15),
             
-            // Contract information
-            'contract_start' => $this->faker->optional(0.8)->dateTimeBetween('-2 years', 'now'),
-            'contract_end' => $this->faker->optional(0.8)->dateTimeBetween('now', '+3 years'),
-            'salary' => $this->faker->optional(0.3)->randomFloat(2, 0, 10000),
+            // Note: Contract information (contract_start, contract_end) moved to player_team pivot table
             
-            // Performance data
-            'performance_rating' => $this->faker->optional(0.7)->randomFloat(1, 1.0, 10.0),
-            'experience_level' => $this->faker->randomElement(['beginner', 'intermediate', 'advanced', 'professional']),
+            // Experience and ratings
+            'years_experience' => $this->faker->numberBetween(0, 15),
+            'overall_rating' => $this->faker->optional(0.7)->randomFloat(1, 1.0, 10.0),
             
             // Season statistics (current season)
             'season_stats' => json_encode([
@@ -105,7 +97,7 @@ class PlayerFactory extends Factory
             ]),
             
             // Training and development
-            'training_focus' => json_encode($this->faker->optional(0.8)->randomElements([
+            'training_focus_areas' => json_encode($this->faker->optional(0.8)->randomElements([
                 'shooting', 'defense', 'ball_handling', 'rebounding', 
                 'passing', 'footwork', 'conditioning', 'mental_game'
             ], $this->faker->numberBetween(1, 4))),
@@ -139,15 +131,10 @@ class PlayerFactory extends Factory
             
             // Notes from coaches
             'coach_notes' => $this->faker->optional(0.5)->paragraph(2),
-            'scout_notes' => $this->faker->optional(0.2)->paragraph(1),
             
-            // Emergency contact (specific to basketball activities)
-            'emergency_contact_basketball' => json_encode([
-                'name' => $this->faker->name(),
-                'phone' => $this->faker->phoneNumber(),
-                'relationship' => $this->faker->randomElement(['parent', 'guardian', 'spouse', 'sibling']),
-                'medical_info' => $this->faker->optional(0.3)->sentence(),
-            ]),
+            // Emergency medical contact
+            'emergency_medical_contact' => $this->faker->optional(0.8)->name(),
+            'emergency_medical_phone' => $this->faker->optional(0.8)->phoneNumber(),
             
             'created_at' => $this->faker->dateTimeBetween('-2 years', 'now'),
         ];
@@ -155,29 +142,30 @@ class PlayerFactory extends Factory
 
     /**
      * Create a player with starter status.
+     * Note: is_starter is now a team-specific attribute in the pivot table.
+     * This method now just sets general attributes for a high-performing player.
      */
     public function starter(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_starter' => true,
             'is_active' => true,
             'status' => 'active',
-            'performance_rating' => $this->faker->randomFloat(1, 6.0, 10.0),
+            'overall_rating' => $this->faker->randomFloat(1, 6.0, 10.0),
         ]);
     }
 
     /**
-     * Create a player with captain status.
+     * Create a player with captain-like attributes.
+     * Note: is_captain is now a team-specific attribute in the pivot table.
+     * This method sets general attributes for a leadership-quality player.
      */
     public function captain(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_captain' => true,
-            'is_starter' => true,
             'is_active' => true,
             'status' => 'active',
-            'experience_level' => $this->faker->randomElement(['advanced', 'professional']),
-            'performance_rating' => $this->faker->randomFloat(1, 7.0, 10.0),
+            'years_experience' => $this->faker->numberBetween(5, 15),
+            'overall_rating' => $this->faker->randomFloat(1, 7.0, 10.0),
         ]);
     }
 
@@ -189,7 +177,6 @@ class PlayerFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'is_injured' => true,
             'status' => 'injured',
-            'is_starter' => false,
             'injury_history' => json_encode([
                 [
                     'injury' => $this->faker->randomElement(['sprained ankle', 'knee strain', 'back pain', 'shoulder injury']),
@@ -207,10 +194,9 @@ class PlayerFactory extends Factory
     public function rookie(): static
     {
         return $this->state(fn (array $attributes) => [
-            'experience_level' => 'beginner',
-            'is_starter' => false,
-            'is_captain' => false,
-            'performance_rating' => $this->faker->randomFloat(1, 3.0, 6.0),
+            'years_experience' => $this->faker->numberBetween(0, 2),
+            'is_rookie' => true,
+            'overall_rating' => $this->faker->randomFloat(1, 3.0, 6.0),
             'season_stats' => json_encode([
                 'games_played' => $games = $this->faker->numberBetween(0, 15),
                 'games_started' => 0,
@@ -228,8 +214,8 @@ class PlayerFactory extends Factory
     public function veteran(): static
     {
         return $this->state(fn (array $attributes) => [
-            'experience_level' => $this->faker->randomElement(['advanced', 'professional']),
-            'performance_rating' => $this->faker->randomFloat(1, 6.0, 9.5),
+            'years_experience' => $this->faker->numberBetween(8, 20),
+            'overall_rating' => $this->faker->randomFloat(1, 6.0, 9.5),
             'career_stats' => json_encode([
                 'total_games' => $totalGames = $this->faker->numberBetween(100, 500),
                 'total_points' => $this->faker->numberBetween($totalGames * 8, $totalGames * 25),
@@ -243,9 +229,11 @@ class PlayerFactory extends Factory
     }
 
     /**
-     * Create a player at a specific position.
+     * Create a player suited for a specific position (height-wise).
+     * Note: Position is now stored in the player_team pivot table.
+     * This method only sets physical attributes suitable for the position.
      */
-    public function position(string $position): static
+    public function forPosition(string $position): static
     {
         $heightRanges = [
             'PG' => [170, 190],
@@ -261,9 +249,8 @@ class PlayerFactory extends Factory
         );
 
         return $this->state(fn (array $attributes) => [
-            'position' => $position,
-            'height' => $height,
-            'weight' => $this->faker->numberBetween(
+            'height_cm' => $height,
+            'weight_kg' => $this->faker->numberBetween(
                 max(60, $height - 80), 
                 min(140, $height - 40)
             ),

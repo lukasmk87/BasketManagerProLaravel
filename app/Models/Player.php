@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
@@ -24,10 +25,11 @@ class Player extends Model implements HasMedia
     protected $fillable = [
         'uuid',
         'user_id',
-        'team_id',
-        'jersey_number',
-        'primary_position',
-        'secondary_positions',
+        // Note: team-specific fields moved to player_team pivot table:
+        // jersey_number, primary_position, secondary_positions, is_starter, is_captain
+        // contract_start, contract_end, registration_number, is_registered, registered_at
+        // games_played, games_started, minutes_played, points_scored
+        
         'height_cm',
         'weight_kg',
         'dominant_hand',
@@ -42,10 +44,6 @@ class Player extends Model implements HasMedia
         'rebounding_rating',
         'speed_rating',
         'overall_rating',
-        'games_played',
-        'games_started',
-        'minutes_played',
-        'points_scored',
         'field_goals_made',
         'field_goals_attempted',
         'three_pointers_made',
@@ -61,15 +59,8 @@ class Player extends Model implements HasMedia
         'turnovers',
         'fouls_personal',
         'fouls_technical',
-        'status',
-        'is_starter',
-        'is_captain',
+        'status', // General player status (not team-specific)
         'is_rookie',
-        'contract_start',
-        'contract_end',
-        'registration_number',
-        'is_registered',
-        'registered_at',
         'medical_conditions',
         'allergies',
         'medications',
@@ -105,8 +96,7 @@ class Player extends Model implements HasMedia
      */
     protected $casts = [
         'uuid' => 'string',
-        'jersey_number' => 'integer',
-        'secondary_positions' => 'array',
+        // Note: team-specific casts moved to pivot table access
         'height_cm' => 'integer',
         'weight_kg' => 'decimal:2',
         'started_playing' => 'date',
@@ -119,10 +109,6 @@ class Player extends Model implements HasMedia
         'rebounding_rating' => 'decimal:1',
         'speed_rating' => 'decimal:1',
         'overall_rating' => 'decimal:1',
-        'games_played' => 'integer',
-        'games_started' => 'integer',
-        'minutes_played' => 'integer',
-        'points_scored' => 'integer',
         'field_goals_made' => 'integer',
         'field_goals_attempted' => 'integer',
         'three_pointers_made' => 'integer',
@@ -138,13 +124,7 @@ class Player extends Model implements HasMedia
         'turnovers' => 'integer',
         'fouls_personal' => 'integer',
         'fouls_technical' => 'integer',
-        'is_starter' => 'boolean',
-        'is_captain' => 'boolean',
         'is_rookie' => 'boolean',
-        'contract_start' => 'date',
-        'contract_end' => 'date',
-        'is_registered' => 'boolean',
-        'registered_at' => 'datetime',
         'medical_conditions' => 'array',
         'allergies' => 'array',
         'medications' => 'array',
@@ -191,11 +171,47 @@ class Player extends Model implements HasMedia
     }
 
     /**
-     * Get the team this player belongs to.
+     * Get the teams this player belongs to.
      */
-    public function team(): BelongsTo
+    public function teams(): BelongsToMany
     {
-        return $this->belongsTo(Team::class, 'team_id');
+        return $this->belongsToMany(Team::class)
+            ->withPivot([
+                'jersey_number', 'primary_position', 'secondary_positions',
+                'is_active', 'is_starter', 'is_captain', 'status',
+                'joined_at', 'left_at', 'contract_start', 'contract_end',
+                'registration_number', 'is_registered', 'registered_at',
+                'games_played', 'games_started', 'minutes_played', 'points_scored',
+                'notes', 'metadata'
+            ])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get only active teams for this player.
+     */
+    public function activeTeams(): BelongsToMany
+    {
+        return $this->teams()->wherePivot('is_active', true);
+    }
+
+    /**
+     * Get the primary team (first active team).
+     */
+    public function primaryTeam()
+    {
+        return $this->activeTeams()->orderBy('joined_at')->first();
+    }
+
+    /**
+     * Backward compatibility: Get the primary team relationship.
+     * Returns the first active team as a proper relationship.
+     * @deprecated Use teams() or activeTeams() instead
+     */
+    public function team()
+    {
+        // Return the first active team as a relationship
+        return $this->teams()->wherePivot('is_active', true)->orderBy('joined_at')->limit(1);
     }
 
     /**

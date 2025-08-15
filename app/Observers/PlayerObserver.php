@@ -17,9 +17,9 @@ class PlayerObserver
             ->causedBy(auth()->user())
             ->log('Player created');
 
-        // Update team player count
-        if ($player->team) {
-            $player->team->updatePlayerCount();
+        // Update team player counts for all active teams
+        foreach ($player->activeTeams as $team) {
+            $team->updatePlayerCount();
         }
     }
 
@@ -28,26 +28,18 @@ class PlayerObserver
      */
     public function updated(Player $player): void
     {
-        // If team changed, update player counts for both teams
-        if ($player->isDirty('team_id')) {
-            // Update old team
-            if ($player->getOriginal('team_id')) {
-                $oldTeam = \App\Models\Team::find($player->getOriginal('team_id'));
-                $oldTeam?->updatePlayerCount();
-            }
-            
-            // Update new team
-            if ($player->team) {
-                $player->team->updatePlayerCount();
-            }
-        }
-
-        // Auto-assign jersey number if not provided
-        if (empty($player->jersey_number) && $player->team) {
-            $player->update([
-                'jersey_number' => $this->getNextAvailableJerseyNumber($player->team)
-            ]);
-        }
+        // Note: Team changes are now handled through the pivot table, 
+        // not through direct player updates. Team player counts will be 
+        // updated when teams are attached/detached from the player.
+        
+        // Auto-assign jersey numbers are now handled in the pivot table
+        // and should be managed when attaching players to teams.
+        
+        // Log the update
+        activity()
+            ->performedOn($player)
+            ->causedBy(auth()->user())
+            ->log('Player updated');
     }
 
     /**
@@ -55,9 +47,9 @@ class PlayerObserver
      */
     public function deleted(Player $player): void
     {
-        // Update team player count
-        if ($player->team) {
-            $player->team->updatePlayerCount();
+        // Update team player counts for all teams the player was on
+        foreach ($player->teams as $team) {
+            $team->updatePlayerCount();
         }
 
         activity()
@@ -71,9 +63,9 @@ class PlayerObserver
      */
     public function restored(Player $player): void
     {
-        // Update team player count
-        if ($player->team) {
-            $player->team->updatePlayerCount();
+        // Update team player counts for all active teams
+        foreach ($player->activeTeams as $team) {
+            $team->updatePlayerCount();
         }
 
         activity()
@@ -93,10 +85,16 @@ class PlayerObserver
 
     /**
      * Get the next available jersey number for a team.
+     * Note: Jersey numbers are now stored in the player_team pivot table.
      */
     private function getNextAvailableJerseyNumber(\App\Models\Team $team): int
     {
-        $usedNumbers = $team->players()->pluck('jersey_number')->toArray();
+        // Get jersey numbers from the pivot table
+        $usedNumbers = $team->players()
+            ->wherePivot('is_active', true)
+            ->pluck('player_team.jersey_number')
+            ->filter()
+            ->toArray();
         
         for ($i = 1; $i <= 99; $i++) {
             if (!in_array($i, $usedNumbers)) {

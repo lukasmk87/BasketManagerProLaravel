@@ -171,33 +171,42 @@ class Team extends JetstreamTeam implements HasMedia
     /**
      * Get the players on this team.
      */
-    public function players(): HasMany
+    public function players(): BelongsToMany
     {
-        return $this->hasMany(Player::class, 'team_id');
+        return $this->belongsToMany(Player::class)
+            ->withPivot([
+                'jersey_number', 'primary_position', 'secondary_positions',
+                'is_active', 'is_starter', 'is_captain', 'status',
+                'joined_at', 'left_at', 'contract_start', 'contract_end',
+                'registration_number', 'is_registered', 'registered_at',
+                'games_played', 'games_started', 'minutes_played', 'points_scored',
+                'notes', 'metadata'
+            ])
+            ->withTimestamps();
     }
 
     /**
      * Get the active players on this team.
      */
-    public function activePlayers(): HasMany
+    public function activePlayers(): BelongsToMany
     {
-        return $this->players()->where('status', 'active');
+        return $this->players()->wherePivot('is_active', true);
     }
 
     /**
      * Get the starting players on this team.
      */
-    public function starters(): HasMany
+    public function starters(): BelongsToMany
     {
-        return $this->players()->where('is_starter', true);
+        return $this->players()->wherePivot('is_starter', true);
     }
 
     /**
      * Get the team captains.
      */
-    public function captains(): HasMany
+    public function captains(): BelongsToMany
     {
-        return $this->players()->where('is_captain', true);
+        return $this->players()->wherePivot('is_captain', true);
     }
 
     /**

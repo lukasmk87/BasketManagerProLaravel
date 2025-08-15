@@ -66,13 +66,52 @@ class ClubController extends Controller
             'name' => 'required|string|max:255',
             'short_name' => 'nullable|string|max:10',
             'founded_year' => 'nullable|integer|min:1850|max:' . date('Y'),
-            'city' => 'nullable|string|max:255',
-            'country' => 'nullable|string|max:2',
-            'website' => 'nullable|url|max:255',
             'description' => 'nullable|string|max:1000',
-            'address' => 'nullable|string|max:500',
-            'phone' => 'nullable|string|max:50',
+            'website' => 'nullable|url|max:255',
             'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:50',
+            
+            // Detailed address fields
+            'address_street' => 'nullable|string|max:255',
+            'address_city' => 'nullable|string|max:255',
+            'address_state' => 'nullable|string|max:255',
+            'address_zip' => 'nullable|string|max:20',
+            'address_country' => 'nullable|string|max:2',
+            
+            // Basketball-specific fields
+            'league' => 'nullable|string|max:255',
+            'division' => 'nullable|string|max:255',
+            'season' => 'nullable|string|max:9',
+            'facilities' => 'nullable|json',
+            
+            // Club colors for branding
+            'primary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
+            'secondary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
+            'accent_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
+            
+            // Status fields
+            'is_active' => 'boolean',
+            'is_verified' => 'boolean',
+            
+            // Emergency contacts
+            'emergency_contact_name' => 'nullable|string|max:255',
+            'emergency_contact_phone' => 'nullable|string|max:50',
+            'emergency_contact_email' => 'nullable|email|max:255',
+            
+            // Financial information
+            'membership_fee' => 'nullable|numeric|min:0|max:9999.99',
+            'currency' => 'nullable|string|max:3',
+            
+            // Social media links
+            'social_links' => 'nullable|json',
+            
+            // Language settings
+            'default_language' => 'nullable|string|max:5',
+            'supported_languages' => 'nullable|json',
+            
+            // Additional settings
+            'settings' => 'nullable|json',
+            'preferences' => 'nullable|json',
         ]);
 
         $club = $this->clubService->createClub($validated);
@@ -130,13 +169,52 @@ class ClubController extends Controller
             'name' => 'required|string|max:255',
             'short_name' => 'nullable|string|max:10',
             'founded_year' => 'nullable|integer|min:1850|max:' . date('Y'),
-            'city' => 'nullable|string|max:255',
-            'country' => 'nullable|string|max:2',
-            'website' => 'nullable|url|max:255',
             'description' => 'nullable|string|max:1000',
-            'address' => 'nullable|string|max:500',
-            'phone' => 'nullable|string|max:50',
+            'website' => 'nullable|url|max:255',
             'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:50',
+            
+            // Detailed address fields
+            'address_street' => 'nullable|string|max:255',
+            'address_city' => 'nullable|string|max:255',
+            'address_state' => 'nullable|string|max:255',
+            'address_zip' => 'nullable|string|max:20',
+            'address_country' => 'nullable|string|max:2',
+            
+            // Basketball-specific fields
+            'league' => 'nullable|string|max:255',
+            'division' => 'nullable|string|max:255',
+            'season' => 'nullable|string|max:9',
+            'facilities' => 'nullable|json',
+            
+            // Club colors for branding
+            'primary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
+            'secondary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
+            'accent_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
+            
+            // Status fields
+            'is_active' => 'boolean',
+            'is_verified' => 'boolean',
+            
+            // Emergency contacts
+            'emergency_contact_name' => 'nullable|string|max:255',
+            'emergency_contact_phone' => 'nullable|string|max:50',
+            'emergency_contact_email' => 'nullable|email|max:255',
+            
+            // Financial information
+            'membership_fee' => 'nullable|numeric|min:0|max:9999.99',
+            'currency' => 'nullable|string|max:3',
+            
+            // Social media links
+            'social_links' => 'nullable|json',
+            
+            // Language settings
+            'default_language' => 'nullable|string|max:5',
+            'supported_languages' => 'nullable|json',
+            
+            // Additional settings
+            'settings' => 'nullable|json',
+            'preferences' => 'nullable|json',
         ]);
 
         $this->clubService->updateClub($club, $validated);
