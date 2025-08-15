@@ -10,7 +10,85 @@
 - **SSL**: Wildcard certificate for multi-tenancy
 - **Memory**: 4GB+ RAM recommended
 
+### 1.5. File Structure Requirements
+
+#### ✅ **REQUIRED Files and Folders for Deployment**
+
+```
+/app/                     # Complete application logic
+/bootstrap/               # Laravel bootstrap files
+/config/                  # All configuration files
+/database/migrations/     # Database migrations
+/database/seeders/        # Seeders (optional, for initial setup)
+/public/                  # Public directory (Document Root)
+  ├── index.php          # Main entry point
+  ├── .htaccess          # Apache configuration (if present)
+  ├── favicon.ico
+  ├── robots.txt
+  ├── manifest.json      # PWA Manifest
+  ├── sw.js              # Service Worker
+  └── build/             # Compiled assets (after npm run build)
+/resources/views/         # Blade templates
+/resources/lang/          # Language files
+/routes/                  # All route definitions
+/storage/                 # Storage directory (WITHOUT contents)
+  ├── app/               # Structure must exist
+  ├── framework/         # Structure must exist
+  └── logs/              # Structure must exist
+/vendor/                  # PHP dependencies (after composer install)
+artisan                   # Laravel CLI
+composer.json             # PHP dependencies definition
+composer.lock             # Exact version locks
+.env                      # Environment variables (MUST BE CREATED)
+```
+
+#### ❌ **NOT NEEDED Files and Folders**
+
+```
+/node_modules/            # NPM packages (only for build)
+/tests/                   # Test files
+/python/                  # Python ML scripts (separate service)
+/docker/                  # Docker configuration
+/scripts/                 # Local development scripts
+/.git/                    # Git repository
+/.github/                 # GitHub configuration
+package.json              # Only for build
+package-lock.json         # Only for build
+vite.config.js           # Only for build
+tailwind.config.js       # Only for build
+postcss.config.js        # Only for build
+phpunit.xml              # Test configuration
+.gitignore               # Git configuration
+*.md                     # Documentation files
+/ToDo/                   # Development documentation
+/resources/js/           # Uncompiled JS files
+/resources/css/          # Uncompiled CSS files
+/storage/debugbar/       # Debug files
+/storage/logs/*.log      # Local log files
+database.sqlite          # Local test database
+```
+
+#### 📦 **Build Process Requirements**
+
+Assets must be compiled LOCALLY before upload:
+```bash
+# Local build process (run before deployment)
+npm install
+npm run build
+# This creates /public/build/ with compiled assets
+```
+
+#### ⚠️ **Critical Notes**
+
+- **Document Root**: Server must point to `/public/` directory
+- **.env File**: NEVER upload local .env! Create new .env on server
+- **Storage Folder**: Structure must exist but WITHOUT local contents
+- **Vendor Folder**: Can be created locally or on server with `composer install`
+- **Build Assets**: `/public/build/` must be uploaded after local compilation
+
 ### 2. Environment Setup
+
+#### Option A: Server with SSH Access (Recommended)
 
 ```bash
 # Clone and install dependencies
@@ -27,6 +105,81 @@ php artisan migrate --force
 php artisan db:seed --class=TenantSeeder
 php artisan setup:rls
 ```
+
+#### Option B: Shared Hosting without SSH Access
+
+**Step 1: Local Preparation**
+```bash
+# Local build process
+npm install
+npm run build
+composer install --optimize-autoloader --no-dev
+
+# Create deployment package (exclude unnecessary files)
+tar -czf basketmanager-deploy.tar.gz \
+  --exclude='node_modules' \
+  --exclude='.git' \
+  --exclude='tests' \
+  --exclude='*.md' \
+  --exclude='package*.json' \
+  --exclude='vite.config.js' \
+  --exclude='tailwind.config.js' \
+  --exclude='storage/logs/*.log' \
+  .
+```
+
+**Step 2: Upload and Configure**
+```bash
+# Upload files to web hosting (via FTP/Panel)
+# 1. Extract files to root directory
+# 2. Move /public/ contents to public_html/ or www/
+# 3. Update index.php paths:
+```
+
+**Modified public/index.php for shared hosting:**
+```php
+<?php
+// Update these paths if Laravel files are outside public_html
+require __DIR__.'/../vendor/autoload.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
+```
+
+**Step 3: Manual Configuration**
+```bash
+# Create .env file via hosting panel file manager
+# Set proper permissions via hosting panel:
+# - storage/ folder: 755
+# - bootstrap/cache/ folder: 755
+
+# Run setup commands via hosting panel terminal (if available):
+php artisan key:generate
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+#### 💡 **Minimal Upload Strategy for Shared Hosting**
+
+Upload only these essential directories:
+```
+/app/                    # Application logic
+/bootstrap/              # Laravel bootstrap
+/config/                 # Configuration
+/database/migrations/    # Database structure
+/public/build/          # Compiled assets
+/resources/views/       # Templates
+/resources/lang/        # Language files
+/routes/                # Routes
+/storage/               # Empty structure only
+/vendor/                # PHP dependencies
+artisan                 # CLI tool
+composer.json           # Dependencies
+index.php               # Entry point
+.htaccess              # Apache rules (if needed)
+```
+
+**Total upload size**: ~50-100MB (vs 500MB+ with all files)
 
 ### 3. Multi-Tenant SSL Configuration
 
@@ -101,6 +254,95 @@ opcache.memory_consumption=256
 opcache.interned_strings_buffer=16
 opcache.max_accelerated_files=20000
 ```
+
+### 5.5. Build Process Documentation
+
+#### Pre-Deployment Build Checklist
+
+**Frontend Assets Build:**
+```bash
+# 1. Install Node dependencies
+npm install
+
+# 2. Build production assets
+npm run build
+
+# 3. Verify build output
+ls -la public/build/
+# Should contain:
+# - manifest.json (build manifest)
+# - assets/ folder with compiled CSS/JS
+```
+
+**PHP Dependencies:**
+```bash
+# 1. Install production dependencies only
+composer install --optimize-autoloader --no-dev
+
+# 2. Verify no dev dependencies
+composer show --installed | grep -v "dev-"
+```
+
+**Asset Verification:**
+```bash
+# Check asset sizes (should be optimized)
+du -sh public/build/assets/*
+
+# Verify Vite manifest
+cat public/build/manifest.json | jq '.'
+```
+
+#### Common Build Issues & Solutions
+
+**Issue**: `npm run build` fails with permission errors
+```bash
+# Solution: Fix node_modules ownership
+sudo chown -R $(whoami) node_modules
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+```
+
+**Issue**: Vite assets not loading in production
+```bash
+# Solution: Verify APP_URL in .env matches domain
+APP_URL=https://your-domain.com
+
+# Clear Laravel caches
+php artisan config:clear
+php artisan config:cache
+```
+
+**Issue**: CSS/JS files missing after upload
+```bash
+# Solution: Ensure public/build/ folder uploaded
+# Check .gitignore doesn't exclude build folder in deployment
+```
+
+#### Asset Optimization Settings
+
+**Vite Production Config** (already configured in vite.config.js):
+```javascript
+export default defineConfig({
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['vue', 'axios'],
+                    charts: ['chart.js']
+                }
+            }
+        },
+        chunkSizeWarningLimit: 1600
+    }
+});
+```
+
+**Expected Build Output Sizes:**
+- Main app.js: ~100-300KB (gzipped)
+- Main app.css: ~50-100KB (gzipped)
+- Vendor chunks: ~200-400KB (gzipped)
+- Chart.js chunk: ~200KB (gzipped)
 
 ### 6. Security Hardening
 

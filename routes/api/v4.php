@@ -2,17 +2,17 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
+// use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TeamController;
-use App\Http\Controllers\Api\PlayerController;
-use App\Http\Controllers\Api\GameController;
-use App\Http\Controllers\Api\GameStatisticController;
-use App\Http\Controllers\Api\TrainingController;
-use App\Http\Controllers\Api\DrillController;
-use App\Http\Controllers\Api\TournamentController;
-use App\Http\Controllers\Api\VideoFileController;
-use App\Http\Controllers\Api\VideoAnnotationController;
-use App\Http\Controllers\Api\MLAnalyticsController;
+// use App\Http\Controllers\Api\PlayerController;
+// use App\Http\Controllers\Api\GameController;
+// use App\Http\Controllers\Api\GameStatisticController;
+// use App\Http\Controllers\Api\TrainingController;
+// use App\Http\Controllers\Api\DrillController;
+// use App\Http\Controllers\Api\TournamentController;
+// use App\Http\Controllers\Api\VideoFileController;
+// use App\Http\Controllers\Api\VideoAnnotationController;
+// use App\Http\Controllers\Api\MLAnalyticsController;
 
 /*
 |--------------------------------------------------------------------------

@@ -88,9 +88,9 @@ Route::prefix('v2')->group(function () {
     require __DIR__ . '/api/v2.php';
 });
 
-// Version 4.0 routes (current)
+// Version 4.0 routes (current) - temporary teams only
 Route::prefix('v4')->group(function () {
-    require __DIR__ . '/api/v4.php';
+    require __DIR__ . '/api/v4_teams_only.php';
 });
 
 /*
