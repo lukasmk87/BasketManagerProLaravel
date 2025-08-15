@@ -48,6 +48,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // API Middleware
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+        
         $middleware->api(append: [
             \App\Http\Middleware\ResolveTenantMiddleware::class,
             \App\Http\Middleware\ConfigureTenantStripe::class,
