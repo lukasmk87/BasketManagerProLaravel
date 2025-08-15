@@ -138,9 +138,9 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Get the teams coached by this user as assistant coach.
      */
-    public function assistantCoachedTeams(): HasMany
+    public function assistantCoachedTeams()
     {
-        return $this->hasMany(Team::class, 'assistant_coach_id');
+        return Team::whereJsonContains('assistant_coaches', $this->id);
     }
 
     /**
@@ -164,7 +164,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function clubs(): BelongsToMany
     {
-        return $this->belongsToMany(Club::class, 'club_members')
+        return $this->belongsToMany(Club::class, 'club_user')
                     ->withPivot('role', 'joined_at', 'is_active')
                     ->withTimestamps();
     }

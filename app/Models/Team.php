@@ -157,11 +157,15 @@ class Team extends JetstreamTeam implements HasMedia
     }
 
     /**
-     * Get the assistant coach of this team.
+     * Get the assistant coaches of this team.
      */
-    public function assistantCoach(): BelongsTo
+    public function assistantCoaches()
     {
-        return $this->belongsTo(User::class, 'assistant_coach_id');
+        if (!$this->assistant_coaches) {
+            return collect();
+        }
+        
+        return User::whereIn('id', $this->assistant_coaches)->get();
     }
 
     /**

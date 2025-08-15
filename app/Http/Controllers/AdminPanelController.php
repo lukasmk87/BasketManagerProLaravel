@@ -107,7 +107,7 @@ class AdminPanelController extends Controller
         $this->authorize('view users');
 
         $users = User::with(['roles', 'clubs'])
-            ->withCount(['clubs', 'coachedTeams', 'assistantCoachedTeams'])
+            ->withCount(['clubs', 'coachedTeams'])
             ->when($request->search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
