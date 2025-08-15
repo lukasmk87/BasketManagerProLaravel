@@ -409,7 +409,11 @@ class DashboardController extends Controller
     {
         return match ($primaryRole) {
             'admin', 'super-admin' => [
-                ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user'],
+                ['label' => 'Neuer Club', 'route' => 'clubs.create', 'icon' => 'building'],
+                ['label' => 'Neues Team', 'route' => 'teams.create', 'icon' => 'user-group'],
+                ['label' => 'Neuer Spieler', 'route' => 'players.create', 'icon' => 'user'],
+                ['label' => 'Admin Panel', 'route' => 'admin.settings', 'icon' => 'cog'],
+                ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user-circle'],
                 ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
             'club-admin' => [

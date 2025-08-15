@@ -513,7 +513,7 @@ class EmergencyContact extends Model
             ],
             'player_info' => [
                 'name' => $this->user->name,
-                'date_of_birth' => $this->user->date_of_birth,
+                'date_of_birth' => $this->user->birth_date,
                 'medical_conditions' => $this->user->medical_conditions,
                 'allergies' => $this->user->allergies,
                 'medications' => $this->user->medications,

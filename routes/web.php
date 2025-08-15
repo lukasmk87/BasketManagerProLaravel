@@ -102,6 +102,14 @@ Route::middleware([
             ->name('statistics');
     });
     
+    // Admin Panel Routes
+    Route::prefix('admin')->name('admin.')->middleware('role:admin|super_admin')->group(function () {
+        Route::get('/settings', [\App\Http\Controllers\AdminPanelController::class, 'settings'])->name('settings');
+        Route::put('/settings', [\App\Http\Controllers\AdminPanelController::class, 'updateSettings'])->name('settings.update');
+        Route::get('/users', [\App\Http\Controllers\AdminPanelController::class, 'users'])->name('users');
+        Route::get('/system', [\App\Http\Controllers\AdminPanelController::class, 'system'])->name('system');
+    });
+    
     // Export Routes
     Route::prefix('export')->name('export.')->group(function () {
         // Game Exports

@@ -376,8 +376,8 @@ class Player extends Model implements HasMedia
      */
     public function getAgeAttribute(): ?int
     {
-        return $this->user->date_of_birth ? 
-            $this->user->date_of_birth->diffInYears(now()) : null;
+        return $this->user->birth_date ? 
+            $this->user->birth_date->diffInYears(now()) : null;
     }
 
     /**

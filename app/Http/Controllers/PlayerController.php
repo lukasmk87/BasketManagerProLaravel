@@ -79,20 +79,82 @@ class PlayerController extends Controller
         $this->authorize('create', Player::class);
 
         $validated = $request->validate([
+            // User Information (these will be handled separately for User model)
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'nullable|string|max:20',
+            'birth_date' => 'nullable|date|before:today',
+            'gender' => 'nullable|in:male,female,other',
+            
+            // Player Basic Info
             'team_id' => 'required|exists:teams,id',
             'jersey_number' => 'required|integer|min:0|max:99',
             'primary_position' => 'required|in:PG,SG,SF,PF,C',
-            'secondary_position' => 'nullable|in:PG,SG,SF,PF,C',
-            'height' => 'nullable|integer|min:100|max:250',
-            'weight' => 'nullable|integer|min:30|max:200',
-            'birth_date' => 'nullable|date|before:today',
-            'nationality' => 'nullable|string|max:2',
-            'is_captain' => 'boolean',
-            'is_starter' => 'boolean',
+            'secondary_positions' => 'nullable|array',
+            'secondary_positions.*' => 'in:PG,SG,SF,PF,C',
+            
+            // Physical Information
+            'height_cm' => 'nullable|integer|min:100|max:250',
+            'weight_kg' => 'nullable|numeric|min:30|max:200',
+            'dominant_hand' => 'nullable|in:left,right,ambidextrous',
+            'shoe_size' => 'nullable|string|max:10',
+            
+            // Basketball Experience
+            'started_playing' => 'nullable|date|before_or_equal:today',
+            'years_experience' => 'nullable|integer|min:0|max:50',
+            'previous_teams' => 'nullable|array',
+            'achievements' => 'nullable|array',
+            
+            // Player Status
             'status' => 'required|in:active,inactive,injured,suspended',
-            'notes' => 'nullable|string|max:1000',
+            'is_starter' => 'boolean',
+            'is_captain' => 'boolean',
+            'is_rookie' => 'boolean',
+            
+            // Contract Information
+            'contract_start' => 'nullable|date',
+            'contract_end' => 'nullable|date|after:contract_start',
+            'registration_number' => 'nullable|string|max:50|unique:players,registration_number',
+            
+            // Medical Information
+            'medical_conditions' => 'nullable|array',
+            'allergies' => 'nullable|array',
+            'medications' => 'nullable|array',
+            'blood_type' => 'nullable|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
+            'medical_clearance' => 'boolean',
+            'medical_clearance_expires' => 'nullable|date|after:today',
+            'preferred_hospital' => 'nullable|string|max:255',
+            'medical_notes' => 'nullable|string|max:2000',
+            
+            // Insurance Information
+            'insurance_provider' => 'nullable|string|max:255',
+            'insurance_policy_number' => 'nullable|string|max:100',
+            'insurance_expires' => 'nullable|date|after:today',
+            
+            // Emergency Contacts
+            'emergency_medical_contact' => 'nullable|string|max:255',
+            'emergency_medical_phone' => 'nullable|string|max:20',
+            'parent_user_id' => 'nullable|exists:users,id',
+            'guardian_contacts' => 'nullable|array',
+            
+            // Development & Training
+            'training_focus_areas' => 'nullable|array',
+            'development_goals' => 'nullable|array',
+            'coach_notes' => 'nullable|string|max:2000',
+            
+            // Academic Information (for minors)
+            'school_name' => 'nullable|string|max:255',
+            'grade_level' => 'nullable|string|max:20',
+            'gpa' => 'nullable|numeric|min:1.0|max:4.0',
+            'academic_eligibility' => 'boolean',
+            
+            // Preferences
+            'preferences' => 'nullable|array',
+            'dietary_restrictions' => 'nullable|array',
+            'social_media' => 'nullable|array',
+            'allow_photos' => 'boolean',
+            'allow_media_interviews' => 'boolean',
         ]);
 
         // Check jersey number uniqueness within team
@@ -119,13 +181,32 @@ class PlayerController extends Controller
     {
         $this->authorize('view', $player);
 
+        // Load all relevant relationships
         $player->load([
             'team.club',
             'user',
+            'parent',
             'gameActions.game'
         ]);
 
-        $playerStats = $this->playerService->getPlayerStatistics($player, $player->team->season);
+        // Add computed attributes to the player
+        $player->append([
+            'full_name',
+            'display_name',
+            'height_feet',
+            'field_goal_percentage',
+            'three_point_percentage',
+            'free_throw_percentage',
+            'points_per_game',
+            'rebounds_per_game',
+            'assists_per_game',
+            'age',
+            'all_positions',
+            'medical_clearance_expired',
+            'insurance_expired'
+        ]);
+
+        $playerStats = $this->playerService->getPlayerStatistics($player, $player->team?->season);
 
         return Inertia::render('Players/Show', [
             'player' => $player,
@@ -133,6 +214,8 @@ class PlayerController extends Controller
             'can' => [
                 'update' => auth()->user()->can('update', $player),
                 'delete' => auth()->user()->can('delete', $player),
+                'view_medical' => auth()->user()->can('view', $player) && 
+                    (auth()->user()->hasRole(['admin', 'club_admin', 'trainer']) || auth()->id() === $player->user_id),
             ],
         ]);
     }
@@ -165,20 +248,82 @@ class PlayerController extends Controller
         $this->authorize('update', $player);
 
         $validated = $request->validate([
+            // User Information (these will be handled separately for User model)
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $player->user_id,
+            'phone' => 'nullable|string|max:20',
+            'birth_date' => 'nullable|date|before:today',
+            'gender' => 'nullable|in:male,female,other',
+            
+            // Player Basic Info
             'team_id' => 'required|exists:teams,id',
             'jersey_number' => 'required|integer|min:0|max:99',
             'primary_position' => 'required|in:PG,SG,SF,PF,C',
-            'secondary_position' => 'nullable|in:PG,SG,SF,PF,C',
-            'height' => 'nullable|integer|min:100|max:250',
-            'weight' => 'nullable|integer|min:30|max:200',
-            'birth_date' => 'nullable|date|before:today',
-            'nationality' => 'nullable|string|max:2',
-            'is_captain' => 'boolean',
-            'is_starter' => 'boolean',
+            'secondary_positions' => 'nullable|array',
+            'secondary_positions.*' => 'in:PG,SG,SF,PF,C',
+            
+            // Physical Information
+            'height_cm' => 'nullable|integer|min:100|max:250',
+            'weight_kg' => 'nullable|numeric|min:30|max:200',
+            'dominant_hand' => 'nullable|in:left,right,ambidextrous',
+            'shoe_size' => 'nullable|string|max:10',
+            
+            // Basketball Experience
+            'started_playing' => 'nullable|date|before_or_equal:today',
+            'years_experience' => 'nullable|integer|min:0|max:50',
+            'previous_teams' => 'nullable|array',
+            'achievements' => 'nullable|array',
+            
+            // Player Status
             'status' => 'required|in:active,inactive,injured,suspended',
-            'notes' => 'nullable|string|max:1000',
+            'is_starter' => 'boolean',
+            'is_captain' => 'boolean',
+            'is_rookie' => 'boolean',
+            
+            // Contract Information
+            'contract_start' => 'nullable|date',
+            'contract_end' => 'nullable|date|after:contract_start',
+            'registration_number' => 'nullable|string|max:50|unique:players,registration_number,' . $player->id,
+            
+            // Medical Information
+            'medical_conditions' => 'nullable|array',
+            'allergies' => 'nullable|array',
+            'medications' => 'nullable|array',
+            'blood_type' => 'nullable|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
+            'medical_clearance' => 'boolean',
+            'medical_clearance_expires' => 'nullable|date|after:today',
+            'preferred_hospital' => 'nullable|string|max:255',
+            'medical_notes' => 'nullable|string|max:2000',
+            
+            // Insurance Information
+            'insurance_provider' => 'nullable|string|max:255',
+            'insurance_policy_number' => 'nullable|string|max:100',
+            'insurance_expires' => 'nullable|date|after:today',
+            
+            // Emergency Contacts
+            'emergency_medical_contact' => 'nullable|string|max:255',
+            'emergency_medical_phone' => 'nullable|string|max:20',
+            'parent_user_id' => 'nullable|exists:users,id',
+            'guardian_contacts' => 'nullable|array',
+            
+            // Development & Training
+            'training_focus_areas' => 'nullable|array',
+            'development_goals' => 'nullable|array',
+            'coach_notes' => 'nullable|string|max:2000',
+            
+            // Academic Information (for minors)
+            'school_name' => 'nullable|string|max:255',
+            'grade_level' => 'nullable|string|max:20',
+            'gpa' => 'nullable|numeric|min:1.0|max:4.0',
+            'academic_eligibility' => 'boolean',
+            
+            // Preferences
+            'preferences' => 'nullable|array',
+            'dietary_restrictions' => 'nullable|array',
+            'social_media' => 'nullable|array',
+            'allow_photos' => 'boolean',
+            'allow_media_interviews' => 'boolean',
         ]);
 
         // Check jersey number uniqueness within team (excluding current player)
@@ -210,5 +355,136 @@ class PlayerController extends Controller
 
         return redirect()->route('players.index')
             ->with('success', 'Spieler wurde erfolgreich gelöscht.');
+    }
+
+    /**
+     * Update medical information for a player.
+     */
+    public function updateMedical(Request $request, Player $player)
+    {
+        $this->authorize('update', $player);
+
+        $validated = $request->validate([
+            'medical_conditions' => 'nullable|array',
+            'allergies' => 'nullable|array',
+            'medications' => 'nullable|array',
+            'blood_type' => 'nullable|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
+            'medical_clearance' => 'boolean',
+            'medical_clearance_expires' => 'nullable|date|after:today',
+            'last_medical_check' => 'nullable|date|before_or_equal:today',
+            'preferred_hospital' => 'nullable|string|max:255',
+            'medical_notes' => 'nullable|string|max:2000',
+            'insurance_provider' => 'nullable|string|max:255',
+            'insurance_policy_number' => 'nullable|string|max:100',
+            'insurance_expires' => 'nullable|date|after:today',
+            'emergency_medical_contact' => 'nullable|string|max:255',
+            'emergency_medical_phone' => 'nullable|string|max:20',
+            'guardian_contacts' => 'nullable|array',
+        ]);
+
+        $player->update($validated);
+
+        return back()->with('success', 'Medizinische Informationen wurden erfolgreich aktualisiert.');
+    }
+
+    /**
+     * Update development information for a player.
+     */
+    public function updateDevelopment(Request $request, Player $player)
+    {
+        $this->authorize('update', $player);
+
+        $validated = $request->validate([
+            'training_focus_areas' => 'nullable|array',
+            'development_goals' => 'nullable|array',
+            'coach_notes' => 'nullable|string|max:2000',
+            'shooting_rating' => 'nullable|numeric|min:1|max:10',
+            'defense_rating' => 'nullable|numeric|min:1|max:10',
+            'passing_rating' => 'nullable|numeric|min:1|max:10',
+            'rebounding_rating' => 'nullable|numeric|min:1|max:10',
+            'speed_rating' => 'nullable|numeric|min:1|max:10',
+            'overall_rating' => 'nullable|numeric|min:1|max:10',
+        ]);
+
+        $player->update($validated);
+
+        return back()->with('success', 'Entwicklungsinformationen wurden erfolgreich aktualisiert.');
+    }
+
+    /**
+     * Update player preferences.
+     */
+    public function updatePreferences(Request $request, Player $player)
+    {
+        $this->authorize('update', $player);
+
+        $validated = $request->validate([
+            'preferences' => 'nullable|array',
+            'dietary_restrictions' => 'nullable|array',
+            'social_media' => 'nullable|array',
+            'allow_photos' => 'boolean',
+            'allow_media_interviews' => 'boolean',
+        ]);
+
+        $player->update($validated);
+
+        return back()->with('success', 'Präferenzen wurden erfolgreich aktualisiert.');
+    }
+
+    /**
+     * Bulk update player status.
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $this->authorize('create', Player::class);
+
+        $validated = $request->validate([
+            'player_ids' => 'required|array',
+            'player_ids.*' => 'exists:players,id',
+            'status' => 'required|in:active,inactive,injured,suspended',
+        ]);
+
+        Player::whereIn('id', $validated['player_ids'])
+            ->update(['status' => $validated['status']]);
+
+        $count = count($validated['player_ids']);
+        return back()->with('success', "{$count} Spieler wurden erfolgreich aktualisiert.");
+    }
+
+    /**
+     * Export player statistics.
+     */
+    public function exportStats(Player $player)
+    {
+        $this->authorize('view', $player);
+
+        return $this->playerService->exportPlayerStatistics($player);
+    }
+
+    /**
+     * Get emergency contacts for quick access.
+     */
+    public function emergencyContacts(Player $player)
+    {
+        $this->authorize('view', $player);
+
+        $contacts = $player->getEmergencyContacts();
+
+        return response()->json([
+            'player' => [
+                'id' => $player->id,
+                'name' => $player->full_name,
+                'jersey_number' => $player->jersey_number,
+                'team' => $player->team?->name,
+            ],
+            'contacts' => $contacts,
+            'medical_info' => [
+                'medical_conditions' => $player->medical_conditions,
+                'allergies' => $player->allergies,
+                'medications' => $player->medications,
+                'blood_type' => $player->blood_type,
+                'preferred_hospital' => $player->preferred_hospital,
+            ]
+        ]);
     }
 }
