@@ -32,6 +32,17 @@ Route::middleware([
     // Teams Routes
     Route::resource('teams', \App\Http\Controllers\TeamController::class);
     
+    // Team Players Routes (nested resource for managing players in teams)
+    Route::prefix('teams/{team}/players')->name('teams.players.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\TeamController::class, 'players'])->name('index');
+        Route::post('/', [\App\Http\Controllers\TeamController::class, 'attachPlayer'])->name('attach');
+        Route::put('/{player}', [\App\Http\Controllers\TeamController::class, 'updatePlayer'])->name('update');
+        Route::delete('/{player}', [\App\Http\Controllers\TeamController::class, 'detachPlayer'])->name('detach');
+    });
+    
+    // Player Search API for team management
+    Route::get('/api/players/search', [\App\Http\Controllers\PlayerController::class, 'search'])->name('players.search');
+    
     // Players Routes
     Route::resource('players', \App\Http\Controllers\PlayerController::class);
     

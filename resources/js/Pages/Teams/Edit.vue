@@ -215,6 +215,150 @@
                         </div>
                     </form>
                 </div>
+
+                <!-- Player Management Section -->
+                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mt-8">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-medium text-gray-900">
+                                Spielerverwaltung
+                            </h3>
+                            <PrimaryButton @click="showPlayerModal = true">
+                                Spieler hinzufügen
+                            </PrimaryButton>
+                        </div>
+
+                        <!-- Current Players Table -->
+                        <div v-if="teamPlayers.length > 0" class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            #
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Spieler
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Position
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Status
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Rollen
+                                        </th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Aktionen
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr v-for="player in teamPlayers" :key="player.id" class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <TextInput
+                                                    v-model.number="player.pivot.jersey_number"
+                                                    type="number"
+                                                    min="0"
+                                                    max="99"
+                                                    class="w-16 text-center"
+                                                    placeholder="#"
+                                                    @blur="updatePlayer(player)"
+                                                />
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div>
+                                                    <div class="text-sm font-medium text-gray-900">
+                                                        {{ player.user?.name }}
+                                                    </div>
+                                                    <div class="text-sm text-gray-500">
+                                                        {{ player.user?.email }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <select
+                                                v-model="player.pivot.primary_position"
+                                                class="text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                                @change="updatePlayer(player)"
+                                            >
+                                                <option value="">-</option>
+                                                <option value="PG">PG</option>
+                                                <option value="SG">SG</option>
+                                                <option value="SF">SF</option>
+                                                <option value="PF">PF</option>
+                                                <option value="C">C</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <select
+                                                v-model="player.pivot.status"
+                                                :class="{
+                                                    'bg-green-50 text-green-800 border-green-300': player.pivot.status === 'active',
+                                                    'bg-red-50 text-red-800 border-red-300': player.pivot.status === 'injured',
+                                                    'bg-yellow-50 text-yellow-800 border-yellow-300': player.pivot.status === 'suspended',
+                                                    'bg-gray-50 text-gray-800 border-gray-300': ['inactive', 'on_loan'].includes(player.pivot.status)
+                                                }"
+                                                class="text-sm rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                                @change="updatePlayer(player)"
+                                            >
+                                                <option value="active">Aktiv</option>
+                                                <option value="inactive">Inaktiv</option>
+                                                <option value="injured">Verletzt</option>
+                                                <option value="suspended">Gesperrt</option>
+                                                <option value="on_loan">Leihgabe</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex space-x-2">
+                                                <label class="flex items-center text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        v-model="player.pivot.is_starter"
+                                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mr-1"
+                                                        @change="updatePlayer(player)"
+                                                    />
+                                                    <span class="text-xs">Starter</span>
+                                                </label>
+                                                <label class="flex items-center text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        v-model="player.pivot.is_captain"
+                                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mr-1"
+                                                        @change="updatePlayer(player)"
+                                                    />
+                                                    <span class="text-xs">Kapitän</span>
+                                                </label>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <SecondaryButton
+                                                @click="removePlayer(player)"
+                                                class="text-red-600 hover:text-red-900"
+                                            >
+                                                Entfernen
+                                            </SecondaryButton>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div v-else class="text-center py-12">
+                            <div class="text-gray-500 text-lg mb-4">
+                                Keine Spieler im Team
+                            </div>
+                            <PrimaryButton @click="showPlayerModal = true">
+                                Ersten Spieler hinzufügen
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -246,11 +390,19 @@
                 </DangerButton>
             </template>
         </ConfirmationModal>
+
+        <!-- Player Management Modal -->
+        <PlayerManagementModal
+            :show="showPlayerModal"
+            :team="team"
+            @close="showPlayerModal = false"
+            @playersAdded="loadTeamPlayers"
+        />
     </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
@@ -260,6 +412,7 @@ import TextInput from '@/Components/TextInput.vue'
 import InputLabel from '@/Components/InputLabel.vue'
 import InputError from '@/Components/InputError.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
+import PlayerManagementModal from '@/Components/PlayerManagementModal.vue'
 
 const props = defineProps({
     team: Object,
@@ -283,6 +436,8 @@ const form = useForm({
 const deleteForm = useForm({})
 
 const confirmingTeamDeletion = ref(false)
+const showPlayerModal = ref(false)
+const teamPlayers = ref([])
 
 const trainingSchedules = ref(
     props.team.training_schedule ? JSON.parse(props.team.training_schedule) : []
@@ -311,4 +466,77 @@ const submit = () => {
 const deleteTeamConfirmed = () => {
     deleteForm.delete(route('teams.destroy', props.team.id))
 }
+
+// Player management functions
+const loadTeamPlayers = async () => {
+    try {
+        const response = await fetch(route('teams.players.index', props.team.id))
+        const data = await response.json()
+        teamPlayers.value = data.players || []
+    } catch (error) {
+        console.error('Fehler beim Laden der Spieler:', error)
+    }
+}
+
+const updatePlayer = async (player) => {
+    try {
+        const response = await fetch(route('teams.players.update', [props.team.id, player.id]), {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+            },
+            body: JSON.stringify({
+                jersey_number: player.pivot.jersey_number,
+                primary_position: player.pivot.primary_position,
+                is_active: player.pivot.is_active,
+                is_starter: player.pivot.is_starter,
+                is_captain: player.pivot.is_captain,
+                status: player.pivot.status,
+                notes: player.pivot.notes,
+            })
+        })
+
+        const data = await response.json()
+        
+        if (!response.ok) {
+            alert(data.error || 'Fehler beim Aktualisieren des Spielers')
+            // Reload to reset any invalid changes
+            await loadTeamPlayers()
+        }
+    } catch (error) {
+        console.error('Fehler beim Aktualisieren des Spielers:', error)
+        alert('Fehler beim Aktualisieren des Spielers')
+    }
+}
+
+const removePlayer = async (player) => {
+    if (!confirm(`Möchten Sie ${player.user?.name} wirklich aus dem Team entfernen?`)) {
+        return
+    }
+
+    try {
+        const response = await fetch(route('teams.players.detach', [props.team.id, player.id]), {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+            }
+        })
+
+        if (response.ok) {
+            await loadTeamPlayers()
+        } else {
+            const data = await response.json()
+            alert(data.error || 'Fehler beim Entfernen des Spielers')
+        }
+    } catch (error) {
+        console.error('Fehler beim Entfernen des Spielers:', error)
+        alert('Fehler beim Entfernen des Spielers')
+    }
+}
+
+// Load team players when component mounts
+onMounted(() => {
+    loadTeamPlayers()
+})
 </script>

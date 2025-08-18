@@ -496,4 +496,55 @@ class PlayerController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Search for players (API endpoint for team management)
+     */
+    public function search(Request $request)
+    {
+        $query = $request->get('q', '');
+        $excludeTeam = $request->get('exclude_team');
+        
+        if (strlen($query) < 2) {
+            return response()->json(['players' => []]);
+        }
+
+        $playersQuery = Player::query()
+            ->with('user')
+            ->join('users', 'players.user_id', '=', 'users.id')
+            ->where(function($q) use ($query) {
+                $q->where('users.name', 'LIKE', "%{$query}%")
+                  ->orWhere('users.email', 'LIKE', "%{$query}%");
+            });
+
+        // Exclude players already in a specific team
+        if ($excludeTeam) {
+            $playersQuery->whereNotExists(function($q) use ($excludeTeam) {
+                $q->select('*')
+                  ->from('player_team')
+                  ->whereColumn('player_team.player_id', 'players.id')
+                  ->where('player_team.team_id', $excludeTeam)
+                  ->where('player_team.is_active', true);
+            });
+        }
+
+        $players = $playersQuery
+            ->select('players.*')
+            ->distinct()
+            ->limit(20)
+            ->get();
+
+        return response()->json([
+            'players' => $players->map(function ($player) {
+                return [
+                    'id' => $player->id,
+                    'user' => $player->user ? [
+                        'id' => $player->user->id,
+                        'name' => $player->user->name,
+                        'email' => $player->user->email,
+                    ] : null
+                ];
+            })
+        ]);
+    }
 }

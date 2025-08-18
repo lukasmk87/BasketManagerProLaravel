@@ -54,13 +54,42 @@ class TeamController extends Controller
      */
     public function create(): Response
     {
-        $this->authorize('create', Team::class);
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
+        try {
+            $this->authorize('create', Team::class);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            // Log the authorization failure with detailed info
+            \Log::warning('Teams Create - Authorization failed', [
+                'user_id' => auth()->id(),
+                'user_email' => auth()->user()?->email,
+                'user_roles' => auth()->user()?->getRoleNames()->toArray() ?? [],
+                'user_permissions' => auth()->user()?->getAllPermissions()->pluck('name')->toArray() ?? [],
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('dashboard')->withErrors([
+                'authorization' => 'Sie haben keine Berechtigung, Teams zu erstellen. Bitte wenden Sie sich an den Administrator.'
+            ]);
+        }
 
         $clubs = Club::query()
             ->select(['id', 'name'])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
+
+        // Debug logging
+        \Log::info('Teams Create - Clubs loaded', [
+            'clubs_count' => $clubs->count(),
+            'clubs' => $clubs->toArray(),
+            'user_id' => auth()->id(),
+            'user_roles' => auth()->user()->getRoleNames()->toArray(),
+            'user_permissions' => auth()->user()->getAllPermissions()->pluck('name')->toArray()
+        ]);
 
         return Inertia::render('Teams/Create', [
             'clubs' => $clubs,
@@ -177,5 +206,159 @@ class TeamController extends Controller
 
         return redirect()->route('teams.index')
             ->with('success', 'Team wurde erfolgreich gelöscht.');
+    }
+
+    /**
+     * Get players for a specific team.
+     */
+    public function players(Team $team)
+    {
+        $this->authorize('view', $team);
+
+        $players = $team->players()
+            ->with('user')
+            ->orderBy('jersey_number')
+            ->orderBy('is_starter', 'desc')
+            ->get();
+
+        return response()->json([
+            'players' => $players->map(function ($player) {
+                return [
+                    'id' => $player->id,
+                    'user' => $player->user,
+                    'pivot' => [
+                        'jersey_number' => $player->pivot->jersey_number,
+                        'primary_position' => $player->pivot->primary_position,
+                        'secondary_positions' => $player->pivot->secondary_positions,
+                        'is_active' => $player->pivot->is_active,
+                        'is_starter' => $player->pivot->is_starter,
+                        'is_captain' => $player->pivot->is_captain,
+                        'status' => $player->pivot->status,
+                        'joined_at' => $player->pivot->joined_at,
+                        'notes' => $player->pivot->notes,
+                    ]
+                ];
+            })
+        ]);
+    }
+
+    /**
+     * Attach a player to a team with pivot data.
+     */
+    public function attachPlayer(Request $request, Team $team)
+    {
+        $this->authorize('update', $team);
+
+        $validated = $request->validate([
+            'player_ids' => 'required|array',
+            'player_ids.*' => 'exists:players,id',
+            'jersey_number' => 'nullable|integer|between:0,99',
+            'primary_position' => 'nullable|in:PG,SG,SF,PF,C',
+            'secondary_positions' => 'nullable|array',
+            'secondary_positions.*' => 'in:PG,SG,SF,PF,C',
+            'is_starter' => 'boolean',
+            'is_captain' => 'boolean',
+            'status' => 'in:active,inactive,injured,suspended,on_loan',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $playerIds = $validated['player_ids'];
+        unset($validated['player_ids']);
+
+        $pivotData = array_merge($validated, [
+            'joined_at' => now(),
+            'is_active' => true,
+        ]);
+
+        foreach ($playerIds as $playerId) {
+            // Check if player is already in the team
+            if ($team->players()->where('player_id', $playerId)->exists()) {
+                continue;
+            }
+
+            // Check jersey number uniqueness within team
+            if (isset($validated['jersey_number'])) {
+                $existingJersey = $team->players()
+                    ->wherePivot('jersey_number', $validated['jersey_number'])
+                    ->wherePivot('is_active', true)
+                    ->exists();
+
+                if ($existingJersey) {
+                    return response()->json([
+                        'error' => "Trikotnummer {$validated['jersey_number']} ist bereits vergeben."
+                    ], 422);
+                }
+            }
+
+            $team->players()->attach($playerId, $pivotData);
+        }
+
+        return response()->json([
+            'message' => 'Spieler wurde(n) erfolgreich zum Team hinzugefügt.',
+        ]);
+    }
+
+    /**
+     * Update player's pivot data in the team.
+     */
+    public function updatePlayer(Request $request, Team $team, Player $player)
+    {
+        $this->authorize('update', $team);
+
+        // Check if player is actually in this team
+        if (!$team->players()->where('player_id', $player->id)->exists()) {
+            return response()->json(['error' => 'Spieler ist nicht in diesem Team.'], 404);
+        }
+
+        $validated = $request->validate([
+            'jersey_number' => 'nullable|integer|between:0,99',
+            'primary_position' => 'nullable|in:PG,SG,SF,PF,C',
+            'secondary_positions' => 'nullable|array',
+            'secondary_positions.*' => 'in:PG,SG,SF,PF,C',
+            'is_active' => 'boolean',
+            'is_starter' => 'boolean',
+            'is_captain' => 'boolean',
+            'status' => 'in:active,inactive,injured,suspended,on_loan',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        // Check jersey number uniqueness within team (exclude current player)
+        if (isset($validated['jersey_number'])) {
+            $existingJersey = $team->players()
+                ->wherePivot('jersey_number', $validated['jersey_number'])
+                ->wherePivot('is_active', true)
+                ->where('player_id', '!=', $player->id)
+                ->exists();
+
+            if ($existingJersey) {
+                return response()->json([
+                    'error' => "Trikotnummer {$validated['jersey_number']} ist bereits vergeben."
+                ], 422);
+            }
+        }
+
+        $team->players()->updateExistingPivot($player->id, $validated);
+
+        return response()->json([
+            'message' => 'Spielerdaten wurden erfolgreich aktualisiert.',
+        ]);
+    }
+
+    /**
+     * Detach a player from a team.
+     */
+    public function detachPlayer(Team $team, Player $player)
+    {
+        $this->authorize('update', $team);
+
+        if (!$team->players()->where('player_id', $player->id)->exists()) {
+            return response()->json(['error' => 'Spieler ist nicht in diesem Team.'], 404);
+        }
+
+        $team->players()->detach($player->id);
+
+        return response()->json([
+            'message' => 'Spieler wurde erfolgreich vom Team entfernt.',
+        ]);
     }
 }

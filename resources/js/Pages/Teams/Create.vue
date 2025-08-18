@@ -47,6 +47,13 @@
                                         {{ club.name }}
                                     </option>
                                 </select>
+                                <!-- Debug info and fallback message -->
+                                <div v-if="!clubs || clubs.length === 0" class="mt-2 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
+                                    <p class="text-yellow-800 text-sm">
+                                        <strong>Keine Vereine verfügbar:</strong> 
+                                        Es wurden keine aktiven Vereine gefunden. Bitte kontaktieren Sie den Administrator, um einen Verein zu erstellen.
+                                    </p>
+                                </div>
                                 <InputError :message="form.errors.club_id" class="mt-2" />
                             </div>
 
@@ -225,6 +232,10 @@ import InputError from '@/Components/InputError.vue'
 const props = defineProps({
     clubs: Array,
 })
+
+// Debug logging
+console.log('Teams Create - Clubs data:', props.clubs)
+console.log('Teams Create - Clubs count:', props.clubs?.length || 0)
 
 const form = useForm({
     name: '',
