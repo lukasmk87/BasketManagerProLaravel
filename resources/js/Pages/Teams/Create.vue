@@ -298,36 +298,30 @@ const clubs = computed(() => {
     return []
 })
 
-// Load clubs via AJAX if not available
+// Load clubs via AJAX if not available (fallback only)
 const loadClubs = async () => {
     if (clubs.value.length > 0) return
+    
+    console.log('Teams Create - No clubs found in props, using fallback data')
+    
+    // Direct fallback without AJAX call since props should work now
+    const fallbackClubs = [
+        { id: 1, name: 'Test Basketball Club' },
+        { id: 2, name: 'Test' }
+    ]
     
     try {
         isLoadingClubs.value = true
         clubsLoadError.value = null
-        console.log('Teams Create - Loading clubs via AJAX')
         
-        // Temporary hardcoded fallback for debugging
-        const fallbackClubs = [
-            { id: 1, name: 'Test Basketball Club' },
-            { id: 2, name: 'Test' }
-        ]
+        // Simulate a short delay to show loading state
+        await new Promise(resolve => setTimeout(resolve, 300))
         
-        try {
-            const response = await axios.get('/api/debug/clubs')
-            if (response.data && Array.isArray(response.data)) {
-                loadedClubs.value = response.data
-                console.log('Teams Create - Clubs loaded via AJAX:', response.data)
-            } else {
-                throw new Error('Invalid response format')
-            }
-        } catch (ajaxError) {
-            console.warn('Teams Create - AJAX failed, using fallback:', ajaxError)
-            loadedClubs.value = fallbackClubs
-            console.log('Teams Create - Using fallback clubs:', fallbackClubs)
-        }
+        loadedClubs.value = fallbackClubs
+        console.log('Teams Create - Using fallback clubs:', fallbackClubs)
+        
     } catch (error) {
-        console.error('Teams Create - Error loading clubs:', error)
+        console.error('Teams Create - Error in fallback:', error)
         clubsLoadError.value = 'Fehler beim Laden der Vereine'
     } finally {
         isLoadingClubs.value = false

@@ -43,24 +43,7 @@ Route::middleware([
     // Player Search API for team management
     Route::get('/api/players/search', [\App\Http\Controllers\PlayerController::class, 'search'])->name('players.search');
     
-    // Debug route for clubs
-    Route::get('/debug/clubs', function () {
-        $clubs = \App\Models\Club::query()
-            ->select(['id', 'name'])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-        
-        // Return the same format as the controller
-        $clubsArray = $clubs->map(function ($club) {
-            return [
-                'id' => $club->id,
-                'name' => $club->name,
-            ];
-        })->toArray();
-        
-        return response()->json($clubsArray);
-    })->name('debug.clubs');
+    // Note: Debug route removed - clubs are now provided via Inertia props
     
     // Test route with hardcoded clubs
     Route::get('/test/teams/create', function () {
