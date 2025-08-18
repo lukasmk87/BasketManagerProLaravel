@@ -141,6 +141,25 @@ Route::get('status', function () {
     ]);
 });
 
+// Debug route for clubs (temporary - for troubleshooting)
+Route::get('debug/clubs', function () {
+    $clubs = \App\Models\Club::query()
+        ->select(['id', 'name'])
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get();
+    
+    // Return the same format as the controller
+    $clubsArray = $clubs->map(function ($club) {
+        return [
+            'id' => $club->id,
+            'name' => $club->name,
+        ];
+    })->toArray();
+    
+    return response()->json($clubsArray);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Admin Rate Limiting Routes

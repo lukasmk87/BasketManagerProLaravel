@@ -41,19 +41,48 @@
                                     v-model="form.club_id"
                                     class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                     required
+                                    :disabled="isLoadingClubs"
                                 >
-                                    <option value="">Verein auswählen</option>
+                                    <option value="">{{ isLoadingClubs ? 'Lade Vereine...' : 'Verein auswählen' }}</option>
                                     <option v-for="club in clubs" :key="club.id" :value="club.id">
                                         {{ club.name }}
                                     </option>
                                 </select>
-                                <!-- Debug info and fallback message -->
-                                <div v-if="!clubs || clubs.length === 0" class="mt-2 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
+                                
+                                <!-- Loading indicator -->
+                                <div v-if="isLoadingClubs" class="mt-2 p-3 bg-blue-100 border border-blue-400 rounded-md">
+                                    <p class="text-blue-800 text-sm">
+                                        <strong>Lade Vereine...</strong> Bitte warten Sie einen Moment.
+                                    </p>
+                                </div>
+                                
+                                <!-- Error message -->
+                                <div v-if="clubsLoadError" class="mt-2 p-3 bg-red-100 border border-red-400 rounded-md">
+                                    <p class="text-red-800 text-sm">
+                                        <strong>Fehler:</strong> {{ clubsLoadError }}
+                                    </p>
+                                    <button 
+                                        @click="loadClubs" 
+                                        class="mt-2 text-sm text-red-600 underline hover:text-red-800"
+                                    >
+                                        Erneut versuchen
+                                    </button>
+                                </div>
+                                
+                                <!-- No clubs available message -->
+                                <div v-if="!isLoadingClubs && !clubsLoadError && clubs.length === 0" class="mt-2 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
                                     <p class="text-yellow-800 text-sm">
                                         <strong>Keine Vereine verfügbar:</strong> 
                                         Es wurden keine aktiven Vereine gefunden. Bitte kontaktieren Sie den Administrator, um einen Verein zu erstellen.
                                     </p>
+                                    <button 
+                                        @click="loadClubs" 
+                                        class="mt-2 text-sm text-yellow-600 underline hover:text-yellow-800"
+                                    >
+                                        Erneut laden
+                                    </button>
                                 </div>
+                                
                                 <InputError :message="form.errors.club_id" class="mt-2" />
                             </div>
 
@@ -220,8 +249,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { ref, watch, computed, onMounted } from 'vue'
+import { useForm, usePage } from '@inertiajs/vue3'
+import axios from 'axios'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
@@ -230,23 +260,93 @@ import InputLabel from '@/Components/InputLabel.vue'
 import InputError from '@/Components/InputError.vue'
 
 const props = defineProps({
-    clubs: Array,
+    clubs: {
+        type: Array,
+        default: () => []
+    },
 })
+
+// Reactive clubs data with fallback loading
+const loadedClubs = ref([])
+const isLoadingClubs = ref(false)
+const clubsLoadError = ref(null)
+
+// Try to access Inertia page props directly
+const page = usePage()
+
+// Computed property to get clubs from either props, page props, or loaded data
+const clubs = computed(() => {
+    // First try props
+    if (props.clubs && Array.isArray(props.clubs) && props.clubs.length > 0) {
+        console.log('Teams Create - Using props clubs:', props.clubs)
+        return props.clubs
+    }
+    
+    // Then try page props
+    if (page.props.clubs && Array.isArray(page.props.clubs) && page.props.clubs.length > 0) {
+        console.log('Teams Create - Using page props clubs:', page.props.clubs)
+        return page.props.clubs
+    }
+    
+    // Finally use loaded clubs
+    if (loadedClubs.value && Array.isArray(loadedClubs.value) && loadedClubs.value.length > 0) {
+        console.log('Teams Create - Using loaded clubs:', loadedClubs.value)
+        return loadedClubs.value
+    }
+    
+    console.log('Teams Create - No clubs available')
+    return []
+})
+
+// Load clubs via AJAX if not available
+const loadClubs = async () => {
+    if (clubs.value.length > 0) return
+    
+    try {
+        isLoadingClubs.value = true
+        clubsLoadError.value = null
+        console.log('Teams Create - Loading clubs via AJAX')
+        
+        // Temporary hardcoded fallback for debugging
+        const fallbackClubs = [
+            { id: 1, name: 'Test Basketball Club' },
+            { id: 2, name: 'Test' }
+        ]
+        
+        try {
+            const response = await axios.get('/api/debug/clubs')
+            if (response.data && Array.isArray(response.data)) {
+                loadedClubs.value = response.data
+                console.log('Teams Create - Clubs loaded via AJAX:', response.data)
+            } else {
+                throw new Error('Invalid response format')
+            }
+        } catch (ajaxError) {
+            console.warn('Teams Create - AJAX failed, using fallback:', ajaxError)
+            loadedClubs.value = fallbackClubs
+            console.log('Teams Create - Using fallback clubs:', fallbackClubs)
+        }
+    } catch (error) {
+        console.error('Teams Create - Error loading clubs:', error)
+        clubsLoadError.value = 'Fehler beim Laden der Vereine'
+    } finally {
+        isLoadingClubs.value = false
+    }
+}
 
 // Debug logging
 console.log('Teams Create - Props:', props)
 console.log('Teams Create - Props Keys:', Object.keys(props))
 console.log('Teams Create - Full Props Object:', JSON.stringify(props))
-console.log('Teams Create - Clubs data:', props.clubs)
-console.log('Teams Create - Clubs count:', props.clubs?.length || 0)
-console.log('Teams Create - Clubs is Array:', Array.isArray(props.clubs))
-console.log('Teams Create - Clubs type:', typeof props.clubs)
-
-// Try to access Inertia page props directly
-import { usePage } from '@inertiajs/vue3'
-const page = usePage()
 console.log('Teams Create - Page Props:', page.props)
 console.log('Teams Create - Page Props Clubs:', page.props.clubs)
+
+// Load clubs on mount if needed
+onMounted(() => {
+    if (clubs.value.length === 0) {
+        loadClubs()
+    }
+})
 
 const form = useForm({
     name: '',

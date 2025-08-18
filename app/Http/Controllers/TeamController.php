@@ -90,7 +90,7 @@ class TeamController extends Controller
             ];
         })->toArray();
 
-        // Debug logging
+        // Debug logging - Before returning response
         \Log::info('Teams Create - Clubs loaded', [
             'clubs_count' => count($clubsArray),
             'clubs' => $clubsArray,
@@ -99,9 +99,17 @@ class TeamController extends Controller
             'user_permissions' => auth()->user()->getAllPermissions()->pluck('name')->toArray()
         ]);
 
-        return Inertia::render('Teams/Create', [
+        $response_data = [
             'clubs' => $clubsArray,
+        ];
+
+        // Debug logging - Response data that will be sent
+        \Log::info('Teams Create - Response data', [
+            'response_data' => $response_data,
+            'clubs_in_response' => $response_data['clubs']
         ]);
+
+        return Inertia::render('Teams/Create', $response_data);
     }
 
     /**

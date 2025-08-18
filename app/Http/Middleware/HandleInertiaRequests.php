@@ -37,7 +37,66 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+            'auth' => [
+                'user' => function () use ($request) {
+                    if (! $user = $request->user()) {
+                        return;
+                    }
+
+                    // Check if user has team features enabled (from Jetstream)
+                    $userHasTeamFeatures = class_exists('\Laravel\Jetstream\Jetstream') 
+                        ? \Laravel\Jetstream\Jetstream::userHasTeamFeatures($user) 
+                        : false;
+
+                    // Load current team if user has team features
+                    if ($user && $userHasTeamFeatures) {
+                        $user->currentTeam;
+                    }
+
+                    return array_merge($user->toArray(), array_filter([
+                        'all_teams' => $userHasTeamFeatures ? $user->allTeams()->values() : null,
+                        'current_team' => $userHasTeamFeatures ? $user->currentTeam : null,
+                    ]), [
+                        'two_factor_enabled' => class_exists('\Laravel\Fortify\Features') 
+                            && \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::twoFactorAuthentication())
+                            && ! is_null($user->two_factor_secret),
+                    ]);
+                },
+            ],
+            'jetstream' => function () use ($request) {
+                if (!class_exists('\Laravel\Jetstream\Jetstream')) {
+                    return null;
+                }
+
+                $user = $request->user();
+
+                return [
+                    'canCreateTeams' => $user &&
+                                        \Laravel\Jetstream\Jetstream::userHasTeamFeatures($user) &&
+                                        \Illuminate\Support\Facades\Gate::forUser($user)->check('create', \Laravel\Jetstream\Jetstream::newTeamModel()),
+                    'canManageTwoFactorAuthentication' => class_exists('\Laravel\Fortify\Features') 
+                        ? \Laravel\Fortify\Features::canManageTwoFactorAuthentication() 
+                        : false,
+                    'canUpdatePassword' => class_exists('\Laravel\Fortify\Features') 
+                        ? \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::updatePasswords()) 
+                        : false,
+                    'canUpdateProfileInformation' => class_exists('\Laravel\Fortify\Features') 
+                        ? \Laravel\Fortify\Features::canUpdateProfileInformation() 
+                        : false,
+                    'hasEmailVerification' => class_exists('\Laravel\Fortify\Features') 
+                        ? \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::emailVerification()) 
+                        : false,
+                    'flash' => $request->session()->get('flash', []),
+                    'hasAccountDeletionFeatures' => \Laravel\Jetstream\Jetstream::hasAccountDeletionFeatures(),
+                    'hasApiFeatures' => \Laravel\Jetstream\Jetstream::hasApiFeatures(),
+                    'hasTeamFeatures' => \Laravel\Jetstream\Jetstream::hasTeamFeatures(),
+                    'hasTermsAndPrivacyPolicyFeature' => \Laravel\Jetstream\Jetstream::hasTermsAndPrivacyPolicyFeature(),
+                    'managesProfilePhotos' => \Laravel\Jetstream\Jetstream::managesProfilePhotos(),
+                ];
+            },
+            'flash' => [
+                'message' => fn () => $request->session()->get('message')
+            ],
         ];
     }
 }

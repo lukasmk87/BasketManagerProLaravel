@@ -46,16 +46,20 @@ Route::middleware([
     // Debug route for clubs
     Route::get('/debug/clubs', function () {
         $clubs = \App\Models\Club::query()
-            ->select(['id', 'name', 'is_active'])
+            ->select(['id', 'name'])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
         
-        return response()->json([
-            'clubs_count' => $clubs->count(),
-            'clubs' => $clubs->toArray(),
-            'all_clubs' => \App\Models\Club::all()->toArray()
-        ]);
+        // Return the same format as the controller
+        $clubsArray = $clubs->map(function ($club) {
+            return [
+                'id' => $club->id,
+                'name' => $club->name,
+            ];
+        })->toArray();
+        
+        return response()->json($clubsArray);
     })->name('debug.clubs');
     
     // Test route with hardcoded clubs
