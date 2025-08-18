@@ -25,7 +25,7 @@ class TrainingController extends Controller
         $upcomingSessions = TrainingSession::query()
             ->with(['team.club'])
             ->where('scheduled_at', '>', now())
-            ->when(!$user->hasRole('admin') && !$user->hasRole('super-admin'), function ($query) use ($user) {
+            ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
                       ->orWhereJsonContains('assistant_coaches', $user->id)
@@ -41,7 +41,7 @@ class TrainingController extends Controller
         $recentSessions = TrainingSession::query()
             ->with(['team.club'])
             ->where('scheduled_at', '<', now())
-            ->when(!$user->hasRole('admin') && !$user->hasRole('super-admin'), function ($query) use ($user) {
+            ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
                       ->orWhereJsonContains('assistant_coaches', $user->id)
@@ -69,7 +69,7 @@ class TrainingController extends Controller
         
         $sessions = TrainingSession::query()
             ->with(['team.club', 'drills'])
-            ->when(!$user->hasRole('admin') && !$user->hasRole('super-admin'), function ($query) use ($user) {
+            ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
                       ->orWhereJsonContains('assistant_coaches', $user->id)

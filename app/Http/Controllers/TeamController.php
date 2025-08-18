@@ -26,7 +26,7 @@ class TeamController extends Controller
         $teams = Team::query()
             ->with(['club', 'headCoach'])
             ->withCount(['players', 'homeGames', 'awayGames'])
-            ->when($user->hasRole('admin') || $user->hasRole('super-admin'), function ($query) {
+            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
                 // Admin users see all teams
                 return $query;
             }, function ($query) use ($user) {
