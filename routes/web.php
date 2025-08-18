@@ -107,6 +107,9 @@ Route::middleware([
         Route::get('/settings', [\App\Http\Controllers\AdminPanelController::class, 'settings'])->name('settings');
         Route::put('/settings', [\App\Http\Controllers\AdminPanelController::class, 'updateSettings'])->name('settings.update');
         Route::get('/users', [\App\Http\Controllers\AdminPanelController::class, 'users'])->name('users');
+        Route::get('/users/{user}/edit', [\App\Http\Controllers\AdminPanelController::class, 'editUser'])->name('users.edit');
+        Route::put('/users/{user}', [\App\Http\Controllers\AdminPanelController::class, 'updateUser'])->name('users.update');
+        Route::delete('/users/{user}', [\App\Http\Controllers\AdminPanelController::class, 'destroyUser'])->name('users.destroy');
         Route::get('/system', [\App\Http\Controllers\AdminPanelController::class, 'system'])->name('system');
     });
     

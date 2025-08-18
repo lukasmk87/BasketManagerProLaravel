@@ -40,7 +40,7 @@ class DashboardController extends Controller
 
         // Get role-specific dashboard data
         $dashboardData = match ($primaryRole) {
-            'admin', 'super-admin' => $this->getAdminDashboard($user),
+            'admin', 'super_admin' => $this->getAdminDashboard($user),
             'club-admin' => $this->getClubAdminDashboard($user),
             'trainer', 'head-coach', 'assistant-coach' => $this->getTrainerDashboard($user),
             'player' => $this->getPlayerDashboard($user),
@@ -410,7 +410,7 @@ class DashboardController extends Controller
     private function getQuickActions(User $user, string $primaryRole): array
     {
         return match ($primaryRole) {
-            'admin', 'super-admin' => [
+            'admin', 'super_admin' => [
                 ['label' => 'Neuer Club', 'route' => 'clubs.create', 'icon' => 'building'],
                 ['label' => 'Neues Team', 'route' => 'teams.create', 'icon' => 'user-group'],
                 ['label' => 'Neuer Spieler', 'route' => 'players.create', 'icon' => 'user'],
@@ -454,7 +454,7 @@ class DashboardController extends Controller
 
         // Priority order for role determination
         $rolePriority = [
-            'super-admin', 'admin', 'club-admin', 'trainer', 
+            'super_admin', 'admin', 'club-admin', 'trainer', 
             'head-coach', 'assistant-coach', 'player', 'member'
         ];
 

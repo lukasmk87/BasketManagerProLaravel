@@ -51,6 +51,19 @@ class DatabaseSeeder extends Seeder
      */
     private function createBasketballTestUsers(): void
     {
+        // Super Admin user
+        $superAdmin = User::firstOrCreate(
+            ['email' => 'ultrathink@basketmanager.test'],
+            [
+                'name' => 'ultrathink',
+                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                'is_active' => true,
+                'is_verified' => true,
+                'language' => 'de',
+            ]
+        );
+        $superAdmin->assignRole('super_admin');
+
         // Admin user
         $admin = User::firstOrCreate(
             ['email' => 'admin@basketmanager.test'],

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -231,9 +231,12 @@ const getStatusText = (isActive) => {
                                         {{ formatDate(user.created_at) }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button class="text-indigo-600 hover:text-indigo-900">
+                                        <Link 
+                                            :href="route('admin.users.edit', user.id)"
+                                            class="text-indigo-600 hover:text-indigo-900 mr-4"
+                                        >
                                             Bearbeiten
-                                        </button>
+                                        </Link>
                                     </td>
                                 </tr>
                             </tbody>

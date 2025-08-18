@@ -47,6 +47,13 @@ php artisan route:cache
 # Cache views for better performance
 php artisan view:cache
 
+echo "🔨 Building frontend assets..."
+
+# Build frontend assets for production
+npm run build
+
+echo "📦 Frontend build completed successfully!"
+
 echo "🔧 Running migrations (if needed)..."
 
 # Run migrations safely
@@ -72,9 +79,12 @@ echo ""
 echo "🌐 Dashboard should now be accessible at: https://staging.basketmanager-pro.de/dashboard"
 echo ""
 echo "📋 Next steps for deployment:"
-echo "1. Copy all files to staging server"
-echo "2. Run this script on staging server"
-echo "3. Ensure .env has correct values:"
+echo "1. Copy all files including public/build/ to staging server:"
+echo "   rsync -av --delete ./ user@staging.basketmanager-pro.de:/path/to/staging/"
+echo "2. Or if using separate build upload:"
+echo "   rsync -av --delete public/build/ user@staging.basketmanager-pro.de:/path/to/staging/public/build/"
+echo "3. Run this script on staging server"
+echo "4. Ensure .env has correct values:"
 echo "   - APP_ENV=staging"
 echo "   - APP_DEBUG=false"  
 echo "   - TELESCOPE_ENABLED=false"

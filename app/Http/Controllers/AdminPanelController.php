@@ -204,6 +204,68 @@ class AdminPanelController extends Controller
     }
 
     /**
+     * Show the edit user form.
+     */
+    public function editUser(Request $request, User $user): Response
+    {
+        $this->authorize('edit users');
+
+        return Inertia::render('Admin/EditUser', [
+            'user' => $user->load('roles'),
+            'roles' => Role::all(),
+        ]);
+    }
+
+    /**
+     * Update a user.
+     */
+    public function updateUser(Request $request, User $user)
+    {
+        $this->authorize('edit users');
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'is_active' => 'boolean',
+            'roles' => 'array',
+            'roles.*' => 'exists:roles,name',
+        ]);
+
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'is_active' => $validated['is_active'] ?? $user->is_active,
+        ]);
+
+        // Update roles if provided
+        if (isset($validated['roles'])) {
+            $user->syncRoles($validated['roles']);
+        }
+
+        return redirect()->route('admin.users')
+            ->with('success', 'Benutzer wurde erfolgreich aktualisiert.');
+    }
+
+    /**
+     * Delete a user.
+     */
+    public function destroyUser(Request $request, User $user)
+    {
+        $this->authorize('delete users');
+
+        // Prevent deletion of own account
+        if ($user->id === auth()->id()) {
+            return redirect()->route('admin.users')
+                ->with('error', 'Sie können Ihr eigenes Benutzerkonto nicht löschen.');
+        }
+
+        $user->delete();
+
+        return redirect()->route('admin.users')
+            ->with('success', 'Benutzer wurde erfolgreich gelöscht.');
+    }
+
+    /**
      * Format bytes to human readable format.
      */
     private function formatBytes(int $bytes, int $precision = 2): string
