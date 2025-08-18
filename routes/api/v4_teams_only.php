@@ -14,6 +14,37 @@ Route::get('debug/test', function () {
     ]);
 });
 
+// Debug route to test authentication
+Route::get('debug/auth-test', function (Request $request) {
+    return response()->json([
+        'message' => 'Testing auth middleware',
+        'user' => auth('sanctum')->check() ? auth('sanctum')->user() : null,
+        'auth_check' => auth('sanctum')->check(),
+        'session_check' => auth('web')->check(),
+        'headers' => $request->headers->all(),
+        'timestamp' => now()->toISOString(),
+        'route' => '/api/v4/debug/auth-test'
+    ]);
+})->middleware('auth:sanctum');
+
+// Debug route to check team without auth
+Route::get('debug/teams-no-auth', function () {
+    $teams = \App\Models\Team::with('club')->take(5)->get();
+    return response()->json([
+        'message' => 'Teams without auth',
+        'teams' => $teams->map(function($team) {
+            return [
+                'id' => $team->id,
+                'name' => $team->name,
+                'club' => $team->club?->name,
+                'created_at' => $team->created_at,
+            ];
+        }),
+        'total_teams' => \App\Models\Team::count(),
+        'timestamp' => now()->toISOString(),
+    ]);
+});
+
 /*
 |--------------------------------------------------------------------------
 | API V4 Routes - Teams Only (Temporary)

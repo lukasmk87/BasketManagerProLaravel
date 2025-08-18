@@ -92,9 +92,26 @@ class TeamController extends Controller
     /**
      * Display the specified team.
      */
-    public function show(Team $team): TeamResource
+    public function show(Team $team)
     {
-        $this->authorize('view', $team);
+        try {
+            $this->authorize('view', $team);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            \Log::warning('API TeamController show - Authorization failed', [
+                'team_id' => $team->id,
+                'user_id' => auth('sanctum')->id(),
+                'user_authenticated' => auth('sanctum')->check(),
+                'session_authenticated' => auth('web')->check(),
+                'error' => $e->getMessage(),
+            ]);
+            
+            return response()->json([
+                'message' => 'Sie haben keine Berechtigung, dieses Team anzuzeigen.',
+                'error' => 'authorization_failed',
+                'api_version' => '4.0',
+                'timestamp' => now()->toISOString(),
+            ], 403);
+        }
 
         $team->load([
             'club',
@@ -105,6 +122,12 @@ class TeamController extends Controller
                       ->wherePivot('is_active', true)
                       ->orderBy('player_team.jersey_number');
             },
+        ]);
+
+        \Log::info('API TeamController show - Success', [
+            'team_id' => $team->id,
+            'team_name' => $team->name,
+            'user_id' => auth('sanctum')->id(),
         ]);
 
         return new TeamResource($team);

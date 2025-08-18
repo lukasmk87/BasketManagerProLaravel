@@ -19,9 +19,27 @@ class TeamService
      */
     public function createTeam(array $data): Team
     {
+        Log::info("TeamService::createTeam - Starting team creation", [
+            'input_data' => $data,
+            'auth_user_id' => auth()->id(),
+            'auth_check' => auth()->check(),
+            'session_exists' => session()->getId() ?? 'no_session',
+        ]);
+
         DB::beginTransaction();
 
         try {
+            // Validate user_id first
+            $userId = auth()->id();
+            if (!$userId) {
+                throw new \RuntimeException('Benutzer ist nicht authentifiziert. user_id ist null.');
+            }
+
+            Log::info("TeamService::createTeam - User validated", [
+                'user_id' => $userId,
+                'user' => auth()->user()?->toArray(),
+            ]);
+
             // Only use fields that are validated in the controller
             $teamData = [
                 'name' => $data['name'],
@@ -33,6 +51,8 @@ class TeamService
                 'gender' => $data['gender'],
                 'is_active' => $data['is_active'] ?? true,
                 'description' => $data['description'] ?? null,
+                'user_id' => $userId, // Required for Jetstream Team compatibility
+                'personal_team' => false, // This is a basketball team, not a personal team
             ];
 
             // Only add training_schedule if it's valid JSON or array
@@ -47,31 +67,65 @@ class TeamService
                 }
             }
 
-            // Set required user_id for Jetstream Team compatibility
-            $teamData['user_id'] = auth()->id();
-
-            Log::info("Creating team with data", [
+            Log::info("TeamService::createTeam - Prepared team data", [
                 'team_data' => $teamData,
                 'original_data' => $data
             ]);
 
+            // Check if club exists
+            $club = \App\Models\Club::find($teamData['club_id']);
+            if (!$club) {
+                throw new \RuntimeException("Club mit ID {$teamData['club_id']} nicht gefunden.");
+            }
+
+            Log::info("TeamService::createTeam - Club validated", [
+                'club_id' => $club->id,
+                'club_name' => $club->name,
+            ]);
+
+            // Create the team
             $team = Team::create($teamData);
+
+            if (!$team) {
+                throw new \RuntimeException('Team-Erstellung fehlgeschlagen - Team::create() gab null zurück.');
+            }
+
+            if (!$team->id) {
+                throw new \RuntimeException('Team wurde erstellt, aber hat keine ID.');
+            }
 
             DB::commit();
 
-            Log::info("Team created successfully", [
+            Log::info("TeamService::createTeam - Team created successfully", [
                 'team_id' => $team->id,
                 'team_name' => $team->name,
-                'club_id' => $team->club_id
+                'club_id' => $team->club_id,
+                'user_id' => $team->user_id,
+                'personal_team' => $team->personal_team,
+                'created_at' => $team->created_at,
+            ]);
+
+            // Verify the team exists in database
+            $verifyTeam = Team::find($team->id);
+            if (!$verifyTeam) {
+                throw new \RuntimeException("Team wurde erstellt (ID: {$team->id}), ist aber nicht in der Datenbank auffindbar.");
+            }
+
+            Log::info("TeamService::createTeam - Team verification successful", [
+                'verified_team_id' => $verifyTeam->id,
+                'verified_team_name' => $verifyTeam->name,
             ]);
 
             return $team->fresh(['club']);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Failed to create team", [
+            Log::error("TeamService::createTeam - Failed to create team", [
                 'error' => $e->getMessage(),
-                'data' => $data
+                'trace' => $e->getTraceAsString(),
+                'input_data' => $data,
+                'auth_user_id' => auth()->id(),
+                'auth_check' => auth()->check(),
             ]);
             throw $e;
         }

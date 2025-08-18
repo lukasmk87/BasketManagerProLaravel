@@ -117,25 +117,79 @@ class TeamController extends Controller
      */
     public function store(Request $request)
     {
-        $this->authorize('create', Team::class);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'club_id' => 'required|exists:clubs,id',
-            'season' => 'required|string|max:9',
-            'league' => 'nullable|string|max:255',
-            'division' => 'nullable|string|max:255',
-            'age_group' => 'nullable|in:u8,u10,u12,u14,u16,u18,u20,senior,masters,veterans',
-            'gender' => 'required|in:male,female,mixed',
-            'is_active' => 'boolean',
-            'training_schedule' => 'nullable|json',
-            'description' => 'nullable|string|max:1000',
+        // Debug logging - Request start
+        \Log::info('Teams Store - Request received', [
+            'user_id' => auth()->id(),
+            'user_email' => auth()->user()?->email,
+            'request_data' => $request->all(),
+            'session_id' => $request->session()->getId(),
+            'is_authenticated' => auth()->check(),
+            'auth_guard' => config('auth.defaults.guard'),
         ]);
 
-        $team = $this->teamService->createTeam($validated);
+        try {
+            $this->authorize('create', Team::class);
+            
+            \Log::info('Teams Store - Authorization passed', [
+                'user_id' => auth()->id(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Teams Store - Authorization failed', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
 
-        return redirect()->route('teams.show', $team)
-            ->with('success', 'Team wurde erfolgreich erstellt.');
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'club_id' => 'required|exists:clubs,id',
+                'season' => 'required|string|max:9',
+                'league' => 'nullable|string|max:255',
+                'division' => 'nullable|string|max:255',
+                'age_group' => 'nullable|in:u8,u10,u12,u14,u16,u18,u20,senior,masters,veterans',
+                'gender' => 'required|in:male,female,mixed',
+                'is_active' => 'boolean',
+                'training_schedule' => 'nullable|json',
+                'description' => 'nullable|string|max:1000',
+            ]);
+            
+            \Log::info('Teams Store - Validation passed', [
+                'validated_data' => $validated,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Teams Store - Validation failed', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all(),
+            ]);
+            throw $e;
+        }
+
+        try {
+            $team = $this->teamService->createTeam($validated);
+            
+            \Log::info('Teams Store - Team created successfully', [
+                'team_id' => $team->id,
+                'team_name' => $team->name,
+                'club_id' => $team->club_id,
+            ]);
+
+            return redirect()->route('teams.show', $team)
+                ->with('success', 'Team wurde erfolgreich erstellt.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Teams Store - Team creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'validated_data' => $validated,
+            ]);
+            
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Team konnte nicht erstellt werden: ' . $e->getMessage()]);
+        }
     }
 
     /**

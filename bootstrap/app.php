@@ -50,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // API Middleware
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
+            \App\Http\Middleware\ForceJsonResponse::class,
         ]);
         
         $middleware->api(append: [
