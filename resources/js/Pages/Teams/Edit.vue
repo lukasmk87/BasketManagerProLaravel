@@ -94,13 +94,23 @@
                             <!-- Age Group -->
                             <div>
                                 <InputLabel for="age_group" value="Altersklasse" />
-                                <TextInput
+                                <select
                                     id="age_group"
                                     v-model="form.age_group"
-                                    type="text"
-                                    class="mt-1 block w-full"
-                                    placeholder="z.B. U16, Herren, Damen"
-                                />
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                >
+                                    <option value="">Altersklasse auswählen</option>
+                                    <option value="u8">U8</option>
+                                    <option value="u10">U10</option>
+                                    <option value="u12">U12</option>
+                                    <option value="u14">U14</option>
+                                    <option value="u16">U16</option>
+                                    <option value="u18">U18</option>
+                                    <option value="u20">U20</option>
+                                    <option value="senior">Senioren</option>
+                                    <option value="masters">Masters</option>
+                                    <option value="veterans">Veterans</option>
+                                </select>
                                 <InputError :message="form.errors.age_group" class="mt-2" />
                             </div>
 

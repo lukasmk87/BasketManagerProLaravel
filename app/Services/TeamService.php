@@ -22,53 +22,40 @@ class TeamService
         DB::beginTransaction();
 
         try {
-            $team = Team::create([
+            // Only use fields that are validated in the controller
+            $teamData = [
                 'name' => $data['name'],
-                'short_name' => $data['short_name'] ?? null,
                 'club_id' => $data['club_id'],
-                'description' => $data['description'] ?? null,
                 'season' => $data['season'],
                 'league' => $data['league'] ?? null,
                 'division' => $data['division'] ?? null,
+                'age_group' => $data['age_group'] ?? null,
                 'gender' => $data['gender'],
-                'age_group' => $data['age_group'],
-                'competitive_level' => $data['competitive_level'] ?? 'recreational',
-                'max_players' => $data['max_players'] ?? 15,
-                'min_age' => $data['min_age'] ?? null,
-                'max_age' => $data['max_age'] ?? null,
-                'head_coach_id' => $data['head_coach_id'] ?? null,
-                'assistant_coaches' => $data['assistant_coaches'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
-                'is_recruiting' => $data['is_recruiting'] ?? false,
-                'home_venue' => $data['home_venue'] ?? null,
-                'venue_details' => $data['venue_details'] ?? null,
-                'training_schedule' => $data['training_schedule'] ?? null,
-                'practice_times' => $data['practice_times'] ?? null,
-                'team_color_primary' => $data['team_color_primary'] ?? '#000000',
-                'team_color_secondary' => $data['team_color_secondary'] ?? '#ffffff',
-                'team_logo_url' => $data['team_logo_url'] ?? null,
-                'contact_email' => $data['contact_email'] ?? null,
-                'contact_phone' => $data['contact_phone'] ?? null,
-                'registration_fee' => $data['registration_fee'] ?? null,
-                'monthly_fee' => $data['monthly_fee'] ?? null,
-                'equipment_provided' => $data['equipment_provided'] ?? false,
-                'insurance_required' => $data['insurance_required'] ?? true,
-                'medical_check_required' => $data['medical_check_required'] ?? true,
-                'requirements' => $data['requirements'] ?? null,
-                'additional_info' => $data['additional_info'] ?? null,
-            ]);
+                'description' => $data['description'] ?? null,
+            ];
 
-            // Add head coach as team member if specified
-            if (!empty($data['head_coach_id'])) {
-                $this->addCoachToTeam($team, $data['head_coach_id'], 'head_coach');
-            }
-
-            // Add assistant coaches as team members if specified
-            if (!empty($data['assistant_coaches']) && is_array($data['assistant_coaches'])) {
-                foreach ($data['assistant_coaches'] as $assistantCoachId) {
-                    $this->addCoachToTeam($team, $assistantCoachId, 'assistant_coach');
+            // Only add training_schedule if it's valid JSON or array
+            if (isset($data['training_schedule'])) {
+                if (is_string($data['training_schedule'])) {
+                    $decoded = json_decode($data['training_schedule'], true);
+                    if ($decoded !== null) {
+                        $teamData['training_schedule'] = $decoded;
+                    }
+                } elseif (is_array($data['training_schedule'])) {
+                    $teamData['training_schedule'] = $data['training_schedule'];
                 }
             }
+
+            // Set required user_id for Jetstream Team compatibility
+            $teamData['user_id'] = auth()->id();
+
+            Log::info("Creating team with data", [
+                'team_data' => $teamData,
+                'original_data' => $data
+            ]);
+
+            $team = Team::create($teamData);
 
             DB::commit();
 
@@ -78,7 +65,7 @@ class TeamService
                 'club_id' => $team->club_id
             ]);
 
-            return $team->fresh(['club', 'headCoach']);
+            return $team->fresh(['club']);
 
         } catch (\Exception $e) {
             DB::rollBack();
