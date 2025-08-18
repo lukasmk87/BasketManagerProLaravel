@@ -195,51 +195,6 @@
                             </div>
                         </div>
 
-                        <!-- Basketball Information Section -->
-                        <div class="mb-8">
-                            <h3 class="text-lg font-medium text-gray-900 mb-4">Basketball-Informationen</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <!-- League -->
-                                <div>
-                                    <InputLabel for="league" value="Liga" />
-                                    <TextInput
-                                        id="league"
-                                        v-model="form.league"
-                                        type="text"
-                                        class="mt-1 block w-full"
-                                        placeholder="z.B. Regionalliga"
-                                    />
-                                    <InputError :message="form.errors.league" class="mt-2" />
-                                </div>
-
-                                <!-- Division -->
-                                <div>
-                                    <InputLabel for="division" value="Staffel" />
-                                    <TextInput
-                                        id="division"
-                                        v-model="form.division"
-                                        type="text"
-                                        class="mt-1 block w-full"
-                                        placeholder="z.B. Staffel A"
-                                    />
-                                    <InputError :message="form.errors.division" class="mt-2" />
-                                </div>
-
-                                <!-- Season -->
-                                <div>
-                                    <InputLabel for="season" value="Aktuelle Saison" />
-                                    <TextInput
-                                        id="season"
-                                        v-model="form.season"
-                                        type="text"
-                                        class="mt-1 block w-full"
-                                        placeholder="2023/2024"
-                                        maxlength="9"
-                                    />
-                                    <InputError :message="form.errors.season" class="mt-2" />
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- Club Colors Section -->
                         <div class="mb-8">
@@ -502,9 +457,6 @@ const form = useForm({
     address_country: props.club.address_country || '',
     
     // Basketball-specific fields
-    league: props.club.league || '',
-    division: props.club.division || '',
-    season: props.club.season || '',
     facilities: props.club.facilities || null,
     
     // Club colors

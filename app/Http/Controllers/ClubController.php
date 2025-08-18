@@ -26,10 +26,10 @@ class ClubController extends Controller
             ->with(['teams', 'users'])
             ->withCount(['teams', 'users'])
             ->when($user->hasRole('admin') || $user->hasRole('super-admin'), function ($query) {
-                // Admin users see all clubs
+                // Super-Admin and Admin users see all clubs
                 return $query;
             }, function ($query) use ($user) {
-                // Other users see only their clubs
+                // Club-Admin and other users see only their clubs
                 return $query->whereHas('users', function ($q) use ($user) {
                     $q->where('user_id', $user->id);
                 });
@@ -79,9 +79,6 @@ class ClubController extends Controller
             'address_country' => 'nullable|string|max:2',
             
             // Basketball-specific fields
-            'league' => 'nullable|string|max:255',
-            'division' => 'nullable|string|max:255',
-            'season' => 'nullable|string|max:9',
             'facilities' => 'nullable|json',
             
             // Club colors for branding
@@ -182,9 +179,6 @@ class ClubController extends Controller
             'address_country' => 'nullable|string|max:2',
             
             // Basketball-specific fields
-            'league' => 'nullable|string|max:255',
-            'division' => 'nullable|string|max:255',
-            'season' => 'nullable|string|max:9',
             'facilities' => 'nullable|json',
             
             // Club colors for branding

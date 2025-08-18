@@ -58,8 +58,8 @@
                                     </div>
                                     
                                     <div class="text-sm text-gray-600 space-y-2">
-                                        <div v-if="club.city">
-                                            <span class="font-medium">Stadt:</span> {{ club.city }}
+                                        <div v-if="club.address_city">
+                                            <span class="font-medium">Stadt:</span> {{ club.address_city }}
                                         </div>
                                         <div>
                                             <span class="font-medium">Teams:</span> {{ club.teams_count }}

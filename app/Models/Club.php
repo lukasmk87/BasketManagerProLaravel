@@ -47,9 +47,6 @@ class Club extends Model implements HasMedia
         'founded_at',
         'default_language',
         'supported_languages',
-        'league',
-        'division',
-        'season',
         'facilities',
         'social_links',
         'membership_fee',
@@ -218,29 +215,6 @@ class Club extends Model implements HasMedia
         return $query->where('is_verified', true);
     }
 
-    /**
-     * Scope a query to filter by league.
-     */
-    public function scopeInLeague($query, string $league)
-    {
-        return $query->where('league', $league);
-    }
-
-    /**
-     * Scope a query to filter by division.
-     */
-    public function scopeInDivision($query, string $division)
-    {
-        return $query->where('division', $division);
-    }
-
-    /**
-     * Scope a query to filter by season.
-     */
-    public function scopeInSeason($query, string $season)
-    {
-        return $query->where('season', $season);
-    }
 
     // ============================
     // ACCESSORS & MUTATORS
@@ -472,7 +446,7 @@ class Club extends Model implements HasMedia
         return LogOptions::defaults()
             ->logOnly([
                 'name', 'short_name', 'email', 'phone', 'website',
-                'is_active', 'is_verified', 'league', 'division'
+                'is_active', 'is_verified'
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();

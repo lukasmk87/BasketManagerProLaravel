@@ -20,11 +20,10 @@ const dashboardComponent = computed(() => {
         case 'admin':
         case 'super_admin':
             return AdminDashboard;
-        case 'club-admin':
+        case 'club_admin':
             return ClubAdminDashboard;
         case 'trainer':
-        case 'head-coach':
-        case 'assistant-coach':
+        case 'assistant_coach':
             return TrainerDashboard;
         case 'player':
             return PlayerDashboard;
@@ -38,11 +37,10 @@ const dashboardTitle = computed(() => {
         case 'admin':
         case 'super_admin':
             return 'System-Administration';
-        case 'club-admin':
+        case 'club_admin':
             return 'Club-Verwaltung';
         case 'trainer':
-        case 'head-coach':
-        case 'assistant-coach':
+        case 'assistant_coach':
             return 'Trainer-Dashboard';
         case 'player':
             return 'Spieler-Dashboard';
@@ -55,10 +53,9 @@ const userRoleBadge = computed(() => {
     const roleTranslations = {
         'super_admin': 'Super Administrator',
         'admin': 'Administrator',
-        'club-admin': 'Club Administrator',
+        'club_admin': 'Club Administrator',
         'trainer': 'Trainer',
-        'head-coach': 'Cheftrainer',
-        'assistant-coach': 'Co-Trainer',
+        'assistant_coach': 'Co-Trainer',
         'player': 'Spieler',
         'member': 'Mitglied',
     };
@@ -100,10 +97,10 @@ const welcomeMessage = computed(() => {
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
                           :class="{
                               'bg-red-100 text-red-800': dashboard_type === 'admin' || dashboard_type === 'super_admin',
-                              'bg-blue-100 text-blue-800': dashboard_type === 'club-admin',
-                              'bg-green-100 text-green-800': dashboard_type === 'trainer' || dashboard_type === 'head-coach' || dashboard_type === 'assistant-coach',
+                              'bg-blue-100 text-blue-800': dashboard_type === 'club_admin',
+                              'bg-green-100 text-green-800': dashboard_type === 'trainer' || dashboard_type === 'assistant_coach',
                               'bg-orange-100 text-orange-800': dashboard_type === 'player',
-                              'bg-gray-100 text-gray-800': !['admin', 'super_admin', 'club-admin', 'trainer', 'head-coach', 'assistant-coach', 'player'].includes(dashboard_type)
+                              'bg-gray-100 text-gray-800': !['admin', 'super_admin', 'club_admin', 'trainer', 'assistant_coach', 'player'].includes(dashboard_type)
                           }">
                         <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"></path>

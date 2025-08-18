@@ -42,9 +42,9 @@
                                 <h3 class="text-lg font-medium text-gray-900 mb-4">Club-Informationen</h3>
                                 
                                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div v-if="club.city">
+                                    <div v-if="club.address_city">
                                         <dt class="text-sm font-medium text-gray-500">Stadt</dt>
-                                        <dd class="mt-1 text-sm text-gray-900">{{ club.city }}</dd>
+                                        <dd class="mt-1 text-sm text-gray-900">{{ club.address_city }}</dd>
                                     </div>
                                     
                                     <div v-if="club.founded_year">

@@ -41,8 +41,8 @@ class DashboardController extends Controller
         // Get role-specific dashboard data
         $dashboardData = match ($primaryRole) {
             'admin', 'super_admin' => $this->getAdminDashboard($user),
-            'club-admin' => $this->getClubAdminDashboard($user),
-            'trainer', 'head-coach', 'assistant-coach' => $this->getTrainerDashboard($user),
+            'club_admin' => $this->getClubAdminDashboard($user),
+            'trainer', 'assistant_coach' => $this->getTrainerDashboard($user),
             'player' => $this->getPlayerDashboard($user),
             default => $this->getBasicDashboard($user),
         };
@@ -418,11 +418,14 @@ class DashboardController extends Controller
                 ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user-circle'],
                 ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
-            'club-admin' => [
+            'club_admin' => [
+                ['label' => 'Neues Team', 'route' => 'teams.create', 'icon' => 'user-group'],
+                ['label' => 'Neuer Spieler', 'route' => 'players.create', 'icon' => 'user'],
+                ['label' => 'Club bearbeiten', 'route' => 'clubs.index', 'icon' => 'building'],
                 ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user'],
                 ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
-            'trainer', 'head-coach', 'assistant-coach' => [
+            'trainer', 'assistant_coach' => [
                 ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user'],
                 ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
@@ -454,8 +457,8 @@ class DashboardController extends Controller
 
         // Priority order for role determination
         $rolePriority = [
-            'super_admin', 'admin', 'club-admin', 'trainer', 
-            'head-coach', 'assistant-coach', 'player', 'member'
+            'super_admin', 'admin', 'club_admin', 'trainer', 
+            'assistant_coach', 'scorer', 'player', 'parent', 'team_manager', 'guest', 'referee', 'member'
         ];
 
         foreach ($rolePriority as $role) {

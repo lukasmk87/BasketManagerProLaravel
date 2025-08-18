@@ -43,9 +43,6 @@ class ClubService
                 'logo_url' => $data['logo_url'] ?? null,
                 'colors_primary' => $data['colors_primary'] ?? '#000000',
                 'colors_secondary' => $data['colors_secondary'] ?? '#ffffff',
-                'league' => $data['league'] ?? null,
-                'division' => $data['division'] ?? null,
-                'season' => $data['season'] ?? date('Y'),
                 'president_name' => $data['president_name'] ?? null,
                 'president_email' => $data['president_email'] ?? null,
                 'vice_president_name' => $data['vice_president_name'] ?? null,
@@ -318,7 +315,6 @@ class ClubService
      */
     public function getClubStatistics(Club $club): array
     {
-        $currentSeason = $club->season ?? date('Y');
         
         // Basic counts
         $teamStats = $club->teams()->selectRaw('
