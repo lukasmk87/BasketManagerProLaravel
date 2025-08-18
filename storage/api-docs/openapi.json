@@ -4,10 +4,10 @@
         "title": "BasketManager Pro API",
         "description": "Enterprise Basketball Club Management API with multi-tenant architecture, real-time scoring, and comprehensive statistics.",
         "version": "4.0",
-        "termsOfService": "https://staging.basketmanager-pro.de//terms",
+        "termsOfService": "https://staging.basketmanager-pro.de/terms",
         "contact": {
             "name": "BasketManager Pro Support",
-            "url": "https://staging.basketmanager-pro.de//support",
+            "url": "https://staging.basketmanager-pro.de/support",
             "email": "support@basketmanager-pro.com"
         },
         "license": {
@@ -17,7 +17,7 @@
     },
     "servers": [
         {
-            "url": "https://staging.basketmanager-pro.de//api",
+            "url": "https://staging.basketmanager-pro.de/api",
             "description": "Production API"
         },
         {

@@ -234,8 +234,19 @@ const props = defineProps({
 })
 
 // Debug logging
+console.log('Teams Create - Props:', props)
+console.log('Teams Create - Props Keys:', Object.keys(props))
+console.log('Teams Create - Full Props Object:', JSON.stringify(props))
 console.log('Teams Create - Clubs data:', props.clubs)
 console.log('Teams Create - Clubs count:', props.clubs?.length || 0)
+console.log('Teams Create - Clubs is Array:', Array.isArray(props.clubs))
+console.log('Teams Create - Clubs type:', typeof props.clubs)
+
+// Try to access Inertia page props directly
+import { usePage } from '@inertiajs/vue3'
+const page = usePage()
+console.log('Teams Create - Page Props:', page.props)
+console.log('Teams Create - Page Props Clubs:', page.props.clubs)
 
 const form = useForm({
     name: '',

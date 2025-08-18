@@ -70,7 +70,7 @@ class RateLimitException(ApiException):
 class BasketManagerProClient:
     """BasketManager Pro API Client"""
     
-    def __init__(self, api_key: str, base_url: str = "https://staging.basketmanager-pro.de//api", timeout: int = 30):
+    def __init__(self, api_key: str, base_url: str = "https://staging.basketmanager-pro.de/api", timeout: int = 30):
         """
         Initialize the API client
         

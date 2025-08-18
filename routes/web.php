@@ -43,6 +43,21 @@ Route::middleware([
     // Player Search API for team management
     Route::get('/api/players/search', [\App\Http\Controllers\PlayerController::class, 'search'])->name('players.search');
     
+    // Debug route for clubs
+    Route::get('/debug/clubs', function () {
+        $clubs = \App\Models\Club::query()
+            ->select(['id', 'name', 'is_active'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        
+        return response()->json([
+            'clubs_count' => $clubs->count(),
+            'clubs' => $clubs->toArray(),
+            'all_clubs' => \App\Models\Club::all()->toArray()
+        ]);
+    })->name('debug.clubs');
+    
     // Players Routes
     Route::resource('players', \App\Http\Controllers\PlayerController::class);
     

@@ -47,7 +47,7 @@ class BasketManagerProClient
      * @param string $baseUrl Optional custom base URL
      * @param array $options Additional GuzzleHttp client options
      */
-    public function __construct(string $apiKey, string $baseUrl = 'https://staging.basketmanager-pro.de//api', array $options = [])
+    public function __construct(string $apiKey, string $baseUrl = 'https://staging.basketmanager-pro.de/api', array $options = [])
     {
         $this->apiKey = $apiKey;
         $this->baseUrl = rtrim($baseUrl, '/');

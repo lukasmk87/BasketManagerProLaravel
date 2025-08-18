@@ -80,7 +80,8 @@ class TeamController extends Controller
             ->select(['id', 'name'])
             ->where('is_active', true)
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->values();
 
         // Debug logging
         \Log::info('Teams Create - Clubs loaded', [
@@ -92,7 +93,7 @@ class TeamController extends Controller
         ]);
 
         return Inertia::render('Teams/Create', [
-            'clubs' => $clubs,
+            'clubs' => $clubs->toArray(),
         ]);
     }
 
