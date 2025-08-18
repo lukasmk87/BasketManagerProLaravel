@@ -80,20 +80,27 @@ class TeamController extends Controller
             ->select(['id', 'name'])
             ->where('is_active', true)
             ->orderBy('name')
-            ->get()
-            ->values();
+            ->get();
+
+        // Convert to simple array
+        $clubsArray = $clubs->map(function ($club) {
+            return [
+                'id' => $club->id,
+                'name' => $club->name,
+            ];
+        })->toArray();
 
         // Debug logging
         \Log::info('Teams Create - Clubs loaded', [
-            'clubs_count' => $clubs->count(),
-            'clubs' => $clubs->toArray(),
+            'clubs_count' => count($clubsArray),
+            'clubs' => $clubsArray,
             'user_id' => auth()->id(),
             'user_roles' => auth()->user()->getRoleNames()->toArray(),
             'user_permissions' => auth()->user()->getAllPermissions()->pluck('name')->toArray()
         ]);
 
         return Inertia::render('Teams/Create', [
-            'clubs' => $clubs->toArray(),
+            'clubs' => $clubsArray,
         ]);
     }
 
@@ -166,7 +173,7 @@ class TeamController extends Controller
 
         return Inertia::render('Teams/Edit', [
             'team' => $team,
-            'clubs' => $clubs,
+            'clubs' => $clubs->toArray(),
         ]);
     }
 

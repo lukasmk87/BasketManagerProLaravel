@@ -58,6 +58,16 @@ Route::middleware([
         ]);
     })->name('debug.clubs');
     
+    // Test route with hardcoded clubs
+    Route::get('/test/teams/create', function () {
+        return Inertia::render('Teams/Create', [
+            'clubs' => [
+                ['id' => 1, 'name' => 'Test Club 1'],
+                ['id' => 2, 'name' => 'Test Club 2'],
+            ],
+        ]);
+    })->name('test.teams.create');
+    
     // Players Routes
     Route::resource('players', \App\Http\Controllers\PlayerController::class);
     
