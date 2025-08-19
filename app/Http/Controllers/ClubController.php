@@ -113,7 +113,7 @@ class ClubController extends Controller
 
         $club = $this->clubService->createClub($validated);
 
-        return redirect()->route('clubs.show', $club)
+        return redirect()->route('web.clubs.show', $club)
             ->with('success', 'Club wurde erfolgreich erstellt.');
     }
 
@@ -213,7 +213,7 @@ class ClubController extends Controller
 
         $this->clubService->updateClub($club, $validated);
 
-        return redirect()->route('clubs.show', $club)
+        return redirect()->route('web.clubs.show', $club)
             ->with('success', 'Club wurde erfolgreich aktualisiert.');
     }
 
@@ -226,7 +226,7 @@ class ClubController extends Controller
 
         $this->clubService->deleteClub($club);
 
-        return redirect()->route('clubs.index')
+        return redirect()->route('web.clubs.index')
             ->with('success', 'Club wurde erfolgreich gelöscht.');
     }
 }

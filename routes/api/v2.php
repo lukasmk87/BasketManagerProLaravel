@@ -33,13 +33,13 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::apiResource('users', UserController::class);
     
     // Club Management
-    Route::apiResource('clubs', ClubController::class);
+    Route::apiResource('clubs', ClubController::class)->names('api.v2.clubs');
     Route::get('clubs/{club}/teams', [ClubController::class, 'teams']);
     Route::get('clubs/{club}/players', [ClubController::class, 'players']);
     Route::get('clubs/{club}/statistics', [ClubController::class, 'statistics']);
     
     // Team Management
-    Route::apiResource('teams', TeamController::class);
+    Route::apiResource('teams', TeamController::class)->names('api.v2.teams');
     Route::get('teams/{team}/players', [TeamController::class, 'players']);
     Route::post('teams/{team}/players', [TeamController::class, 'addPlayer']);
     Route::delete('teams/{team}/players/{player}', [TeamController::class, 'removePlayer']);
@@ -47,7 +47,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('teams/{team}/statistics', [TeamController::class, 'statistics']);
     
     // Player Management
-    Route::apiResource('players', PlayerController::class);
+    Route::apiResource('players', PlayerController::class)->names('api.v2.players');
     Route::get('players/{player}/games', [PlayerController::class, 'games']);
     Route::get('players/{player}/statistics', [PlayerController::class, 'statistics']);
     Route::get('players/{player}/career-stats', [PlayerController::class, 'careerStats']);

@@ -8,7 +8,7 @@
                 <div>
                     <Link 
                         v-if="can.create"
-                        :href="route('teams.create')"
+                        :href="route('web.teams.create')"
                         class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition ease-in-out duration-150"
                     >
                         Team erstellen
@@ -105,14 +105,14 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex items-center justify-end space-x-3">
                                                 <Link
-                                                    :href="route('teams.show', team.id)"
+                                                    :href="route('web.teams.show', team.id)"
                                                     class="text-indigo-600 hover:text-indigo-900"
                                                 >
                                                     Anzeigen
                                                 </Link>
                                                 <Link
                                                     v-if="team.can?.update"
-                                                    :href="route('teams.edit', team.id)"
+                                                    :href="route('web.teams.edit', team.id)"
                                                     class="text-gray-600 hover:text-gray-900"
                                                 >
                                                     Bearbeiten
@@ -131,7 +131,7 @@
                             </div>
                             <Link 
                                 v-if="can.create"
-                                :href="route('teams.create')"
+                                :href="route('web.teams.create')"
                                 class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition ease-in-out duration-150"
                             >
                                 Erstes Team erstellen

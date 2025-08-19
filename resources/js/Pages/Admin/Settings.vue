@@ -182,7 +182,7 @@ const getIconColor = (tab) => {
                                     <SecondaryButton :href="route('admin.users')" as="Link" class="justify-center">
                                         Benutzer verwalten
                                     </SecondaryButton>
-                                    <SecondaryButton :href="route('clubs.index')" as="Link" class="justify-center">
+                                    <SecondaryButton :href="route('web.clubs.index')" as="Link" class="justify-center">
                                         Clubs verwalten
                                     </SecondaryButton>
                                     <SecondaryButton :href="route('admin.system')" as="Link" class="justify-center">

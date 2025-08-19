@@ -53,7 +53,7 @@ const logout = () => {
                                 </NavLink>
                                 
                                 <!-- Clubs -->
-                                <NavLink :href="route('clubs.index')" :active="route().current('clubs.*')">
+                                <NavLink :href="route('web.clubs.index')" :active="route().current('web.clubs.*')">
                                     Clubs
                                 </NavLink>
                                 
@@ -305,7 +305,7 @@ const logout = () => {
                         </ResponsiveNavLink>
                         
                         <!-- Clubs -->
-                        <ResponsiveNavLink :href="route('clubs.index')" :active="route().current('clubs.*')">
+                        <ResponsiveNavLink :href="route('web.clubs.index')" :active="route().current('web.clubs.*')">
                             Clubs
                         </ResponsiveNavLink>
                         

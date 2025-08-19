@@ -26,16 +26,28 @@ Route::middleware([
 ])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
-    // Clubs Routes
-    Route::resource('clubs', \App\Http\Controllers\ClubController::class);
+    // Basketball Clubs Routes (explicit names to avoid conflicts)
+    Route::get('clubs', [\App\Http\Controllers\ClubController::class, 'index'])->name('web.clubs.index');
+    Route::get('clubs/create', [\App\Http\Controllers\ClubController::class, 'create'])->name('web.clubs.create');
+    Route::post('clubs', [\App\Http\Controllers\ClubController::class, 'store'])->name('web.clubs.store');
+    Route::get('clubs/{club}', [\App\Http\Controllers\ClubController::class, 'show'])->name('web.clubs.show');
+    Route::get('clubs/{club}/edit', [\App\Http\Controllers\ClubController::class, 'edit'])->name('web.clubs.edit');
+    Route::put('clubs/{club}', [\App\Http\Controllers\ClubController::class, 'update'])->name('web.clubs.update');
+    Route::patch('clubs/{club}', [\App\Http\Controllers\ClubController::class, 'update'])->name('web.clubs.patch');
+    Route::delete('clubs/{club}', [\App\Http\Controllers\ClubController::class, 'destroy'])->name('web.clubs.destroy');
     
-    // Teams Routes
-    Route::resource('teams', \App\Http\Controllers\TeamController::class)->parameters([
-        'teams' => 'team' // Use standard Laravel resource parameter
-    ]);
+    // Basketball Teams Routes (explicit names to avoid conflicts with Jetstream teams)
+    Route::get('basketball-teams', [\App\Http\Controllers\TeamController::class, 'index'])->name('web.teams.index');
+    Route::get('basketball-teams/create', [\App\Http\Controllers\TeamController::class, 'create'])->name('web.teams.create');
+    Route::post('basketball-teams', [\App\Http\Controllers\TeamController::class, 'store'])->name('web.teams.store');
+    Route::get('basketball-teams/{team}', [\App\Http\Controllers\TeamController::class, 'show'])->name('web.teams.show');
+    Route::get('basketball-teams/{team}/edit', [\App\Http\Controllers\TeamController::class, 'edit'])->name('web.teams.edit');
+    Route::put('basketball-teams/{team}', [\App\Http\Controllers\TeamController::class, 'update'])->name('web.teams.update');
+    Route::patch('basketball-teams/{team}', [\App\Http\Controllers\TeamController::class, 'update'])->name('web.teams.patch');
+    Route::delete('basketball-teams/{team}', [\App\Http\Controllers\TeamController::class, 'destroy'])->name('web.teams.destroy');
     
-    // Team Players Routes (nested resource for managing players in teams)
-    Route::prefix('teams/{team}/players')->name('teams.players.')->group(function () {
+    // Basketball Team Players Routes (nested resource for managing players in teams)
+    Route::prefix('basketball-teams/{team}/players')->name('web.teams.players.')->group(function () {
         Route::get('/', [\App\Http\Controllers\TeamController::class, 'players'])->name('index');
         Route::post('/', [\App\Http\Controllers\TeamController::class, 'attachPlayer'])->name('attach');
         Route::put('/{player}', [\App\Http\Controllers\TeamController::class, 'updatePlayer'])->name('update');
@@ -58,10 +70,25 @@ Route::middleware([
     })->name('test.teams.create');
     
     // Players Routes
-    Route::resource('players', \App\Http\Controllers\PlayerController::class);
+    // Basketball Players Routes (explicit names to avoid conflicts)
+    Route::get('players', [\App\Http\Controllers\PlayerController::class, 'index'])->name('web.players.index');
+    Route::get('players/create', [\App\Http\Controllers\PlayerController::class, 'create'])->name('web.players.create');
+    Route::post('players', [\App\Http\Controllers\PlayerController::class, 'store'])->name('web.players.store');
+    Route::get('players/{player}', [\App\Http\Controllers\PlayerController::class, 'show'])->name('web.players.show');
+    Route::get('players/{player}/edit', [\App\Http\Controllers\PlayerController::class, 'edit'])->name('web.players.edit');
+    Route::put('players/{player}', [\App\Http\Controllers\PlayerController::class, 'update'])->name('web.players.update');
+    Route::patch('players/{player}', [\App\Http\Controllers\PlayerController::class, 'update'])->name('web.players.patch');
+    Route::delete('players/{player}', [\App\Http\Controllers\PlayerController::class, 'destroy'])->name('web.players.destroy');
     
-    // Games Routes
-    Route::resource('games', \App\Http\Controllers\GameController::class);
+    // Basketball Games Routes (explicit names to avoid conflicts)
+    Route::get('games', [\App\Http\Controllers\GameController::class, 'index'])->name('web.games.index');
+    Route::get('games/create', [\App\Http\Controllers\GameController::class, 'create'])->name('web.games.create');
+    Route::post('games', [\App\Http\Controllers\GameController::class, 'store'])->name('web.games.store');
+    Route::get('games/{game}', [\App\Http\Controllers\GameController::class, 'show'])->name('web.games.show');
+    Route::get('games/{game}/edit', [\App\Http\Controllers\GameController::class, 'edit'])->name('web.games.edit');
+    Route::put('games/{game}', [\App\Http\Controllers\GameController::class, 'update'])->name('web.games.update');
+    Route::patch('games/{game}', [\App\Http\Controllers\GameController::class, 'update'])->name('web.games.patch');
+    Route::delete('games/{game}', [\App\Http\Controllers\GameController::class, 'destroy'])->name('web.games.destroy');
     
     // Training Routes
     Route::prefix('training')->name('training.')->group(function () {

@@ -16,14 +16,14 @@
                 </div>
                 <div class="flex space-x-3">
                     <SecondaryButton 
-                        :href="route('clubs.index')"
+                        :href="route('web.clubs.index')"
                         as="Link"
                     >
                         Zurück
                     </SecondaryButton>
                     <PrimaryButton 
                         v-if="can.update"
-                        :href="route('clubs.edit', club.id)"
+                        :href="route('web.clubs.edit', club.id)"
                         as="Link"
                     >
                         Bearbeiten

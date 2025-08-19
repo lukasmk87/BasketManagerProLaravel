@@ -6,7 +6,7 @@
                     Neuen Club erstellen
                 </h2>
                 <SecondaryButton 
-                    :href="route('clubs.index')"
+                    :href="route('web.clubs.index')"
                     as="Link"
                 >
                     Zurück
@@ -365,7 +365,7 @@
 
                         <div class="flex items-center justify-end mt-8 pt-6 border-t">
                             <SecondaryButton 
-                                :href="route('clubs.index')"
+                                :href="route('web.clubs.index')"
                                 as="Link"
                                 class="mr-3"
                             >
@@ -445,6 +445,6 @@ const form = useForm({
 const currentYear = computed(() => new Date().getFullYear())
 
 const submit = () => {
-    form.post(route('clubs.store'))
+    form.post(route('web.clubs.store'))
 }
 </script>

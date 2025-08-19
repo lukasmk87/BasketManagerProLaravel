@@ -35,7 +35,7 @@ Route::group(['prefix' => 'auth'], function () {
 Route::middleware('auth:sanctum')->group(function () {
     
     // Team management (basic endpoints only)
-    Route::apiResource('teams', TeamController::class)->only(['index', 'show', 'store', 'update']);
+    Route::apiResource('teams', TeamController::class)->only(['index', 'show', 'store', 'update'])->names('api.v1.teams');
     Route::get('teams/{team}/players', [TeamController::class, 'players']);
     Route::get('teams/{team}/games', [TeamController::class, 'games']);
 

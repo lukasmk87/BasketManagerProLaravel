@@ -57,7 +57,7 @@ Route::group(['prefix' => 'auth'], function () {
 Route::middleware('auth:sanctum')->group(function () {
     
     // Team management (enhanced with V4 features)
-    Route::apiResource('teams', TeamController::class);
+    Route::apiResource('teams', TeamController::class)->names('api.v4.teams');
     Route::get('teams/{team}/players', [TeamController::class, 'players']);
     Route::get('teams/{team}/games', [TeamController::class, 'games']);
     Route::get('teams/{team}/statistics', [TeamController::class, 'statistics']);

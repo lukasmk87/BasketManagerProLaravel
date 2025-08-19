@@ -136,7 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Team management (enhanced with V4 features) - Use explicit ID binding for API
     Route::apiResource('teams', TeamController::class)->parameters([
         'teams' => 'team:id'
-    ]);
+    ])->names('api.v4.teams');
     Route::get('teams/{team:id}/players', [TeamController::class, 'players']);
     Route::get('teams/{team:id}/games', [TeamController::class, 'games']);
     Route::get('teams/{team:id}/statistics', [TeamController::class, 'statistics']);
