@@ -6,7 +6,7 @@
                     {{ club.name }} bearbeiten
                 </h2>
                 <SecondaryButton 
-                    :href="route('clubs.show', club.id)"
+                    :href="route('web.clubs.show', club.id)"
                     as="Link"
                 >
                     Zurück
@@ -374,7 +374,7 @@
 
                             <div class="flex items-center space-x-3">
                                 <SecondaryButton 
-                                    :href="route('clubs.show', club.id)"
+                                    :href="route('web.clubs.show', club.id)"
                                     as="Link"
                                 >
                                     Abbrechen
@@ -491,7 +491,7 @@ const confirmingClubDeletion = ref(false)
 const currentYear = computed(() => new Date().getFullYear())
 
 const submit = () => {
-    form.put(route('clubs.update', props.club.id))
+    form.put(route('web.clubs.update', props.club.id))
 }
 
 const deleteClub = () => {
@@ -499,7 +499,7 @@ const deleteClub = () => {
 }
 
 const deleteClubConfirmed = () => {
-    deleteForm.delete(route('clubs.destroy', props.club.id), {
+    deleteForm.delete(route('web.clubs.destroy', props.club.id), {
         onSuccess: () => confirmingClubDeletion.value = false
     })
 }

@@ -75,7 +75,7 @@
                                     <div class="mt-4 pt-4 border-t border-gray-200">
                                         <div class="flex justify-between items-center">
                                             <Link
-                                                :href="route('clubs.show', club.id)"
+                                                :href="route('web.clubs.show', club.id)"
                                                 class="text-indigo-600 hover:text-indigo-500 font-medium text-sm"
                                             >
                                                 Details anzeigen
@@ -83,7 +83,7 @@
                                             <div class="flex space-x-2">
                                                 <Link
                                                     v-if="club.can?.update"
-                                                    :href="route('clubs.edit', club.id)"
+                                                    :href="route('web.clubs.edit', club.id)"
                                                     class="text-gray-400 hover:text-gray-500"
                                                 >
                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
