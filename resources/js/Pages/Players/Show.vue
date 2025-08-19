@@ -39,7 +39,7 @@
                 <div class="flex space-x-2">
                     <Link
                         v-if="can.update"
-                        :href="route('players.edit', player.id)"
+                        :href="route('web.players.edit', player.id)"
                         class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                     >
                         Bearbeiten

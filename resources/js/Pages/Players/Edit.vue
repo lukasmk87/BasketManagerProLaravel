@@ -6,7 +6,7 @@
                     {{ player.user?.name || player.first_name + ' ' + player.last_name }} bearbeiten
                 </h2>
                 <SecondaryButton 
-                    :href="route('players.show', player.id)"
+                    :href="route('web.players.show', player.id)"
                     as="Link"
                 >
                     Zurück
@@ -831,10 +831,10 @@ const removeGuardianContact = (index) => {
 }
 
 const submit = () => {
-    form.put(route('players.update', props.player.id))
+    form.put(route('web.players.update', props.player.id))
 }
 
 const deletePlayerConfirmed = () => {
-    deleteForm.delete(route('players.destroy', props.player.id))
+    deleteForm.delete(route('web.players.destroy', props.player.id))
 }
 </script>
