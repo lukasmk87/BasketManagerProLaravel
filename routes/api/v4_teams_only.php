@@ -45,6 +45,65 @@ Route::get('debug/teams-no-auth', function () {
     ]);
 });
 
+// Debug route for session and auth status
+Route::get('debug/session-auth', function (Request $request) {
+    $sessionData = [];
+    try {
+        $sessionData = [
+            'session_id' => $request->session()->getId(),
+            'session_token' => $request->session()->token(),
+            'has_session' => $request->hasSession(),
+            'session_started' => $request->session()->isStarted(),
+        ];
+    } catch (\Exception $e) {
+        $sessionData = ['error' => $e->getMessage()];
+    }
+
+    return response()->json([
+        'message' => 'Session and Auth Debug Info',
+        'timestamp' => now()->toISOString(),
+        'request_info' => [
+            'host' => $request->getHost(),
+            'scheme' => $request->getScheme(),
+            'url' => $request->url(),
+            'user_agent' => $request->userAgent(),
+            'ip' => $request->ip(),
+            'referer' => $request->header('Referer'),
+        ],
+        'cookies' => [
+            'all_cookies' => $request->cookies->all(),
+            'laravel_session' => $request->cookie('laravel_session'),
+            'xsrf_token' => $request->cookie('XSRF-TOKEN'),
+        ],
+        'headers' => [
+            'accept' => $request->header('Accept'),
+            'content_type' => $request->header('Content-Type'),
+            'x_requested_with' => $request->header('X-Requested-With'),
+            'authorization' => $request->header('Authorization') ? 'Present' : 'Missing',
+            'x_csrf_token' => $request->header('X-CSRF-TOKEN') ? 'Present' : 'Missing',
+        ],
+        'session' => $sessionData,
+        'auth_guards' => [
+            'web' => [
+                'check' => auth('web')->check(),
+                'user_id' => auth('web')->id(),
+                'user_email' => auth('web')->user()?->email,
+            ],
+            'sanctum' => [
+                'check' => auth('sanctum')->check(),
+                'user_id' => auth('sanctum')->id(),
+                'user_email' => auth('sanctum')->user()?->email,
+            ],
+        ],
+        'sanctum_config' => [
+            'stateful_domains' => config('sanctum.stateful'),
+            'guard' => config('sanctum.guard'),
+        ],
+        'is_stateful_request' => method_exists(\Laravel\Sanctum\Sanctum::class, 'actingAs') ? 
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::fromFrontend($request) : 'Cannot determine',
+    ]);
+});
+
 /*
 |--------------------------------------------------------------------------
 | API V4 Routes - Teams Only (Temporary)
@@ -71,8 +130,10 @@ Route::get('/user', function (Request $request) {
 // Protected API routes - Teams only
 Route::middleware('auth:sanctum')->group(function () {
     
-    // Team management (enhanced with V4 features)
-    Route::apiResource('teams', TeamController::class);
+    // Team management (enhanced with V4 features) - Use explicit ID binding for API
+    Route::apiResource('teams', TeamController::class)->parameters([
+        'teams' => 'team:id'
+    ]);
     Route::get('teams/{team:id}/players', [TeamController::class, 'players']);
     Route::get('teams/{team:id}/games', [TeamController::class, 'games']);
     Route::get('teams/{team:id}/statistics', [TeamController::class, 'statistics']);

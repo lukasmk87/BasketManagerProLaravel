@@ -49,6 +49,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // API Middleware
         $middleware->api(prepend: [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Http\Middleware\HandleCors::class,
             \App\Http\Middleware\ForceJsonResponse::class,
         ]);
