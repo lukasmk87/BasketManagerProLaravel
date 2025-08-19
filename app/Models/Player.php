@@ -571,6 +571,57 @@ class Player extends Model implements HasMedia
         return collect($contacts)->sortBy('priority')->values()->toArray();
     }
 
+    /**
+     * Check if the player has all valid consents.
+     */
+    public function hasValidConsents(): bool
+    {
+        // Check if player has valid GDPR consent
+        if ($this->user && !$this->user->gdpr_consent) {
+            return false;
+        }
+
+        // Check if medical consent is valid
+        if (!$this->medical_consent) {
+            return false;
+        }
+
+        // For minors, check if guardian consent is valid
+        if ($this->isMinor() && (!$this->user || !$this->user->guardian_consent_date)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if the player is eligible to play.
+     */
+    public function isEligibleToPlay(): bool
+    {
+        // Must be able to play
+        if (!$this->canPlay()) {
+            return false;
+        }
+
+        // Must have valid consents
+        if (!$this->hasValidConsents()) {
+            return false;
+        }
+
+        // Must have valid medical clearance
+        if (!$this->medical_clearance || $this->medical_clearance_expired) {
+            return false;
+        }
+
+        // Must be registered if required
+        if ($this->team && $this->team->requires_registration && !$this->is_registered) {
+            return false;
+        }
+
+        return true;
+    }
+
     // ============================
     // MEDIA LIBRARY
     // ============================

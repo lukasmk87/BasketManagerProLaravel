@@ -25,8 +25,8 @@ class DBBApiService
     public function __construct()
     {
         $this->baseUrl = config('services.dbb.base_url', 'https://api.basketball-bund.de/v2');
-        $this->apiKey = config('services.dbb.api_key');
-        $this->apiSecret = config('services.dbb.api_secret');
+        $this->apiKey = config('services.dbb.api_key') ?? '';
+        $this->apiSecret = config('services.dbb.api_secret') ?? '';
         $this->timeout = config('services.dbb.timeout', 30);
         $this->retries = config('services.dbb.retries', 3);
     }

@@ -31,11 +31,11 @@ Route::middleware([
     
     // Teams Routes
     Route::resource('teams', \App\Http\Controllers\TeamController::class)->parameters([
-        'teams' => 'team:id' // Use ID for web routes instead of slug
+        'teams' => 'team' // Use standard Laravel resource parameter
     ]);
     
     // Team Players Routes (nested resource for managing players in teams)
-    Route::prefix('teams/{team:id}/players')->name('teams.players.')->group(function () {
+    Route::prefix('teams/{team}/players')->name('teams.players.')->group(function () {
         Route::get('/', [\App\Http\Controllers\TeamController::class, 'players'])->name('index');
         Route::post('/', [\App\Http\Controllers\TeamController::class, 'attachPlayer'])->name('attach');
         Route::put('/{player}', [\App\Http\Controllers\TeamController::class, 'updatePlayer'])->name('update');

@@ -13,11 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Providers\FeatureGateServiceProvider::class,
     ])
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function () {
+            // Register WEB routes FIRST to ensure they take precedence
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/web.php'));
+            
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/subscription.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
@@ -36,6 +38,11 @@ return Application::configure(basePath: dirname(__DIR__))
             // GDPR compliance routes (mixed web/api middleware)
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/gdpr.php'));
+            
+            // Register API routes LAST to avoid conflicts with web routes
+            \Illuminate\Support\Facades\Route::prefix('api')
+                ->middleware('api')
+                ->group(base_path('routes/api.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

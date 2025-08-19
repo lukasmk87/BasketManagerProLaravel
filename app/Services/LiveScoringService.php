@@ -256,7 +256,7 @@ class LiveScoringService
             throw new \Exception('Spiel ist nicht live.');
         }
 
-        if ($team !== 'official' && $liveGame->{\"timeouts_{$team}_remaining\"} <= 0) {
+        if ($team !== 'official' && $liveGame->{"timeouts_{$team}_remaining"} <= 0) {
             throw new \Exception("Team {$team} hat keine Timeouts mehr.");
         }
 
@@ -322,7 +322,7 @@ class LiveScoringService
             ]);
 
             // Update players on court
-            $playersOnCourt = $liveGame->{\"players_on_court_{$team}\"} ?? [];
+            $playersOnCourt = $liveGame->{"players_on_court_{$team}"} ?? [];
             $playersOnCourt = array_map('intval', $playersOnCourt);
             
             // Remove player out and add player in

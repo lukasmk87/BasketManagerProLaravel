@@ -170,6 +170,22 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the parent of this user (if they are a minor).
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'parent_id');
+    }
+
+    /**
+     * Get the children of this user (if they are a parent).
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(User::class, 'parent_id');
+    }
+
+    /**
      * Get the user's subscription.
      */
     public function subscription(): HasOne
@@ -310,6 +326,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isClubAdmin(): bool
     {
         return $this->hasRole('club_admin');
+    }
+
+    /**
+     * Check if the user is a parent.
+     */
+    public function isParent(): bool
+    {
+        // Check if user has the parent role OR has children
+        return $this->hasRole('parent') || $this->children()->exists();
     }
 
     /**

@@ -197,6 +197,17 @@ class TeamController extends Controller
      */
     public function show(Team $team): Response
     {
+        // Debug logging to identify the issue
+        \Log::info('Web TeamController show - Request received', [
+            'team_id' => $team->id,
+            'request_url' => request()->url(),
+            'request_path' => request()->path(),
+            'is_inertia' => request()->header('X-Inertia') ? true : false,
+            'accepts_json' => request()->wantsJson(),
+            'user_agent' => request()->userAgent(),
+            'method' => request()->method(),
+        ]);
+        
         $this->authorize('view', $team);
 
         $team->load([
@@ -210,8 +221,23 @@ class TeamController extends Controller
 
         $teamStats = $this->teamService->getTeamStatistics($team);
 
+        // Convert team to simple array for Inertia (avoid Resource serialization)
+        $teamData = $team->toArray();
+        $teamData['club'] = $team->club?->toArray();
+        $teamData['head_coach'] = $team->headCoach?->toArray();
+        $teamData['players'] = $team->players->map(function($player) {
+            $playerData = $player->toArray();
+            $playerData['user'] = $player->user?->toArray();
+            return $playerData;
+        })->toArray();
+
+        \Log::info('Web TeamController show - Returning Inertia response', [
+            'team_id' => $team->id,
+            'inertia_page' => 'Teams/Show',
+        ]);
+        
         return Inertia::render('Teams/Show', [
-            'team' => $team,
+            'team' => $teamData,
             'statistics' => $teamStats,
             'can' => [
                 'update' => auth()->user()->can('update', $team),

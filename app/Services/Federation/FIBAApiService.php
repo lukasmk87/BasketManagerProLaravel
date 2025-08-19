@@ -25,8 +25,8 @@ class FIBAApiService
     public function __construct()
     {
         $this->baseUrl = config('services.fiba.base_url', 'https://api.fiba.basketball/v3');
-        $this->apiKey = config('services.fiba.api_key');
-        $this->apiSecret = config('services.fiba.api_secret');
+        $this->apiKey = config('services.fiba.api_key') ?? '';
+        $this->apiSecret = config('services.fiba.api_secret') ?? '';
         $this->timeout = config('services.fiba.timeout', 30);
         $this->retries = config('services.fiba.retries', 3);
     }
