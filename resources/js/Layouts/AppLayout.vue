@@ -58,7 +58,7 @@ const logout = () => {
                                 </NavLink>
                                 
                                 <!-- Teams -->
-                                <NavLink :href="route('teams.index')" :active="route().current('teams.*')">
+                                <NavLink :href="route('web.teams.index')" :active="route().current('web.teams.*')">
                                     Teams
                                 </NavLink>
                                 
@@ -131,7 +131,7 @@ const logout = () => {
                                             
                                             <div class="border-t border-gray-100"></div>
                                             
-                                            <DropdownLink :href="route('clubs.create')">
+                                            <DropdownLink :href="route('web.clubs.create')">
                                                 <div class="flex items-center">
                                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
@@ -310,7 +310,7 @@ const logout = () => {
                         </ResponsiveNavLink>
                         
                         <!-- Teams -->
-                        <ResponsiveNavLink :href="route('teams.index')" :active="route().current('teams.*')">
+                        <ResponsiveNavLink :href="route('web.teams.index')" :active="route().current('web.teams.*')">
                             Teams
                         </ResponsiveNavLink>
                         
@@ -358,7 +358,7 @@ const logout = () => {
                                 Schnellaktionen
                             </div>
                             
-                            <ResponsiveNavLink :href="route('clubs.create')" :active="route().current('clubs.create')">
+                            <ResponsiveNavLink :href="route('web.clubs.create')" :active="route().current('web.clubs.create')">
                                 Neuer Club
                             </ResponsiveNavLink>
                             

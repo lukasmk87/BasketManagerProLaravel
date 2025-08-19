@@ -6,7 +6,7 @@
                     Team erstellen
                 </h2>
                 <SecondaryButton 
-                    :href="route('teams.index')"
+                    :href="route('web.teams.index')"
                     as="Link"
                 >
                     Zurück
@@ -384,6 +384,6 @@ const removeTrainingSchedule = (index) => {
 }
 
 const submit = () => {
-    form.post(route('teams.store'))
+    form.post(route('web.teams.store'))
 }
 </script>

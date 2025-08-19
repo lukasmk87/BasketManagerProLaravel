@@ -6,7 +6,7 @@
                     {{ team.name }} bearbeiten
                 </h2>
                 <SecondaryButton 
-                    :href="route('teams.show', team.id)"
+                    :href="route('web.teams.show', team.id)"
                     as="Link"
                 >
                     Zurück
@@ -470,17 +470,17 @@ const removeTrainingSchedule = (index) => {
 }
 
 const submit = () => {
-    form.put(route('teams.update', props.team.id))
+    form.put(route('web.teams.update', props.team.id))
 }
 
 const deleteTeamConfirmed = () => {
-    deleteForm.delete(route('teams.destroy', props.team.id))
+    deleteForm.delete(route('web.teams.destroy', props.team.id))
 }
 
 // Player management functions
 const loadTeamPlayers = async () => {
     try {
-        const response = await fetch(route('teams.players.index', props.team.id))
+        const response = await fetch(route('web.teams.players.index', props.team.id))
         const data = await response.json()
         teamPlayers.value = data.players || []
     } catch (error) {
@@ -490,7 +490,7 @@ const loadTeamPlayers = async () => {
 
 const updatePlayer = async (player) => {
     try {
-        const response = await fetch(route('teams.players.update', [props.team.id, player.id]), {
+        const response = await fetch(route('web.teams.players.update', [props.team.id, player.id]), {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -526,7 +526,7 @@ const removePlayer = async (player) => {
     }
 
     try {
-        const response = await fetch(route('teams.players.detach', [props.team.id, player.id]), {
+        const response = await fetch(route('web.teams.players.detach', [props.team.id, player.id]), {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),

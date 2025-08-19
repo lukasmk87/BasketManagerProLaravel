@@ -118,7 +118,7 @@
                                                 </p>
                                             </div>
                                             <Link
-                                                :href="route('teams.show', team.id)"
+                                                :href="route('web.teams.show', team.id)"
                                                 class="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
                                             >
                                                 Details

@@ -8,7 +8,7 @@
                 <div>
                     <PrimaryButton 
                         v-if="can.create"
-                        :href="route('clubs.create')"
+                        :href="route('web.clubs.create')"
                         as="Link"
                     >
                         Club erstellen
@@ -104,7 +104,7 @@
                             </div>
                             <PrimaryButton 
                                 v-if="can.create"
-                                :href="route('clubs.create')"
+                                :href="route('web.clubs.create')"
                                 as="Link"
                             >
                                 Ersten Club erstellen

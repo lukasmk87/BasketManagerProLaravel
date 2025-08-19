@@ -176,7 +176,7 @@ class TeamController extends Controller
                 'club_id' => $team->club_id,
             ]);
 
-            return redirect()->route('teams.show', $team)
+            return redirect()->route('web.teams.show', $team)
                 ->with('success', 'Team wurde erfolgreich erstellt.');
                 
         } catch (\Exception $e) {
@@ -287,7 +287,7 @@ class TeamController extends Controller
 
         $this->teamService->updateTeam($team, $validated);
 
-        return redirect()->route('teams.show', $team)
+        return redirect()->route('web.teams.show', $team)
             ->with('success', 'Team wurde erfolgreich aktualisiert.');
     }
 
@@ -300,7 +300,7 @@ class TeamController extends Controller
 
         $this->teamService->deleteTeam($team);
 
-        return redirect()->route('teams.index')
+        return redirect()->route('web.teams.index')
             ->with('success', 'Team wurde erfolgreich gelöscht.');
     }
 

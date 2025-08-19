@@ -69,7 +69,7 @@ const chartData = computed(() => {
                 </h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Neuer Club -->
-                    <Link :href="route('clubs.create')" 
+                    <Link :href="route('web.clubs.create')" 
                           class="flex items-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors group">
                         <div class="flex items-center space-x-3">
                             <div class="flex-shrink-0">
@@ -85,7 +85,7 @@ const chartData = computed(() => {
                     </Link>
 
                     <!-- Neues Team -->
-                    <Link :href="route('teams.create')" 
+                    <Link :href="route('web.teams.create')" 
                           class="flex items-center p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition-colors group">
                         <div class="flex items-center space-x-3">
                             <div class="flex-shrink-0">
