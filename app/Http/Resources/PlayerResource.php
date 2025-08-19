@@ -74,7 +74,7 @@ class PlayerResource extends JsonResource
             'primary_position' => $this->primary_position,
             'secondary_positions' => $this->secondary_positions,
             'all_positions' => $this->all_positions,
-            'position_display_name' => $this->getPositionDisplayName(),
+            'position_display_name' => $this->primary_position,
             'preferred_position' => $this->preferred_position,
             
             // Physical Attributes

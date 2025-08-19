@@ -4,6 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TeamController;
 
+// Apply ForceJsonResponse middleware to all routes in this file
+Route::middleware([\App\Http\Middleware\ForceJsonResponse::class])->group(function () {
+
 // Debug route without middleware
 Route::get('debug/test', function () {
     return response()->json([
@@ -160,3 +163,5 @@ Route::prefix('public')->group(function () {
     Route::get('teams/{team:id}/games', [TeamController::class, 'games']);
     Route::get('teams/{team:id}/public-stats', [TeamController::class, 'publicStats']); // V4 new
 });
+
+}); // End ForceJsonResponse middleware group

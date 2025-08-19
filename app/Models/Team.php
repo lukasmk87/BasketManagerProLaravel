@@ -353,9 +353,10 @@ class Team extends JetstreamTeam implements HasMedia
     public function getAveragePlayerAgeAttribute(): ?float
     {
         return $this->activePlayers()
-                   ->whereNotNull('birth_date')
+                   ->with('user')
                    ->get()
-                   ->avg(fn($player) => $player->user?->birth_date?->age);
+                   ->filter(fn($player) => $player->user?->date_of_birth)
+                   ->avg(fn($player) => $player->user->date_of_birth->age ?? null);
     }
 
     // ============================

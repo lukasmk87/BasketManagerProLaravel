@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Route;
 | features, and migration guides.
 |
 */
-Route::get('/', function (Request $request) {
+Route::middleware([\App\Http\Middleware\ForceJsonResponse::class])->get('/', function (Request $request) {
     // Try multiple methods to get the resolved version
     $currentVersion = $request->route()?->parameter('api_version') 
                    ?? $request->attributes->get('api_version') 

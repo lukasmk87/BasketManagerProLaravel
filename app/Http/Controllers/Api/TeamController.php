@@ -116,7 +116,7 @@ class TeamController extends Controller
         $team->load([
             'club',
             'headCoach:id,name,email',
-            'players.user:id,name,birth_date',
+            'players.user:id,name,date_of_birth',
             'players' => function ($query) {
                 $query->wherePivot('status', 'active')
                       ->wherePivot('is_active', true)
@@ -186,7 +186,7 @@ class TeamController extends Controller
         $this->authorize('view', $team);
 
         $players = $team->players()
-            ->with(['user:id,name,birth_date'])
+            ->with(['user:id,name,date_of_birth'])
             ->wherePivot('status', 'active')
             ->wherePivot('is_active', true)
             ->orderBy('player_team.jersey_number')
@@ -197,7 +197,7 @@ class TeamController extends Controller
                     'name' => $player->user?->name ?? $player->full_name,
                     'jersey_number' => $player->pivot->jersey_number,
                     'position' => $player->pivot->primary_position,
-                    'age' => $player->user?->birth_date?->age,
+                    'age' => $player->user?->date_of_birth?->age,
                     'is_captain' => $player->pivot->is_captain,
                     'is_starter' => $player->pivot->is_starter,
                     'status' => $player->pivot->status,

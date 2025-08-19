@@ -47,11 +47,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // API Middleware
+        // API Middleware - Only apply to /api/* routes
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Http\Middleware\HandleCors::class,
-            \App\Http\Middleware\ForceJsonResponse::class,
         ]);
         
         $middleware->api(append: [
