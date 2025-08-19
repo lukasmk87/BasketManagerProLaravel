@@ -101,7 +101,7 @@ const chartData = computed(() => {
                     </Link>
 
                     <!-- Neuer Spieler -->
-                    <Link :href="route('players.create')" 
+                    <Link :href="route('web.players.create')" 
                           class="flex items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200 transition-colors group">
                         <div class="flex items-center space-x-3">
                             <div class="flex-shrink-0">

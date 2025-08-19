@@ -8,7 +8,7 @@
                 <div class="flex gap-2">
                     <SecondaryButton 
                         v-if="can?.update"
-                        :href="route('games.edit', game.id)"
+                        :href="route('web.games.edit', game.id)"
                         as="Link"
                     >
                         Bearbeiten
@@ -21,7 +21,7 @@
                         Live-Scoring starten
                     </PrimaryButton>
                     <SecondaryButton 
-                        :href="route('games.index')"
+                        :href="route('web.games.index')"
                         as="Link"
                     >
                         Zurück zur Übersicht

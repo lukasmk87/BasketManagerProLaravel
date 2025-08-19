@@ -6,7 +6,7 @@
                     Neues Spiel erstellen
                 </h2>
                 <SecondaryButton 
-                    :href="route('games.index')"
+                    :href="route('web.games.index')"
                     as="Link"
                 >
                     Abbrechen

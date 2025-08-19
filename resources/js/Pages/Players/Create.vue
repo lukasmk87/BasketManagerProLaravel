@@ -6,7 +6,7 @@
                     Neuen Spieler erstellen
                 </h2>
                 <SecondaryButton 
-                    :href="route('players.index')"
+                    :href="route('web.players.index')"
                     as="Link"
                 >
                     Abbrechen

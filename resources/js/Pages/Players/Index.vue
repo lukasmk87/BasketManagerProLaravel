@@ -8,7 +8,7 @@
                 <div>
                     <PrimaryButton 
                         v-if="can.create"
-                        :href="route('players.create')"
+                        :href="route('web.players.create')"
                         as="Link"
                     >
                         Spieler hinzufügen
@@ -312,7 +312,7 @@
                                     <div class="mt-4 pt-4 border-t border-gray-200">
                                         <div class="flex justify-between items-center">
                                             <Link
-                                                :href="route('players.show', player.id)"
+                                                :href="route('web.players.show', player.id)"
                                                 class="text-indigo-600 hover:text-indigo-500 font-medium text-sm"
                                             >
                                                 Details anzeigen
@@ -320,7 +320,7 @@
                                             <div class="flex space-x-2">
                                                 <Link
                                                     v-if="player.can?.update"
-                                                    :href="route('players.edit', player.id)"
+                                                    :href="route('web.players.edit', player.id)"
                                                     class="text-gray-400 hover:text-gray-500"
                                                 >
                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -341,7 +341,7 @@
                             </div>
                             <PrimaryButton 
                                 v-if="can.create"
-                                :href="route('players.create')"
+                                :href="route('web.players.create')"
                                 as="Link"
                             >
                                 Ersten Spieler hinzufügen
@@ -485,7 +485,7 @@ const applyFilters = () => {
     })
     
     const queryString = params.toString()
-    const url = queryString ? `${route('players.index')}?${queryString}` : route('players.index')
+    const url = queryString ? `${route('web.players.index')}?${queryString}` : route('web.players.index')
     
     router.visit(url, {
         preserveState: true,
@@ -524,20 +524,20 @@ const executeBulkAction = () => {
     
     switch (bulkAction.value) {
         case 'activate':
-            router.post(route('players.bulk-status'), {
+            router.post(route('web.players.bulk-status'), {
                 ...data,
                 status: 'active'
             })
             break
         case 'deactivate':
-            router.post(route('players.bulk-status'), {
+            router.post(route('web.players.bulk-status'), {
                 ...data,
                 status: 'inactive'
             })
             break
         case 'export':
             // Handle export functionality
-            const url = route('players.export') + '?' + new URLSearchParams({
+            const url = route('web.players.export') + '?' + new URLSearchParams({
                 player_ids: selectedPlayers.value.join(',')
             }).toString()
             window.open(url, '_blank')

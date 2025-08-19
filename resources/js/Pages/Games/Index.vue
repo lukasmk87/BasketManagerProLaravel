@@ -8,7 +8,7 @@
                 <div>
                     <PrimaryButton 
                         v-if="can.create"
-                        :href="route('games.create')"
+                        :href="route('web.games.create')"
                         as="Link"
                     >
                         Spiel planen
@@ -124,7 +124,7 @@
                                     <!-- Actions -->
                                     <div class="flex items-center space-x-3">
                                         <Link
-                                            :href="route('games.show', game.id)"
+                                            :href="route('web.games.show', game.id)"
                                             class="text-indigo-600 hover:text-indigo-500 font-medium text-sm"
                                         >
                                             Details
@@ -148,7 +148,7 @@
                                         
                                         <Link
                                             v-if="game.can?.update && game.status === 'scheduled'"
-                                            :href="route('games.edit', game.id)"
+                                            :href="route('web.games.edit', game.id)"
                                             class="text-gray-400 hover:text-gray-500"
                                         >
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,7 +167,7 @@
                             </div>
                             <PrimaryButton 
                                 v-if="can.create"
-                                :href="route('games.create')"
+                                :href="route('web.games.create')"
                                 as="Link"
                             >
                                 Erstes Spiel planen

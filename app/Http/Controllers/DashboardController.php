@@ -411,17 +411,17 @@ class DashboardController extends Controller
     {
         return match ($primaryRole) {
             'admin', 'super_admin' => [
-                ['label' => 'Neuer Club', 'route' => 'clubs.create', 'icon' => 'building'],
-                ['label' => 'Neues Team', 'route' => 'teams.create', 'icon' => 'user-group'],
-                ['label' => 'Neuer Spieler', 'route' => 'players.create', 'icon' => 'user'],
+                ['label' => 'Neuer Club', 'route' => 'web.clubs.create', 'icon' => 'building'],
+                ['label' => 'Neues Team', 'route' => 'web.teams.create', 'icon' => 'user-group'],
+                ['label' => 'Neuer Spieler', 'route' => 'web.players.create', 'icon' => 'user'],
                 ['label' => 'Admin Panel', 'route' => 'admin.settings', 'icon' => 'cog'],
                 ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user-circle'],
                 ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
             'club_admin' => [
-                ['label' => 'Neues Team', 'route' => 'teams.create', 'icon' => 'user-group'],
-                ['label' => 'Neuer Spieler', 'route' => 'players.create', 'icon' => 'user'],
-                ['label' => 'Club bearbeiten', 'route' => 'clubs.index', 'icon' => 'building'],
+                ['label' => 'Neues Team', 'route' => 'web.teams.create', 'icon' => 'user-group'],
+                ['label' => 'Neuer Spieler', 'route' => 'web.players.create', 'icon' => 'user'],
+                ['label' => 'Club bearbeiten', 'route' => 'web.clubs.index', 'icon' => 'building'],
                 ['label' => 'Profil bearbeiten', 'route' => 'profile.show', 'icon' => 'user'],
                 ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],

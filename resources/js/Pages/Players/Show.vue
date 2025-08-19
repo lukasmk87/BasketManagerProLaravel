@@ -4,7 +4,7 @@
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-4">
                     <Link
-                        :href="route('players.index')"
+                        :href="route('web.players.index')"
                         class="text-gray-400 hover:text-gray-600"
                     >
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
