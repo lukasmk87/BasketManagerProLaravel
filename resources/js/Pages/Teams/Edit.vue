@@ -6,7 +6,7 @@
                     {{ team.name }} bearbeiten
                 </h2>
                 <SecondaryButton 
-                    :href="route('web.teams.show', team.id)"
+                    :href="route('web.teams.show', team.slug)"
                     as="Link"
                 >
                     Zurück
@@ -470,11 +470,11 @@ const removeTrainingSchedule = (index) => {
 }
 
 const submit = () => {
-    form.put(route('web.teams.update', props.team.id))
+    form.put(route('web.teams.update', props.team.slug))
 }
 
 const deleteTeamConfirmed = () => {
-    deleteForm.delete(route('web.teams.destroy', props.team.id))
+    deleteForm.delete(route('web.teams.destroy', props.team.slug))
 }
 
 // Player management functions

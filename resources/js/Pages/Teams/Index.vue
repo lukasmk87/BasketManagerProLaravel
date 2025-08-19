@@ -105,14 +105,14 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex items-center justify-end space-x-3">
                                                 <Link
-                                                    :href="route('web.teams.show', team.id)"
+                                                    :href="route('web.teams.show', team.slug)"
                                                     class="text-indigo-600 hover:text-indigo-900"
                                                 >
                                                     Anzeigen
                                                 </Link>
                                                 <Link
                                                     v-if="team.can?.update"
-                                                    :href="route('web.teams.edit', team.id)"
+                                                    :href="route('web.teams.edit', team.slug)"
                                                     class="text-gray-600 hover:text-gray-900"
                                                 >
                                                     Bearbeiten
