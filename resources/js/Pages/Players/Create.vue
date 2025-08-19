@@ -17,7 +17,7 @@
         <div class="py-12">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                    <form @submit.prevent="submit" class="p-6">
+                    <form @submit.prevent="submit" class="p-6" novalidate>
                         <!-- Form Navigation -->
                         <div class="mb-8 border-b border-gray-200">
                             <nav class="-mb-px flex space-x-8">
@@ -787,6 +787,30 @@ const removeGuardianContact = (index) => {
 }
 
 const submit = () => {
-    form.post(route('players.store'))
+    // Validate required fields before submission
+    const requiredFields = [
+        { field: 'first_name', section: 'basic' },
+        { field: 'last_name', section: 'basic' },
+        { field: 'email', section: 'basic' },
+        { field: 'team_id', section: 'team' },
+        { field: 'jersey_number', section: 'team' },
+        { field: 'primary_position', section: 'team' },
+    ]
+    
+    // Check if medical clearance is required and has expiry date
+    if (form.medical_clearance && !form.medical_clearance_expires) {
+        activeSection.value = 'medical'
+        return
+    }
+    
+    // Find first missing required field
+    for (const { field, section } of requiredFields) {
+        if (!form[field] || (Array.isArray(form[field]) && form[field].length === 0)) {
+            activeSection.value = section
+            return
+        }
+    }
+    
+    form.post(route('web.players.store'))
 }
 </script>
