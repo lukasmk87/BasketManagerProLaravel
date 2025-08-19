@@ -284,7 +284,7 @@ class TeamService
             if (!empty($playerData['jersey_number'])) {
                 $existingPlayer = $team->players()
                     ->where('jersey_number', $playerData['jersey_number'])
-                    ->where('status', 'active')
+                    ->wherePivot('status', 'active')
                     ->first();
                 
                 if ($existingPlayer) {
@@ -301,7 +301,7 @@ class TeamService
                           ->where('league', $team->league)
                           ->where('is_active', true);
                 })
-                ->where('status', 'active')
+                ->where('players.status', 'active')
                 ->first();
 
             if ($existingMembership) {
@@ -551,7 +551,7 @@ class TeamService
      */
     private function getTopPlayerContributions(Team $team, string $season): array
     {
-        $players = $team->players()->where('status', 'active')->get();
+        $players = $team->players()->wherePivot('status', 'active')->get();
         $contributions = [];
 
         foreach ($players as $player) {

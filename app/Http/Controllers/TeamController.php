@@ -213,7 +213,6 @@ class TeamController extends Controller
         $team->load([
             'club',
             'headCoach',
-            'assistantCoach',
             'players.user',
             'homeGames.awayTeam',
             'awayGames.homeTeam'
