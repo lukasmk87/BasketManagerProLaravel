@@ -117,7 +117,7 @@ Route::prefix('api/v2/emergency')->name('api.v2.emergency.')->middleware(['auth:
 Route::prefix('admin/emergency')->name('admin.emergency.')->middleware(['auth', 'verified', 'role:admin'])->group(function () {
     
     // Team Emergency Access Management
-    Route::controller(\App\Http\Controllers\Admin\EmergencyAccessController::class)->group(function () {
+    Route::controller(\App\Http\Controllers\EmergencyAccessController::class)->group(function () {
         // List all team access keys
         Route::get('/access', 'index')->name('access.index');
         
@@ -142,23 +142,26 @@ Route::prefix('admin/emergency')->name('admin.emergency.')->middleware(['auth', 
     });
     
     // Emergency Incidents Management
+    /* Temporarily disabled - controller needs to be created
     Route::controller(\App\Http\Controllers\Admin\EmergencyIncidentsController::class)->group(function () {
         Route::get('/incidents', 'index')->name('incidents.index');
         Route::get('/incidents/{incident}', 'show')->name('incidents.show');
         Route::patch('/incidents/{incident}', 'update')->name('incidents.update');
         Route::post('/incidents/{incident}/resolve', 'resolve')->name('incidents.resolve');
-    });
+    }); */
     
     // Emergency System Analytics
+    /* Temporarily disabled - controller needs to be created
     Route::controller(\App\Http\Controllers\Admin\EmergencyAnalyticsController::class)->group(function () {
         Route::get('/analytics', 'dashboard')->name('analytics.dashboard');
         Route::get('/analytics/usage', 'usageReport')->name('analytics.usage');
         Route::get('/analytics/incidents', 'incidentsReport')->name('analytics.incidents');
         Route::get('/analytics/export', 'exportData')->name('analytics.export');
-    });
+    }); */
 });
 
 // Webhook Routes for Emergency Notifications
+/* Temporarily disabled - controller needs to be created
 Route::prefix('webhooks/emergency')->name('webhooks.emergency.')->group(function () {
     
     // Generic emergency webhook
@@ -173,7 +176,7 @@ Route::prefix('webhooks/emergency')->name('webhooks.emergency.')->group(function
     // Call status webhooks
     Route::post('/call-status', [\App\Http\Controllers\Webhooks\EmergencyWebhookController::class, 'handleCallStatus'])
         ->name('call-status');
-});
+}); */
 
 // Service Worker Route for PWA
 Route::get('/emergency-sw.js', function () {

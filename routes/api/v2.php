@@ -151,6 +151,65 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
             return response()->json(['message' => 'Live player stats coming soon']);
         });
     });
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Gym Hall Management (Hallenverwaltung)
+    |--------------------------------------------------------------------------
+    */
+    
+    Route::prefix('gym-management')->name('api.gym.')->middleware('auth:sanctum')->group(function () {
+        
+        // Gym Halls CRUD
+        Route::apiResource('halls', \App\Http\Controllers\Api\GymHallController::class);
+        
+        // Time Slots for a specific hall
+        Route::get('halls/{hall}/time-slots', [\App\Http\Controllers\Api\GymHallController::class, 'getTimeSlots'])
+             ->name('halls.time-slots');
+             
+        Route::post('halls/{hall}/time-slots', [\App\Http\Controllers\Api\GymHallController::class, 'createTimeSlot'])
+             ->name('halls.time-slots.store');
+        
+        // Booking Management
+        Route::apiResource('bookings', \App\Http\Controllers\Api\GymHallController::class, [
+            'only' => ['index', 'show', 'store', 'update', 'destroy']
+        ])->parameters(['bookings' => 'booking']);
+        
+        // Booking Actions
+        Route::post('bookings/{booking}/release', [\App\Http\Controllers\Api\GymHallController::class, 'releaseBooking'])
+             ->name('bookings.release');
+             
+        Route::post('bookings/{booking}/cancel', [\App\Http\Controllers\Api\GymHallController::class, 'cancelBooking'])
+             ->name('bookings.cancel');
+             
+        Route::post('bookings/{booking}/request', [\App\Http\Controllers\Api\GymHallController::class, 'requestBooking'])
+             ->name('bookings.request');
+        
+        // Booking Requests Management
+        Route::prefix('booking-requests')->name('booking-requests.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\GymHallController::class, 'getBookingRequests'])
+                 ->name('index');
+                 
+            Route::post('{request}/approve', [\App\Http\Controllers\Api\GymHallController::class, 'approveRequest'])
+                 ->name('approve');
+                 
+            Route::post('{request}/reject', [\App\Http\Controllers\Api\GymHallController::class, 'rejectRequest'])
+                 ->name('reject');
+        });
+        
+        // Search and Availability
+        Route::post('search-available', [\App\Http\Controllers\Api\GymHallController::class, 'searchAvailable'])
+             ->name('search-available');
+             
+        Route::get('availability/{hall}', [\App\Http\Controllers\Api\GymHallController::class, 'getAvailability'])
+             ->name('availability');
+             
+        Route::get('team/{team}/bookings', [\App\Http\Controllers\Api\GymHallController::class, 'getTeamBookings'])
+             ->name('team.bookings');
+             
+        Route::get('bookings/available-for-team/{team}', [\App\Http\Controllers\Api\GymHallController::class, 'getAvailableForTeam'])
+             ->name('bookings.available-for-team');
+    });
 });
 
 /*
