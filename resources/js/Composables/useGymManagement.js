@@ -83,9 +83,7 @@ export function useGymManagement(initialGymHalls = [], initialStats = {}) {
 
     const refreshPendingRequests = async () => {
         try {
-            const response = await axios.get('/api/v2/gym-booking-requests', {
-                params: { status: 'pending' }
-            })
+            const response = await axios.get('/api/v2/gym-management/pending-requests')
             pendingRequests.value = response.data.data
         } catch (err) {
             console.error('Error refreshing pending requests:', err)
