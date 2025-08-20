@@ -29,11 +29,19 @@ class GymBookingRequestController extends Controller
         $user = Auth::user();
         $clubId = $user->currentTeam?->club_id ?? $user->clubs()->first()?->id;
 
+        // If no club association, return empty list instead of error
         if (!$clubId) {
             return response()->json([
-                'success' => false,
+                'success' => true,
+                'data' => [],
+                'pagination' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 20,
+                    'total' => 0,
+                ],
                 'message' => 'No club associated with user'
-            ], 400);
+            ]);
         }
 
         $query = GymBookingRequest::whereHas('gymHall', function ($query) use ($clubId) {

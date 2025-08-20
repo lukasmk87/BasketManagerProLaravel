@@ -367,11 +367,18 @@ class GymHallController extends Controller
         $user = Auth::user();
         $clubId = $user->currentTeam?->club_id ?? $user->clubs()->first()?->id;
 
+        // If no club association, return empty stats instead of error
         if (!$clubId) {
             return response()->json([
-                'success' => false,
+                'success' => true,
+                'data' => [
+                    'total_halls' => 0,
+                    'active_bookings' => 0,
+                    'pending_requests' => 0,
+                    'utilization_rate' => 0,
+                ],
                 'message' => 'No club associated with user'
-            ], 400);
+            ]);
         }
 
         $totalHalls = GymHall::where('club_id', $clubId)->count();
@@ -427,11 +434,13 @@ class GymHallController extends Controller
         $user = Auth::user();
         $clubId = $user->currentTeam?->club_id ?? $user->clubs()->first()?->id;
 
+        // If no club association, return empty bookings instead of error
         if (!$clubId) {
             return response()->json([
-                'success' => false,
+                'success' => true,
+                'data' => [],
                 'message' => 'No club associated with user'
-            ], 400);
+            ]);
         }
 
         $weekStart = Carbon::parse($request->input('week_start'));
@@ -459,11 +468,13 @@ class GymHallController extends Controller
         $user = Auth::user();
         $clubId = $user->currentTeam?->club_id ?? $user->clubs()->first()?->id;
 
+        // If no club association, return empty activities instead of error
         if (!$clubId) {
             return response()->json([
-                'success' => false,
+                'success' => true,
+                'data' => [],
                 'message' => 'No club associated with user'
-            ], 400);
+            ]);
         }
 
         // Mock recent activities - in a real app this would come from an activity log
@@ -502,11 +513,13 @@ class GymHallController extends Controller
         $user = Auth::user();
         $clubId = $user->currentTeam?->club_id ?? $user->clubs()->first()?->id;
 
+        // If no club association, return empty requests instead of error
         if (!$clubId) {
             return response()->json([
-                'success' => false,
+                'success' => true,
+                'data' => [],
                 'message' => 'No club associated with user'
-            ], 400);
+            ]);
         }
 
         $requests = \App\Models\GymBookingRequest::whereHas('gymHall', function ($query) use ($clubId) {
