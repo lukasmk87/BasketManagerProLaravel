@@ -169,6 +169,15 @@ Route::middleware([
         Route::get('/system', [\App\Http\Controllers\AdminPanelController::class, 'system'])->name('system');
     });
     
+    // Gym Management Routes
+    Route::prefix('gym-management')->name('gym.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\GymManagementController::class, 'index'])->name('index');
+        Route::get('/halls', [\App\Http\Controllers\GymManagementController::class, 'halls'])->name('halls');
+        Route::get('/bookings', [\App\Http\Controllers\GymManagementController::class, 'bookings'])->name('bookings');
+        Route::get('/requests', [\App\Http\Controllers\GymManagementController::class, 'requests'])->name('requests');
+        Route::get('/create-hall', [\App\Http\Controllers\GymManagementController::class, 'create'])->name('create-hall');
+    });
+    
     // Export Routes
     Route::prefix('export')->name('export.')->group(function () {
         // Game Exports

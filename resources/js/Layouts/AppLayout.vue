@@ -82,6 +82,13 @@ const logout = () => {
                                     Statistiken
                                 </NavLink>
                                 
+                                <!-- Hallenverwaltung (für berechtigte Benutzer) -->
+                                <NavLink v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin') || $page.props.auth.user.roles.includes('club_admin') || $page.props.auth.user.roles.includes('trainer'))" 
+                                         :href="route('gym.index')" 
+                                         :active="route().current('gym.*')">
+                                    Hallenverwaltung
+                                </NavLink>
+                                
                                 <!-- Admin Dropdown (nur für Admins) -->
                                 <div v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin'))" class="relative">
                                     <Dropdown align="bottom" width="48">
@@ -332,6 +339,13 @@ const logout = () => {
                         <!-- Statistiken -->
                         <ResponsiveNavLink :href="route('statistics.index')" :active="route().current('statistics.*')">
                             Statistiken
+                        </ResponsiveNavLink>
+                        
+                        <!-- Hallenverwaltung (für berechtigte Benutzer) -->
+                        <ResponsiveNavLink v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin') || $page.props.auth.user.roles.includes('club_admin') || $page.props.auth.user.roles.includes('trainer'))" 
+                                           :href="route('gym.index')" 
+                                           :active="route().current('gym.*')">
+                            Hallenverwaltung
                         </ResponsiveNavLink>
                         
                         <!-- Admin Links (nur für Admins) -->
