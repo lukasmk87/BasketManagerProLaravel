@@ -11,6 +11,10 @@ $defaultLocale = config('localization.default_locale', 'de');
 
 // Register routes for default locale (no prefix)
 Route::get('/', function () {
+    return view('landing');
+})->name('landing');
+
+Route::get('/welcome', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
@@ -228,13 +232,8 @@ foreach ($supportedLocales as $locale) {
         } else {
             // For other locales, render normally
             Route::get('/', function () {
-                return Inertia::render('Welcome', [
-                    'canLogin' => Route::has('login'),
-                    'canRegister' => Route::has('register'),
-                    'laravelVersion' => Application::VERSION,
-                    'phpVersion' => PHP_VERSION,
-                ]);
-            })->name('welcome');
+                return view('landing');
+            })->name('landing');
             
             // Authenticated routes
             Route::middleware([
