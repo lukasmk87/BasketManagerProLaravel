@@ -16,6 +16,54 @@ class StatisticsService
     private int $defaultCacheTtl = 3600; // 1 hour
 
     /**
+     * Get team statistics wrapper method (used by StatisticsController).
+     */
+    public function getTeamStatistics(Team $team): array
+    {
+        $season = $team->season ?? '2024-25'; // Default to current season
+        return $this->getTeamSeasonStats($team, $season);
+    }
+
+    /**
+     * Get player statistics wrapper method (used by StatisticsController).
+     */
+    public function getPlayerStatistics(Player $player, ?string $season = null): array
+    {
+        $season = $season ?? $player->team?->season ?? '2024-25'; // Default to current season
+        return $this->getPlayerSeasonStats($player, $season);
+    }
+
+    /**
+     * Get game statistics wrapper method (used by StatisticsController).
+     */
+    public function getGameStatistics(Game $game): array
+    {
+        // Return basic game statistics
+        return [
+            'total_actions' => $game->gameActions()->count(),
+            'home_team_actions' => $game->gameActions()->where('team_id', $game->home_team_id)->count(),
+            'away_team_actions' => $game->gameActions()->where('team_id', $game->away_team_id)->count(),
+            'duration' => $game->duration_minutes ?? 0,
+            'finished_at' => $game->finished_at,
+            'actions_summary' => $this->getGameActionsSummary($game),
+        ];
+    }
+
+    /**
+     * Get game actions summary.
+     */
+    private function getGameActionsSummary(Game $game): array
+    {
+        $actions = $game->gameActions()
+            ->selectRaw('action_type, COUNT(*) as count')
+            ->groupBy('action_type')
+            ->pluck('count', 'action_type')
+            ->toArray();
+            
+        return $actions;
+    }
+
+    /**
      * Get player statistics for a specific game.
      */
     public function getPlayerGameStats(Player $player, Game $game): array

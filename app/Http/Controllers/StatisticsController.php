@@ -87,15 +87,18 @@ class StatisticsController extends Controller
                 });
             })
             ->get()
+            ->filter(function ($player) {
+                return $player->team !== null; // Filter out players without teams
+            })
             ->map(function ($player) {
-                $stats = $this->statisticsService->getPlayerStatistics($player, $player->team->season);
+                $stats = $this->statisticsService->getPlayerStatistics($player, $player->team?->season);
                 return [
                     'id' => $player->id,
                     'name' => $player->user?->name ?? $player->full_name,
                     'jersey_number' => $player->jersey_number,
                     'position' => $player->primary_position,
-                    'team_name' => $player->team->name,
-                    'club_name' => $player->team->club->name,
+                    'team_name' => $player->team?->name ?? 'No Team',
+                    'club_name' => $player->team?->club?->name ?? 'No Club',
                     'statistics' => $stats,
                 ];
             });
