@@ -76,9 +76,20 @@ class TeamController extends Controller
             ]);
         }
 
+        $user = auth()->user();
+        
         $clubs = Club::query()
             ->select(['id', 'name'])
             ->where('is_active', true)
+            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+                // Admin users see all clubs
+                return $query;
+            }, function ($query) use ($user) {
+                // Other users see only their clubs
+                return $query->whereHas('users', function ($subQ) use ($user) {
+                    $subQ->where('user_id', $user->id);
+                });
+            })
             ->orderBy('name')
             ->get();
 
@@ -252,9 +263,20 @@ class TeamController extends Controller
     {
         $this->authorize('update', $team);
 
+        $user = auth()->user();
+        
         $clubs = Club::query()
             ->select(['id', 'name'])
             ->where('is_active', true)
+            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+                // Admin users see all clubs
+                return $query;
+            }, function ($query) use ($user) {
+                // Other users see only their clubs
+                return $query->whereHas('users', function ($subQ) use ($user) {
+                    $subQ->where('user_id', $user->id);
+                });
+            })
             ->orderBy('name')
             ->get();
 

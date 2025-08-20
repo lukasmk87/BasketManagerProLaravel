@@ -453,6 +453,83 @@ class PushNotificationService
         
         return User::where('tenant_id', $tenantId)->get();
     }
+
+    /**
+     * Get club teams except the original team
+     *
+     * @param string|null $clubId
+     * @param string|null $originalTeamId
+     * @return Collection
+     */
+    private function getClubTeamsExceptOriginal(?string $clubId, ?string $originalTeamId): Collection
+    {
+        if (!$clubId) {
+            return collect();
+        }
+
+        $query = User::whereHas('clubs', function ($q) use ($clubId) {
+            $q->where('club_id', $clubId);
+        })->whereHas('teams', function ($q) use ($originalTeamId) {
+            if ($originalTeamId) {
+                $q->where('team_id', '!=', $originalTeamId);
+            }
+        });
+
+        return $query->get();
+    }
+
+    /**
+     * Get team trainers/coaches
+     *
+     * @param string|null $teamId
+     * @return Collection
+     */
+    private function getTeamTrainers(?string $teamId): Collection
+    {
+        if (!$teamId) {
+            return collect();
+        }
+
+        return User::whereHas('teams', function ($query) use ($teamId) {
+            $query->where('team_id', $teamId)
+                  ->wherePivotIn('role', ['trainer', 'assistant_trainer']);
+        })->get();
+    }
+
+    /**
+     * Get team members
+     *
+     * @param string|null $teamId
+     * @return Collection
+     */
+    private function getTeamMembers(?string $teamId): Collection
+    {
+        if (!$teamId) {
+            return collect();
+        }
+
+        return User::whereHas('teams', function ($query) use ($teamId) {
+            $query->where('team_id', $teamId);
+        })->get();
+    }
+
+    /**
+     * Get club administrators
+     *
+     * @param string|null $clubId
+     * @return Collection
+     */
+    private function getClubAdministrators(?string $clubId): Collection
+    {
+        if (!$clubId) {
+            return collect();
+        }
+
+        return User::whereHas('clubs', function ($query) use ($clubId) {
+            $query->where('club_id', $clubId)
+                  ->wherePivotIn('role', ['admin', 'owner']);
+        })->get();
+    }
     
     /**
      * Schedule delayed notification
@@ -496,6 +573,225 @@ class PushNotificationService
         ];
     }
     
+    /**
+     * Send gym time released notification
+     *
+     * @param string $bookingId
+     * @param array $bookingData
+     * @return array
+     */
+    public function sendGymTimeReleasedNotification(string $bookingId, array $bookingData): array
+    {
+        $notification = [
+            'type' => 'gym_time_released',
+            'title' => '🏀 Hallenzeit freigegeben',
+            'body' => sprintf(
+                '%s am %s um %s ist jetzt verfügbar',
+                $bookingData['gym_hall_name'] ?? 'Sporthalle',
+                $bookingData['date'] ?? 'Unbekanntes Datum',
+                $bookingData['start_time'] ?? 'Unbekannte Zeit'
+            ),
+            'icon' => '/images/notifications/gym-released.png',
+            'badge' => '/images/badge-gym.png',
+            'data' => [
+                'booking_id' => $bookingId,
+                'type' => 'gym_time_released',
+                'url' => "/gym/bookings/available",
+                'booking_data' => $bookingData,
+                'actions' => [
+                    ['action' => 'view-available', 'title' => 'Verfügbare Zeiten ansehen'],
+                    ['action' => 'request-booking', 'title' => 'Zeit anfragen']
+                ]
+            ],
+            'vibrate' => [200, 100, 200],
+            'requireInteraction' => true
+        ];
+        
+        // Send to all teams in the same club except the releasing team
+        $recipients = $this->getClubTeamsExceptOriginal($bookingData['club_id'] ?? null, $bookingData['original_team_id'] ?? null);
+        
+        return $this->sendToUsers($recipients, $notification);
+    }
+
+    /**
+     * Send gym booking request notification
+     *
+     * @param string $requestId
+     * @param array $requestData
+     * @return array
+     */
+    public function sendGymBookingRequestNotification(string $requestId, array $requestData): array
+    {
+        $notification = [
+            'type' => 'gym_booking_requested',
+            'title' => '📋 Neue Buchungsanfrage',
+            'body' => sprintf(
+                '%s möchte %s am %s buchen',
+                $requestData['requesting_team_name'] ?? 'Ein Team',
+                $requestData['gym_hall_name'] ?? 'eine Sporthalle',
+                $requestData['date'] ?? 'einem Termin'
+            ),
+            'icon' => '/images/notifications/booking-request.png',
+            'data' => [
+                'request_id' => $requestId,
+                'type' => 'gym_booking_requested',
+                'url' => "/gym/requests",
+                'request_data' => $requestData,
+                'actions' => [
+                    ['action' => 'approve-request', 'title' => 'Genehmigen'],
+                    ['action' => 'reject-request', 'title' => 'Ablehnen']
+                ]
+            ],
+            'vibrate' => [300, 100, 300],
+            'requireInteraction' => true
+        ];
+        
+        // Send to trainers/coaches of the original team
+        $recipients = $this->getTeamTrainers($requestData['original_team_id'] ?? null);
+        
+        return $this->sendToUsers($recipients, $notification);
+    }
+
+    /**
+     * Send gym booking approved notification
+     *
+     * @param string $requestId
+     * @param array $requestData
+     * @return array
+     */
+    public function sendGymBookingApprovedNotification(string $requestId, array $requestData): array
+    {
+        $notification = [
+            'type' => 'gym_booking_approved',
+            'title' => '✅ Buchung genehmigt',
+            'body' => sprintf(
+                'Ihre Anfrage für %s am %s wurde genehmigt',
+                $requestData['gym_hall_name'] ?? 'die Sporthalle',
+                $requestData['date'] ?? 'den gewünschten Termin'
+            ),
+            'icon' => '/images/notifications/booking-approved.png',
+            'data' => [
+                'request_id' => $requestId,
+                'booking_id' => $requestData['booking_id'] ?? null,
+                'type' => 'gym_booking_approved',
+                'url' => "/gym/my-bookings",
+                'request_data' => $requestData
+            ],
+            'vibrate' => [200, 100, 200, 100, 200]
+        ];
+        
+        // Send to requesting team members
+        $recipients = $this->getTeamMembers($requestData['requesting_team_id'] ?? null);
+        
+        return $this->sendToUsers($recipients, $notification);
+    }
+
+    /**
+     * Send gym booking rejected notification
+     *
+     * @param string $requestId
+     * @param array $requestData
+     * @return array
+     */
+    public function sendGymBookingRejectedNotification(string $requestId, array $requestData): array
+    {
+        $notification = [
+            'type' => 'gym_booking_rejected',
+            'title' => '❌ Buchung abgelehnt',
+            'body' => sprintf(
+                'Ihre Anfrage für %s am %s wurde abgelehnt',
+                $requestData['gym_hall_name'] ?? 'die Sporthalle',
+                $requestData['date'] ?? 'den gewünschten Termin'
+            ),
+            'icon' => '/images/notifications/booking-rejected.png',
+            'data' => [
+                'request_id' => $requestId,
+                'type' => 'gym_booking_rejected',
+                'url' => "/gym/available-times",
+                'request_data' => $requestData,
+                'rejection_reason' => $requestData['rejection_reason'] ?? null
+            ],
+            'vibrate' => [100, 50, 100]
+        ];
+        
+        // Send to requesting team members
+        $recipients = $this->getTeamMembers($requestData['requesting_team_id'] ?? null);
+        
+        return $this->sendToUsers($recipients, $notification);
+    }
+
+    /**
+     * Send gym booking reminder notification
+     *
+     * @param string $bookingId
+     * @param array $bookingData
+     * @return array
+     */
+    public function sendGymBookingReminderNotification(string $bookingId, array $bookingData): array
+    {
+        $minutesUntil = $bookingData['minutes_until'] ?? 30;
+        
+        $notification = [
+            'type' => 'gym_booking_reminder',
+            'title' => '⏰ Hallenzeit-Erinnerung',
+            'body' => sprintf(
+                'Ihr Training in %s beginnt in %d Minuten',
+                $bookingData['gym_hall_name'] ?? 'der Sporthalle',
+                $minutesUntil
+            ),
+            'icon' => '/images/notifications/reminder.png',
+            'data' => [
+                'booking_id' => $bookingId,
+                'type' => 'gym_booking_reminder',
+                'url' => "/gym/halls/{$bookingData['gym_hall_id']}",
+                'booking_data' => $bookingData,
+                'actions' => [
+                    ['action' => 'view-hall', 'title' => 'Halle ansehen'],
+                    ['action' => 'start-session', 'title' => 'Training starten']
+                ]
+            ],
+            'vibrate' => [100, 50, 100, 50, 100]
+        ];
+        
+        // Send to team members
+        $recipients = $this->getTeamMembers($bookingData['team_id'] ?? null);
+        
+        return $this->sendToUsers($recipients, $notification);
+    }
+
+    /**
+     * Send gym schedule conflict notification
+     *
+     * @param array $conflictData
+     * @return array
+     */
+    public function sendGymScheduleConflictNotification(array $conflictData): array
+    {
+        $notification = [
+            'type' => 'gym_schedule_conflict',
+            'title' => '⚠️ Hallenplan-Konflikt',
+            'body' => sprintf(
+                'Konflikt erkannt: %s am %s',
+                $conflictData['gym_hall_name'] ?? 'Sporthalle',
+                $conflictData['date'] ?? 'einem Termin'
+            ),
+            'icon' => '/images/notifications/conflict.png',
+            'badge' => '/images/badge-warning.png',
+            'data' => [
+                'type' => 'gym_schedule_conflict',
+                'url' => "/gym/conflicts",
+                'conflict_data' => $conflictData
+            ],
+            'vibrate' => [300, 100, 300, 100, 300],
+            'requireInteraction' => true
+        ];
+        
+        // Send to club administrators
+        $recipients = $this->getClubAdministrators($conflictData['club_id'] ?? null);
+        
+        return $this->sendToUsers($recipients, $notification);
+    }
+
     /**
      * Test notification delivery to a user
      *

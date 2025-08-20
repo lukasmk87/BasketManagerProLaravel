@@ -62,10 +62,24 @@ class PlayerController extends Controller
     {
         $this->authorize('create', Player::class);
 
+        $user = auth()->user();
+        
         $teams = Team::query()
             ->with('club')
             ->select(['id', 'name', 'club_id'])
             ->where('is_active', true)
+            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+                // Admin users see all teams
+                return $query;
+            }, function ($query) use ($user) {
+                // Other users see teams from their clubs or teams they coach
+                return $query->where(function ($q) use ($user) {
+                    $q->whereHas('club.users', function ($subQ) use ($user) {
+                        $subQ->where('user_id', $user->id);
+                    })->orWhere('head_coach_id', $user->id)
+                    ->orWhereJsonContains('assistant_coaches', $user->id);
+                });
+            })
             ->orderBy('name')
             ->get();
 
@@ -233,10 +247,24 @@ class PlayerController extends Controller
     {
         $this->authorize('update', $player);
 
+        $user = auth()->user();
+        
         $teams = Team::query()
             ->with('club')
             ->select(['id', 'name', 'club_id'])
             ->where('is_active', true)
+            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+                // Admin users see all teams
+                return $query;
+            }, function ($query) use ($user) {
+                // Other users see teams from their clubs or teams they coach
+                return $query->where(function ($q) use ($user) {
+                    $q->whereHas('club.users', function ($subQ) use ($user) {
+                        $subQ->where('user_id', $user->id);
+                    })->orWhere('head_coach_id', $user->id)
+                    ->orWhereJsonContains('assistant_coaches', $user->id);
+                });
+            })
             ->orderBy('name')
             ->get();
 

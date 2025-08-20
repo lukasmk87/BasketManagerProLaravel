@@ -195,6 +195,22 @@ class Club extends Model implements HasMedia
             ->orWhereIn('away_team_id', $teamIds);
     }
 
+    /**
+     * Get gym halls belonging to this club.
+     */
+    public function gymHalls(): HasMany
+    {
+        return $this->hasMany(GymHall::class);
+    }
+
+    /**
+     * Get active gym halls belonging to this club.
+     */
+    public function activeGymHalls(): HasMany
+    {
+        return $this->gymHalls()->where('is_active', true);
+    }
+
     // ============================
     // SCOPES
     // ============================

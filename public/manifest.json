@@ -142,6 +142,42 @@
           "sizes": "96x96"
         }
       ]
+    },
+    {
+      "name": "Gym Management",
+      "short_name": "Gym",
+      "description": "Manage gym halls and bookings",
+      "url": "/gym/dashboard",
+      "icons": [
+        {
+          "src": "/images/shortcuts/gym.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "My Bookings",
+      "short_name": "Bookings",
+      "description": "View my gym bookings",
+      "url": "/gym/my-bookings",
+      "icons": [
+        {
+          "src": "/images/shortcuts/bookings.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Available Times",
+      "short_name": "Available",
+      "description": "Find available gym times",
+      "url": "/gym/available-times",
+      "icons": [
+        {
+          "src": "/images/shortcuts/available.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
   
