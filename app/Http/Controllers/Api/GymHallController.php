@@ -358,4 +358,169 @@ class GymHallController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Get gym management statistics for dashboard.
+     */
+    public function getStats(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $clubId = $user->currentTeam?->club_id ?? $user->clubs()->first()?->id;
+
+        if (!$clubId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No club associated with user'
+            ], 400);
+        }
+
+        $totalHalls = GymHall::where('club_id', $clubId)->count();
+        
+        $activeBookings = \App\Models\GymBooking::whereHas('gymHall', function ($query) use ($clubId) {
+                $query->where('club_id', $clubId);
+            })
+            ->where('booking_date', '>=', now()->toDateString())
+            ->where('status', 'confirmed')
+            ->count();
+        
+        $pendingRequests = \App\Models\GymBookingRequest::whereHas('gymHall', function ($query) use ($clubId) {
+                $query->where('club_id', $clubId);
+            })
+            ->where('status', 'pending')
+            ->count();
+
+        // Calculate utilization rate
+        $utilizationRate = 0;
+        if ($totalHalls > 0) {
+            $totalPossibleSlots = $totalHalls * 7 * 12; // 7 days, 12 possible time slots per day
+            $bookedSlots = \App\Models\GymBooking::whereHas('gymHall', function ($query) use ($clubId) {
+                    $query->where('club_id', $clubId);
+                })
+                ->where('booking_date', '>=', now()->startOfWeek())
+                ->where('booking_date', '<=', now()->endOfWeek())
+                ->where('status', 'confirmed')
+                ->count();
+            
+            $utilizationRate = $totalPossibleSlots > 0 ? round(($bookedSlots / $totalPossibleSlots) * 100, 1) : 0;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total_halls' => $totalHalls,
+                'active_bookings' => $activeBookings,
+                'pending_requests' => $pendingRequests,
+                'utilization_rate' => $utilizationRate,
+            ]
+        ]);
+    }
+
+    /**
+     * Get weekly bookings for calendar display.
+     */
+    public function getWeeklyBookings(Request $request): JsonResponse
+    {
+        $request->validate([
+            'week_start' => 'required|date',
+        ]);
+
+        $user = Auth::user();
+        $clubId = $user->currentTeam?->club_id ?? $user->clubs()->first()?->id;
+
+        if (!$clubId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No club associated with user'
+            ], 400);
+        }
+
+        $weekStart = Carbon::parse($request->input('week_start'));
+        $weekEnd = $weekStart->copy()->endOfWeek();
+
+        $bookings = \App\Models\GymBooking::whereHas('gymHall', function ($query) use ($clubId) {
+                $query->where('club_id', $clubId);
+            })
+            ->whereBetween('booking_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->with(['gymHall:id,name', 'team:id,name'])
+            ->get()
+            ->groupBy('booking_date');
+
+        return response()->json([
+            'success' => true,
+            'data' => $bookings
+        ]);
+    }
+
+    /**
+     * Get recent activities for dashboard.
+     */
+    public function getRecentActivities(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $clubId = $user->currentTeam?->club_id ?? $user->clubs()->first()?->id;
+
+        if (!$clubId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No club associated with user'
+            ], 400);
+        }
+
+        // Mock recent activities - in a real app this would come from an activity log
+        $activities = collect([
+            [
+                'id' => 1,
+                'type' => 'booking_created',
+                'message' => 'Neue Buchung für Halle A erstellt',
+                'created_at' => now()->subMinutes(15),
+            ],
+            [
+                'id' => 2,
+                'type' => 'request_approved',
+                'message' => 'Buchungsanfrage für Team Warriors genehmigt',
+                'created_at' => now()->subHours(2),
+            ],
+            [
+                'id' => 3,
+                'type' => 'booking_confirmed',
+                'message' => 'Buchung für Halle B bestätigt',
+                'created_at' => now()->subHours(5),
+            ],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $activities
+        ]);
+    }
+
+    /**
+     * Get pending booking requests for dashboard.
+     */
+    public function getPendingRequests(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $clubId = $user->currentTeam?->club_id ?? $user->clubs()->first()?->id;
+
+        if (!$clubId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No club associated with user'
+            ], 400);
+        }
+
+        $requests = \App\Models\GymBookingRequest::whereHas('gymHall', function ($query) use ($clubId) {
+                $query->where('club_id', $clubId);
+            })
+            ->where('status', 'pending')
+            ->with(['team:id,name', 'gymHall:id,name', 'requestedBy:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $requests
+        ]);
+    }
 }

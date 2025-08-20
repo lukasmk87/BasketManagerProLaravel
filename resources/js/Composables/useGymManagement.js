@@ -2,6 +2,23 @@ import { ref, reactive, computed } from 'vue'
 import axios from 'axios'
 
 export function useGymManagement(initialGymHalls = [], initialStats = {}) {
+    // Utility functions (defined first to avoid hoisting issues)
+    const getISODateString = (date) => {
+        return date.toISOString().split('T')[0]
+    }
+
+    const getCurrentWeekStart = () => {
+        const now = new Date()
+        const dayOfWeek = now.getDay()
+        const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1) // Adjust for Monday start
+        const monday = new Date(now.setDate(diff))
+        return getISODateString(monday)
+    }
+
+    const isCurrentWeek = () => {
+        return currentWeek.value === getCurrentWeekStart()
+    }
+
     // Reactive state
     const gymHalls = ref(initialGymHalls)
     const stats = reactive({
@@ -277,23 +294,6 @@ export function useGymManagement(initialGymHalls = [], initialStats = {}) {
             console.error('Error searching available slots:', err)
             throw err
         }
-    }
-
-    // Utility functions
-    const getCurrentWeekStart = () => {
-        const now = new Date()
-        const dayOfWeek = now.getDay()
-        const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1) // Adjust for Monday start
-        const monday = new Date(now.setDate(diff))
-        return getISODateString(monday)
-    }
-
-    const getISODateString = (date) => {
-        return date.toISOString().split('T')[0]
-    }
-
-    const isCurrentWeek = () => {
-        return currentWeek.value === getCurrentWeekStart()
     }
 
     // Export everything

@@ -209,6 +209,19 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
              
         Route::get('bookings/available-for-team/{team}', [\App\Http\Controllers\Api\GymHallController::class, 'getAvailableForTeam'])
              ->name('bookings.available-for-team');
+             
+        // Dashboard specific endpoints
+        Route::get('stats', [\App\Http\Controllers\Api\GymHallController::class, 'getStats'])
+             ->name('stats');
+             
+        Route::get('weekly-bookings', [\App\Http\Controllers\Api\GymHallController::class, 'getWeeklyBookings'])
+             ->name('weekly-bookings');
+             
+        Route::get('recent-activities', [\App\Http\Controllers\Api\GymHallController::class, 'getRecentActivities'])
+             ->name('recent-activities');
+             
+        Route::get('pending-requests', [\App\Http\Controllers\Api\GymHallController::class, 'getPendingRequests'])
+             ->name('pending-requests');
     });
 });
 
