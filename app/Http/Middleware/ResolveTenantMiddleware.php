@@ -29,7 +29,12 @@ class ResolveTenantMiddleware
             $tenant = $this->resolveTenant($request);
             
             if (!$tenant) {
-                return $this->handleTenantNotFound($request);
+                // For staging environment, create a mock tenant
+                if (app()->environment('staging') && $request->getHost() === 'staging.basketmanager-pro.de') {
+                    $tenant = $this->createMockStagingTenant();
+                } else {
+                    return $this->handleTenantNotFound($request);
+                }
             }
             
             // Set tenant context throughout the application
@@ -312,6 +317,11 @@ class ResolveTenantMiddleware
      */
     private function logTenantAccess(Request $request, Tenant $tenant): void
     {
+        // Skip logging for mock tenants
+        if ($tenant->id === 'staging-tenant') {
+            return;
+        }
+        
         // Only log once per session to avoid spam
         $sessionKey = "tenant_access_logged_{$tenant->id}";
         
@@ -320,8 +330,31 @@ class ResolveTenantMiddleware
             $request->session()->put($sessionKey, true);
         }
         
-        // Update tenant's last activity timestamp
-        $tenant->touch('last_activity_at');
+        // Update tenant's last activity timestamp (only for real tenants)
+        if ($tenant->exists) {
+            $tenant->touch('last_activity_at');
+        }
+    }
+
+    /**
+     * Create mock staging tenant for development.
+     */
+    private function createMockStagingTenant(): Tenant
+    {
+        $mockTenant = new Tenant();
+        $mockTenant->id = 'staging-tenant';
+        $mockTenant->name = 'BasketManager Pro Staging';
+        $mockTenant->slug = 'staging';
+        $mockTenant->domain = 'staging.basketmanager-pro.de';
+        $mockTenant->subscription_tier = 'professional';
+        $mockTenant->is_active = true;
+        $mockTenant->timezone = 'Europe/Berlin';
+        $mockTenant->locale = 'de';
+        $mockTenant->currency = 'EUR';
+        $mockTenant->country_code = 'DE';
+        $mockTenant->exists = true; // Mark as existing to avoid save attempts
+        
+        return $mockTenant;
     }
 
     /**
