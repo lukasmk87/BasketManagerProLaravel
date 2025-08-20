@@ -211,7 +211,7 @@ class Player extends Model implements HasMedia
     public function team()
     {
         // Return the first active team as a relationship
-        return $this->teams()->wherePivot('is_active', true)->orderBy('joined_at')->limit(1);
+        return $this->teams()->wherePivot('is_active', true)->orderBy('joined_at');
     }
 
     /**
@@ -296,7 +296,7 @@ class Player extends Model implements HasMedia
      */
     public function getFullNameAttribute(): string
     {
-        return $this->user->name;
+        return $this->user?->name ?? 'Unknown Player';
     }
 
     /**
@@ -306,7 +306,7 @@ class Player extends Model implements HasMedia
     {
         $primaryTeam = $this->primaryTeam();
         $number = $primaryTeam?->pivot->jersey_number ? "#{$primaryTeam->pivot->jersey_number}" : '';
-        return trim("{$number} {$this->user->name}");
+        return trim("{$number} " . ($this->user?->name ?? 'Unknown Player'));
     }
 
     /**

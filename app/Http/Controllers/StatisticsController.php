@@ -40,7 +40,7 @@ class StatisticsController extends Controller
         
         $teams = Team::query()
             ->with(['club', 'players'])
-            ->withCount(['players', 'games'])
+            ->withCount(['players', 'homeGames', 'awayGames'])
             ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
                 return $query->where(function ($q) use ($user) {
                     $q->whereHas('club.users', function ($subQ) use ($user) {
@@ -51,14 +51,18 @@ class StatisticsController extends Controller
             })
             ->get()
             ->map(function ($team) {
-                $stats = $this->statisticsService->getTeamStatistics($team);
+                try {
+                    $stats = $this->statisticsService->getTeamStatistics($team);
+                } catch (\Exception $e) {
+                    $stats = [];
+                }
                 return [
                     'id' => $team->id,
                     'name' => $team->name,
-                    'club_name' => $team->club->name,
+                    'club_name' => $team->club?->name ?? 'No Club',
                     'season' => $team->season,
                     'players_count' => $team->players_count,
-                    'games_count' => $team->games_count,
+                    'games_count' => $team->home_games_count + $team->away_games_count,
                     'statistics' => $stats,
                 ];
             });
@@ -88,17 +92,21 @@ class StatisticsController extends Controller
             })
             ->get()
             ->filter(function ($player) {
-                return $player->team !== null; // Filter out players without teams
+                return $player->primaryTeam() !== null; // Filter out players without teams
             })
             ->map(function ($player) {
-                $stats = $this->statisticsService->getPlayerStatistics($player, $player->team?->season);
+                try {
+                    $stats = $this->statisticsService->getPlayerStatistics($player, $player->primaryTeam()?->season);
+                } catch (\Exception $e) {
+                    $stats = [];
+                }
                 return [
                     'id' => $player->id,
                     'name' => $player->user?->name ?? $player->full_name,
-                    'jersey_number' => $player->jersey_number,
-                    'position' => $player->primary_position,
-                    'team_name' => $player->team?->name ?? 'No Team',
-                    'club_name' => $player->team?->club?->name ?? 'No Club',
+                    'jersey_number' => $player->primaryTeam()?->pivot->jersey_number ?? null,
+                    'position' => $player->primaryTeam()?->pivot->primary_position ?? null,
+                    'team_name' => $player->primaryTeam()?->name ?? 'No Team',
+                    'club_name' => $player->primaryTeam()?->club?->name ?? 'No Club',
                     'statistics' => $stats,
                 ];
             });
@@ -139,11 +147,15 @@ class StatisticsController extends Controller
             ->limit(50)
             ->get()
             ->map(function ($game) {
-                $stats = $this->statisticsService->getGameStatistics($game);
+                try {
+                    $stats = $this->statisticsService->getGameStatistics($game);
+                } catch (\Exception $e) {
+                    $stats = [];
+                }
                 return [
                     'id' => $game->id,
-                    'home_team' => $game->homeTeam->name,
-                    'away_team' => $game->awayTeam->name,
+                    'home_team' => $game->homeTeam?->name ?? 'Unknown Team',
+                    'away_team' => $game->awayTeam?->name ?? 'Unknown Team',
                     'scheduled_at' => $game->scheduled_at,
                     'home_score' => $game->home_score,
                     'away_score' => $game->away_score,
