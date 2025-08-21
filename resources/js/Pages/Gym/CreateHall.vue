@@ -33,8 +33,8 @@
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="z.B. Turnhalle Hauptschule"
                                 />
-                                <div v-if="form.errors.name" class="mt-1 text-sm text-red-600">
-                                    {{ form.errors.name }}
+                                <div v-if="errors.name" class="mt-1 text-sm text-red-600">
+                                    {{ Array.isArray(errors.name) ? errors.name.join(', ') : errors.name }}
                                 </div>
                             </div>
 
@@ -50,8 +50,8 @@
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="Optionale Beschreibung der Sporthalle..."
                                 ></textarea>
-                                <div v-if="form.errors.description" class="mt-1 text-sm text-red-600">
-                                    {{ form.errors.description }}
+                                <div v-if="errors.description" class="mt-1 text-sm text-red-600">
+                                    {{ Array.isArray(errors.description) ? errors.description.join(', ') : errors.description }}
                                 </div>
                             </div>
 
@@ -67,8 +67,8 @@
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="Vollständige Adresse der Sporthalle..."
                                 ></textarea>
-                                <div v-if="form.errors.address" class="mt-1 text-sm text-red-600">
-                                    {{ form.errors.address }}
+                                <div v-if="errors.address" class="mt-1 text-sm text-red-600">
+                                    {{ Array.isArray(errors.address) ? errors.address.join(', ') : errors.address }}
                                 </div>
                             </div>
 
@@ -86,8 +86,8 @@
                                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         placeholder="z.B. 200"
                                     />
-                                    <div v-if="form.errors.capacity" class="mt-1 text-sm text-red-600">
-                                        {{ form.errors.capacity }}
+                                    <div v-if="errors.capacity" class="mt-1 text-sm text-red-600">
+                                        {{ Array.isArray(errors.capacity) ? errors.capacity.join(', ') : errors.capacity }}
                                     </div>
                                 </div>
 
@@ -104,8 +104,8 @@
                                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         placeholder="z.B. 25.00"
                                     />
-                                    <div v-if="form.errors.hourly_rate" class="mt-1 text-sm text-red-600">
-                                        {{ form.errors.hourly_rate }}
+                                    <div v-if="errors.hourly_rate" class="mt-1 text-sm text-red-600">
+                                        {{ Array.isArray(errors.hourly_rate) ? errors.hourly_rate.join(', ') : errors.hourly_rate }}
                                     </div>
                                 </div>
                             </div>
@@ -125,8 +125,8 @@
                                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         placeholder="z.B. 28.0"
                                     />
-                                    <div v-if="form.errors.court_length" class="mt-1 text-sm text-red-600">
-                                        {{ form.errors.court_length }}
+                                    <div v-if="errors.court_length" class="mt-1 text-sm text-red-600">
+                                        {{ Array.isArray(errors.court_length) ? errors.court_length.join(', ') : errors.court_length }}
                                     </div>
                                 </div>
 
@@ -143,8 +143,8 @@
                                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         placeholder="z.B. 15.0"
                                     />
-                                    <div v-if="form.errors.court_width" class="mt-1 text-sm text-red-600">
-                                        {{ form.errors.court_width }}
+                                    <div v-if="errors.court_width" class="mt-1 text-sm text-red-600">
+                                        {{ Array.isArray(errors.court_width) ? errors.court_width.join(', ') : errors.court_width }}
                                     </div>
                                 </div>
                             </div>
@@ -198,6 +198,24 @@
                             </div>
                         </div>
 
+                        <!-- Error Messages -->
+                        <div v-if="Object.keys(errors).length > 0" class="px-6 py-4 bg-red-50 border-t border-red-200">
+                            <div class="flex">
+                                <svg class="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                                <div>
+                                    <h3 class="text-sm font-medium text-red-800">Fehler beim Erstellen:</h3>
+                                    <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+                                        <li v-for="(fieldErrors, field) in errors" :key="field">
+                                            <span v-if="field === 'general'">{{ fieldErrors.join(', ') }}</span>
+                                            <span v-else>{{ field }}: {{ fieldErrors.join(', ') }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
                             <Link
                                 :href="route('gym.halls')"
@@ -207,10 +225,10 @@
                             </Link>
                             <button
                                 type="submit"
-                                :disabled="form.processing"
+                                :disabled="processing"
                                 class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
                             >
-                                {{ form.processing ? 'Wird erstellt...' : 'Sporthalle erstellen' }}
+                                {{ processing ? 'Wird erstellt...' : 'Sporthalle erstellen' }}
                             </button>
                         </div>
                     </div>
@@ -221,10 +239,16 @@
 </template>
 
 <script setup>
-import { useForm, Link } from '@inertiajs/vue3'
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 
-const form = useForm({
+const props = defineProps({
+    currentClub: Object
+})
+
+const form = ref({
+    club_id: props.currentClub?.id || null,
     name: '',
     description: '',
     address: '',
@@ -238,11 +262,50 @@ const form = useForm({
     is_active: true,
 })
 
-const submit = () => {
-    form.post(route('api.gym-halls.store'), {
-        onSuccess: () => {
-            // Redirect to halls list or show success message
-        },
-    })
+const processing = ref(false)
+const errors = ref({})
+
+const submit = async () => {
+    if (processing.value) return
+    
+    processing.value = true
+    errors.value = {}
+    
+    try {
+        const response = await window.axios.post('/api/v2/gym-halls', form.value, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            withCredentials: true
+        })
+        
+        if (response.status >= 200 && response.status < 300) {
+            // Redirect to halls list on success
+            router.visit(route('gym.halls'), {
+                onSuccess: () => {
+                    // Show success message via flash or notification
+                    console.log('Sporthalle erfolgreich erstellt')
+                }
+            })
+        }
+    } catch (error) {
+        console.error('Error creating gym hall:', error)
+        
+        if (error.response?.data?.errors) {
+            // Laravel validation errors - ensure they're properly formatted
+            const formattedErrors = {}
+            for (const [field, fieldErrors] of Object.entries(error.response.data.errors)) {
+                formattedErrors[field] = Array.isArray(fieldErrors) ? fieldErrors : [fieldErrors]
+            }
+            errors.value = formattedErrors
+        } else if (error.response?.data?.message) {
+            errors.value = { general: [error.response.data.message] }
+        } else {
+            errors.value = { general: ['Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.'] }
+        }
+    } finally {
+        processing.value = false
+    }
 }
 </script>

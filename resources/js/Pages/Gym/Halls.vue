@@ -121,6 +121,64 @@
             @close="closeHallModal"
             @updated="refreshData"
         />
+
+        <!-- Schedule Modal -->
+        <DialogModal :show="showScheduleModal" @close="closeScheduleModal" max-width="6xl">
+            <template #title>
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Terminplan - {{ selectedScheduleHall?.name }}
+                </div>
+            </template>
+            
+            <template #content>
+                <div v-if="selectedScheduleHall" class="space-y-6">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="font-medium text-blue-900 mb-2">Halleninformationen</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-blue-700 font-medium">Kapazität:</span> {{ selectedScheduleHall.capacity || 'Nicht angegeben' }}
+                            </div>
+                            <div>
+                                <span class="text-blue-700 font-medium">Status:</span>
+                                <span :class="selectedScheduleHall.is_active ? 'text-green-600' : 'text-red-600'">
+                                    {{ selectedScheduleHall.is_active ? 'Aktiv' : 'Inaktiv' }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-blue-700 font-medium">Zeitslots:</span> {{ selectedScheduleHall.time_slots_count || 0 }}
+                            </div>
+                            <div>
+                                <span class="text-blue-700 font-medium">Buchungen:</span> {{ selectedScheduleHall.bookings_count || 0 }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <GymTimeSlotManager
+                        v-if="selectedScheduleHall.id"
+                        :gym-hall-id="selectedScheduleHall.id"
+                        :initial-time-slots="selectedScheduleHall.time_slots || []"
+                        :default-open-time="selectedScheduleHall.opening_time || '08:00'"
+                        :default-close-time="selectedScheduleHall.closing_time || '22:00'"
+                        @updated="refreshData"
+                        @error="(error) => console.error('Schedule error:', error)"
+                    />
+                </div>
+            </template>
+            
+            <template #footer>
+                <div class="flex justify-end">
+                    <button
+                        @click="closeScheduleModal"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md"
+                    >
+                        Schließen
+                    </button>
+                </div>
+            </template>
+        </DialogModal>
     </AppLayout>
 </template>
 
@@ -128,7 +186,9 @@
 import { ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import DialogModal from '@/Components/DialogModal.vue'
 import GymHallModal from '@/Components/Gym/GymHallModal.vue'
+import GymTimeSlotManager from '@/Components/Gym/GymTimeSlotManager.vue'
 import {
     BuildingStorefrontIcon,
     PlusIcon,
@@ -145,6 +205,8 @@ const props = defineProps({
 // Modal state
 const showHallModal = ref(false)
 const selectedHall = ref(null)
+const showScheduleModal = ref(false)
+const selectedScheduleHall = ref(null)
 
 // Methods
 const editHall = (hall) => {
@@ -163,7 +225,12 @@ const refreshData = () => {
 }
 
 const viewSchedule = (hall) => {
-    // Navigate to schedule view for this hall
-    console.log('View schedule for hall:', hall)
+    selectedScheduleHall.value = hall
+    showScheduleModal.value = true
+}
+
+const closeScheduleModal = () => {
+    selectedScheduleHall.value = null
+    showScheduleModal.value = false
 }
 </script>

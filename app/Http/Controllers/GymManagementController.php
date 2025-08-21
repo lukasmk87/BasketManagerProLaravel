@@ -78,7 +78,15 @@ class GymManagementController extends Controller
     {
         $this->authorize('create', GymHall::class);
         
-        return Inertia::render('Gym/CreateHall');
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        return Inertia::render('Gym/CreateHall', [
+            'currentClub' => $userClub ? [
+                'id' => $userClub->id,
+                'name' => $userClub->name,
+            ] : null,
+        ]);
     }
 
     /**
