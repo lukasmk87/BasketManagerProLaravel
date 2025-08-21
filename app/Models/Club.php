@@ -57,6 +57,31 @@ class Club extends Model implements HasMedia
         'privacy_policy_updated_at',
         'terms_updated_at',
         'gdpr_compliant',
+        // New attributes from migration
+        'president_name',
+        'president_email',
+        'vice_president_name',
+        'secretary_name',
+        'treasurer_name',
+        'contact_person_name',
+        'contact_person_phone',
+        'contact_person_email',
+        'has_indoor_courts',
+        'has_outdoor_courts',
+        'court_count',
+        'equipment_available',
+        'training_times',
+        'offers_youth_programs',
+        'offers_adult_programs',
+        'accepts_new_members',
+        'requires_approval',
+        'membership_fee_annual',
+        'membership_fee_monthly',
+        'social_media_facebook',
+        'social_media_instagram',
+        'social_media_twitter',
+        'privacy_policy_url',
+        'terms_of_service_url',
     ];
 
     /**
@@ -77,6 +102,17 @@ class Club extends Model implements HasMedia
         'privacy_policy_updated_at' => 'datetime',
         'terms_updated_at' => 'datetime',
         'gdpr_compliant' => 'boolean',
+        // New casts from migration
+        'has_indoor_courts' => 'boolean',
+        'has_outdoor_courts' => 'boolean',
+        'court_count' => 'integer',
+        'training_times' => 'array',
+        'offers_youth_programs' => 'boolean',
+        'offers_adult_programs' => 'boolean',
+        'accepts_new_members' => 'boolean',
+        'requires_approval' => 'boolean',
+        'membership_fee_annual' => 'decimal:2',
+        'membership_fee_monthly' => 'decimal:2',
     ];
 
     /**
@@ -466,6 +502,48 @@ class Club extends Model implements HasMedia
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    // ============================
+    // LEGACY COMPATIBILITY ACCESSORS
+    // ============================
+    
+    /**
+     * Legacy compatibility accessors for ClubService
+     */
+    public function getCityAttribute(): ?string
+    {
+        return $this->address_city;
+    }
+    
+    public function getStateAttribute(): ?string
+    {
+        return $this->address_state;
+    }
+    
+    public function getPostalCodeAttribute(): ?string
+    {
+        return $this->address_zip;
+    }
+    
+    public function getCountryAttribute(): ?string
+    {
+        return $this->address_country;
+    }
+    
+    public function getAddressAttribute(): ?string
+    {
+        return $this->address_street;
+    }
+    
+    public function getColorsPrimaryAttribute(): ?string
+    {
+        return $this->primary_color;
+    }
+    
+    public function getColorsSecondaryAttribute(): ?string
+    {
+        return $this->secondary_color;
     }
 
     // ============================

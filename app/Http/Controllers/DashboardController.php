@@ -161,9 +161,10 @@ class DashboardController extends Controller
                 'club_statistics' => $clubStats,
                 'teams_overview' => $primaryClub->teams()
                     ->with(['headCoach:id,name', 'players'])
-                    ->withCount(['players', 'games'])
+                    ->withCount(['players', 'homeGames', 'awayGames'])
                     ->get()
                     ->map(function ($team) {
+                        $totalGames = ($team->home_games_count ?? 0) + ($team->away_games_count ?? 0);
                         return [
                             'id' => $team->id,
                             'name' => $team->name,
@@ -171,9 +172,9 @@ class DashboardController extends Controller
                             'league' => $team->league,
                             'head_coach' => $team->headCoach?->name,
                             'player_count' => $team->players_count,
-                            'games_count' => $team->games_count,
+                            'games_count' => $totalGames,
                             'is_active' => $team->is_active,
-                            'win_percentage' => $team->win_percentage,
+                            'win_percentage' => $team->win_percentage ?? 0,
                         ];
                     }),
                 'recent_member_activity' => $primaryClub->users()

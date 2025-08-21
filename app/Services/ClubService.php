@@ -315,8 +315,8 @@ class ClubService
      */
     public function getClubStatistics(Club $club): array
     {
-        
-        // Basic counts
+        try {
+            // Basic counts
         $teamStats = $club->teams()->selectRaw('
             COUNT(*) as total_teams,
             SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_teams,
@@ -424,17 +424,70 @@ class ClubService
             'financial_stats' => $financialStats,
             'recent_activity' => $recentActivity,
             'facilities' => [
-                'has_indoor_courts' => $club->has_indoor_courts,
-                'has_outdoor_courts' => $club->has_outdoor_courts,
-                'court_count' => $club->court_count,
-                'equipment_available' => $club->equipment_available,
+                'has_indoor_courts' => $club->has_indoor_courts ?? false,
+                'has_outdoor_courts' => $club->has_outdoor_courts ?? false,
+                'court_count' => $club->court_count ?? 1,
+                'equipment_available' => $club->equipment_available ?? null,
             ],
             'programs' => [
-                'offers_youth_programs' => $club->offers_youth_programs,
-                'offers_adult_programs' => $club->offers_adult_programs,
-                'accepts_new_members' => $club->accepts_new_members,
+                'offers_youth_programs' => $club->offers_youth_programs ?? true,
+                'offers_adult_programs' => $club->offers_adult_programs ?? true,
+                'accepts_new_members' => $club->accepts_new_members ?? true,
             ]
         ];
+
+        } catch (\Exception $e) {
+            Log::error('Failed to load club statistics', [
+                'club_id' => $club->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return basic fallback data structure
+            return [
+                'basic_stats' => [
+                    'total_teams' => 0,
+                    'active_teams' => 0,
+                    'total_players' => 0,
+                    'active_players' => 0,
+                    'total_members' => 0,
+                    'active_members' => 0,
+                    'seasons_active' => 0,
+                    'leagues_participated' => 0,
+                    'avg_player_age' => 0,
+                ],
+                'game_stats' => [
+                    'total_games' => 0,
+                    'total_wins' => 0,
+                    'total_losses' => 0,
+                    'win_percentage' => 0,
+                    'avg_points_scored' => 0,
+                    'avg_points_allowed' => 0,
+                ],
+                'financial_stats' => [
+                    'total_annual_revenue' => 0,
+                    'membership_fee_annual' => null,
+                    'membership_fee_monthly' => null,
+                ],
+                'recent_activity' => [
+                    'teams_created_this_month' => 0,
+                    'players_joined_this_month' => 0,
+                    'games_this_month' => 0,
+                ],
+                'facilities' => [
+                    'has_indoor_courts' => false,
+                    'has_outdoor_courts' => false,
+                    'court_count' => 1,
+                    'equipment_available' => null,
+                ],
+                'programs' => [
+                    'offers_youth_programs' => true,
+                    'offers_adult_programs' => true,
+                    'accepts_new_members' => true,
+                ],
+                'error' => 'Einige Statistiken konnten nicht geladen werden.'
+            ];
+        }
     }
 
     /**

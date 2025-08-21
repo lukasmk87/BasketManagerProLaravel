@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
 
@@ -11,6 +12,12 @@ $defaultLocale = config('localization.default_locale', 'de');
 
 // Register routes for default locale (no prefix)
 Route::get('/', function () {
+    // Redirect authenticated users to dashboard
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+    
+    // Show landing page for guests
     return view('landing');
 })->name('landing');
 
@@ -241,6 +248,12 @@ foreach ($supportedLocales as $locale) {
         } else {
             // For other locales, render normally
             Route::get('/', function () {
+                // Redirect authenticated users to dashboard
+                if (Auth::check()) {
+                    return redirect()->route('dashboard');
+                }
+                
+                // Show landing page for guests
                 return view('landing');
             })->name('landing');
             

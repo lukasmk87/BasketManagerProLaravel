@@ -138,10 +138,12 @@
                 <a href="#pricing" class="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">Preise</a>
                 <a href="#testimonials" class="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">Referenzen</a>
                 <a href="#faq" class="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">FAQ</a>
-                @guest
+                @auth
+                    <a href="{{ route('dashboard') }}" class="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">Dashboard</a>
+                @else
                     <a href="{{ route('login') }}" class="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">Login</a>
                     <a href="{{ route('register') }}" class="block px-3 py-2 bg-orange-600 text-white rounded-lg font-medium mx-3 text-center">Kostenlos testen</a>
-                @endguest
+                @endauth
             </div>
         </div>
     </nav>
