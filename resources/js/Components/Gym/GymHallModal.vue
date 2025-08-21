@@ -507,7 +507,8 @@ const submitForm = async () => {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
-            }
+            },
+            withCredentials: true
         })
         
         if (response.status >= 200 && response.status < 300) {
@@ -541,7 +542,8 @@ const deleteGymHall = async () => {
         const response = await window.axios.delete(`/api/v2/gym-halls/${props.gymHall.id}`, {
             headers: {
                 'Accept': 'application/json'
-            }
+            },
+            withCredentials: true
         })
         
         if (response.status >= 200 && response.status < 300) {
@@ -587,7 +589,9 @@ const loadHallTimeSlots = async (hallId) => {
     if (!hallId) return
     
     try {
-        const response = await window.axios.get(`/api/v2/gym-halls/${hallId}/time-slots`)
+        const response = await window.axios.get(`/api/v2/gym-halls/${hallId}/time-slots`, {
+            withCredentials: true
+        })
         if (response.data.success) {
             hallTimeSlots.value = response.data.data
         }

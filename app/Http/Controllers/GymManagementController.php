@@ -328,32 +328,64 @@ class GymManagementController extends Controller
             }
         }
 
-        // Delete existing time slots for this hall
-        GymTimeSlot::where('gym_hall_id', $hall->id)->delete();
-
+        // Get existing time slots for this hall
+        $existingSlots = GymTimeSlot::where('gym_hall_id', $hall->id)->get();
+        $processedSlotIds = [];
         $createdSlots = [];
         
         foreach ($request->time_slots as $slotData) {
-            $timeSlot = GymTimeSlot::create([
-                'uuid' => Str::uuid(),
-                'gym_hall_id' => $hall->id,
-                'title' => $slotData['title'],
-                'description' => $slotData['description'] ?? null,
-                'day_of_week' => $slotData['day_of_week'] ?? null,
-                'uses_custom_times' => $slotData['uses_custom_times'] ?? false,
-                'custom_times' => $slotData['custom_times'] ?? null,
-                'start_time' => $slotData['start_time'] ?? null,
-                'end_time' => $slotData['end_time'] ?? null,
-                'duration_minutes' => $this->calculateDuration($slotData['start_time'] ?? null, $slotData['end_time'] ?? null),
-                'slot_type' => $slotData['slot_type'],
-                'valid_from' => $slotData['valid_from'],
-                'valid_until' => $slotData['valid_until'] ?? null,
-                'status' => 'active',
-                'is_recurring' => true,
-                'allows_substitution' => true,
-            ]);
+            // Check if this is an update (has id) or create new
+            if (isset($slotData['id']) && !empty($slotData['id'])) {
+                // Update existing slot
+                $timeSlot = $existingSlots->where('id', $slotData['id'])->first();
+                if ($timeSlot) {
+                    $timeSlot->update([
+                        'title' => $slotData['title'],
+                        'description' => $slotData['description'] ?? null,
+                        'day_of_week' => $slotData['day_of_week'] ?? null,
+                        'uses_custom_times' => $slotData['uses_custom_times'] ?? false,
+                        'custom_times' => $slotData['custom_times'] ?? null,
+                        'start_time' => $slotData['start_time'] ?? null,
+                        'end_time' => $slotData['end_time'] ?? null,
+                        'duration_minutes' => $this->calculateDuration($slotData['start_time'] ?? null, $slotData['end_time'] ?? null),
+                        'slot_type' => $slotData['slot_type'],
+                        'valid_from' => $slotData['valid_from'],
+                        'valid_until' => $slotData['valid_until'] ?? null,
+                        'status' => 'active',
+                    ]);
+                    $processedSlotIds[] = $timeSlot->id;
+                    $createdSlots[] = $timeSlot;
+                }
+            } else {
+                // Create new slot
+                $timeSlot = GymTimeSlot::create([
+                    'uuid' => Str::uuid(),
+                    'gym_hall_id' => $hall->id,
+                    'title' => $slotData['title'],
+                    'description' => $slotData['description'] ?? null,
+                    'day_of_week' => $slotData['day_of_week'] ?? null,
+                    'uses_custom_times' => $slotData['uses_custom_times'] ?? false,
+                    'custom_times' => $slotData['custom_times'] ?? null,
+                    'start_time' => $slotData['start_time'] ?? null,
+                    'end_time' => $slotData['end_time'] ?? null,
+                    'duration_minutes' => $this->calculateDuration($slotData['start_time'] ?? null, $slotData['end_time'] ?? null),
+                    'slot_type' => $slotData['slot_type'],
+                    'valid_from' => $slotData['valid_from'],
+                    'valid_until' => $slotData['valid_until'] ?? null,
+                    'status' => 'active',
+                    'is_recurring' => true,
+                    'allows_substitution' => true,
+                ]);
+                $processedSlotIds[] = $timeSlot->id;
+                $createdSlots[] = $timeSlot;
+            }
+        }
 
-            $createdSlots[] = $timeSlot;
+        // Delete slots that were not included in the update (only if we got specific slots to replace)
+        if (!empty($request->time_slots)) {
+            GymTimeSlot::where('gym_hall_id', $hall->id)
+                ->whereNotIn('id', $processedSlotIds)
+                ->delete();
         }
 
         return response()->json([

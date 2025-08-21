@@ -404,6 +404,8 @@ const saveTimeSlots = async () => {
         
         const response = await window.axios.put(`/api/v2/gym-halls/${props.gymHallId}/time-slots`, {
             time_slots: timeSlots
+        }, {
+            withCredentials: true
         })
         
         if (response.data.success) {
