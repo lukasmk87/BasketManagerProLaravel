@@ -13,6 +13,11 @@ class GymHallPolicy
      */
     public function viewAny(User $user, $clubId = null): bool
     {
+        // Global admins and club admins can view gym halls
+        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return true;
+        }
+
         // If club ID is provided, check if user belongs to that club
         if ($clubId) {
             return $user->clubs()->where('club_id', $clubId)->exists();
@@ -36,6 +41,11 @@ class GymHallPolicy
      */
     public function create(User $user, $clubId = null): bool
     {
+        // Global admins and club admins can create gym halls
+        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return true;
+        }
+
         if (!$clubId) {
             return false;
         }
@@ -52,6 +62,11 @@ class GymHallPolicy
      */
     public function update(User $user, GymHall $gymHall): bool
     {
+        // Global admins and club admins can update gym halls
+        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return true;
+        }
+
         // Only club admins and owners can update gym halls
         return $user->clubs()
             ->where('club_id', $gymHall->club_id)
@@ -64,6 +79,11 @@ class GymHallPolicy
      */
     public function delete(User $user, GymHall $gymHall): bool
     {
+        // Global admins and club admins can delete gym halls
+        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return true;
+        }
+
         // Only club admins and owners can delete gym halls
         return $user->clubs()
             ->where('club_id', $gymHall->club_id)
@@ -92,6 +112,11 @@ class GymHallPolicy
      */
     public function manageTimeSlots(User $user, GymHall $gymHall): bool
     {
+        // Global admins, club admins, and trainers can manage time slots
+        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin', 'trainer'])) {
+            return true;
+        }
+
         // Club admins, owners, and trainers can manage time slots
         return $user->clubs()
             ->where('club_id', $gymHall->club_id)
@@ -113,6 +138,11 @@ class GymHallPolicy
      */
     public function viewStatistics(User $user, GymHall $gymHall): bool
     {
+        // Global admins, club admins, and trainers can view statistics
+        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin', 'trainer'])) {
+            return true;
+        }
+
         // Club admins, owners, and trainers can view statistics
         return $user->clubs()
             ->where('club_id', $gymHall->club_id)

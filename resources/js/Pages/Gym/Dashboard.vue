@@ -155,6 +155,13 @@
                                         <CalendarIcon class="h-5 w-5 mr-2" />
                                         Meine Buchungen
                                     </button>
+                                    <Link
+                                        :href="route('gym.halls')"
+                                        class="w-full flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                                    >
+                                        <BuildingStorefrontIcon class="h-5 w-5 mr-2" />
+                                        Sporthallen verwalten
+                                    </Link>
                                     <button
                                         @click="showAvailableTimes"
                                         class="w-full flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
@@ -180,6 +187,63 @@
                                     @approve="approveRequest"
                                     @reject="rejectRequest"
                                 />
+                            </div>
+                        </div>
+
+                        <!-- My Gym Halls -->
+                        <div v-if="canManageHalls && gymHalls.length > 0" class="bg-white shadow-xl rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-medium text-gray-900">
+                                        Meine Sporthallen
+                                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {{ gymHalls.length }}
+                                        </span>
+                                    </h3>
+                                    <Link 
+                                        :href="route('gym.halls')"
+                                        class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                    >
+                                        Alle anzeigen →
+                                    </Link>
+                                </div>
+                                <div class="space-y-3">
+                                    <div
+                                        v-for="hall in gymHalls.slice(0, 3)"
+                                        :key="hall.id"
+                                        class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                    >
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-gray-900 truncate">
+                                                {{ hall.name }}
+                                            </p>
+                                            <p class="text-xs text-gray-500">
+                                                {{ hall.time_slots_count || 0 }} Zeitslots · {{ hall.bookings_count || 0 }} Buchungen
+                                            </p>
+                                        </div>
+                                        <div class="flex items-center space-x-2 ml-3">
+                                            <span 
+                                                :class="[
+                                                    'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
+                                                    hall.is_active 
+                                                        ? 'bg-green-100 text-green-800' 
+                                                        : 'bg-red-100 text-red-800'
+                                                ]"
+                                            >
+                                                {{ hall.is_active ? 'Aktiv' : 'Inaktiv' }}
+                                            </span>
+                                            <button
+                                                @click="openHallModal(hall)"
+                                                class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded"
+                                            >
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                                Bearbeiten
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -239,7 +303,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { usePage } from '@inertiajs/vue3'
+import { usePage, Link } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import GymHallCalendar from '@/Components/Gym/GymHallCalendar.vue'
 import GymBookingModal from '@/Components/Gym/GymBookingModal.vue'

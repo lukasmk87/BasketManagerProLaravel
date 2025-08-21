@@ -302,6 +302,29 @@ class GymManagementController extends Controller
             'time_slots.*.valid_until' => 'nullable|date|after:valid_from',
         ]);
 
+        // Additional validation: either custom_times OR day_of_week + start_time + end_time
+        foreach ($request->time_slots as $index => $slotData) {
+            $usesCustomTimes = $slotData['uses_custom_times'] ?? false;
+            
+            if ($usesCustomTimes) {
+                if (empty($slotData['custom_times'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Zeitslot {$index}: Bei individuellen Zeiten müssen custom_times definiert sein.",
+                        'errors' => ["time_slots.{$index}.custom_times" => ['Custom times sind erforderlich.']]
+                    ], 422);
+                }
+            } else {
+                if (empty($slotData['day_of_week']) || empty($slotData['start_time']) || empty($slotData['end_time'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Zeitslot {$index}: Bei Standard-Zeiten sind day_of_week, start_time und end_time erforderlich.",
+                        'errors' => ["time_slots.{$index}" => ['Wochentag, Start- und Endzeit sind erforderlich.']]
+                    ], 422);
+                }
+            }
+        }
+
         // Additional validation for custom times
         foreach ($request->time_slots as $index => $slotData) {
             if (!empty($slotData['uses_custom_times']) && !empty($slotData['custom_times'])) {
