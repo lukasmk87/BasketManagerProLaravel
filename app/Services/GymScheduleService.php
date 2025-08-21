@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\GymHall;
+use App\Models\GymHallCourt;
 use App\Models\GymTimeSlot;
 use App\Models\GymBooking;
 use App\Models\GymBookingRequest;
@@ -422,5 +423,332 @@ class GymScheduleService
         $expectedBookings = $totalSlots * $weeksBetween;
 
         return $expectedBookings > 0 ? round(($usedSlots / $expectedBookings) * 100, 1) : 0.0;
+    }
+
+    // ============================
+    // MULTI-COURT & 30-MIN GRID METHODS
+    // ============================
+
+    /**
+     * Generate a time grid for a gym hall with 30-minute slots.
+     */
+    public function generateDailyTimeGrid(GymHall $gymHall, Carbon $date, int $slotDuration = 30): array
+    {
+        return $gymHall->generateTimeGrid($date, $slotDuration);
+    }
+
+    /**
+     * Find available slots for multiple teams (parallel booking).
+     */
+    public function findAvailableSlots(GymHall $gymHall, Carbon $date, int $duration = 30, int $teamCount = 1): array
+    {
+        if (!$gymHall->supports_parallel_bookings && $teamCount > 1) {
+            return [];
+        }
+
+        $dayOfWeek = strtolower($date->format('l'));
+        
+        // Get operating hours for the day
+        $operatingHours = $gymHall->operating_hours[$dayOfWeek] ?? null;
+        
+        if (!$operatingHours || !$operatingHours['is_open']) {
+            return [];
+        }
+
+        $startTime = Carbon::createFromTimeString($operatingHours['open_time']);
+        $endTime = Carbon::createFromTimeString($operatingHours['close_time']);
+        $increment = $gymHall->booking_increment ?: 30;
+        
+        $availableSlots = [];
+        $current = $startTime->copy();
+
+        while ($current->copy()->addMinutes($duration)->lte($endTime)) {
+            $slotStart = $current->copy();
+            $slotDateTime = $date->copy()->setTimeFrom($slotStart);
+            
+            // Check if we can accommodate the required number of teams
+            if ($gymHall->canAccommodateTeams($teamCount, $slotDateTime, $duration)) {
+                $availableCourts = $gymHall->getAvailableCourtsByTime($slotDateTime, $duration);
+                
+                $availableSlots[] = [
+                    'start_time' => $slotStart->format('H:i'),
+                    'end_time' => $slotStart->copy()->addMinutes($duration)->format('H:i'),
+                    'duration_minutes' => $duration,
+                    'datetime' => $slotDateTime,
+                    'available_courts' => $availableCourts->count(),
+                    'court_details' => $availableCourts->map(function ($court) {
+                        return [
+                            'id' => $court->id,
+                            'identifier' => $court->court_identifier,
+                            'name' => $court->court_name,
+                            'color' => $court->color_code
+                        ];
+                    })->toArray(),
+                    'can_accommodate_teams' => min($teamCount, $availableCourts->count())
+                ];
+            }
+            
+            $current->addMinutes($increment);
+        }
+
+        return $availableSlots;
+    }
+
+    /**
+     * Create a multi-court booking with conflict checking.
+     */
+    public function createMultiCourtBooking(array $bookingData): GymBooking
+    {
+        return DB::transaction(function () use ($bookingData) {
+            // Validate required data
+            $requiredFields = ['gym_time_slot_id', 'team_id', 'booked_by_user_id', 'booking_date', 'start_time', 'duration_minutes'];
+            foreach ($requiredFields as $field) {
+                if (!isset($bookingData[$field])) {
+                    throw new \InvalidArgumentException("Feld '{$field}' ist erforderlich.");
+                }
+            }
+
+            $timeSlot = GymTimeSlot::findOrFail($bookingData['gym_time_slot_id']);
+            $team = Team::findOrFail($bookingData['team_id']);
+            $bookedBy = User::findOrFail($bookingData['booked_by_user_id']);
+            $date = Carbon::parse($bookingData['booking_date']);
+            $startTime = $bookingData['start_time'];
+            $duration = (int) $bookingData['duration_minutes'];
+            $courtIds = $bookingData['court_ids'] ?? [];
+
+            // Validate booking time
+            $errors = $this->validateFlexibleBookingTime($timeSlot, $date, $startTime, $duration);
+            if (!empty($errors)) {
+                throw new \InvalidArgumentException('Buchungsfehler: ' . implode(', ', $errors));
+            }
+
+            // Validate courts if specified
+            if (!empty($courtIds)) {
+                $validationErrors = $this->validateCourtSelection($timeSlot->gymHall, $courtIds, $date, $startTime, $duration);
+                if (!empty($validationErrors)) {
+                    throw new \InvalidArgumentException('Court-Fehler: ' . implode(', ', $validationErrors));
+                }
+            }
+
+            // Create the booking using the enhanced method
+            $booking = $timeSlot->createFlexibleBookingForDate($date, $team, $bookedBy, $startTime, $duration, $courtIds);
+
+            return $booking;
+        });
+    }
+
+    /**
+     * Validate flexible booking time against custom times and 30-min slots.
+     */
+    public function validateFlexibleBookingTime(GymTimeSlot $timeSlot, Carbon $date, string $startTime, int $duration): array
+    {
+        $errors = [];
+        
+        // Use time slot's validation method
+        $timeSlotErrors = $timeSlot->canBookAtTime($date, $startTime, $duration) 
+            ? [] 
+            : ['Buchung zu dieser Zeit nicht möglich für dieses Zeitfenster.'];
+        
+        // Use gym hall's validation method
+        $gymHallErrors = $timeSlot->gymHall->validateBookingTime(
+            $date->copy()->setTimeFromTimeString($startTime),
+            $duration
+        );
+        
+        return array_merge($timeSlotErrors, $gymHallErrors);
+    }
+
+    /**
+     * Validate court selection for booking.
+     */
+    public function validateCourtSelection(GymHall $gymHall, array $courtIds, Carbon $date, string $startTime, int $duration): array
+    {
+        $errors = [];
+        
+        // Check if courts exist and belong to this hall
+        $validCourts = GymHallCourt::whereIn('id', $courtIds)
+            ->where('gym_hall_id', $gymHall->id)
+            ->where('is_active', true)
+            ->pluck('id')
+            ->toArray();
+
+        if (count($validCourts) !== count($courtIds)) {
+            $errors[] = 'Einige der ausgewählten Courts sind ungültig oder nicht verfügbar.';
+            return $errors;
+        }
+
+        // Check court availability
+        $dateTime = $date->copy()->setTimeFromTimeString($startTime);
+        foreach ($courtIds as $courtId) {
+            $court = GymHallCourt::find($courtId);
+            if (!$court->isAvailableAt($dateTime, $duration)) {
+                $errors[] = "Court {$court->court_identifier} ist zu dieser Zeit nicht verfügbar.";
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Get comprehensive court schedule for a date range.
+     */
+    public function getCourtSchedule(GymHall $gymHall, Carbon $startDate, Carbon $endDate): array
+    {
+        $schedule = [];
+        $current = $startDate->copy();
+
+        while ($current->lte($endDate)) {
+            $daySchedule = [
+                'date' => $current->toDateString(),
+                'day_name' => $current->format('l'),
+                'is_open' => false,
+                'time_grid' => [],
+                'courts' => []
+            ];
+
+            $dayOfWeek = strtolower($current->format('l'));
+            $operatingHours = $gymHall->operating_hours[$dayOfWeek] ?? null;
+
+            if ($operatingHours && $operatingHours['is_open']) {
+                $daySchedule['is_open'] = true;
+                $daySchedule['operating_hours'] = $operatingHours;
+                $daySchedule['time_grid'] = $this->generateDailyTimeGrid($gymHall, $current);
+                
+                // Get court-specific bookings
+                $courts = $gymHall->activeCourts()->orderBy('sort_order')->get();
+                foreach ($courts as $court) {
+                    $courtBookings = $court->getBookingsForDate($current);
+                    $daySchedule['courts'][] = [
+                        'id' => $court->id,
+                        'identifier' => $court->court_identifier,
+                        'name' => $court->court_name,
+                        'color' => $court->color_code,
+                        'bookings' => $courtBookings->map(function ($booking) {
+                            return [
+                                'id' => $booking->id,
+                                'start_time' => $booking->start_time->format('H:i'),
+                                'end_time' => $booking->end_time->format('H:i'),
+                                'team_name' => $booking->team->name ?? 'Unbekannt',
+                                'status' => $booking->status,
+                                'booking_type' => $booking->booking_type
+                            ];
+                        })->toArray()
+                    ];
+                }
+            }
+
+            $schedule[] = $daySchedule;
+            $current->addDay();
+        }
+
+        return $schedule;
+    }
+
+    /**
+     * Get optimal court assignments for team preferences.
+     */
+    public function getOptimalCourtAssignments(GymHall $gymHall, Carbon $date, int $duration = 30): array
+    {
+        $assignments = [];
+        
+        // Get all time slots for this hall
+        $dayOfWeek = strtolower($date->format('l'));
+        $timeSlots = $gymHall->timeSlots()
+            ->where('day_of_week', $dayOfWeek)
+            ->where('status', 'active')
+            ->where(function ($query) use ($date) {
+                $query->where('valid_from', '<=', $date)
+                      ->where(function ($q) use ($date) {
+                          $q->whereNull('valid_until')
+                            ->orWhere('valid_until', '>=', $date);
+                      });
+            })
+            ->with('team')
+            ->get();
+
+        foreach ($timeSlots as $timeSlot) {
+            if (!$timeSlot->team_id) continue;
+
+            // Get available segments for this time slot
+            $segments = $timeSlot->getAvailableSegments($date);
+            
+            foreach ($segments as $segment) {
+                if (!$segment['is_available']) continue;
+
+                $segmentDateTime = $date->copy()->setTimeFromTimeString($segment['start_time']);
+                $optimalCourts = $gymHall->findOptimalCourtsForTeams(1, $segmentDateTime, $duration);
+                
+                if ($optimalCourts->isNotEmpty()) {
+                    $assignments[] = [
+                        'time_slot_id' => $timeSlot->id,
+                        'team_id' => $timeSlot->team_id,
+                        'team_name' => $timeSlot->team->name ?? 'Unbekannt',
+                        'segment' => $segment,
+                        'recommended_courts' => $optimalCourts->map(function ($court) {
+                            return [
+                                'id' => $court->id,
+                                'identifier' => $court->court_identifier,
+                                'name' => $court->court_name
+                            ];
+                        })->toArray()
+                    ];
+                }
+            }
+        }
+
+        return $assignments;
+    }
+
+    /**
+     * Generate automatic bookings for time slots with 30-min flexibility.
+     */
+    public function generateFlexibleBookings(GymTimeSlot $timeSlot, Carbon $startDate, Carbon $endDate): int
+    {
+        if (!$timeSlot->is_recurring || !$timeSlot->team_id || !$timeSlot->supports_30_min_slots) {
+            return 0;
+        }
+
+        $created = 0;
+        $current = $startDate->copy();
+
+        while ($current->lte($endDate)) {
+            if (!$timeSlot->isAvailableForDate($current)) {
+                $current->addDay();
+                continue;
+            }
+
+            // Get available segments for this day
+            $segments = $timeSlot->getAvailableSegments($current);
+            
+            // Find the best segment (prefer earlier times)
+            $bestSegment = collect($segments)->first(function ($segment) {
+                return $segment['is_available'];
+            });
+
+            if ($bestSegment && !$timeSlot->hasBookingForDate($current)) {
+                try {
+                    $booking = $this->createMultiCourtBooking([
+                        'gym_time_slot_id' => $timeSlot->id,
+                        'team_id' => $timeSlot->team_id,
+                        'booked_by_user_id' => $timeSlot->assigned_by ?: 1, // Fallback to system user
+                        'booking_date' => $current->toDateString(),
+                        'start_time' => $bestSegment['start_time'],
+                        'duration_minutes' => $bestSegment['duration_minutes'],
+                        'court_ids' => $timeSlot->hasPreferredCourts() 
+                            ? array_slice($timeSlot->getPreferredCourts(), 0, 1)
+                            : []
+                    ]);
+                    
+                    $created++;
+                } catch (\Exception $e) {
+                    // Log error but continue with next date
+                    \Log::warning("Failed to create flexible booking for time slot {$timeSlot->id} on {$current->toDateString()}: " . $e->getMessage());
+                }
+            }
+
+            $current->addDay();
+        }
+
+        return $created;
     }
 }

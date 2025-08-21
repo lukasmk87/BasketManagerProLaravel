@@ -25,6 +25,12 @@ class GymTimeSlot extends Model
         'day_of_week',
         'custom_times',
         'uses_custom_times',
+        'time_slot_segments',
+        'preferred_courts',
+        'min_booking_duration_minutes',
+        'booking_increment_minutes',
+        'allows_partial_court',
+        'supports_30_min_slots',
         'start_time',
         'end_time',
         'duration_minutes',
@@ -49,6 +55,12 @@ class GymTimeSlot extends Model
         'uuid' => 'string',
         'custom_times' => 'array',
         'uses_custom_times' => 'boolean',
+        'time_slot_segments' => 'array',
+        'preferred_courts' => 'array',
+        'min_booking_duration_minutes' => 'integer',
+        'booking_increment_minutes' => 'integer',
+        'allows_partial_court' => 'boolean',
+        'supports_30_min_slots' => 'boolean',
         'start_time' => 'datetime:H:i',
         'end_time' => 'datetime:H:i',
         'duration_minutes' => 'integer',
@@ -167,6 +179,24 @@ class GymTimeSlot extends Model
     public function scopeAllowsSubstitution($query)
     {
         return $query->where('allows_substitution', true);
+    }
+
+    public function scopeSupports30MinSlots($query)
+    {
+        return $query->where('supports_30_min_slots', true);
+    }
+
+    public function scopeAllowsPartialCourt($query)
+    {
+        return $query->where('allows_partial_court', true);
+    }
+
+    public function scopeWithPreferredCourts($query, array $courtIds)
+    {
+        return $query->where(function($q) use ($courtIds) {
+            $q->whereNull('preferred_courts')
+              ->orWhereJsonContains('preferred_courts', $courtIds);
+        });
     }
 
     // ============================
@@ -383,6 +413,250 @@ class GymTimeSlot extends Model
                 'metadata' => $metadata,
             ]);
         }
+    }
+
+    // ============================
+    // 30-MIN SLOTS & FLEXIBLE BOOKING METHODS  
+    // ============================
+
+    public function getAvailableSegments(Carbon $date): array
+    {
+        $dayOfWeek = strtolower($date->format('l'));
+        
+        // Get times for this specific day (either custom or default)
+        $times = $this->getTimesForDay($dayOfWeek);
+        
+        if (!$times || !$times['start_time'] || !$times['end_time']) {
+            return [];
+        }
+
+        $startTime = Carbon::createFromTimeString($times['start_time']);
+        $endTime = Carbon::createFromTimeString($times['end_time']);
+        $increment = $this->booking_increment_minutes ?: 30;
+        
+        $segments = [];
+        $current = $startTime->copy();
+
+        while ($current->copy()->addMinutes($increment)->lte($endTime)) {
+            $segmentStart = $current->copy();
+            $segmentEnd = $current->copy()->addMinutes($increment);
+            
+            $segments[] = [
+                'start_time' => $segmentStart->format('H:i'),
+                'end_time' => $segmentEnd->format('H:i'),
+                'duration_minutes' => $increment,
+                'segment_id' => $segmentStart->format('Hi') . '-' . $segmentEnd->format('Hi'),
+                'is_available' => $this->isSegmentAvailable($date, $segmentStart->format('H:i'), $increment)
+            ];
+            
+            $current->addMinutes($increment);
+        }
+
+        return $segments;
+    }
+
+    public function canBookAtTime(Carbon $date, string $startTime, int $duration): bool
+    {
+        $dayOfWeek = strtolower($date->format('l'));
+        
+        // Check if this time slot is available for this day
+        if (!$this->isAvailableForDate($date)) {
+            return false;
+        }
+
+        // Get allowed times for this day
+        $allowedTimes = $this->getTimesForDay($dayOfWeek);
+        
+        if (!$allowedTimes) {
+            return false;
+        }
+
+        // Validate time is within allowed range
+        $requestStart = Carbon::createFromTimeString($startTime);
+        $requestEnd = $requestStart->copy()->addMinutes($duration);
+        $allowedStart = Carbon::createFromTimeString($allowedTimes['start_time']);
+        $allowedEnd = Carbon::createFromTimeString($allowedTimes['end_time']);
+
+        if ($requestStart->lt($allowedStart) || $requestEnd->gt($allowedEnd)) {
+            return false;
+        }
+
+        // Validate duration and increment
+        $increment = $this->booking_increment_minutes ?: 30;
+        $minDuration = $this->min_booking_duration_minutes ?: 30;
+        
+        if ($duration < $minDuration || $duration % $increment !== 0) {
+            return false;
+        }
+
+        // Check if start time is on valid increment (00 or 30 minutes)
+        if ($requestStart->minute % $increment !== 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function getTimeGridForDay(string $dayOfWeek): array
+    {
+        $times = $this->getTimesForDay($dayOfWeek);
+        
+        if (!$times || !$times['start_time'] || !$times['end_time']) {
+            return [];
+        }
+
+        $startTime = Carbon::createFromTimeString($times['start_time']);
+        $endTime = Carbon::createFromTimeString($times['end_time']);
+        $increment = $this->booking_increment_minutes ?: 30;
+        
+        $grid = [];
+        $current = $startTime->copy();
+
+        while ($current->copy()->addMinutes($increment)->lte($endTime)) {
+            $grid[] = [
+                'start_time' => $current->format('H:i'),
+                'end_time' => $current->copy()->addMinutes($increment)->format('H:i'),
+                'duration_minutes' => $increment,
+                'time_key' => $current->format('Hi')
+            ];
+            
+            $current->addMinutes($increment);
+        }
+
+        return $grid;
+    }
+
+    public function validateBookingTime(Carbon $date, string $startTime, string $endTime): array
+    {
+        $errors = [];
+        $dayOfWeek = strtolower($date->format('l'));
+        
+        try {
+            $start = Carbon::createFromTimeString($startTime);
+            $end = Carbon::createFromTimeString($endTime);
+            $duration = $start->diffInMinutes($end);
+            
+            // Check if booking is possible for this time slot
+            if (!$this->canBookAtTime($date, $startTime, $duration)) {
+                $errors[] = 'Buchung zu dieser Zeit nicht möglich für dieses Zeitfenster.';
+            }
+            
+            // Additional custom time validations
+            $allowedTimes = $this->getTimesForDay($dayOfWeek);
+            if ($allowedTimes) {
+                $allowedStart = Carbon::createFromTimeString($allowedTimes['start_time']);
+                $allowedEnd = Carbon::createFromTimeString($allowedTimes['end_time']);
+                
+                if ($start->lt($allowedStart)) {
+                    $errors[] = "Startzeit liegt vor der erlaubten Zeit ({$allowedTimes['start_time']}).";
+                }
+                
+                if ($end->gt($allowedEnd)) {
+                    $errors[] = "Endzeit liegt nach der erlaubten Zeit ({$allowedTimes['end_time']}).";
+                }
+            }
+            
+        } catch (\Exception $e) {
+            $errors[] = 'Ungültiges Zeitformat.';
+        }
+
+        return $errors;
+    }
+
+    private function isSegmentAvailable(Carbon $date, string $startTime, int $duration): bool
+    {
+        $dateTimeString = $date->toDateString() . ' ' . $startTime;
+        $segmentDateTime = Carbon::createFromFormat('Y-m-d H:i', $dateTimeString);
+        
+        // Check if segment conflicts with existing bookings
+        $conflictingBookings = $this->bookings()
+            ->whereDate('booking_date', $date)
+            ->where(function ($query) use ($segmentDateTime, $duration) {
+                $segmentEnd = $segmentDateTime->copy()->addMinutes($duration);
+                $query->where(function ($q) use ($segmentDateTime, $segmentEnd) {
+                    $q->where('start_time', '<', $segmentEnd->format('H:i:s'))
+                      ->where('end_time', '>', $segmentDateTime->format('H:i:s'));
+                });
+            })
+            ->whereIn('status', ['reserved', 'confirmed'])
+            ->exists();
+
+        return !$conflictingBookings;
+    }
+
+    // ============================
+    // COURT PREFERENCE METHODS
+    // ============================
+
+    public function getPreferredCourts(): array
+    {
+        return $this->preferred_courts ?: [];
+    }
+
+    public function hasPreferredCourts(): bool
+    {
+        return !empty($this->preferred_courts);
+    }
+
+    public function addPreferredCourt(int $courtId): void
+    {
+        $preferredCourts = $this->getPreferredCourts();
+        
+        if (!in_array($courtId, $preferredCourts)) {
+            $preferredCourts[] = $courtId;
+            $this->update(['preferred_courts' => $preferredCourts]);
+        }
+    }
+
+    public function removePreferredCourt(int $courtId): void
+    {
+        $preferredCourts = $this->getPreferredCourts();
+        $filteredCourts = array_filter($preferredCourts, fn($id) => $id !== $courtId);
+        
+        $this->update(['preferred_courts' => array_values($filteredCourts)]);
+    }
+
+    public function isCourtPreferred(int $courtId): bool
+    {
+        return in_array($courtId, $this->getPreferredCourts());
+    }
+
+    // ============================
+    // ENHANCED BOOKING METHODS
+    // ============================
+
+    public function createFlexibleBookingForDate(
+        Carbon $date, 
+        Team $team, 
+        User $bookedBy, 
+        string $startTime, 
+        int $durationMinutes,
+        array $courtIds = []
+    ): GymBooking {
+        $endTime = Carbon::createFromTimeString($startTime)->addMinutes($durationMinutes);
+
+        $bookingData = [
+            'uuid' => Str::uuid(),
+            'team_id' => $team->id,
+            'booked_by_user_id' => $bookedBy->id,
+            'booking_date' => $date,
+            'start_time' => $startTime,
+            'end_time' => $endTime->format('H:i'),
+            'duration_minutes' => $durationMinutes,
+            'status' => 'reserved',
+            'booking_type' => 'regular',
+            'court_ids' => $courtIds,
+            'is_partial_court' => count($courtIds) < $this->gymHall->court_count,
+        ];
+
+        $booking = $this->bookings()->create($bookingData);
+
+        // Attach courts if specified
+        if (!empty($courtIds)) {
+            $booking->courts()->attach($courtIds);
+        }
+
+        return $booking;
     }
 
     // ============================

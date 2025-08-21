@@ -23,6 +23,12 @@ class GymHall extends Model implements HasMedia
         'club_id',
         'name',
         'slug',
+        'hall_type',
+        'court_count',
+        'court_configuration',
+        'supports_parallel_bookings',
+        'min_booking_duration_minutes',
+        'booking_increment_minutes',
         'description',
         'address_street',
         'address_city',
@@ -49,6 +55,11 @@ class GymHall extends Model implements HasMedia
 
     protected $casts = [
         'uuid' => 'string',
+        'court_count' => 'integer',
+        'court_configuration' => 'array',
+        'supports_parallel_bookings' => 'boolean',
+        'min_booking_duration_minutes' => 'integer',
+        'booking_increment_minutes' => 'integer',
         'capacity' => 'integer',
         'facilities' => 'array',
         'equipment' => 'array',
@@ -96,6 +107,16 @@ class GymHall extends Model implements HasMedia
         return $this->timeSlots()->where('status', 'active');
     }
 
+    public function courts(): HasMany
+    {
+        return $this->hasMany(GymHallCourt::class);
+    }
+
+    public function activeCourts(): HasMany
+    {
+        return $this->courts()->active();
+    }
+
     public function bookings()
     {
         return $this->hasManyThrough(
@@ -125,6 +146,21 @@ class GymHall extends Model implements HasMedia
     public function scopeWithCapacityMin($query, $minCapacity)
     {
         return $query->where('capacity', '>=', $minCapacity);
+    }
+
+    public function scopeSupportsParallelBookings($query)
+    {
+        return $query->where('supports_parallel_bookings', true);
+    }
+
+    public function scopeOfType($query, $hallType)
+    {
+        return $query->where('hall_type', $hallType);
+    }
+
+    public function scopeWithMinCourts($query, $minCourts)
+    {
+        return $query->where('court_count', '>=', $minCourts);
     }
 
     // ============================
@@ -172,6 +208,37 @@ class GymHall extends Model implements HasMedia
         if (empty($this->attributes['slug'])) {
             $this->attributes['slug'] = Str::slug($value);
         }
+    }
+
+    public function getIsMultiCourtAttribute(): bool
+    {
+        return $this->court_count > 1;
+    }
+
+    public function getSupportsFlexibleBookingsAttribute(): bool
+    {
+        return $this->supports_parallel_bookings && $this->is_multi_court;
+    }
+
+    public function getHallTypeDisplayAttribute(): string
+    {
+        return match($this->hall_type) {
+            'single' => 'Einfachhalle',
+            'double' => 'Doppelhalle',
+            'triple' => 'Dreifachhalle',
+            'multi' => 'Mehrfachhalle',
+            default => ucfirst($this->hall_type)
+        };
+    }
+
+    public function getMinBookingDurationAttribute(): int
+    {
+        return $this->min_booking_duration_minutes ?: 30;
+    }
+
+    public function getBookingIncrementAttribute(): int
+    {
+        return $this->booking_increment_minutes ?: 30;
     }
 
     // ============================
@@ -261,6 +328,177 @@ class GymHall extends Model implements HasMedia
             ->count();
 
         return round(($bookedSlots / $totalSlots) * 100, 1);
+    }
+
+    // ============================
+    // COURT MANAGEMENT METHODS
+    // ============================
+
+    public function getAvailableCourtsByTime(\Carbon\Carbon $dateTime, int $duration = 30): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->activeCourts()
+            ->get()
+            ->filter(function ($court) use ($dateTime, $duration) {
+                return $court->isAvailableAt($dateTime, $duration);
+            });
+    }
+
+    public function generateTimeGrid(\Carbon\Carbon $date, int $slotDuration = 30): array
+    {
+        $dayOfWeek = strtolower($date->format('l'));
+        
+        // Get operating hours for the day
+        $operatingHours = $this->operating_hours[$dayOfWeek] ?? null;
+        
+        if (!$operatingHours || !$operatingHours['is_open']) {
+            return [];
+        }
+
+        $startTime = \Carbon\Carbon::createFromTimeString($operatingHours['open_time']);
+        $endTime = \Carbon\Carbon::createFromTimeString($operatingHours['close_time']);
+        
+        $timeGrid = [];
+        $current = $startTime->copy();
+
+        while ($current->copy()->addMinutes($slotDuration)->lte($endTime)) {
+            $slotStart = $current->copy();
+            $slotEnd = $current->copy()->addMinutes($slotDuration);
+            
+            $slotData = [
+                'start_time' => $slotStart->format('H:i'),
+                'end_time' => $slotEnd->format('H:i'),
+                'duration' => $slotDuration,
+                'courts' => []
+            ];
+
+            // Check availability for each court
+            foreach ($this->activeCourts()->orderBy('sort_order')->get() as $court) {
+                $slotDateTime = $date->copy()->setTimeFrom($slotStart);
+                $isAvailable = $court->isAvailableAt($slotDateTime, $slotDuration);
+                
+                $slotData['courts'][] = [
+                    'court_id' => $court->id,
+                    'court_identifier' => $court->court_identifier,
+                    'court_name' => $court->court_name,
+                    'is_available' => $isAvailable,
+                    'bookings' => $isAvailable ? [] : $court->getConflictingBookings($slotDateTime, $slotDuration)->toArray()
+                ];
+            }
+
+            $timeGrid[] = $slotData;
+            $current->addMinutes($slotDuration);
+        }
+
+        return $timeGrid;
+    }
+
+    public function canAccommodateTeams(int $teamCount, \Carbon\Carbon $dateTime, int $duration = 30): bool
+    {
+        if (!$this->supports_parallel_bookings) {
+            return $teamCount <= 1;
+        }
+
+        $availableCourts = $this->getAvailableCourtsByTime($dateTime, $duration);
+        return $availableCourts->count() >= $teamCount;
+    }
+
+    public function findOptimalCourtsForTeams(int $teamCount, \Carbon\Carbon $dateTime, int $duration = 30): \Illuminate\Database\Eloquent\Collection
+    {
+        $availableCourts = $this->getAvailableCourtsByTime($dateTime, $duration);
+        
+        if ($availableCourts->count() < $teamCount) {
+            return collect();
+        }
+
+        // Return courts ordered by preference (sort order)
+        return $availableCourts->sortBy('sort_order')->take($teamCount);
+    }
+
+    public function validateBookingTime(\Carbon\Carbon $dateTime, int $duration): array
+    {
+        $errors = [];
+        
+        // Check if duration matches booking increment
+        if ($duration % $this->booking_increment !== 0) {
+            $errors[] = "Buchungsdauer muss ein Vielfaches von {$this->booking_increment} Minuten sein.";
+        }
+        
+        // Check minimum duration
+        if ($duration < $this->min_booking_duration) {
+            $errors[] = "Mindestbuchungsdauer beträgt {$this->min_booking_duration} Minuten.";
+        }
+        
+        // Check if time is on valid increment (00 or 30 minutes)
+        $minutes = $dateTime->minute;
+        if ($minutes % $this->booking_increment !== 0) {
+            $errors[] = "Startzeit muss auf einem {$this->booking_increment}-Minuten-Raster liegen.";
+        }
+        
+        // Check if within operating hours
+        $dayOfWeek = strtolower($dateTime->format('l'));
+        $operatingHours = $this->operating_hours[$dayOfWeek] ?? null;
+        
+        if (!$operatingHours || !$operatingHours['is_open']) {
+            $errors[] = "Halle ist an diesem Tag nicht geöffnet.";
+        } elseif (isset($operatingHours['open_time'], $operatingHours['close_time'])) {
+            $openTime = \Carbon\Carbon::createFromTimeString($operatingHours['open_time']);
+            $closeTime = \Carbon\Carbon::createFromTimeString($operatingHours['close_time']);
+            $endTime = $dateTime->copy()->addMinutes($duration);
+            
+            if ($dateTime->format('H:i') < $openTime->format('H:i')) {
+                $errors[] = "Startzeit liegt vor Öffnungszeit ({$openTime->format('H:i')}).";
+            }
+            
+            if ($endTime->format('H:i') > $closeTime->format('H:i')) {
+                $errors[] = "Endzeit liegt nach Schließzeit ({$closeTime->format('H:i')}).";
+            }
+        }
+        
+        return $errors;
+    }
+
+    public function initializeDefaultCourts(): void
+    {
+        if ($this->courts()->count() > 0) {
+            return; // Already has courts
+        }
+
+        $courtsToCreate = match($this->hall_type) {
+            'single' => [
+                ['identifier' => '1', 'name' => 'Hauptfeld', 'color' => '#3B82F6']
+            ],
+            'double' => [
+                ['identifier' => 'A', 'name' => 'Feld A', 'color' => '#3B82F6'],
+                ['identifier' => 'B', 'name' => 'Feld B', 'color' => '#10B981']
+            ],
+            'triple' => [
+                ['identifier' => 'A', 'name' => 'Feld A', 'color' => '#3B82F6'],
+                ['identifier' => 'B', 'name' => 'Feld B', 'color' => '#10B981'],
+                ['identifier' => 'C', 'name' => 'Feld C', 'color' => '#F59E0B']
+            ],
+            'multi' => array_map(function($i) {
+                $colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316'];
+                return [
+                    'identifier' => (string)($i + 1),
+                    'name' => 'Feld ' . ($i + 1),
+                    'color' => $colors[$i % count($colors)]
+                ];
+            }, range(0, $this->court_count - 1)),
+            default => []
+        };
+
+        foreach ($courtsToCreate as $index => $courtData) {
+            $this->courts()->create([
+                'uuid' => Str::uuid(),
+                'court_identifier' => $courtData['identifier'],
+                'court_name' => $courtData['name'],
+                'court_type' => 'full',
+                'color_code' => $courtData['color'],
+                'is_active' => true,
+                'sort_order' => $index + 1,
+                'max_capacity' => $this->capacity
+            ]);
+        }
     }
 
     // ============================

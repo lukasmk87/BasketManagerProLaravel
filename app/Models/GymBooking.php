@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -48,6 +49,9 @@ class GymBooking extends Model
         'special_requirements',
         'notifications_sent',
         'metadata',
+        'court_ids',
+        'is_partial_court',
+        'court_percentage',
     ];
 
     protected $casts = [
@@ -66,6 +70,9 @@ class GymBooking extends Model
         'participant_list' => 'array',
         'notifications_sent' => 'array',
         'metadata' => 'array',
+        'court_ids' => 'array',
+        'is_partial_court' => 'boolean',
+        'court_percentage' => 'decimal:2',
     ];
 
     protected static function boot()
@@ -126,6 +133,12 @@ class GymBooking extends Model
     public function requests(): HasMany
     {
         return $this->hasMany(GymBookingRequest::class);
+    }
+
+    public function courts(): BelongsToMany
+    {
+        return $this->belongsToMany(GymHallCourt::class, 'gym_booking_courts')
+            ->withTimestamps();
     }
 
     /**
@@ -196,6 +209,30 @@ class GymBooking extends Model
                     ->where('booking_date', '>=', now()->toDateString());
     }
 
+    public function scopeForCourt($query, $courtId)
+    {
+        return $query->whereHas('courts', function($q) use ($courtId) {
+            $q->where('gym_hall_courts.id', $courtId);
+        });
+    }
+
+    public function scopeUsingCourts($query, array $courtIds)
+    {
+        return $query->whereHas('courts', function($q) use ($courtIds) {
+            $q->whereIn('gym_hall_courts.id', $courtIds);
+        });
+    }
+
+    public function scopePartialCourt($query)
+    {
+        return $query->where('is_partial_court', true);
+    }
+
+    public function scopeFullCourt($query)
+    {
+        return $query->where('is_partial_court', false);
+    }
+
     // ============================
     // ACCESSORS & MUTATORS
     // ============================
@@ -247,6 +284,43 @@ class GymBooking extends Model
     public function getHasPendingRequestsAttribute(): bool
     {
         return $this->pendingRequests()->exists();
+    }
+
+    public function getHasCourtsAttribute(): bool
+    {
+        return $this->courts()->exists();
+    }
+
+    public function getCourtNamesAttribute(): string
+    {
+        if (!$this->has_courts) {
+            return 'Alle Courts';
+        }
+        
+        return $this->courts->pluck('court_name')->join(', ');
+    }
+
+    public function getCourtIdentifiersAttribute(): string
+    {
+        if (!$this->has_courts) {
+            return 'Gesamt';
+        }
+        
+        return $this->courts->pluck('court_identifier')->join(', ');
+    }
+
+    public function getDisplayCourtInfoAttribute(): string
+    {
+        if (!$this->has_courts) {
+            return $this->gymHall?->name . ' (Gesamt)';
+        }
+        
+        return $this->gymHall?->name . ' - ' . $this->court_identifiers;
+    }
+
+    public function getIsMultiCourtBookingAttribute(): bool
+    {
+        return $this->courts()->count() > 1;
     }
 
     // ============================
@@ -412,7 +486,145 @@ class GymBooking extends Model
         $hourlyRate = $this->gymTimeSlot->cost_per_hour ?? $this->gymTimeSlot->gymHall->hourly_rate ?? 0;
         $hours = $this->duration_minutes / 60;
         
-        return round($hourlyRate * $hours, 2);
+        // Adjust cost based on court percentage if partial court
+        $courtMultiplier = $this->is_partial_court ? ($this->court_percentage / 100) : 1.0;
+        
+        return round($hourlyRate * $hours * $courtMultiplier, 2);
+    }
+
+    // ============================
+    // COURT MANAGEMENT METHODS
+    // ============================
+
+    public function assignCourts(array $courtIds): bool
+    {
+        try {
+            // Validate courts belong to the same gym hall
+            $validCourts = GymHallCourt::whereIn('id', $courtIds)
+                ->where('gym_hall_id', $this->gymTimeSlot->gym_hall_id)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->toArray();
+
+            if (count($validCourts) !== count($courtIds)) {
+                return false; // Some courts are invalid
+            }
+
+            // Check for conflicts with existing bookings
+            if ($this->hasCourtConflicts($courtIds)) {
+                return false;
+            }
+
+            // Sync courts
+            $this->courts()->sync($courtIds);
+            
+            // Update booking data
+            $this->update([
+                'court_ids' => $courtIds,
+                'is_partial_court' => count($courtIds) < $this->gymTimeSlot->gymHall->court_count,
+                'court_percentage' => (count($courtIds) / max($this->gymTimeSlot->gymHall->court_count, 1)) * 100
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public function hasCourtConflict(GymBooking $otherBooking): bool
+    {
+        if ($this->id === $otherBooking->id) {
+            return false;
+        }
+
+        // Check date and time overlap
+        if (!$this->hasTimeOverlap($otherBooking)) {
+            return false;
+        }
+
+        // Check court overlap
+        $myCourts = $this->courts->pluck('id')->toArray();
+        $otherCourts = $otherBooking->courts->pluck('id')->toArray();
+
+        return !empty(array_intersect($myCourts, $otherCourts));
+    }
+
+    private function hasTimeOverlap(GymBooking $otherBooking): bool
+    {
+        if ($this->booking_date->ne($otherBooking->booking_date)) {
+            return false;
+        }
+
+        $myStart = $this->start_time;
+        $myEnd = $this->end_time;
+        $otherStart = $otherBooking->start_time;
+        $otherEnd = $otherBooking->end_time;
+
+        return $myStart->lt($otherEnd) && $myEnd->gt($otherStart);
+    }
+
+    private function hasCourtConflicts(array $courtIds): bool
+    {
+        $conflictingBookings = GymBooking::whereHas('courts', function ($query) use ($courtIds) {
+                $query->whereIn('gym_hall_courts.id', $courtIds);
+            })
+            ->where('booking_date', $this->booking_date)
+            ->where('id', '!=', $this->id)
+            ->where(function ($query) {
+                $myStart = $this->start_time;
+                $myEnd = $this->end_time;
+                $query->where(function ($q) use ($myStart, $myEnd) {
+                    $q->where('start_time', '<', $myEnd)
+                      ->where('end_time', '>', $myStart);
+                });
+            })
+            ->whereIn('status', ['reserved', 'confirmed'])
+            ->exists();
+
+        return $conflictingBookings;
+    }
+
+    public function getAvailableCourts(): \Illuminate\Database\Eloquent\Collection
+    {
+        $gymHall = $this->gymTimeSlot->gymHall;
+        
+        return $gymHall->getAvailableCourtsByTime(
+            $this->booking_date->setTimeFrom($this->start_time),
+            $this->duration_minutes
+        );
+    }
+
+    public function canUseAllCourts(): bool
+    {
+        $gymHall = $this->gymTimeSlot->gymHall;
+        return $gymHall->supports_parallel_bookings;
+    }
+
+    public function optimizeCourtSelection(): array
+    {
+        if (!$this->canUseAllCourts()) {
+            return [];
+        }
+
+        $availableCourts = $this->getAvailableCourts();
+        $preferredCourts = $this->gymTimeSlot->getPreferredCourts();
+
+        if (empty($preferredCourts)) {
+            // Return first available court if no preferences
+            return $availableCourts->take(1)->pluck('id')->toArray();
+        }
+
+        // Filter by preferences and availability
+        $optimalCourts = $availableCourts->filter(function ($court) use ($preferredCourts) {
+            return in_array($court->id, $preferredCourts);
+        });
+
+        if ($optimalCourts->isEmpty()) {
+            // Fall back to any available court
+            return $availableCourts->take(1)->pluck('id')->toArray();
+        }
+
+        return $optimalCourts->pluck('id')->toArray();
     }
 
     // ============================

@@ -326,6 +326,57 @@ export function useGymBookings() {
         }
     }
 
+    // ============================
+    // MULTI-COURT BOOKING METHODS
+    // ============================
+
+    const createMultiCourtBooking = async (bookingData) => {
+        try {
+            const response = await axios.post('/api/gym-schedule/multi-court-booking', bookingData)
+            
+            if (response.data.success) {
+                bookings.value.push(response.data.data)
+                return response.data.data
+            } else {
+                throw new Error(response.data.message || 'Fehler beim Erstellen der Multi-Court-Buchung')
+            }
+        } catch (err) {
+            error.value = err.response?.data?.message || err.message
+            console.error('Error creating multi-court booking:', err)
+            throw err
+        }
+    }
+
+    const updateBookingCourts = async (bookingId, courtIds) => {
+        try {
+            const response = await axios.put(`/api/v2/gym-bookings/${bookingId}/courts`, {
+                court_ids: courtIds
+            })
+            
+            const index = bookings.value.findIndex(b => b.id === bookingId)
+            if (index !== -1) {
+                bookings.value[index] = response.data.data
+            }
+            
+            return response.data.data
+        } catch (err) {
+            error.value = err.response?.data?.message || err.message
+            console.error('Error updating booking courts:', err)
+            throw err
+        }
+    }
+
+    const getBookingCourtNames = (booking) => {
+        if (!booking.courts || booking.courts.length === 0) {
+            return 'Alle Courts'
+        }
+        return booking.courts.map(court => `${court.court_identifier} - ${court.court_name}`).join(', ')
+    }
+
+    const canBookMultipleCourts = (gymHall) => {
+        return gymHall?.supports_parallel_bookings && gymHall?.court_count > 1
+    }
+
     return {
         // State
         bookings,
@@ -360,6 +411,12 @@ export function useGymBookings() {
         getBookingStatusText,
         calculateBookingDuration,
         formatBookingTime,
-        formatBookingDate
+        formatBookingDate,
+
+        // Multi-Court Methods
+        createMultiCourtBooking,
+        updateBookingCourts,
+        getBookingCourtNames,
+        canBookMultipleCourts
     }
 }

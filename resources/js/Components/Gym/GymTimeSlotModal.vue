@@ -136,9 +136,107 @@
                         </div>
                     </div>
 
+                    <!-- Flexible Booking Settings -->
+                    <div v-if="selectedHall?.supports_parallel_bookings || selectedHall?.court_count > 1">
+                        <h4 class="font-medium text-gray-900 mb-4">Flexible Buchungsoptionen</h4>
+                        <div class="space-y-4">
+                            <!-- Court Preferences -->
+                            <div v-if="availableCourts.length > 1">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Bevorzugte Courts (optional)</label>
+                                <div class="space-y-2">
+                                    <div
+                                        v-for="court in availableCourts"
+                                        :key="court.id"
+                                        class="flex items-center space-x-3 p-2 border rounded"
+                                        :class="[
+                                            form.preferred_courts.includes(court.id) 
+                                                ? 'border-blue-500 bg-blue-50' 
+                                                : 'border-gray-200'
+                                        ]"
+                                    >
+                                        <input
+                                            :id="`pref-court-${court.id}`"
+                                            v-model="form.preferred_courts"
+                                            :value="court.id"
+                                            type="checkbox"
+                                            class="rounded border-gray-300 text-blue-600 focus:border-blue-300 focus:ring focus:ring-blue-200"
+                                        />
+                                        <div 
+                                            class="w-3 h-3 rounded"
+                                            :style="{ backgroundColor: court.color_code }"
+                                        ></div>
+                                        <label :for="`pref-court-${court.id}`" class="flex-1 cursor-pointer text-sm">
+                                            {{ court.court_identifier }} - {{ court.court_name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Teams können bevorzugte Courts automatisch zugewiesen bekommen, wenn verfügbar.
+                                </p>
+                            </div>
+
+                            <!-- 30-Min Slot Support -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="flex items-center">
+                                        <input
+                                            v-model="form.supports_30_min_slots"
+                                            type="checkbox"
+                                            class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
+                                        />
+                                        <span class="ml-2 text-sm text-gray-700">30-Minuten-Slots unterstützen</span>
+                                    </label>
+                                    <p class="mt-1 text-xs text-gray-500 ml-6">
+                                        Ermöglicht flexible Buchungen in 30-Min-Schritten
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="flex items-center">
+                                        <input
+                                            v-model="form.allows_partial_court"
+                                            type="checkbox"
+                                            class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
+                                        />
+                                        <span class="ml-2 text-sm text-gray-700">Teilcourt-Buchungen erlauben</span>
+                                    </label>
+                                    <p class="mt-1 text-xs text-gray-500 ml-6">
+                                        Teams können nur einzelne Courts buchen
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Booking Duration Settings -->
+                            <div v-if="form.supports_30_min_slots" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Mindestbuchungsdauer (Min)</label>
+                                    <select
+                                        v-model.number="form.min_booking_duration_minutes"
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                    >
+                                        <option :value="15">15 Minuten</option>
+                                        <option :value="30">30 Minuten</option>
+                                        <option :value="60">60 Minuten</option>
+                                        <option :value="90">90 Minuten</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Buchungsraster (Min)</label>
+                                    <select
+                                        v-model.number="form.booking_increment_minutes"
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                    >
+                                        <option :value="15">15 Minuten</option>
+                                        <option :value="30">30 Minuten</option>
+                                        <option :value="60">60 Minuten</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Settings -->
                     <div>
-                        <h4 class="font-medium text-gray-900 mb-4">Einstellungen</h4>
+                        <h4 class="font-medium text-gray-900 mb-4">Allgemeine Einstellungen</h4>
                         <div class="space-y-3">
                             <label class="flex items-center">
                                 <input
@@ -235,7 +333,11 @@ import DialogModal from '@/Components/DialogModal.vue'
 const props = defineProps({
     show: Boolean,
     timeSlot: Object,
-    gymHall: Object
+    gymHall: Object,
+    availableCourts: {
+        type: Array,
+        default: () => []
+    }
 })
 
 const emit = defineEmits(['close', 'updated'])
@@ -254,7 +356,13 @@ const form = ref({
     allows_substitution: true,
     max_participants: null,
     description: '',
-    slot_type: 'training'
+    slot_type: 'training',
+    // New flexible booking fields
+    preferred_courts: [],
+    supports_30_min_slots: true,
+    allows_partial_court: false,
+    min_booking_duration_minutes: 30,
+    booking_increment_minutes: 30
 })
 
 const submitting = ref(false)
@@ -275,6 +383,10 @@ const calculatedDuration = computed(() => {
 
 const availableTeams = computed(() => {
     return page.props.user?.teams || []
+})
+
+const selectedHall = computed(() => {
+    return props.gymHall
 })
 
 // Methods
@@ -395,7 +507,12 @@ const resetForm = () => {
         allows_substitution: true,
         max_participants: null,
         description: '',
-        slot_type: 'training'
+        slot_type: 'training',
+        preferred_courts: [],
+        supports_30_min_slots: true,
+        allows_partial_court: false,
+        min_booking_duration_minutes: 30,
+        booking_increment_minutes: 30
     }
     errors.value = []
 }
@@ -416,7 +533,12 @@ watch(() => props.timeSlot, (newTimeSlot) => {
             allows_substitution: newTimeSlot.allows_substitution ?? true,
             max_participants: newTimeSlot.max_participants || null,
             description: newTimeSlot.description || '',
-            slot_type: newTimeSlot.slot_type || 'training'
+            slot_type: newTimeSlot.slot_type || 'training',
+            preferred_courts: newTimeSlot.preferred_courts || [],
+            supports_30_min_slots: newTimeSlot.supports_30_min_slots ?? true,
+            allows_partial_court: newTimeSlot.allows_partial_court ?? false,
+            min_booking_duration_minutes: newTimeSlot.min_booking_duration_minutes || 30,
+            booking_increment_minutes: newTimeSlot.booking_increment_minutes || 30
         }
     } else {
         resetForm()

@@ -550,4 +550,120 @@ class GymHallController extends Controller
             'data' => $requests
         ]);
     }
+
+    /**
+     * Initialize default courts for a gym hall based on its type.
+     */
+    public function initializeCourts(GymHall $gymHall): JsonResponse
+    {
+        $this->authorize('update', $gymHall);
+
+        $gymHall->initializeDefaultCourts();
+
+        $courts = $gymHall->courts()->orderBy('sort_order')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Default courts erfolgreich initialisiert.',
+            'data' => [
+                'gym_hall' => $gymHall->only(['id', 'name', 'hall_type', 'court_count']),
+                'courts' => $courts->map(function ($court) {
+                    return [
+                        'id' => $court->id,
+                        'court_identifier' => $court->court_identifier,
+                        'court_name' => $court->court_name,
+                        'color_code' => $court->color_code,
+                        'is_active' => $court->is_active
+                    ];
+                })
+            ]
+        ]);
+    }
+
+    /**
+     * Get enhanced availability with court-specific information.
+     */
+    public function availabilityWithCourts(Request $request, GymHall $gymHall): JsonResponse
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'include_courts' => 'boolean'
+        ]);
+
+        $this->authorize('view', $gymHall);
+
+        $startDate = Carbon::parse($request->input('start_date'));
+        $endDate = Carbon::parse($request->input('end_date'));
+        $includeCourts = $request->boolean('include_courts', true);
+
+        if ($startDate->diffInDays($endDate) > 30) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datumsbereich darf nicht größer als 30 Tage sein.'
+            ], 400);
+        }
+
+        $gymScheduleService = app(\App\Services\GymScheduleService::class);
+        $schedule = $gymScheduleService->getCourtSchedule($gymHall, $startDate, $endDate);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'gym_hall' => [
+                    'id' => $gymHall->id,
+                    'name' => $gymHall->name,
+                    'hall_type' => $gymHall->hall_type,
+                    'court_count' => $gymHall->court_count,
+                    'supports_parallel_bookings' => $gymHall->supports_parallel_bookings
+                ],
+                'period' => [
+                    'start_date' => $startDate->toDateString(),
+                    'end_date' => $endDate->toDateString(),
+                ],
+                'schedule' => $schedule,
+                'summary' => [
+                    'total_days' => count($schedule),
+                    'total_courts' => $gymHall->courts()->active()->count(),
+                    'supports_multi_booking' => $gymHall->supports_parallel_bookings
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Update gym hall court settings.
+     */
+    public function updateCourtSettings(Request $request, GymHall $gymHall): JsonResponse
+    {
+        $this->authorize('update', $gymHall);
+
+        $validated = $request->validate([
+            'hall_type' => ['sometimes', Rule::in(['single', 'double', 'triple', 'multi'])],
+            'court_count' => ['sometimes', 'integer', 'min:1', 'max:10'],
+            'supports_parallel_bookings' => ['sometimes', 'boolean'],
+            'min_booking_duration_minutes' => ['sometimes', 'integer', 'min:15', 'max:480'],
+            'booking_increment_minutes' => ['sometimes', 'integer', 'in:15,30,60']
+        ]);
+
+        $gymHall->update($validated);
+
+        // If hall type changed and no courts exist, initialize default courts
+        if (isset($validated['hall_type']) && $gymHall->courts()->count() === 0) {
+            $gymHall->initializeDefaultCourts();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Court-Einstellungen erfolgreich aktualisiert.',
+            'data' => [
+                'id' => $gymHall->id,
+                'hall_type' => $gymHall->hall_type,
+                'court_count' => $gymHall->court_count,
+                'supports_parallel_bookings' => $gymHall->supports_parallel_bookings,
+                'min_booking_duration_minutes' => $gymHall->min_booking_duration_minutes,
+                'booking_increment_minutes' => $gymHall->booking_increment_minutes
+            ]
+        ]);
+    }
 }

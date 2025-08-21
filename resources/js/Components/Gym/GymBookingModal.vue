@@ -35,6 +35,15 @@
                                 <div v-if="booking.booked_by_user">
                                     <strong>Gebucht von:</strong> {{ booking.booked_by_user.name }}
                                 </div>
+                                <!-- Court Information -->
+                                <div v-if="booking.court_names">
+                                    <strong>Courts:</strong> {{ booking.court_names }}
+                                </div>
+                                <div v-if="booking.is_partial_court">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        Teilcourt ({{ booking.court_percentage }}%)
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -135,6 +144,80 @@
                                 ></textarea>
                             </div>
 
+                            <!-- Court Selection (if multi-court hall) -->
+                            <div v-if="availableCourts.length > 1">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Courts auswählen</label>
+                                <div class="space-y-2">
+                                    <div
+                                        v-for="court in availableCourts"
+                                        :key="court.id"
+                                        class="flex items-center space-x-3 p-3 border rounded-lg"
+                                        :class="[
+                                            requestForm.court_ids.includes(court.id) 
+                                                ? 'border-blue-500 bg-blue-50' 
+                                                : 'border-gray-200 hover:border-gray-300'
+                                        ]"
+                                    >
+                                        <input
+                                            :id="`court-${court.id}`"
+                                            v-model="requestForm.court_ids"
+                                            :value="court.id"
+                                            type="checkbox"
+                                            class="rounded border-gray-300 text-blue-600 focus:border-blue-300 focus:ring focus:ring-blue-200"
+                                        />
+                                        <div 
+                                            class="w-4 h-4 rounded"
+                                            :style="{ backgroundColor: court.color_code }"
+                                        ></div>
+                                        <label :for="`court-${court.id}`" class="flex-1 cursor-pointer">
+                                            <div class="font-medium text-gray-900">{{ court.court_identifier }} - {{ court.court_name }}</div>
+                                            <div class="text-sm text-gray-500">{{ court.court_type_label }}</div>
+                                        </label>
+                                        <div v-if="court.max_capacity" class="text-xs text-gray-400">
+                                            Max. {{ court.max_capacity }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="mt-2 text-xs text-gray-500">
+                                    Wählen Sie die Courts aus, die Sie benötigen. Leer = alle verfügbaren Courts.
+                                </p>
+                            </div>
+
+                            <!-- Flexible Time Selection -->
+                            <div v-if="supportsFlexibleBooking">
+                                <h5 class="font-medium text-gray-900 mb-3">Flexible Zeitauswahl</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Startzeit</label>
+                                        <select
+                                            v-model="requestForm.start_time"
+                                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                        >
+                                            <option value="">Original-Zeit verwenden</option>
+                                            <option
+                                                v-for="timeSlot in availableTimeSlots"
+                                                :key="timeSlot.start_time"
+                                                :value="timeSlot.start_time"
+                                            >
+                                                {{ timeSlot.start_time }} - {{ timeSlot.end_time }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Dauer (Minuten)</label>
+                                        <select
+                                            v-model="requestForm.duration_minutes"
+                                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                        >
+                                            <option :value="booking.duration_minutes">{{ booking.duration_minutes }} Min (Original)</option>
+                                            <option v-for="duration in availableDurations" :key="duration" :value="duration">
+                                                {{ duration }} Min
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Priorität</label>
                                 <select
@@ -145,6 +228,37 @@
                                     <option value="high">Hoch</option>
                                     <option value="urgent">Dringend</option>
                                 </select>
+                            </div>
+
+                            <!-- Booking Summary -->
+                            <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                                <h6 class="font-medium text-gray-900">Anfrage-Zusammenfassung</h6>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-gray-500">Courts:</span>
+                                        <span class="ml-2 font-medium">{{ selectedCourtNames }}</span>
+                                    </div>
+                                    <div v-if="requestForm.start_time">
+                                        <span class="text-gray-500">Zeit:</span>
+                                        <span class="ml-2 font-medium">{{ requestForm.start_time }}</span>
+                                    </div>
+                                    <div v-if="requestForm.duration_minutes">
+                                        <span class="text-gray-500">Dauer:</span>
+                                        <span class="ml-2 font-medium">{{ requestForm.duration_minutes }} Min</span>
+                                    </div>
+                                    <div v-if="estimatedCost">
+                                        <span class="text-gray-500">Geschätzte Kosten:</span>
+                                        <span class="ml-2 font-medium">{{ estimatedCost }}€</span>
+                                    </div>
+                                </div>
+                                <div v-if="isPartialCourtRequest" class="flex items-center space-x-2">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        Teilcourt-Buchung
+                                    </span>
+                                    <span class="text-xs text-gray-500">
+                                        {{ Math.round((requestForm.court_ids.length / props.availableCourts.length) * 100) }}% der Halle
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="flex justify-end space-x-3">
@@ -272,7 +386,23 @@ import { useGymBookings } from '@/Composables/useGymBookings'
 
 const props = defineProps({
     show: Boolean,
-    booking: Object
+    booking: Object,
+    availableCourts: {
+        type: Array,
+        default: () => []
+    },
+    availableTimeSlots: {
+        type: Array,
+        default: () => []
+    },
+    availableDurations: {
+        type: Array,
+        default: () => [30, 60, 90, 120]
+    },
+    supportsFlexibleBooking: {
+        type: Boolean,
+        default: false
+    }
 })
 
 const emit = defineEmits(['close', 'updated'])
@@ -292,8 +422,19 @@ const submitting = ref(false)
 const requestForm = useForm({
     requesting_team_id: '',
     message: '',
-    priority: 'normal'
+    priority: 'normal',
+    court_ids: [],
+    start_time: '',
+    duration_minutes: null
 })
+
+// Initialize form with booking data
+watch(() => props.booking, (newBooking) => {
+    if (newBooking) {
+        requestForm.duration_minutes = newBooking.duration_minutes
+        requestForm.court_ids = newBooking.court_ids || []
+    }
+}, { immediate: true })
 
 // Computed
 const canRequestBooking = computed(() => {
@@ -348,6 +489,35 @@ const availableActions = computed(() => {
     }
     
     return actions
+})
+
+const selectedCourtNames = computed(() => {
+    if (!requestForm.court_ids.length) return 'Alle verfügbaren Courts'
+    
+    const selectedCourts = props.availableCourts.filter(court => 
+        requestForm.court_ids.includes(court.id)
+    )
+    return selectedCourts.map(court => `${court.court_identifier} - ${court.court_name}`).join(', ')
+})
+
+const isPartialCourtRequest = computed(() => {
+    if (!props.availableCourts.length) return false
+    return requestForm.court_ids.length > 0 && requestForm.court_ids.length < props.availableCourts.length
+})
+
+const estimatedCost = computed(() => {
+    if (!props.booking?.cost) return null
+    
+    let multiplier = 1
+    if (isPartialCourtRequest.value && requestForm.court_ids.length > 0) {
+        multiplier = requestForm.court_ids.length / props.availableCourts.length
+    }
+    
+    if (requestForm.duration_minutes && props.booking.duration_minutes) {
+        multiplier *= requestForm.duration_minutes / props.booking.duration_minutes
+    }
+    
+    return (props.booking.cost * multiplier).toFixed(2)
 })
 
 // Methods
