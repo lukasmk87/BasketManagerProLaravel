@@ -404,6 +404,12 @@ const submitForm = async () => {
     errors.value = []
     
     try {
+        // Validate gym hall ID for updates
+        if (props.gymHall && (!props.gymHall.id || props.gymHall.id === undefined)) {
+            errors.value = ['Sporthalle ID fehlt oder ist ungültig. Bitte versuchen Sie es erneut.']
+            return
+        }
+        
         const url = props.gymHall 
             ? `/api/v2/gym-halls/${props.gymHall.id}`
             : '/api/v2/gym-halls'
@@ -417,57 +423,64 @@ const submitForm = async () => {
             equipment: equipmentArray.value
         }
         
-        const response = await fetch(url, {
-            method,
+        // Use axios instead of fetch for better CSRF token handling
+        const response = await window.axios({
+            method: method,
+            url: url,
+            data: data,
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            },
-            body: JSON.stringify(data)
+                'Accept': 'application/json'
+            }
         })
         
-        if (response.ok) {
+        if (response.status >= 200 && response.status < 300) {
             emit('updated')
             emit('close')
             resetForm()
         } else {
-            const errorData = await response.json()
-            errors.value = Object.values(errorData.errors || {}).flat()
+            errors.value = Object.values(response.data.errors || {}).flat()
         }
     } catch (error) {
         console.error('Error saving gym hall:', error)
-        errors.value = ['Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.']
+        if (error.response?.data?.errors) {
+            errors.value = Object.values(error.response.data.errors).flat()
+        } else if (error.response?.data?.message) {
+            errors.value = [error.response.data.message]
+        } else {
+            errors.value = ['Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.']
+        }
     } finally {
         submitting.value = false
     }
 }
 
 const deleteGymHall = async () => {
-    if (!props.gymHall) return
+    if (!props.gymHall || !props.gymHall.id) return
     
     const confirmed = confirm('Möchten Sie diese Sporthalle wirklich löschen? Alle zugehörigen Zeitfenster und Buchungen werden ebenfalls gelöscht.')
     if (!confirmed) return
     
     try {
-        const response = await fetch(`/api/v2/gym-halls/${props.gymHall.id}`, {
-            method: 'DELETE',
+        const response = await window.axios.delete(`/api/v2/gym-halls/${props.gymHall.id}`, {
             headers: {
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                'Accept': 'application/json'
             }
         })
         
-        if (response.ok) {
+        if (response.status >= 200 && response.status < 300) {
             emit('updated')
             emit('close')
         } else {
-            const errorData = await response.json()
-            errors.value = [errorData.message || 'Fehler beim Löschen']
+            errors.value = [response.data.message || 'Fehler beim Löschen']
         }
     } catch (error) {
         console.error('Error deleting gym hall:', error)
-        errors.value = ['Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.']
+        if (error.response?.data?.message) {
+            errors.value = [error.response.data.message]
+        } else {
+            errors.value = ['Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.']
+        }
     }
 }
 

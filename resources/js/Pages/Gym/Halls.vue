@@ -106,12 +106,22 @@
                 </div>
             </div>
         </div>
+
+        <!-- Gym Hall Modal -->
+        <GymHallModal
+            :show="showHallModal"
+            :gym-hall="selectedHall"
+            @close="closeHallModal"
+            @updated="refreshData"
+        />
     </AppLayout>
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import GymHallModal from '@/Components/Gym/GymHallModal.vue'
 import {
     BuildingStorefrontIcon,
     PlusIcon,
@@ -124,9 +134,24 @@ const props = defineProps({
     gymHalls: Array,
 })
 
+// Modal state
+const showHallModal = ref(false)
+const selectedHall = ref(null)
+
+// Methods
 const editHall = (hall) => {
-    // Navigate to edit hall page or open modal
-    console.log('Edit hall:', hall)
+    selectedHall.value = hall
+    showHallModal.value = true
+}
+
+const closeHallModal = () => {
+    selectedHall.value = null
+    showHallModal.value = false
+}
+
+const refreshData = () => {
+    // Refresh the page data after successful update
+    router.reload({ only: ['gymHalls'] })
 }
 
 const viewSchedule = (hall) => {
