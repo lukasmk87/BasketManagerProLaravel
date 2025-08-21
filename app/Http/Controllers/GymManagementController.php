@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\GymHall;
 use App\Models\GymBooking;
 use App\Models\GymBookingRequest;
+use App\Models\GymTimeSlot;
 use App\Services\GymScheduleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -216,5 +219,255 @@ class GymManagementController extends Controller
             'pending_requests' => $pendingRequests,
             'utilization_rate' => $utilizationRate,
         ];
+    }
+
+    /**
+     * Get time slots for a specific gym hall.
+     */
+    public function getHallTimeSlots(Request $request, $hallId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        $hall = GymHall::where('id', $hallId)
+            ->where('club_id', $userClub->id)
+            ->firstOrFail();
+
+        $timeSlots = GymTimeSlot::where('gym_hall_id', $hall->id)
+            ->with(['team'])
+            ->orderBy('day_of_week')
+            ->orderBy('start_time')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $timeSlots->map(function ($slot) {
+                return [
+                    'id' => $slot->id,
+                    'uuid' => $slot->uuid,
+                    'title' => $slot->title,
+                    'description' => $slot->description,
+                    'day_of_week' => $slot->day_of_week,
+                    'uses_custom_times' => $slot->uses_custom_times,
+                    'custom_times' => $slot->custom_times,
+                    'start_time' => $slot->start_time?->format('H:i'),
+                    'end_time' => $slot->end_time?->format('H:i'),
+                    'duration_minutes' => $slot->duration_minutes,
+                    'team' => $slot->team ? [
+                        'id' => $slot->team->id,
+                        'name' => $slot->team->name,
+                    ] : null,
+                    'status' => $slot->status,
+                    'slot_type' => $slot->slot_type,
+                    'is_recurring' => $slot->is_recurring,
+                    'allows_substitution' => $slot->allows_substitution,
+                    'valid_from' => $slot->valid_from?->format('Y-m-d'),
+                    'valid_until' => $slot->valid_until?->format('Y-m-d'),
+                    'all_day_times' => $slot->getAllDayTimes(),
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * Create or update time slots for a gym hall.
+     */
+    public function updateHallTimeSlots(Request $request, $hallId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung zum Bearbeiten von Zeitslots.'
+            ], 403);
+        }
+        
+        $hall = GymHall::where('id', $hallId)
+            ->where('club_id', $userClub->id)
+            ->firstOrFail();
+
+        $request->validate([
+            'time_slots' => 'required|array',
+            'time_slots.*.title' => 'required|string|max:255',
+            'time_slots.*.description' => 'nullable|string',
+            'time_slots.*.day_of_week' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'time_slots.*.uses_custom_times' => 'boolean',
+            'time_slots.*.custom_times' => 'nullable|array',
+            'time_slots.*.start_time' => 'nullable|string',
+            'time_slots.*.end_time' => 'nullable|string',
+            'time_slots.*.slot_type' => 'required|in:training,game,event,maintenance',
+            'time_slots.*.valid_from' => 'required|date',
+            'time_slots.*.valid_until' => 'nullable|date|after:valid_from',
+        ]);
+
+        // Additional validation for custom times
+        foreach ($request->time_slots as $index => $slotData) {
+            if (!empty($slotData['uses_custom_times']) && !empty($slotData['custom_times'])) {
+                $validationErrors = GymTimeSlot::validateCustomTimes($slotData['custom_times']);
+                
+                if (!empty($validationErrors)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Validierungsfehler bei den Zeitangaben',
+                        'errors' => $validationErrors
+                    ], 422);
+                }
+
+                // Check for overlaps with existing slots
+                $overlapConflicts = GymTimeSlot::hasOverlappingSlots($hall->id, $slotData['custom_times']);
+                
+                if (!empty($overlapConflicts)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Zeitüberschneidungen gefunden',
+                        'conflicts' => $overlapConflicts
+                    ], 422);
+                }
+            }
+        }
+
+        // Delete existing time slots for this hall
+        GymTimeSlot::where('gym_hall_id', $hall->id)->delete();
+
+        $createdSlots = [];
+        
+        foreach ($request->time_slots as $slotData) {
+            $timeSlot = GymTimeSlot::create([
+                'uuid' => Str::uuid(),
+                'gym_hall_id' => $hall->id,
+                'title' => $slotData['title'],
+                'description' => $slotData['description'] ?? null,
+                'day_of_week' => $slotData['day_of_week'] ?? null,
+                'uses_custom_times' => $slotData['uses_custom_times'] ?? false,
+                'custom_times' => $slotData['custom_times'] ?? null,
+                'start_time' => $slotData['start_time'] ?? null,
+                'end_time' => $slotData['end_time'] ?? null,
+                'duration_minutes' => $this->calculateDuration($slotData['start_time'] ?? null, $slotData['end_time'] ?? null),
+                'slot_type' => $slotData['slot_type'],
+                'valid_from' => $slotData['valid_from'],
+                'valid_until' => $slotData['valid_until'] ?? null,
+                'status' => 'active',
+                'is_recurring' => true,
+                'allows_substitution' => true,
+            ]);
+
+            $createdSlots[] = $timeSlot;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Zeitslots erfolgreich aktualisiert.',
+            'data' => $createdSlots->map(function ($slot) {
+                return [
+                    'id' => $slot->id,
+                    'uuid' => $slot->uuid,
+                    'title' => $slot->title,
+                    'description' => $slot->description,
+                    'day_of_week' => $slot->day_of_week,
+                    'uses_custom_times' => $slot->uses_custom_times,
+                    'custom_times' => $slot->custom_times,
+                    'start_time' => $slot->start_time?->format('H:i'),
+                    'end_time' => $slot->end_time?->format('H:i'),
+                    'slot_type' => $slot->slot_type,
+                    'all_day_times' => $slot->getAllDayTimes(),
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * Update custom times for a specific time slot.
+     */
+    public function updateTimeSlotCustomTimes(Request $request, $slotId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung zum Bearbeiten von Zeitslots.'
+            ], 403);
+        }
+
+        $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
+                $query->where('club_id', $userClub->id);
+            })
+            ->where('id', $slotId)
+            ->firstOrFail();
+
+        $request->validate([
+            'custom_times' => 'required|array',
+            'custom_times.*.start_time' => 'required|string',
+            'custom_times.*.end_time' => 'required|string|after:custom_times.*.start_time',
+        ]);
+
+        // Validate custom times structure
+        $validationErrors = GymTimeSlot::validateCustomTimes($request->custom_times);
+        
+        if (!empty($validationErrors)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validierungsfehler bei den Zeitangaben',
+                'errors' => $validationErrors
+            ], 422);
+        }
+
+        // Check for overlaps with other slots (excluding current slot)
+        $overlapConflicts = GymTimeSlot::hasOverlappingSlots(
+            $timeSlot->gym_hall_id, 
+            $request->custom_times, 
+            $timeSlot->id
+        );
+        
+        if (!empty($overlapConflicts)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Zeitüberschneidungen mit anderen Slots gefunden',
+                'conflicts' => $overlapConflicts
+            ], 422);
+        }
+
+        // Check for conflicts with existing bookings
+        $bookingConflicts = $timeSlot->getConflictingBookings($request->custom_times);
+        
+        if (!empty($bookingConflicts)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Änderungen würden bestehende Buchungen betreffen',
+                'booking_conflicts' => $bookingConflicts,
+                'warning' => true
+            ], 422);
+        }
+
+        $timeSlot->setCustomTimes($request->custom_times);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Individuelle Zeiten erfolgreich gespeichert.',
+            'data' => [
+                'id' => $timeSlot->id,
+                'uses_custom_times' => $timeSlot->uses_custom_times,
+                'custom_times' => $timeSlot->custom_times,
+                'all_day_times' => $timeSlot->getAllDayTimes(),
+            ],
+        ]);
+    }
+
+    /**
+     * Calculate duration in minutes between two time strings.
+     */
+    private function calculateDuration(?string $startTime, ?string $endTime): ?int
+    {
+        if (!$startTime || !$endTime) {
+            return null;
+        }
+
+        $start = \Carbon\Carbon::createFromTimeString($startTime);
+        $end = \Carbon\Carbon::createFromTimeString($endTime);
+        
+        return $end->diffInMinutes($start);
     }
 }

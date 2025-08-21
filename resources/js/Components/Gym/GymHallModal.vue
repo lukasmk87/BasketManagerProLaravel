@@ -10,8 +10,41 @@
         </template>
 
         <template #content>
-            <form @submit.prevent="submitForm">
-                <div class="space-y-6">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200 mb-6">
+                <nav class="-mb-px flex space-x-8">
+                    <button
+                        @click="activeTab = 'details'"
+                        type="button"
+                        :class="[
+                            activeTab === 'details'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                            'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
+                        ]"
+                    >
+                        Grunddaten
+                    </button>
+                    <button
+                        v-if="gymHall"
+                        @click="activeTab = 'schedule'"
+                        type="button"
+                        :class="[
+                            activeTab === 'schedule'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                            'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
+                        ]"
+                    >
+                        Öffnungszeiten
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Details Tab -->
+            <div v-if="activeTab === 'details'">
+                <form @submit.prevent="submitForm">
+                    <div class="space-y-6">
                     <!-- Basic Information -->
                     <div>
                         <h4 class="font-medium text-gray-900 mb-4">Grundinformationen</h4>
@@ -291,15 +324,28 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </form>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Schedule Tab -->
+            <div v-if="activeTab === 'schedule' && gymHall">
+                <GymTimeSlotManager
+                    :gym-hall-id="gymHall.id"
+                    :initial-time-slots="hallTimeSlots"
+                    :default-open-time="gymHall.opening_time || '08:00'"
+                    :default-close-time="gymHall.closing_time || '22:00'"
+                    @updated="onTimeSlotsUpdated"
+                    @error="onTimeSlotsError"
+                />
+            </div>
         </template>
 
         <template #footer>
             <div class="flex justify-between">
                 <div>
                     <button
-                        v-if="gymHall"
+                        v-if="gymHall && activeTab === 'details'"
                         @click="deleteGymHall"
                         type="button"
                         class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
@@ -318,9 +364,10 @@
                         class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md"
                         :disabled="submitting"
                     >
-                        Abbrechen
+                        {{ activeTab === 'schedule' ? 'Schließen' : 'Abbrechen' }}
                     </button>
                     <button
+                        v-if="activeTab === 'details'"
                         @click="submitForm"
                         type="button"
                         class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
@@ -338,6 +385,7 @@
 import { ref, computed, watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import DialogModal from '@/Components/DialogModal.vue'
+import GymTimeSlotManager from '@/Components/Gym/GymTimeSlotManager.vue'
 
 const props = defineProps({
     show: Boolean,
@@ -387,6 +435,8 @@ const equipmentCheckboxes = ref({
 
 const submitting = ref(false)
 const errors = ref([])
+const activeTab = ref('details')
+const hallTimeSlots = ref([])
 
 // Computed
 const facilitiesArray = computed(() => {
@@ -533,6 +583,28 @@ const isValidEmail = (email) => {
     return emailRegex.test(email)
 }
 
+const loadHallTimeSlots = async (hallId) => {
+    if (!hallId) return
+    
+    try {
+        const response = await window.axios.get(`/api/v2/gym-halls/${hallId}/time-slots`)
+        if (response.data.success) {
+            hallTimeSlots.value = response.data.data
+        }
+    } catch (error) {
+        console.error('Error loading hall time slots:', error)
+    }
+}
+
+const onTimeSlotsUpdated = (updatedSlots) => {
+    hallTimeSlots.value = updatedSlots
+    emit('updated')
+}
+
+const onTimeSlotsError = (error) => {
+    console.error('Time slots error:', error)
+}
+
 const resetForm = () => {
     form.value = {
         club_id: null,
@@ -569,6 +641,8 @@ const resetForm = () => {
     }
     
     errors.value = []
+    activeTab.value = 'details'
+    hallTimeSlots.value = []
 }
 
 // Watch for gymHall changes to populate form
@@ -610,6 +684,11 @@ watch(() => props.gymHall, (newGymHall) => {
             scoreboard: equipment.includes('scoreboard'),
             shot_clock: equipment.includes('shot_clock'),
             sound_system: equipment.includes('sound_system')
+        }
+        
+        // Load time slots for existing hall
+        if (newGymHall.id) {
+            loadHallTimeSlots(newGymHall.id)
         }
     } else {
         resetForm()

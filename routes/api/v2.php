@@ -232,6 +232,11 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('gym-halls/{gymHall}/schedule', [\App\Http\Controllers\Api\GymHallController::class, 'schedule']);
     Route::get('gym-halls/{gymHall}/statistics', [\App\Http\Controllers\Api\GymHallController::class, 'statistics']);
     
+    // Hall Time Slots Management (Custom Times)
+    Route::get('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\GymManagementController::class, 'getHallTimeSlots']);
+    Route::put('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\GymManagementController::class, 'updateHallTimeSlots']);
+    Route::put('time-slots/{slotId}/custom-times', [\App\Http\Controllers\GymManagementController::class, 'updateTimeSlotCustomTimes']);
+    
     // Time Slot Management
     Route::apiResource('gym-time-slots', \App\Http\Controllers\Api\GymTimeSlotController::class);
     Route::post('gym-time-slots/{timeSlot}/assign', [\App\Http\Controllers\Api\GymTimeSlotController::class, 'assignToTeam']);
