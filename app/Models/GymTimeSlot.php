@@ -73,7 +73,11 @@ class GymTimeSlot extends Model
                 $gymTimeSlot->uuid = (string) Str::uuid();
             }
 
-            if (empty($gymTimeSlot->duration_minutes) && $gymTimeSlot->start_time && $gymTimeSlot->end_time) {
+            // Only calculate duration for standard time slots, not custom times
+            if (empty($gymTimeSlot->duration_minutes) && 
+                !$gymTimeSlot->uses_custom_times && 
+                $gymTimeSlot->start_time && 
+                $gymTimeSlot->end_time) {
                 $start = Carbon::createFromTimeString($gymTimeSlot->start_time);
                 $end = Carbon::createFromTimeString($gymTimeSlot->end_time);
                 $gymTimeSlot->duration_minutes = $end->diffInMinutes($start);

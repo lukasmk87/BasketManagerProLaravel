@@ -378,7 +378,9 @@ class GymManagementController extends Controller
                         'custom_times' => $slotData['custom_times'] ?? null,
                         'start_time' => $slotData['start_time'] ?? null,
                         'end_time' => $slotData['end_time'] ?? null,
-                        'duration_minutes' => $this->calculateDuration($slotData['start_time'] ?? null, $slotData['end_time'] ?? null),
+                        'duration_minutes' => ($slotData['uses_custom_times'] ?? false) 
+                            ? null 
+                            : $this->calculateDuration($slotData['start_time'] ?? null, $slotData['end_time'] ?? null),
                         'slot_type' => $slotData['slot_type'],
                         'valid_from' => $slotData['valid_from'],
                         'valid_until' => $slotData['valid_until'] ?? null,
@@ -399,7 +401,9 @@ class GymManagementController extends Controller
                     'custom_times' => $slotData['custom_times'] ?? null,
                     'start_time' => $slotData['start_time'] ?? null,
                     'end_time' => $slotData['end_time'] ?? null,
-                    'duration_minutes' => $this->calculateDuration($slotData['start_time'] ?? null, $slotData['end_time'] ?? null),
+                    'duration_minutes' => ($slotData['uses_custom_times'] ?? false) 
+                        ? null 
+                        : $this->calculateDuration($slotData['start_time'] ?? null, $slotData['end_time'] ?? null),
                     'slot_type' => $slotData['slot_type'],
                     'valid_from' => $slotData['valid_from'],
                     'valid_until' => $slotData['valid_until'] ?? null,
@@ -422,7 +426,7 @@ class GymManagementController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Zeitslots erfolgreich aktualisiert.',
-            'data' => $createdSlots->map(function ($slot) {
+            'data' => collect($createdSlots)->map(function ($slot) {
                 return [
                     'id' => $slot->id,
                     'uuid' => $slot->uuid,

@@ -244,4 +244,50 @@ class GymTimeSlotCustomTimesTest extends TestCase
         $noTime = $timeSlot->getFormattedTimeRangeForDay('sunday');
         $this->assertNull($noTime);
     }
+
+    /** @test */
+    public function custom_time_slots_have_null_duration_minutes()
+    {
+        $timeSlot = GymTimeSlot::create([
+            'uuid' => \Str::uuid(),
+            'gym_hall_id' => $this->gymHall->id,
+            'title' => 'Custom Time Slot',
+            'uses_custom_times' => true,
+            'custom_times' => [
+                'monday' => ['start_time' => '18:00', 'end_time' => '22:00'],
+                'tuesday' => ['start_time' => '18:00', 'end_time' => '22:00'],
+                'wednesday' => ['start_time' => '18:00', 'end_time' => '22:00'],
+            ],
+            'slot_type' => 'training',
+            'valid_from' => now()->toDateString(),
+            'status' => 'active',
+            'is_recurring' => true,
+        ]);
+
+        // Custom time slots should have null duration_minutes since they have different durations per day
+        $this->assertNull($timeSlot->duration_minutes);
+        $this->assertTrue($timeSlot->uses_custom_times);
+    }
+
+    /** @test */
+    public function standard_time_slots_have_calculated_duration_minutes()
+    {
+        $timeSlot = GymTimeSlot::create([
+            'uuid' => \Str::uuid(),
+            'gym_hall_id' => $this->gymHall->id,
+            'title' => 'Standard Time Slot',
+            'day_of_week' => 'monday',
+            'start_time' => '18:00',
+            'end_time' => '20:00',
+            'uses_custom_times' => false,
+            'slot_type' => 'training',
+            'valid_from' => now()->toDateString(),
+            'status' => 'active',
+            'is_recurring' => true,
+        ]);
+
+        // Standard time slots should have calculated duration_minutes
+        $this->assertEquals(120, $timeSlot->duration_minutes); // 2 hours = 120 minutes
+        $this->assertFalse($timeSlot->uses_custom_times);
+    }
 }
