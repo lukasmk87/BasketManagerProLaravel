@@ -341,7 +341,8 @@ import DialogModal from '@/Components/DialogModal.vue'
 
 const props = defineProps({
     show: Boolean,
-    gymHall: Object
+    gymHall: Object,
+    currentClub: Object
 })
 
 const emit = defineEmits(['close', 'updated'])
@@ -416,9 +417,34 @@ const submitForm = async () => {
         
         const method = props.gymHall ? 'PUT' : 'POST'
         
+        // Get club_id from multiple possible sources
+        let clubId = null
+        
+        // 1. If editing existing hall, use its club_id
+        if (props.gymHall?.club_id) {
+            clubId = props.gymHall.club_id
+        }
+        // 2. Try current club from props (if passed)
+        else if (props.currentClub?.id) {
+            clubId = props.currentClub.id
+        }
+        // 3. Try auth user's current team club_id
+        else if (page.props.auth?.user?.current_team?.club_id) {
+            clubId = page.props.auth.user.current_team.club_id
+        }
+        // 4. Try alternative user structure
+        else if (page.props.user?.current_team?.club_id) {
+            clubId = page.props.user.current_team.club_id
+        }
+        
+        if (!clubId) {
+            errors.value = ['Vereins-ID konnte nicht ermittelt werden. Bitte wenden Sie sich an den Administrator.']
+            return
+        }
+
         const data = {
             ...form.value,
-            club_id: page.props.user?.current_team?.club_id,
+            club_id: clubId,
             facilities: facilitiesArray.value,
             equipment: equipmentArray.value
         }

@@ -101,6 +101,10 @@ class GymManagementController extends Controller
 
         return Inertia::render('Gym/Halls', [
             'gymHalls' => $gymHalls,
+            'currentClub' => $userClub ? [
+                'id' => $userClub->id,
+                'name' => $userClub->name,
+            ] : null,
         ]);
     }
 

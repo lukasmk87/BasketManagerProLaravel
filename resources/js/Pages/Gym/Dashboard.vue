@@ -230,6 +230,7 @@
         <GymHallModal
             :show="showHallModal"
             :gym-hall="selectedHall"
+            :current-club="currentClub"
             @close="closeHallModal"
             @updated="refreshData"
         />
@@ -264,6 +265,7 @@ const props = defineProps({
     gymHalls: Array,
     initialStats: Object,
     userPermissions: Object,
+    currentClub: Object,
 })
 
 // Composables
