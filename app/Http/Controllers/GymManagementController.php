@@ -520,6 +520,223 @@ class GymManagementController extends Controller
     }
 
     /**
+     * Get available teams for time slot assignment.
+     */
+    public function getAvailableTeams(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        if (!$userClub) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kein Verein gefunden.'
+            ], 404);
+        }
+
+        $teams = \App\Models\Team::where('club_id', $userClub->id)
+            ->where('personal_team', false)
+            ->orderBy('name')
+            ->get(['id', 'name', 'short_name', 'age_group', 'gender']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $teams
+        ]);
+    }
+
+    /**
+     * Assign team to time slot.
+     */
+    public function assignTeamToTimeSlot(Request $request, $timeSlotId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung zum Zuordnen von Teams.'
+            ], 403);
+        }
+
+        $request->validate([
+            'team_id' => 'required|exists:teams,id'
+        ]);
+
+        $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
+                $query->where('club_id', $userClub->id);
+            })
+            ->where('id', $timeSlotId)
+            ->firstOrFail();
+
+        $team = \App\Models\Team::where('id', $request->team_id)
+            ->where('club_id', $userClub->id)
+            ->firstOrFail();
+
+        // Check for conflicts
+        $conflicts = $this->checkTeamTimeSlotConflicts($team->id, $timeSlot);
+        
+        if (!empty($conflicts)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Zeitkonflikte gefunden',
+                'conflicts' => $conflicts
+            ], 422);
+        }
+
+        $timeSlot->update([
+            'team_id' => $team->id,
+            'assigned_by' => $user->id,
+            'assigned_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Team erfolgreich zugeordnet.',
+            'data' => [
+                'time_slot' => [
+                    'id' => $timeSlot->id,
+                    'team' => [
+                        'id' => $team->id,
+                        'name' => $team->name,
+                    ]
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Remove team assignment from time slot.
+     */
+    public function removeTeamFromTimeSlot(Request $request, $timeSlotId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung zum Entfernen von Team-Zuordnungen.'
+            ], 403);
+        }
+
+        $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
+                $query->where('club_id', $userClub->id);
+            })
+            ->where('id', $timeSlotId)
+            ->firstOrFail();
+
+        $timeSlot->update([
+            'team_id' => null,
+            'assigned_by' => null,
+            'assigned_at' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Team-Zuordnung erfolgreich entfernt.',
+        ]);
+    }
+
+    /**
+     * Get team's assigned time slots.
+     */
+    public function getTeamTimeSlots(Request $request, $teamId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+
+        $team = \App\Models\Team::where('id', $teamId)
+            ->where('club_id', $userClub->id)
+            ->firstOrFail();
+
+        $timeSlots = GymTimeSlot::where('team_id', $team->id)
+            ->with(['gymHall'])
+            ->orderBy('day_of_week')
+            ->orderBy('start_time')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $timeSlots->map(function ($slot) {
+                return [
+                    'id' => $slot->id,
+                    'title' => $slot->title,
+                    'day_of_week' => $slot->day_of_week,
+                    'start_time' => $slot->start_time?->format('H:i'),
+                    'end_time' => $slot->end_time?->format('H:i'),
+                    'slot_type' => $slot->slot_type,
+                    'gym_hall' => [
+                        'id' => $slot->gymHall->id,
+                        'name' => $slot->gymHall->name,
+                        'address' => $slot->gymHall->address,
+                    ],
+                ];
+            })
+        ]);
+    }
+
+    /**
+     * Check for team time slot conflicts.
+     */
+    private function checkTeamTimeSlotConflicts(int $teamId, GymTimeSlot $timeSlot): array
+    {
+        $conflicts = [];
+
+        // Check for existing time slot assignments
+        $existingSlots = GymTimeSlot::where('team_id', $teamId)
+            ->where('id', '!=', $timeSlot->id)
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($existingSlots as $existingSlot) {
+            // Check day overlap
+            if ($timeSlot->day_of_week === $existingSlot->day_of_week) {
+                // Check time overlap
+                if ($this->timePeriodsOverlap(
+                    $timeSlot->start_time, 
+                    $timeSlot->end_time,
+                    $existingSlot->start_time,
+                    $existingSlot->end_time
+                )) {
+                    $conflicts[] = [
+                        'type' => 'time_slot_conflict',
+                        'message' => 'Team hat bereits einen Zeitslot zu dieser Zeit',
+                        'conflicting_slot' => [
+                            'id' => $existingSlot->id,
+                            'title' => $existingSlot->title,
+                            'day_of_week' => $existingSlot->day_of_week,
+                            'start_time' => $existingSlot->start_time?->format('H:i'),
+                            'end_time' => $existingSlot->end_time?->format('H:i'),
+                            'gym_hall' => $existingSlot->gymHall->name,
+                        ]
+                    ];
+                }
+            }
+        }
+
+        return $conflicts;
+    }
+
+    /**
+     * Check if two time periods overlap.
+     */
+    private function timePeriodsOverlap($start1, $end1, $start2, $end2): bool
+    {
+        if (!$start1 || !$end1 || !$start2 || !$end2) {
+            return false;
+        }
+
+        $start1 = \Carbon\Carbon::createFromTimeString($start1);
+        $end1 = \Carbon\Carbon::createFromTimeString($end1);
+        $start2 = \Carbon\Carbon::createFromTimeString($start2);
+        $end2 = \Carbon\Carbon::createFromTimeString($end2);
+
+        return $start1->lt($end2) && $start2->lt($end1);
+    }
+
+    /**
      * Calculate duration in minutes between two time strings.
      */
     private function calculateDuration(?string $startTime, ?string $endTime): ?int

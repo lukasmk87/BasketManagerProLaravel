@@ -16,9 +16,51 @@
 
         <div class="py-12">
             <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                    <form @submit.prevent="submit" class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Tab Navigation -->
+                <div class="bg-white rounded-t-lg border-b border-gray-200">
+                    <nav class="flex space-x-8 px-6 pt-6">
+                        <button
+                            @click="activeTab = 'details'"
+                            :class="[
+                                'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                activeTab === 'details'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            ]"
+                        >
+                            Team-Details
+                        </button>
+                        <button
+                            @click="activeTab = 'players'"
+                            :class="[
+                                'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                activeTab === 'players'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            ]"
+                        >
+                            Spieler
+                        </button>
+                        <button
+                            @click="activeTab = 'schedule'"
+                            :class="[
+                                'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                activeTab === 'schedule'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            ]"
+                        >
+                            Hallenzeiten
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="bg-white shadow-xl rounded-b-lg">
+                    <!-- Team Details Tab -->
+                    <div v-show="activeTab === 'details'" class="p-6">
+                        <form @submit.prevent="submit">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Team Name -->
                             <div class="md:col-span-2">
                                 <InputLabel for="name" value="Team-Name*" />
@@ -223,12 +265,11 @@
                                 Änderungen speichern
                             </PrimaryButton>
                         </div>
-                    </form>
-                </div>
+                        </form>
+                    </div>
 
-                <!-- Player Management Section -->
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mt-8">
-                    <div class="p-6">
+                    <!-- Players Tab -->
+                    <div v-show="activeTab === 'players'" class="p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-medium text-gray-900">
                                 Spielerverwaltung
@@ -368,6 +409,11 @@
                             </PrimaryButton>
                         </div>
                     </div>
+
+                    <!-- Hall Schedule Tab -->
+                    <div v-show="activeTab === 'schedule'" class="p-6">
+                        <TeamHallSchedule :team-id="team.id" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -423,6 +469,7 @@ import InputLabel from '@/Components/InputLabel.vue'
 import InputError from '@/Components/InputError.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import PlayerManagementModal from '@/Components/PlayerManagementModal.vue'
+import TeamHallSchedule from '@/Components/Teams/TeamHallSchedule.vue'
 
 const props = defineProps({
     team: Object,
@@ -448,6 +495,7 @@ const deleteForm = useForm({})
 const confirmingTeamDeletion = ref(false)
 const showPlayerModal = ref(false)
 const teamPlayers = ref([])
+const activeTab = ref('details')
 
 const trainingSchedules = ref(
     props.team.training_schedule ? JSON.parse(props.team.training_schedule) : []

@@ -156,14 +156,50 @@
                         </div>
                     </div>
                     
+                    <!-- Tab Navigation -->
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex space-x-8">
+                            <button
+                                @click="activeTab = 'schedule'"
+                                :class="[
+                                    'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                    activeTab === 'schedule'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ]"
+                            >
+                                Öffnungszeiten
+                            </button>
+                            <button
+                                @click="activeTab = 'teams'"
+                                :class="[
+                                    'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                    activeTab === 'teams'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ]"
+                            >
+                                Team-Zuordnungen
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Schedule Tab -->
                     <GymTimeSlotManager
-                        v-if="selectedScheduleHall.id"
+                        v-if="selectedScheduleHall.id && activeTab === 'schedule'"
                         :gym-hall-id="selectedScheduleHall.id"
                         :initial-time-slots="selectedScheduleHall.time_slots || []"
                         :default-open-time="selectedScheduleHall.opening_time || '08:00'"
                         :default-close-time="selectedScheduleHall.closing_time || '22:00'"
                         @updated="refreshData"
                         @error="(error) => console.error('Schedule error:', error)"
+                    />
+
+                    <!-- Teams Tab -->
+                    <TimeSlotsList
+                        v-if="selectedScheduleHall.id && activeTab === 'teams'"
+                        :gym-hall-id="selectedScheduleHall.id"
+                        @updated="refreshData"
                     />
                 </div>
             </template>
@@ -189,6 +225,7 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import DialogModal from '@/Components/DialogModal.vue'
 import GymHallModal from '@/Components/Gym/GymHallModal.vue'
 import GymTimeSlotManager from '@/Components/Gym/GymTimeSlotManager.vue'
+import TimeSlotsList from '@/Components/Gym/TimeSlotsList.vue'
 import {
     BuildingStorefrontIcon,
     PlusIcon,
@@ -207,6 +244,7 @@ const showHallModal = ref(false)
 const selectedHall = ref(null)
 const showScheduleModal = ref(false)
 const selectedScheduleHall = ref(null)
+const activeTab = ref('schedule')
 
 // Methods
 const editHall = (hall) => {
