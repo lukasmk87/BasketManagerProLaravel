@@ -501,13 +501,18 @@ class GymTimeSlot extends Model
     /**
      * Check for overlapping time slots in the same hall
      */
-    public static function hasOverlappingSlots(int $gymHallId, array $customTimes, ?int $excludeSlotId = null): array
+    public static function hasOverlappingSlots(int $gymHallId, array $customTimes, $excludeSlotIds = null): array
     {
         $conflicts = [];
         
         $existingSlots = static::where('gym_hall_id', $gymHallId)
-            ->when($excludeSlotId, function ($query, $excludeSlotId) {
-                $query->where('id', '!=', $excludeSlotId);
+            ->when($excludeSlotIds, function ($query, $excludeSlotIds) {
+                // Handle both single ID and array of IDs
+                if (is_array($excludeSlotIds)) {
+                    $query->whereNotIn('id', $excludeSlotIds);
+                } else {
+                    $query->where('id', '!=', $excludeSlotIds);
+                }
             })
             ->get();
 

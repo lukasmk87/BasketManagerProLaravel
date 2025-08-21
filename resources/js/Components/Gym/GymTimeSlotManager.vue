@@ -364,15 +364,20 @@ const saveTimeSlots = async () => {
         const timeSlots = []
         
         if (!useCustomTimes.value) {
-            // Create a single time slot with default times
-            timeSlots.push({
-                title: 'Standard Öffnungszeiten',
-                description: 'Einheitliche Öffnungszeiten für alle Tage',
-                uses_custom_times: false,
-                start_time: defaultTimes.value.start_time,
-                end_time: defaultTimes.value.end_time,
-                slot_type: 'training',
-                valid_from: new Date().toISOString().split('T')[0],
+            // Create separate time slots for each day with the same times
+            const weekDayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+            
+            weekDayKeys.forEach(day => {
+                timeSlots.push({
+                    title: 'Standard Öffnungszeiten',
+                    description: 'Einheitliche Öffnungszeiten für alle Tage',
+                    uses_custom_times: false,
+                    day_of_week: day,
+                    start_time: defaultTimes.value.start_time,
+                    end_time: defaultTimes.value.end_time,
+                    slot_type: 'training',
+                    valid_from: new Date().toISOString().split('T')[0],
+                })
             })
         } else {
             // Create time slot with custom times

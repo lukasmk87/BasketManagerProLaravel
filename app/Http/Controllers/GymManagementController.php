@@ -333,6 +333,23 @@ class GymManagementController extends Controller
             }
         }
 
+        // Get existing time slots for this hall
+        $existingSlots = GymTimeSlot::where('gym_hall_id', $hall->id)->get();
+        
+        // Collect IDs of slots being updated (to exclude them from overlap checking)
+        $updatingSlotIds = [];
+        foreach ($request->time_slots as $slotData) {
+            if (isset($slotData['id']) && !empty($slotData['id'])) {
+                $updatingSlotIds[] = $slotData['id'];
+            }
+        }
+        
+        // If no existing slots are being updated, we're replacing all slots
+        // In this case, exclude all existing slots from overlap checking
+        if (empty($updatingSlotIds) && $existingSlots->count() > 0) {
+            $updatingSlotIds = $existingSlots->pluck('id')->toArray();
+        }
+
         // Additional validation for custom times
         foreach ($request->time_slots as $index => $slotData) {
             if (!empty($slotData['uses_custom_times']) && !empty($slotData['custom_times'])) {
@@ -346,8 +363,12 @@ class GymManagementController extends Controller
                     ], 422);
                 }
 
-                // Check for overlaps with existing slots
-                $overlapConflicts = GymTimeSlot::hasOverlappingSlots($hall->id, $slotData['custom_times']);
+                // Check for overlaps with existing slots (excluding slots being updated)
+                $overlapConflicts = GymTimeSlot::hasOverlappingSlots(
+                    $hall->id, 
+                    $slotData['custom_times'], 
+                    $updatingSlotIds
+                );
                 
                 if (!empty($overlapConflicts)) {
                     return response()->json([
@@ -359,8 +380,6 @@ class GymManagementController extends Controller
             }
         }
 
-        // Get existing time slots for this hall
-        $existingSlots = GymTimeSlot::where('gym_hall_id', $hall->id)->get();
         $processedSlotIds = [];
         $createdSlots = [];
         
