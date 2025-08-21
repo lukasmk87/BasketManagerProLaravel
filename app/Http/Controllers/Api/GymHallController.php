@@ -383,15 +383,21 @@ class GymHallController extends Controller
 
         $totalHalls = GymHall::where('club_id', $clubId)->count();
         
-        $activeBookings = \App\Models\GymBooking::whereHas('gymTimeSlot.gymHall', function ($query) use ($clubId) {
-                $query->where('club_id', $clubId);
+        $activeBookings = \App\Models\GymBooking::whereHas('gymTimeSlot', function ($query) use ($clubId) {
+                $query->whereHas('gymHall', function ($q) use ($clubId) {
+                    $q->where('club_id', $clubId);
+                });
             })
             ->where('booking_date', '>=', now()->toDateString())
             ->where('status', 'confirmed')
             ->count();
         
-        $pendingRequests = \App\Models\GymBookingRequest::whereHas('gymBooking.gymTimeSlot.gymHall', function ($query) use ($clubId) {
-                $query->where('club_id', $clubId);
+        $pendingRequests = \App\Models\GymBookingRequest::whereHas('gymBooking', function ($query) use ($clubId) {
+                $query->whereHas('gymTimeSlot', function ($q) use ($clubId) {
+                    $q->whereHas('gymHall', function ($hall) use ($clubId) {
+                        $hall->where('club_id', $clubId);
+                    });
+                });
             })
             ->where('status', 'pending')
             ->count();
@@ -400,8 +406,10 @@ class GymHallController extends Controller
         $utilizationRate = 0;
         if ($totalHalls > 0) {
             $totalPossibleSlots = $totalHalls * 7 * 12; // 7 days, 12 possible time slots per day
-            $bookedSlots = \App\Models\GymBooking::whereHas('gymTimeSlot.gymHall', function ($query) use ($clubId) {
-                    $query->where('club_id', $clubId);
+            $bookedSlots = \App\Models\GymBooking::whereHas('gymTimeSlot', function ($query) use ($clubId) {
+                    $query->whereHas('gymHall', function ($q) use ($clubId) {
+                        $q->where('club_id', $clubId);
+                    });
                 })
                 ->where('booking_date', '>=', now()->startOfWeek())
                 ->where('booking_date', '<=', now()->endOfWeek())
@@ -446,11 +454,13 @@ class GymHallController extends Controller
         $weekStart = Carbon::parse($request->input('week_start'));
         $weekEnd = $weekStart->copy()->endOfWeek();
 
-        $bookings = \App\Models\GymBooking::whereHas('gymTimeSlot.gymHall', function ($query) use ($clubId) {
-                $query->where('club_id', $clubId);
+        $bookings = \App\Models\GymBooking::whereHas('gymTimeSlot', function ($query) use ($clubId) {
+                $query->whereHas('gymHall', function ($q) use ($clubId) {
+                    $q->where('club_id', $clubId);
+                });
             })
             ->whereBetween('booking_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
-            ->with(['gymHall:id,name', 'team:id,name'])
+            ->with(['gymTimeSlot.gymHall:id,name', 'team:id,name'])
             ->get()
             ->groupBy('booking_date');
 
@@ -522,11 +532,15 @@ class GymHallController extends Controller
             ]);
         }
 
-        $requests = \App\Models\GymBookingRequest::whereHas('gymBooking.gymTimeSlot.gymHall', function ($query) use ($clubId) {
-                $query->where('club_id', $clubId);
+        $requests = \App\Models\GymBookingRequest::whereHas('gymBooking', function ($query) use ($clubId) {
+                $query->whereHas('gymTimeSlot', function ($q) use ($clubId) {
+                    $q->whereHas('gymHall', function ($hall) use ($clubId) {
+                        $hall->where('club_id', $clubId);
+                    });
+                });
             })
             ->where('status', 'pending')
-            ->with(['team:id,name', 'gymHall:id,name', 'requestedBy:id,name'])
+            ->with(['requestingTeam:id,name', 'gymBooking.gymTimeSlot.gymHall:id,name', 'requestedByUser:id,name'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();

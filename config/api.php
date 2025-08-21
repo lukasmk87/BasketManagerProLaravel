@@ -50,15 +50,28 @@ return [
         ],
 
         '2.0' => [
-            'enabled' => false, // Disabled version
-            'deprecated' => true,
-            'sunset_date' => '2024-06-30',
-            'deprecation_message' => 'API v2.0 has been sunset. Please use v4.0.',
-            'documentation_url' => null,
-            'openapi_spec' => null,
-            'features' => [],
-            'middleware' => [],
-            'rate_limits' => []
+            'enabled' => true, // Re-enabled for gym management features
+            'deprecated' => false,
+            'sunset_date' => null,
+            'deprecation_message' => null,
+            'documentation_url' => '/api/v2/documentation',
+            'openapi_spec' => 'storage/api-docs/v2/openapi.json',
+            'features' => [
+                'live_scoring',
+                'advanced_statistics',
+                'team_management',
+                'player_management',
+                'gym_management',
+                'shot_charts'
+            ],
+            'middleware' => [
+                'throttle:3000,1', // 3000 requests per hour for v2
+            ],
+            'rate_limits' => [
+                'default' => 3000,
+                'authenticated' => 10000,
+                'premium' => 25000
+            ]
         ],
 
         '3.0' => [

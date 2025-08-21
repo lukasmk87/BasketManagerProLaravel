@@ -115,18 +115,10 @@ class GymBookingRequest extends Model
 
     /**
      * Get the gym hall through the booking and time slot.
-     * This is a custom relationship that works with whereHas() queries.
      */
-    public function gymHall(): HasOneThrough
+    public function gymHall()
     {
-        return $this->hasOneThrough(
-            GymHall::class,
-            GymBooking::class,
-            'id',              // Foreign key on GymBooking table
-            'id',              // Foreign key on GymHall table
-            'gym_booking_id',  // Local key on GymBookingRequest table
-            'gym_time_slot_id' // Local key on GymBooking table (connecting to time slot)
-        );
+        return $this->gymBooking->gymTimeSlot->gymHall ?? null;
     }
 
     // ============================

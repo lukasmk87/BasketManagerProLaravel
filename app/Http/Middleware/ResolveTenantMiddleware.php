@@ -131,6 +131,11 @@ class ResolveTenantMiddleware
      */
     private function resolveFromSession(Request $request): ?Tenant
     {
+        // Skip session resolution for API requests without session support
+        if (!$request->hasSession()) {
+            return null;
+        }
+        
         $sessionKey = config('tenants.resolution.session_key', 'tenant_id');
         $tenantId = $request->session()->get($sessionKey);
         
@@ -322,12 +327,17 @@ class ResolveTenantMiddleware
             return;
         }
         
-        // Only log once per session to avoid spam
-        $sessionKey = "tenant_access_logged_{$tenant->id}";
-        
-        if (!$request->session()->has($sessionKey)) {
+        // Only log once per session to avoid spam (skip for API requests without session)
+        if ($request->hasSession()) {
+            $sessionKey = "tenant_access_logged_{$tenant->id}";
+            
+            if (!$request->session()->has($sessionKey)) {
+                $this->tenantService->logAccess($tenant, $request);
+                $request->session()->put($sessionKey, true);
+            }
+        } else {
+            // For API requests without session, log every time (but rate limit this in service)
             $this->tenantService->logAccess($tenant, $request);
-            $request->session()->put($sessionKey, true);
         }
         
         // Update tenant's last activity timestamp (only for real tenants)

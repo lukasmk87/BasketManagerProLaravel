@@ -131,15 +131,15 @@ class GymBooking extends Model
     /**
      * Get the gym hall through the time slot.
      */
-    public function gymHall()
+    public function gymHall(): HasOneThrough
     {
         return $this->hasOneThrough(
             GymHall::class,
             GymTimeSlot::class,
-            'id',           // Foreign key on GymTimeSlot table
-            'id',           // Foreign key on GymHall table
+            'id',                // Foreign key on GymTimeSlot table
+            'id',                // Foreign key on GymHall table  
             'gym_time_slot_id',  // Local key on GymBooking table
-            'gym_hall_id'   // Local key on GymTimeSlot table
+            'gym_hall_id'        // Local key on GymTimeSlot table
         );
     }
 
