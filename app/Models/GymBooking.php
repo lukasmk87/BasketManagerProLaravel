@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -125,6 +126,21 @@ class GymBooking extends Model
     public function requests(): HasMany
     {
         return $this->hasMany(GymBookingRequest::class);
+    }
+
+    /**
+     * Get the gym hall through the time slot.
+     */
+    public function gymHall()
+    {
+        return $this->hasOneThrough(
+            GymHall::class,
+            GymTimeSlot::class,
+            'id',           // Foreign key on GymTimeSlot table
+            'id',           // Foreign key on GymHall table
+            'gym_time_slot_id',  // Local key on GymBooking table
+            'gym_hall_id'   // Local key on GymTimeSlot table
+        );
     }
 
     public function pendingRequests(): HasMany

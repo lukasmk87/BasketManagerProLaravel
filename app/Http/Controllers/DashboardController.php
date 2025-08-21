@@ -230,13 +230,18 @@ class DashboardController extends Controller
             // Get teams where user is coach
             $coachedTeams = $user->coachedTeams()
                 ->with(['club:id,name', 'players.user:id,name'])
-                ->withCount(['players', 'games'])
+                ->withCount(['players'])
                 ->get();
 
-            $assistantCoachedTeams = $user->assistantCoachedTeams()
-                ->with(['club:id,name', 'players.user:id,name'])
-                ->withCount(['players', 'games'])
-                ->get();
+            // Get assistant coached teams (returns collection directly)
+            $assistantCoachedTeams = collect();
+            $assistantTeamIds = Team::whereJsonContains('assistant_coaches', $user->id)->pluck('id');
+            if ($assistantTeamIds->isNotEmpty()) {
+                $assistantCoachedTeams = Team::whereIn('id', $assistantTeamIds)
+                    ->with(['club:id,name', 'players.user:id,name'])
+                    ->withCount(['players'])
+                    ->get();
+            }
 
             $allTeams = $coachedTeams->merge($assistantCoachedTeams);
 
@@ -258,7 +263,7 @@ class DashboardController extends Controller
                 ],
                 'team_statistics' => $teamStats,
                 'roster_overview' => $primaryTeam->players()
-                    ->with('user:id,name,birth_date')
+                    ->with('user:id,name')
                     ->wherePivot('status', 'active')
                     ->wherePivot('is_active', true)
                     ->orderBy('player_team.jersey_number')
@@ -269,11 +274,11 @@ class DashboardController extends Controller
                             'name' => $player->user?->name ?? $player->full_name,
                             'jersey_number' => $player->pivot->jersey_number,
                             'position' => $player->pivot->primary_position,
-                            'age' => $player->user?->birth_date?->age,
+                            'age' => $player->user?->age,
                             'is_captain' => $player->pivot->is_captain,
                             'is_starter' => $player->pivot->is_starter,
                             'games_played' => $player->pivot->games_played,
-                            'points_per_game' => $player->points_per_game,
+                            'points_per_game' => $player->points_per_game ?? 0,
                         ];
                     }),
                 'upcoming_games' => $primaryTeam->allGames()
@@ -319,11 +324,17 @@ class DashboardController extends Controller
         try {
             $player = $user->playerProfile;
             
-            if (!$player || !$player->team) {
+            if (!$player) {
+                return ['message' => 'Sie haben kein Spielerprofil.'];
+            }
+
+            // Get the player's active team
+            $team = $player->teams()->wherePivot('is_active', true)->first();
+            
+            if (!$team) {
                 return ['message' => 'Sie sind aktuell keinem Team zugeordnet.'];
             }
 
-            $team = $player->team;
             $currentSeason = $team->season;
             $playerStats = $this->playerService->getPlayerStatistics($player, $currentSeason);
 
@@ -331,10 +342,10 @@ class DashboardController extends Controller
                 'player_info' => [
                     'id' => $player->id,
                     'name' => $user->name,
-                    'jersey_number' => $player->jersey_number,
-                    'position' => $player->primary_position,
-                    'is_captain' => $player->is_captain,
-                    'is_starter' => $player->is_starter,
+                    'jersey_number' => $player->pivot->jersey_number ?? null,
+                    'position' => $player->pivot->primary_position ?? null,
+                    'is_captain' => $player->pivot->is_captain ?? false,
+                    'is_starter' => $player->pivot->is_starter ?? false,
                     'status' => $player->status,
                 ],
                 'team_info' => [

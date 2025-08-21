@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -87,6 +88,45 @@ class GymBookingRequest extends Model
     public function reviewedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by_user_id');
+    }
+
+    /**
+     * Get the team alias (for compatibility).
+     */
+    public function team(): BelongsTo
+    {
+        return $this->requestingTeam();
+    }
+
+    /**
+     * Get the time slot through the gym booking.
+     */
+    public function timeSlot(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            GymTimeSlot::class,
+            GymBooking::class,
+            'id',              // Foreign key on GymBooking table
+            'id',              // Foreign key on GymTimeSlot table  
+            'gym_booking_id',  // Local key on GymBookingRequest table
+            'gym_time_slot_id' // Local key on GymBooking table
+        );
+    }
+
+    /**
+     * Get the gym hall through the booking and time slot.
+     * This is a custom relationship that works with whereHas() queries.
+     */
+    public function gymHall(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            GymHall::class,
+            GymBooking::class,
+            'id',              // Foreign key on GymBooking table
+            'id',              // Foreign key on GymHall table
+            'gym_booking_id',  // Local key on GymBookingRequest table
+            'gym_time_slot_id' // Local key on GymBooking table (connecting to time slot)
+        );
     }
 
     // ============================

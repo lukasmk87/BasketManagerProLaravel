@@ -383,14 +383,14 @@ class GymHallController extends Controller
 
         $totalHalls = GymHall::where('club_id', $clubId)->count();
         
-        $activeBookings = \App\Models\GymBooking::whereHas('gymHall', function ($query) use ($clubId) {
+        $activeBookings = \App\Models\GymBooking::whereHas('gymTimeSlot.gymHall', function ($query) use ($clubId) {
                 $query->where('club_id', $clubId);
             })
             ->where('booking_date', '>=', now()->toDateString())
             ->where('status', 'confirmed')
             ->count();
         
-        $pendingRequests = \App\Models\GymBookingRequest::whereHas('gymHall', function ($query) use ($clubId) {
+        $pendingRequests = \App\Models\GymBookingRequest::whereHas('gymBooking.gymTimeSlot.gymHall', function ($query) use ($clubId) {
                 $query->where('club_id', $clubId);
             })
             ->where('status', 'pending')
@@ -400,7 +400,7 @@ class GymHallController extends Controller
         $utilizationRate = 0;
         if ($totalHalls > 0) {
             $totalPossibleSlots = $totalHalls * 7 * 12; // 7 days, 12 possible time slots per day
-            $bookedSlots = \App\Models\GymBooking::whereHas('gymHall', function ($query) use ($clubId) {
+            $bookedSlots = \App\Models\GymBooking::whereHas('gymTimeSlot.gymHall', function ($query) use ($clubId) {
                     $query->where('club_id', $clubId);
                 })
                 ->where('booking_date', '>=', now()->startOfWeek())
@@ -446,7 +446,7 @@ class GymHallController extends Controller
         $weekStart = Carbon::parse($request->input('week_start'));
         $weekEnd = $weekStart->copy()->endOfWeek();
 
-        $bookings = \App\Models\GymBooking::whereHas('gymHall', function ($query) use ($clubId) {
+        $bookings = \App\Models\GymBooking::whereHas('gymTimeSlot.gymHall', function ($query) use ($clubId) {
                 $query->where('club_id', $clubId);
             })
             ->whereBetween('booking_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
@@ -522,7 +522,7 @@ class GymHallController extends Controller
             ]);
         }
 
-        $requests = \App\Models\GymBookingRequest::whereHas('gymHall', function ($query) use ($clubId) {
+        $requests = \App\Models\GymBookingRequest::whereHas('gymBooking.gymTimeSlot.gymHall', function ($query) use ($clubId) {
                 $query->where('club_id', $clubId);
             })
             ->where('status', 'pending')

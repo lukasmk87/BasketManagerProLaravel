@@ -40,11 +40,11 @@ class GymManagementController extends Controller
         // Get pending booking requests for club admins
         $pendingRequests = collect();
         if ($userClub && $user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
-            $pendingRequests = GymBookingRequest::whereHas('gymHall', function ($query) use ($userClub) {
+            $pendingRequests = GymBookingRequest::whereHas('gymBooking.gymTimeSlot.gymHall', function ($query) use ($userClub) {
                     $query->where('club_id', $userClub->id);
                 })
                 ->where('status', 'pending')
-                ->with(['team', 'gymHall', 'timeSlot'])
+                ->with(['team', 'timeSlot'])
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
@@ -114,7 +114,7 @@ class GymManagementController extends Controller
         
         $bookings = collect();
         if ($userClub) {
-            $query = GymBooking::whereHas('gymHall', function ($query) use ($userClub) {
+            $query = GymBooking::whereHas('gymTimeSlot.gymHall', function ($query) use ($userClub) {
                 $query->where('club_id', $userClub->id);
             });
 
@@ -126,7 +126,7 @@ class GymManagementController extends Controller
                 }
             }
 
-            $bookings = $query->with(['gymHall', 'team', 'timeSlot'])
+            $bookings = $query->with(['gymTimeSlot.gymHall', 'team'])
                 ->orderBy('booking_date', 'desc')
                 ->orderBy('start_time')
                 ->paginate(20);
@@ -149,10 +149,10 @@ class GymManagementController extends Controller
         
         $requests = collect();
         if ($userClub) {
-            $requests = GymBookingRequest::whereHas('gymHall', function ($query) use ($userClub) {
+            $requests = GymBookingRequest::whereHas('gymBooking.gymTimeSlot.gymHall', function ($query) use ($userClub) {
                     $query->where('club_id', $userClub->id);
                 })
-                ->with(['team', 'gymHall', 'timeSlot', 'requestedBy'])
+                ->with(['team', 'timeSlot', 'requestedBy'])
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
         }
@@ -178,14 +178,14 @@ class GymManagementController extends Controller
 
         $totalHalls = GymHall::where('club_id', $club->id)->count();
         
-        $activeBookings = GymBooking::whereHas('gymHall', function ($query) use ($club) {
+        $activeBookings = GymBooking::whereHas('gymTimeSlot.gymHall', function ($query) use ($club) {
                 $query->where('club_id', $club->id);
             })
             ->where('booking_date', '>=', now()->toDateString())
             ->where('status', 'confirmed')
             ->count();
         
-        $pendingRequests = GymBookingRequest::whereHas('gymHall', function ($query) use ($club) {
+        $pendingRequests = GymBookingRequest::whereHas('gymBooking.gymTimeSlot.gymHall', function ($query) use ($club) {
                 $query->where('club_id', $club->id);
             })
             ->where('status', 'pending')
@@ -195,7 +195,7 @@ class GymManagementController extends Controller
         $utilizationRate = 0;
         if ($totalHalls > 0) {
             $totalPossibleSlots = $totalHalls * 7 * 12; // 7 days, 12 possible time slots per day
-            $bookedSlots = GymBooking::whereHas('gymHall', function ($query) use ($club) {
+            $bookedSlots = GymBooking::whereHas('gymTimeSlot.gymHall', function ($query) use ($club) {
                     $query->where('club_id', $club->id);
                 })
                 ->where('booking_date', '>=', now()->startOfWeek())

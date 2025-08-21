@@ -235,16 +235,22 @@ class Team extends JetstreamTeam implements HasMedia
     }
 
     /**
+     * Get all games for this team (returns a collection).
+     */
+    public function getAllGames()
+    {
+        return Game::where(function ($query) {
+            $query->where('home_team_id', $this->id)
+                  ->orWhere('away_team_id', $this->id);
+        });
+    }
+
+    /**
      * Get all games for this team as a proper relationship.
      */
     public function allGames()
     {
-        $gameModel = new \App\Models\Game;
-        return $gameModel->newQuery()
-            ->where(function ($query) {
-                $query->where('home_team_id', $this->id)
-                      ->orWhere('away_team_id', $this->id);
-            });
+        return $this->getAllGames();
     }
 
     // ============================
