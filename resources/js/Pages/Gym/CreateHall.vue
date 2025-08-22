@@ -458,10 +458,12 @@
                                     v-if="activeTab === 'details'"
                                     @click="submitForm"
                                     type="button"
-                                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
-                                    :disabled="submitting"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                    :disabled="isFormBusy"
                                 >
-                                    {{ submitting ? 'Erstelle...' : 'Sporthalle erstellen' }}
+                                    <span v-if="initializingSession">Initialisiere Sitzung...</span>
+                                    <span v-else-if="submitting">Erstelle...</span>
+                                    <span v-else>Sporthalle erstellen</span>
                                 </button>
                                 <button
                                     v-if="activeTab === 'schedule' && createdHallId"
@@ -495,6 +497,7 @@ const page = usePage()
 // State
 const activeTab = ref('details')
 const submitting = ref(false)
+const initializingSession = ref(false)
 const errors = ref([])
 const createdHallId = ref(null)
 const createdHall = ref(null)
@@ -549,6 +552,10 @@ const equipmentArray = computed(() => {
     return Object.keys(equipmentCheckboxes.value).filter(key => equipmentCheckboxes.value[key])
 })
 
+const isFormBusy = computed(() => {
+    return submitting.value || initializingSession.value
+})
+
 // Methods
 const submitForm = async () => {
     if (!validateForm()) return
@@ -557,6 +564,11 @@ const submitForm = async () => {
     errors.value = []
     
     try {
+        // First, ensure CSRF cookie is set
+        initializingSession.value = true
+        await window.axios.get('/sanctum/csrf-cookie')
+        initializingSession.value = false
+        
         // Get club_id from multiple possible sources
         let clubId = null
         
@@ -601,7 +613,11 @@ const submitForm = async () => {
     } catch (error) {
         console.error('Error creating gym hall:', error)
         
-        if (error.response?.data?.errors) {
+        // Handle 419 CSRF token mismatch errors specifically
+        if (error.response?.status === 419) {
+            handleSessionTimeout()
+            return
+        } else if (error.response?.data?.errors) {
             errors.value = Object.values(error.response.data.errors).flat()
         } else if (error.response?.data?.message) {
             errors.value = [error.response.data.message]
@@ -610,6 +626,7 @@ const submitForm = async () => {
         }
     } finally {
         submitting.value = false
+        initializingSession.value = false
     }
 }
 
@@ -663,5 +680,15 @@ const finishCreation = () => {
 const showSuccess = (message) => {
     // You could implement a toast notification here
     console.log(message)
+}
+
+const handleSessionTimeout = () => {
+    // Clear any stored session data
+    errors.value = ['Ihre Sitzung ist abgelaufen. Die Seite wird neu geladen...']
+    
+    // Reload page after short delay to re-establish session
+    setTimeout(() => {
+        window.location.reload()
+    }, 2000)
 }
 </script>

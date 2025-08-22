@@ -20,6 +20,7 @@ class GymCourt extends Model
         'name',
         'court_number',
         'is_active',
+        'sort_order',
         'hourly_rate',
         'notes',
         'metadata',
@@ -28,6 +29,7 @@ class GymCourt extends Model
     protected $casts = [
         'uuid' => 'string',
         'is_active' => 'boolean',
+        'sort_order' => 'integer',
         'hourly_rate' => 'decimal:2',
         'metadata' => 'array',
     ];
@@ -74,6 +76,11 @@ class GymCourt extends Model
     public function scopeOrderedByNumber($query)
     {
         return $query->orderBy('court_number');
+    }
+
+    public function scopeOrderedBySortOrder($query)
+    {
+        return $query->orderBy('sort_order');
     }
 
     // ============================
