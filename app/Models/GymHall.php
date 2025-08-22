@@ -368,9 +368,11 @@ class GymHall extends Model implements HasMedia
                 $slotData['courts'][] = [
                     'court_id' => $court->id,
                     'court_identifier' => $court->court_identifier,
-                    'court_name' => $court->court_name,
+                    'court_name' => $court->name,
+                    'court_number' => $court->court_number,
+                    'color_code' => $court->color_code,
                     'is_available' => $isAvailable,
-                    'bookings' => $isAvailable ? [] : $court->getConflictingBookings($slotDateTime, $slotDuration)->toArray()
+                    'bookings' => []  // TODO: Implement getConflictingBookings method
                 ];
             }
 

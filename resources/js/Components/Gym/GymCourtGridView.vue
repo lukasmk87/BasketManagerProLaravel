@@ -290,10 +290,26 @@ const updateTimeGrid = async () => {
     
     try {
         const response = await fetch(`/api/v2/gym-halls/${props.gymHall.id}/time-grid?date=${format(selectedDateObj.value, 'yyyy-MM-dd')}&slot_duration=${selectedIncrement.value}`)
+        
+        // Check HTTP status first
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Sitzung abgelaufen. Bitte melden Sie sich erneut an.')
+            } else if (response.status === 403) {
+                throw new Error('Keine Berechtigung für diese Aktion.')
+            } else if (response.status === 404) {
+                throw new Error('Endpunkt nicht gefunden. Bitte kontaktieren Sie den Support.')
+            } else if (response.status >= 500) {
+                throw new Error('Serverfehler. Bitte versuchen Sie es später erneut.')
+            } else {
+                throw new Error(`HTTP Fehler ${response.status}`)
+            }
+        }
+        
         const data = await response.json()
         
         if (data.success) {
-            timeSlots.value = data.data.time_grid.map(slot => ({
+            timeSlots.value = data.data.time_slots.map(slot => ({
                 ...slot,
                 time_key: slot.start_time.replace(':', ''),
                 is_current_hour: isCurrentHour(slot.start_time),

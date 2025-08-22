@@ -759,61 +759,40 @@ class GymHallController extends Controller
             $date = Carbon::parse($request->date);
             $slotDuration = $request->get('slot_duration', 30);
 
-            // Get day of week
-            $dayOfWeek = strtolower($date->format('l'));
+            // Use the comprehensive time grid generation from the model
+            $timeGrid = $gymHall->generateTimeGrid($date, $slotDuration);
             
-            // Get time slots for this day
-            $timeSlots = $gymHall->timeSlots()
-                ->where('day_of_week', $dayOfWeek)
-                ->where('is_active', true)
-                ->orderBy('start_time')
-                ->get();
-
-            if ($timeSlots->isEmpty()) {
+            if (empty($timeGrid)) {
                 return response()->json([
                     'success' => true,
                     'data' => [
                         'date' => $date->format('Y-m-d'),
-                        'day_of_week' => $dayOfWeek,
+                        'day_of_week' => strtolower($date->format('l')),
                         'time_slots' => [],
-                        'message' => 'Keine Öffnungszeiten für diesen Tag.'
+                        'message' => 'Keine Öffnungszeiten für diesen Tag konfiguriert.'
                     ]
                 ]);
             }
 
-            $gridSlots = [];
-
-            foreach ($timeSlots as $timeSlot) {
-                $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $timeSlot->start_time);
-                $endTime = Carbon::parse($date->format('Y-m-d') . ' ' . $timeSlot->end_time);
-
-                $current = $startTime->copy();
-                while ($current->copy()->addMinutes($slotDuration)->lte($endTime)) {
-                    $slotEnd = $current->copy()->addMinutes($slotDuration);
-                    
-                    $gridSlots[] = [
-                        'start_time' => $current->format('H:i'),
-                        'end_time' => $slotEnd->format('H:i'),
-                        'duration_minutes' => $slotDuration,
-                        'is_past' => $current->lt(now()),
-                        'time_slot_id' => $timeSlot->id,
-                    ];
-                    
-                    $current->addMinutes($slotDuration);
-                }
-            }
+            // Add is_past flag to each slot
+            $timeGrid = array_map(function ($slot) use ($date) {
+                $slotDateTime = Carbon::createFromFormat('Y-m-d H:i', $date->format('Y-m-d') . ' ' . $slot['start_time']);
+                $slot['is_past'] = $slotDateTime->lt(now());
+                return $slot;
+            }, $timeGrid);
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'date' => $date->format('Y-m-d'),
-                    'day_of_week' => $dayOfWeek,
+                    'day_of_week' => strtolower($date->format('l')),
                     'slot_duration' => $slotDuration,
-                    'time_slots' => $gridSlots,
+                    'time_slots' => $timeGrid,
                     'hall' => [
                         'id' => $gymHall->id,
                         'name' => $gymHall->name,
                         'court_count' => $gymHall->court_count,
+                        'supports_parallel_bookings' => $gymHall->supports_parallel_bookings,
                     ]
                 ]
             ]);
