@@ -479,13 +479,16 @@ class GymHall extends Model implements HasMedia
         foreach ($courtsToCreate as $index => $courtData) {
             $this->courts()->create([
                 'uuid' => Str::uuid(),
-                'court_identifier' => $courtData['identifier'],
-                'court_name' => $courtData['name'],
-                'court_type' => 'full',
-                'color_code' => $courtData['color'],
+                'name' => $courtData['name'],
+                'court_number' => $index + 1,
                 'is_active' => true,
                 'sort_order' => $index + 1,
-                'max_capacity' => $this->capacity
+                'metadata' => [
+                    'identifier' => $courtData['identifier'],
+                    'color_code' => $courtData['color'],
+                    'court_type' => 'full',
+                    'max_capacity' => $this->capacity
+                ]
             ]);
         }
     }

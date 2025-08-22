@@ -289,7 +289,7 @@ const updateTimeGrid = async () => {
     error.value = null
     
     try {
-        const response = await fetch(`/api/gym-halls/${props.gymHall.id}/time-grid?date=${format(selectedDateObj.value, 'yyyy-MM-dd')}&slot_duration=${selectedIncrement.value}`)
+        const response = await fetch(`/api/v2/gym-halls/${props.gymHall.id}/time-grid?date=${format(selectedDateObj.value, 'yyyy-MM-dd')}&slot_duration=${selectedIncrement.value}`)
         const data = await response.json()
         
         if (data.success) {

@@ -97,6 +97,26 @@ class GymCourt extends Model
         return $this->hourly_rate ?: $this->gymHall->hourly_rate ?: 0;
     }
 
+    public function getCourtIdentifierAttribute(): string
+    {
+        return $this->metadata['identifier'] ?? $this->court_number;
+    }
+
+    public function getColorCodeAttribute(): string
+    {
+        return $this->metadata['color_code'] ?? '#3B82F6';
+    }
+
+    public function getCourtTypeAttribute(): string
+    {
+        return $this->metadata['court_type'] ?? 'full';
+    }
+
+    public function getMaxCapacityAttribute(): ?int
+    {
+        return $this->metadata['max_capacity'] ?? null;
+    }
+
     public function isAvailableAt(\Carbon\Carbon $dateTime, int $durationMinutes = 30): bool
     {
         if (!$this->is_active) {

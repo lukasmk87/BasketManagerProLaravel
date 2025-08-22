@@ -581,10 +581,14 @@ class GymHallController extends Controller
                 'courts' => $courts->map(function ($court) {
                     return [
                         'id' => $court->id,
+                        'name' => $court->name,
+                        'court_number' => $court->court_number,
                         'court_identifier' => $court->court_identifier,
-                        'court_name' => $court->court_name,
                         'color_code' => $court->color_code,
-                        'is_active' => $court->is_active
+                        'court_type' => $court->court_type,
+                        'max_capacity' => $court->max_capacity,
+                        'is_active' => $court->is_active,
+                        'sort_order' => $court->sort_order
                     ];
                 })
             ]
