@@ -231,6 +231,9 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('gym-halls/{gymHall}/availability', [\App\Http\Controllers\Api\GymHallController::class, 'availability']);
     Route::get('gym-halls/{gymHall}/schedule', [\App\Http\Controllers\Api\GymHallController::class, 'schedule']);
     Route::get('gym-halls/{gymHall}/statistics', [\App\Http\Controllers\Api\GymHallController::class, 'statistics']);
+    Route::post('gym-halls/{gymHall}/initialize-courts', [\App\Http\Controllers\Api\GymHallController::class, 'initializeCourts']);
+    Route::get('gym-halls/{gymHall}/availability-with-courts', [\App\Http\Controllers\Api\GymHallController::class, 'availabilityWithCourts']);
+    Route::put('gym-halls/{gymHall}/court-settings', [\App\Http\Controllers\Api\GymHallController::class, 'updateCourtSettings']);
     
     // Hall Time Slots Management (Custom Times)
     Route::get('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\GymManagementController::class, 'getHallTimeSlots']);

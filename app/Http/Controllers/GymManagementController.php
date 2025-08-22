@@ -103,9 +103,14 @@ class GymManagementController extends Controller
         if ($userClub) {
             $gymHalls = GymHall::where('club_id', $userClub->id)
                 ->withCount(['timeSlots', 'bookings'])
-                ->with(['timeSlots' => function ($query) {
-                    $query->orderBy('day_of_week')->orderBy('start_time');
-                }])
+                ->with([
+                    'timeSlots' => function ($query) {
+                        $query->orderBy('day_of_week')->orderBy('start_time');
+                    },
+                    'courts' => function ($query) {
+                        $query->active()->orderBy('sort_order');
+                    }
+                ])
                 ->orderBy('name')
                 ->get();
         }

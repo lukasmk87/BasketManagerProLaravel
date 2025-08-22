@@ -38,6 +38,19 @@
                     >
                         Öffnungszeiten
                     </button>
+                    <button
+                        v-if="gymHall && gymHall.hall_type !== 'single'"
+                        @click="activeTab = 'courts'"
+                        type="button"
+                        :class="[
+                            activeTab === 'courts'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                            'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
+                        ]"
+                    >
+                        Plätze verwalten
+                    </button>
                 </nav>
             </div>
 
@@ -252,10 +265,74 @@
                         </div>
                     </div>
 
-                    <!-- Additional Settings -->
+                    <!-- Court Configuration -->
                     <div>
-                        <h4 class="font-medium text-gray-900 mb-4">Weitere Einstellungen</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <h4 class="font-medium text-gray-900 mb-4">Platz-Konfiguration</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Hallentyp</label>
+                                <select
+                                    v-model="form.hall_type"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                                    <option value="single">Einfachhalle (1 Platz)</option>
+                                    <option value="double">Doppelhalle (2 Plätze)</option>
+                                    <option value="triple">Dreifachhalle (3 Plätze)</option>
+                                    <option value="multi">Mehrfachhalle (4+ Plätze)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Anzahl Plätze</label>
+                                <input
+                                    v-model.number="form.court_count"
+                                    type="number"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                    placeholder="1"
+                                    min="1"
+                                    max="10"
+                                />
+                            </div>
+                            <div class="flex items-center pt-6">
+                                <label class="flex items-center">
+                                    <input
+                                        v-model="form.supports_parallel_bookings"
+                                        type="checkbox"
+                                        class="rounded border-gray-300 text-blue-600"
+                                    />
+                                    <span class="ml-2 text-sm text-gray-700">Parallel-Buchungen</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Booking Settings -->
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-4">Buchungseinstellungen</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mindestbuchungsdauer (Min.)</label>
+                                <select
+                                    v-model.number="form.min_booking_duration_minutes"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                                    <option :value="15">15 Minuten</option>
+                                    <option :value="30">30 Minuten</option>
+                                    <option :value="60">60 Minuten</option>
+                                    <option :value="90">90 Minuten</option>
+                                    <option :value="120">120 Minuten</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Buchungsintervall (Min.)</label>
+                                <select
+                                    v-model.number="form.booking_increment_minutes"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                                    <option :value="15">15 Minuten</option>
+                                    <option :value="30">30 Minuten</option>
+                                    <option :value="60">60 Minuten</option>
+                                </select>
+                            </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Stundensatz (€)</label>
                                 <input
@@ -267,24 +344,29 @@
                                     min="0"
                                 />
                             </div>
-                            <div class="flex items-center space-x-4 pt-6">
-                                <label class="flex items-center">
-                                    <input
-                                        v-model="form.is_active"
-                                        type="checkbox"
-                                        class="rounded border-gray-300 text-blue-600"
-                                    />
-                                    <span class="ml-2 text-sm text-gray-700">Aktiv</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input
-                                        v-model="form.requires_key"
-                                        type="checkbox"
-                                        class="rounded border-gray-300 text-blue-600"
-                                    />
-                                    <span class="ml-2 text-sm text-gray-700">Schlüssel erforderlich</span>
-                                </label>
-                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Settings -->
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-4">Weitere Einstellungen</h4>
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center">
+                                <input
+                                    v-model="form.is_active"
+                                    type="checkbox"
+                                    class="rounded border-gray-300 text-blue-600"
+                                />
+                                <span class="ml-2 text-sm text-gray-700">Aktiv</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    v-model="form.requires_key"
+                                    type="checkbox"
+                                    class="rounded border-gray-300 text-blue-600"
+                                />
+                                <span class="ml-2 text-sm text-gray-700">Schlüssel erforderlich</span>
+                            </label>
                         </div>
                     </div>
 
@@ -338,6 +420,83 @@
                     @updated="onTimeSlotsUpdated"
                     @error="onTimeSlotsError"
                 />
+            </div>
+
+            <!-- Courts Tab -->
+            <div v-if="activeTab === 'courts' && gymHall">
+                <div class="space-y-6">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="font-medium text-blue-900 mb-2">Platz-Konfiguration</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-blue-700 font-medium">Hallentyp:</span>
+                                <span class="ml-2">{{ getHallTypeDisplay(gymHall.hall_type) }}</span>
+                            </div>
+                            <div>
+                                <span class="text-blue-700 font-medium">Anzahl Plätze:</span>
+                                <span class="ml-2">{{ gymHall.court_count || 1 }}</span>
+                            </div>
+                            <div>
+                                <span class="text-blue-700 font-medium">Parallel-Buchungen:</span>
+                                <span class="ml-2">{{ gymHall.supports_parallel_bookings ? 'Aktiviert' : 'Deaktiviert' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-blue-700 font-medium">Buchungsintervall:</span>
+                                <span class="ml-2">{{ gymHall.booking_increment_minutes || 30 }} Min.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="gymHall.courts && gymHall.courts.length > 0">
+                        <h4 class="font-medium text-gray-900 mb-4">Plätze</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div 
+                                v-for="court in gymHall.courts" 
+                                :key="court.id"
+                                class="border border-gray-200 rounded-lg p-4"
+                            >
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center space-x-2">
+                                        <div 
+                                            class="w-4 h-4 rounded-full"
+                                            :style="{ backgroundColor: court.color_code }"
+                                        ></div>
+                                        <span class="font-medium">{{ court.court_name }}</span>
+                                    </div>
+                                    <span 
+                                        :class="[
+                                            'px-2 py-1 text-xs font-semibold rounded-full',
+                                            court.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                        ]"
+                                    >
+                                        {{ court.is_active ? 'Aktiv' : 'Inaktiv' }}
+                                    </span>
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <p>Bezeichner: {{ court.court_identifier }}</p>
+                                    <p v-if="court.max_capacity">Kapazität: {{ court.max_capacity }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="text-center py-8">
+                        <div class="text-gray-400 mb-4">
+                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h6m-6 4h6m-6 4h6" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Keine Plätze konfiguriert</h3>
+                        <p class="text-gray-600 mb-4">Initialisieren Sie Standard-Plätze für diese Halle.</p>
+                        <button
+                            @click="initializeCourts"
+                            :disabled="initializingCourts"
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md disabled:opacity-50"
+                        >
+                            {{ initializingCourts ? 'Initialisiere...' : 'Standard-Plätze erstellen' }}
+                        </button>
+                    </div>
+                </div>
             </div>
         </template>
 
@@ -407,6 +566,11 @@ const form = ref({
     address_zip: '',
     address_country: 'Deutschland',
     capacity: null,
+    hall_type: 'single',
+    court_count: 1,
+    supports_parallel_bookings: false,
+    min_booking_duration_minutes: 30,
+    booking_increment_minutes: 30,
     opening_time: '',
     closing_time: '',
     hourly_rate: null,
@@ -437,6 +601,7 @@ const submitting = ref(false)
 const errors = ref([])
 const activeTab = ref('details')
 const hallTimeSlots = ref([])
+const initializingCourts = ref(false)
 
 // Computed
 const facilitiesArray = computed(() => {
@@ -577,6 +742,18 @@ const validateForm = () => {
         errors.value.push('Ungültige E-Mail-Adresse')
     }
     
+    if (form.value.court_count < 1 || form.value.court_count > 10) {
+        errors.value.push('Anzahl Plätze muss zwischen 1 und 10 liegen')
+    }
+    
+    if (form.value.min_booking_duration_minutes < 15 || form.value.min_booking_duration_minutes > 480) {
+        errors.value.push('Mindestbuchungsdauer muss zwischen 15 und 480 Minuten liegen')
+    }
+    
+    if (![15, 30, 60].includes(form.value.booking_increment_minutes)) {
+        errors.value.push('Buchungsintervall muss 15, 30 oder 60 Minuten sein')
+    }
+    
     return errors.value.length === 0
 }
 
@@ -609,6 +786,41 @@ const onTimeSlotsError = (error) => {
     console.error('Time slots error:', error)
 }
 
+const initializeCourts = async () => {
+    if (!props.gymHall?.id) return
+    
+    initializingCourts.value = true
+    
+    try {
+        const response = await window.axios.post(`/api/v2/gym-halls/${props.gymHall.id}/initialize-courts`, {}, {
+            headers: {
+                'Accept': 'application/json'
+            },
+            withCredentials: true
+        })
+        
+        if (response.data.success) {
+            // Reload the gym hall data to show the courts
+            emit('updated')
+        }
+    } catch (error) {
+        console.error('Error initializing courts:', error)
+        errors.value = [error.response?.data?.message || 'Fehler beim Initialisieren der Plätze']
+    } finally {
+        initializingCourts.value = false
+    }
+}
+
+const getHallTypeDisplay = (hallType) => {
+    const types = {
+        'single': 'Einfachhalle',
+        'double': 'Doppelhalle', 
+        'triple': 'Dreifachhalle',
+        'multi': 'Mehrfachhalle'
+    }
+    return types[hallType] || hallType
+}
+
 const resetForm = () => {
     form.value = {
         club_id: null,
@@ -619,6 +831,11 @@ const resetForm = () => {
         address_zip: '',
         address_country: 'Deutschland',
         capacity: null,
+        hall_type: 'single',
+        court_count: 1,
+        supports_parallel_bookings: false,
+        min_booking_duration_minutes: 30,
+        booking_increment_minutes: 30,
         opening_time: '',
         closing_time: '',
         hourly_rate: null,
@@ -661,6 +878,11 @@ watch(() => props.gymHall, (newGymHall) => {
             address_zip: newGymHall.address_zip || '',
             address_country: newGymHall.address_country || 'Deutschland',
             capacity: newGymHall.capacity,
+            hall_type: newGymHall.hall_type || 'single',
+            court_count: newGymHall.court_count || 1,
+            supports_parallel_bookings: newGymHall.supports_parallel_bookings ?? false,
+            min_booking_duration_minutes: newGymHall.min_booking_duration_minutes || 30,
+            booking_increment_minutes: newGymHall.booking_increment_minutes || 30,
             opening_time: newGymHall.opening_time || '',
             closing_time: newGymHall.closing_time || '',
             hourly_rate: newGymHall.hourly_rate,

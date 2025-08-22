@@ -541,8 +541,5 @@ class GymHall extends Model implements HasMedia
     // ROUTE MODEL BINDING
     // ============================
 
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
+    // Using default 'id' for route model binding to match frontend implementation
 }
