@@ -102,19 +102,19 @@ class GymHall extends Model implements HasMedia
         return $this->hasMany(GymTimeSlot::class);
     }
 
-    public function activeTimeSlots(): HasMany
-    {
-        return $this->timeSlots()->where('status', 'active');
-    }
-
     public function courts(): HasMany
     {
-        return $this->hasMany(GymHallCourt::class);
+        return $this->hasMany(GymCourt::class);
     }
 
     public function activeCourts(): HasMany
     {
-        return $this->courts()->active();
+        return $this->courts()->where('is_active', true);
+    }
+
+    public function activeTimeSlots(): HasMany
+    {
+        return $this->timeSlots()->where('status', 'active');
     }
 
     public function bookings()

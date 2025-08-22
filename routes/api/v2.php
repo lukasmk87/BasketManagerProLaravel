@@ -233,6 +233,16 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('gym-halls/{gymHall}/statistics', [\App\Http\Controllers\Api\GymHallController::class, 'statistics']);
     Route::post('gym-halls/{gymHall}/initialize-courts', [\App\Http\Controllers\Api\GymHallController::class, 'initializeCourts']);
     Route::get('gym-halls/{gymHall}/availability-with-courts', [\App\Http\Controllers\Api\GymHallController::class, 'availabilityWithCourts']);
+    
+    // Courts Management
+    Route::get('gym-halls/{gymHall}/courts', [\App\Http\Controllers\Api\GymHallController::class, 'getCourts']);
+    Route::post('gym-halls/{gymHall}/courts', [\App\Http\Controllers\Api\GymHallController::class, 'createCourt']);
+    Route::put('gym-halls/{gymHall}/courts/{court}', [\App\Http\Controllers\Api\GymHallController::class, 'updateCourt']);
+    Route::delete('gym-halls/{gymHall}/courts/{court}', [\App\Http\Controllers\Api\GymHallController::class, 'deleteCourt']);
+    Route::get('gym-halls/{gymHall}/courts/{court}/availability', [\App\Http\Controllers\Api\GymHallController::class, 'getCourtAvailability']);
+    
+    // Time Grid
+    Route::get('gym-halls/{gymHall}/time-grid', [\App\Http\Controllers\Api\GymHallController::class, 'getTimeGrid']);
     Route::put('gym-halls/{gymHall}/court-settings', [\App\Http\Controllers\Api\GymHallController::class, 'updateCourtSettings']);
     
     // Hall Time Slots Management (Custom Times)

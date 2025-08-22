@@ -140,14 +140,14 @@
                                     Schnellaktionen
                                 </h3>
                                 <div class="space-y-3">
-                                    <button
+                                    <Link
                                         v-if="canManageHalls"
-                                        @click="openHallModal()"
+                                        :href="route('gym.create-hall')"
                                         class="w-full flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
                                     >
                                         <PlusIcon class="h-5 w-5 mr-2" />
                                         Neue Sporthalle
-                                    </button>
+                                    </Link>
                                     <button
                                         @click="showMyBookings"
                                         class="w-full flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\GymHall;
+use App\Models\GymCourt;
 use App\Models\Club;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -675,5 +676,155 @@ class GymHallController extends Controller
                 'booking_increment_minutes' => $gymHall->booking_increment_minutes
             ]
         ]);
+    }
+
+    /**
+     * Get all courts for a gym hall.
+     */
+    public function getCourts(GymHall $gymHall): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+            
+            if (!$userClub || $gymHall->club_id !== $userClub->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Keine Berechtigung für diese Halle.'
+                ], 403);
+            }
+
+            $courts = $gymHall->courts()
+                ->active()
+                ->orderedByNumber()
+                ->get()
+                ->map(function ($court) {
+                    return [
+                        'id' => $court->id,
+                        'uuid' => $court->uuid,
+                        'name' => $court->full_name,
+                        'court_number' => $court->court_number,
+                        'is_active' => $court->is_active,
+                        'hourly_rate' => $court->effective_hourly_rate,
+                        'notes' => $court->notes,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'courts' => $courts,
+                    'total' => $courts->count()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting courts: ' . $e->getMessage(), [
+                'gym_hall_id' => $gymHall->id,
+                'user_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Laden der Plätze.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get time grid for a gym hall.
+     */
+    public function getTimeGrid(Request $request, GymHall $gymHall): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+            
+            if (!$userClub || $gymHall->club_id !== $userClub->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Keine Berechtigung für diese Halle.'
+                ], 403);
+            }
+
+            $request->validate([
+                'date' => 'required|date',
+                'slot_duration' => 'sometimes|integer|min:15|max:120',
+            ]);
+
+            $date = Carbon::parse($request->date);
+            $slotDuration = $request->get('slot_duration', 30);
+
+            // Get day of week
+            $dayOfWeek = strtolower($date->format('l'));
+            
+            // Get time slots for this day
+            $timeSlots = $gymHall->timeSlots()
+                ->where('day_of_week', $dayOfWeek)
+                ->where('is_active', true)
+                ->orderBy('start_time')
+                ->get();
+
+            if ($timeSlots->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'date' => $date->format('Y-m-d'),
+                        'day_of_week' => $dayOfWeek,
+                        'time_slots' => [],
+                        'message' => 'Keine Öffnungszeiten für diesen Tag.'
+                    ]
+                ]);
+            }
+
+            $gridSlots = [];
+
+            foreach ($timeSlots as $timeSlot) {
+                $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $timeSlot->start_time);
+                $endTime = Carbon::parse($date->format('Y-m-d') . ' ' . $timeSlot->end_time);
+
+                $current = $startTime->copy();
+                while ($current->copy()->addMinutes($slotDuration)->lte($endTime)) {
+                    $slotEnd = $current->copy()->addMinutes($slotDuration);
+                    
+                    $gridSlots[] = [
+                        'start_time' => $current->format('H:i'),
+                        'end_time' => $slotEnd->format('H:i'),
+                        'duration_minutes' => $slotDuration,
+                        'is_past' => $current->lt(now()),
+                        'time_slot_id' => $timeSlot->id,
+                    ];
+                    
+                    $current->addMinutes($slotDuration);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'date' => $date->format('Y-m-d'),
+                    'day_of_week' => $dayOfWeek,
+                    'slot_duration' => $slotDuration,
+                    'time_slots' => $gridSlots,
+                    'hall' => [
+                        'id' => $gymHall->id,
+                        'name' => $gymHall->name,
+                        'court_count' => $gymHall->court_count,
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting time grid: ' . $e->getMessage(), [
+                'gym_hall_id' => $gymHall->id,
+                'user_id' => auth()->id(),
+                'request_data' => $request->all(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Laden des Zeitrasters.'
+            ], 500);
+        }
     }
 }
