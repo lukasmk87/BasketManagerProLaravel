@@ -392,6 +392,28 @@
                         </div>
                     </div>
 
+                    <!-- Active Time Slots Warning (for existing halls) -->
+                    <div v-if="gymHall && gymHall.time_slots_count > 0" class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            <div>
+                                <h3 class="text-sm font-medium text-yellow-800">Aktive Zeitfenster vorhanden</h3>
+                                <p class="mt-1 text-sm text-yellow-700">
+                                    Diese Halle hat {{ gymHall.time_slots_count }} aktive Zeitfenster. 
+                                    Zum Löschen der Halle müssen alle Zeitfenster zuerst entfernt werden.
+                                    <button 
+                                        @click="activeTab = 'schedule'" 
+                                        class="ml-2 font-medium underline hover:no-underline"
+                                    >
+                                        Zu den Öffnungszeiten →
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Error Messages -->
                     <div v-if="errors.length > 0" class="bg-red-50 border border-red-200 rounded-md p-4">
                         <div class="flex">
@@ -509,11 +531,15 @@
                         type="button"
                         class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
                         :disabled="submitting"
+                        :title="gymHall.time_slots_count > 0 ? `${gymHall.time_slots_count} aktive Zeitfenster müssen zuerst entfernt werden` : 'Sporthalle löschen'"
                     >
                         <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                         Löschen
+                        <span v-if="gymHall.time_slots_count > 0" class="ml-1 px-1.5 py-0.5 text-xs bg-red-500 rounded-full">
+                            {{ gymHall.time_slots_count }}
+                        </span>
                     </button>
                 </div>
                 <div class="flex space-x-3">
@@ -719,10 +745,38 @@ const deleteGymHall = async () => {
         }
     } catch (error) {
         console.error('Error deleting gym hall:', error)
-        if (error.response?.data?.message) {
+        
+        if (error.response?.status === 422) {
+            // Handle constraint violations with specific guidance
+            const message = error.response.data.message || 'Sporthalle kann nicht gelöscht werden'
+            
+            // Show detailed error dialog with options
+            const deleteAnyway = confirm(
+                `${message}\n\n` +
+                `Aktuelle Zeitfenster müssen zuerst entfernt werden.\n\n` +
+                `Möchten Sie zur Zeitfenster-Verwaltung wechseln?\n\n` +
+                `(Klicken Sie "OK" um zu den Öffnungszeiten zu wechseln, oder "Abbrechen" um zu schließen)`
+            )
+            
+            if (deleteAnyway) {
+                // Switch to schedule tab to manage time slots
+                activeTab.value = 'schedule'
+                errors.value = [
+                    'Bitte entfernen Sie zuerst alle Zeitfenster, bevor Sie die Halle löschen.',
+                    'Sie befinden sich jetzt im Öffnungszeiten-Tab.'
+                ]
+            } else {
+                errors.value = [message]
+            }
+        } else if (error.response?.data?.message) {
             errors.value = [error.response.data.message]
         } else {
             errors.value = ['Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.']
+        }
+        
+        // Always switch back to details tab to show errors
+        if (activeTab.value !== 'schedule') {
+            activeTab.value = 'details'
         }
     }
 }

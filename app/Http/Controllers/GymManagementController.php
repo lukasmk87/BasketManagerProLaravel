@@ -287,6 +287,12 @@ class GymManagementController extends Controller
      */
     public function updateHallTimeSlots(Request $request, $hallId): JsonResponse
     {
+        \Log::info('UpdateHallTimeSlots called', [
+            'hall_id' => $hallId,
+            'user_id' => auth()->id(),
+            'payload' => $request->all()
+        ]);
+        
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
         
@@ -297,23 +303,45 @@ class GymManagementController extends Controller
             ], 403);
         }
         
+        if (!$userClub) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Vereinszuordnung gefunden. Bitte wenden Sie sich an den Administrator.'
+            ], 422);
+        }
+        
         $hall = GymHall::where('id', $hallId)
             ->where('club_id', $userClub->id)
-            ->firstOrFail();
+            ->first();
+            
+        if (!$hall) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sporthalle nicht gefunden oder keine Berechtigung.'
+            ], 404);
+        }
 
-        $request->validate([
-            'time_slots' => 'required|array',
-            'time_slots.*.title' => 'required|string|max:255',
-            'time_slots.*.description' => 'nullable|string',
-            'time_slots.*.day_of_week' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
-            'time_slots.*.uses_custom_times' => 'boolean',
-            'time_slots.*.custom_times' => 'nullable|array',
-            'time_slots.*.start_time' => 'nullable|string',
-            'time_slots.*.end_time' => 'nullable|string',
-            'time_slots.*.slot_type' => 'required|in:training,game,event,maintenance',
-            'time_slots.*.valid_from' => 'required|date',
-            'time_slots.*.valid_until' => 'nullable|date|after:valid_from',
-        ]);
+        try {
+            $request->validate([
+                'time_slots' => 'required|array',
+                'time_slots.*.title' => 'required|string|max:255',
+                'time_slots.*.description' => 'nullable|string',
+                'time_slots.*.day_of_week' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+                'time_slots.*.uses_custom_times' => 'boolean',
+                'time_slots.*.custom_times' => 'nullable|array',
+                'time_slots.*.start_time' => 'nullable|string',
+                'time_slots.*.end_time' => 'nullable|string',
+                'time_slots.*.slot_type' => 'required|in:training,game,event,maintenance',
+                'time_slots.*.valid_from' => 'required|date',
+                'time_slots.*.valid_until' => 'nullable|date|after:valid_from',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validierungsfehler bei den Zeitslot-Daten.',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
         // Additional validation: either custom_times OR day_of_week + start_time + end_time
         foreach ($request->time_slots as $index => $slotData) {

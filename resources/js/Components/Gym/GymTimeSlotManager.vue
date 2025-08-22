@@ -407,9 +407,10 @@ const saveTimeSlots = async () => {
             }
         }
         
-        const response = await window.axios.put(`/api/v2/gym-halls/${props.gymHallId}/time-slots`, {
-            time_slots: timeSlots
-        }, {
+        const payload = { time_slots: timeSlots }
+        console.log('Sending time slots payload:', payload)
+        
+        const response = await window.axios.put(`/api/v2/gym-halls/${props.gymHallId}/time-slots`, payload, {
             withCredentials: true
         })
         
@@ -429,9 +430,24 @@ const saveTimeSlots = async () => {
         }
     } catch (error) {
         console.error('Error saving time slots:', error)
+        
+        let errorMessage = 'Fehler beim Speichern der Zeitslots'
+        
+        if (error.response?.status === 422) {
+            // Validation errors
+            if (error.response.data?.errors) {
+                const validationErrors = Object.values(error.response.data.errors).flat()
+                errorMessage = validationErrors.join(', ')
+            } else if (error.response.data?.message) {
+                errorMessage = error.response.data.message
+            }
+        } else if (error.response?.data?.message) {
+            errorMessage = error.response.data.message
+        }
+        
         statusMessage.value = {
             type: 'error',
-            text: error.response?.data?.message || 'Fehler beim Speichern der Zeitslots'
+            text: errorMessage
         }
         emit('error', error)
     } finally {
