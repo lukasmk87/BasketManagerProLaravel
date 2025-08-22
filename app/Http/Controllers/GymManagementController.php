@@ -801,6 +801,171 @@ class GymManagementController extends Controller
     }
 
     /**
+     * Get available time segments for a time slot and day.
+     */
+    public function getTimeSlotSegments(Request $request, $timeSlotId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
+                $query->where('club_id', $userClub->id);
+            })
+            ->where('id', $timeSlotId)
+            ->firstOrFail();
+
+        $dayOfWeek = $request->get('day_of_week', 'monday');
+        $incrementMinutes = $request->get('increment_minutes', 30);
+
+        $segments = $timeSlot->getAvailableSegmentsForDay($dayOfWeek, $incrementMinutes);
+
+        return response()->json([
+            'success' => true,
+            'data' => $segments,
+        ]);
+    }
+
+    /**
+     * Assign team to a specific time segment.
+     */
+    public function assignTeamToSegment(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung zum Zuordnen von Teams.'
+            ], 403);
+        }
+
+        $request->validate([
+            'gym_time_slot_id' => 'required|exists:gym_time_slots,id',
+            'team_id' => 'required|exists:teams,id',
+            'day_of_week' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'start_time' => 'required|string',
+            'end_time' => 'required|string|after:start_time',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
+                $query->where('club_id', $userClub->id);
+            })
+            ->where('id', $request->gym_time_slot_id)
+            ->firstOrFail();
+
+        $team = \App\Models\Team::where('id', $request->team_id)
+            ->where('club_id', $userClub->id)
+            ->firstOrFail();
+
+        $validationErrors = $timeSlot->canAssignTeamToSegment(
+            $team->id,
+            $request->day_of_week,
+            $request->start_time,
+            $request->end_time
+        );
+
+        if (!empty($validationErrors)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Zuordnung nicht möglich',
+                'errors' => $validationErrors
+            ], 422);
+        }
+
+        $assignment = $timeSlot->assignTeamToSegment(
+            $team,
+            $request->day_of_week,
+            $request->start_time,
+            $request->end_time,
+            $user,
+            $request->notes
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Team erfolgreich dem Zeitfenster zugeordnet.',
+            'data' => [
+                'id' => $assignment->id,
+                'team_name' => $team->name,
+                'time_range' => $assignment->time_range,
+                'day_name' => $assignment->day_name,
+            ]
+        ]);
+    }
+
+    /**
+     * Remove team assignment from time segment.
+     */
+    public function removeTeamSegmentAssignment(Request $request, $assignmentId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung zum Entfernen von Team-Zuordnungen.'
+            ], 403);
+        }
+
+        $assignment = \App\Models\GymTimeSlotTeamAssignment::whereHas('gymTimeSlot.gymHall', function ($query) use ($userClub) {
+                $query->where('club_id', $userClub->id);
+            })
+            ->where('id', $assignmentId)
+            ->firstOrFail();
+
+        $assignment->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Team-Zuordnung erfolgreich entfernt.',
+        ]);
+    }
+
+    /**
+     * Get team assignments for a specific time slot.
+     */
+    public function getTimeSlotTeamAssignments(Request $request, $timeSlotId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
+                $query->where('club_id', $userClub->id);
+            })
+            ->where('id', $timeSlotId)
+            ->firstOrFail();
+
+        $assignments = $timeSlot->activeTeamAssignments()
+            ->with(['team'])
+            ->orderBy('day_of_week')
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy('day_of_week')
+            ->map(function ($dayAssignments) {
+                return $dayAssignments->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->id,
+                        'team_id' => $assignment->team_id,
+                        'team_name' => $assignment->team->name,
+                        'start_time' => $assignment->start_time->format('H:i'),
+                        'end_time' => $assignment->end_time->format('H:i'),
+                        'duration_minutes' => $assignment->duration_minutes,
+                        'notes' => $assignment->notes,
+                        'assigned_at' => $assignment->assigned_at->format('Y-m-d H:i'),
+                    ];
+                })->toArray();
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $assignments,
+        ]);
+    }
+
+    /**
      * Calculate duration in minutes between two time strings.
      */
     private function calculateDuration(?string $startTime, ?string $endTime): ?int

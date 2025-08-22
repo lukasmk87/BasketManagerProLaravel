@@ -138,6 +138,16 @@ class GymTimeSlot extends Model
         );
     }
 
+    public function teamAssignments(): HasMany
+    {
+        return $this->hasMany(GymTimeSlotTeamAssignment::class);
+    }
+
+    public function activeTeamAssignments(): HasMany
+    {
+        return $this->teamAssignments()->where('status', 'active');
+    }
+
     // ============================
     // SCOPES
     // ============================
@@ -947,6 +957,172 @@ class GymTimeSlot extends Model
         ];
 
         return $days[$dayName] ?? 1;
+    }
+
+    // ============================
+    // SEGMENT-BASED TEAM ASSIGNMENT METHODS
+    // ============================
+
+    public function getTeamAssignmentsForDay(string $dayOfWeek): array
+    {
+        return $this->activeTeamAssignments()
+            ->where('day_of_week', $dayOfWeek)
+            ->with(['team'])
+            ->orderBy('start_time')
+            ->get()
+            ->map(function ($assignment) {
+                return [
+                    'id' => $assignment->id,
+                    'team_id' => $assignment->team_id,
+                    'team_name' => $assignment->team->name,
+                    'start_time' => $assignment->start_time->format('H:i'),
+                    'end_time' => $assignment->end_time->format('H:i'),
+                    'duration_minutes' => $assignment->duration_minutes,
+                    'notes' => $assignment->notes,
+                ];
+            })
+            ->toArray();
+    }
+
+    public function assignTeamToSegment(
+        Team $team,
+        string $dayOfWeek,
+        string $startTime,
+        string $endTime,
+        User $assignedBy,
+        string $notes = null
+    ): GymTimeSlotTeamAssignment {
+        $startCarbon = Carbon::createFromTimeString($startTime);
+        $endCarbon = Carbon::createFromTimeString($endTime);
+        $duration = $startCarbon->diffInMinutes($endCarbon);
+
+        return $this->teamAssignments()->create([
+            'uuid' => Str::uuid(),
+            'team_id' => $team->id,
+            'day_of_week' => $dayOfWeek,
+            'start_time' => $startTime,
+            'end_time' => $endTime,
+            'duration_minutes' => $duration,
+            'status' => 'active',
+            'notes' => $notes,
+            'assigned_by' => $assignedBy->id,
+            'assigned_at' => now(),
+            'valid_from' => now()->toDateString(),
+        ]);
+    }
+
+    public function removeTeamAssignment(int $assignmentId): bool
+    {
+        $assignment = $this->teamAssignments()->find($assignmentId);
+        
+        if ($assignment) {
+            return $assignment->delete();
+        }
+        
+        return false;
+    }
+
+    public function getAvailableSegmentsForDay(string $dayOfWeek, int $incrementMinutes = 30): array
+    {
+        $times = $this->getTimesForDay($dayOfWeek);
+        
+        if (!$times || !$times['start_time'] || !$times['end_time']) {
+            return [];
+        }
+
+        $startTime = Carbon::createFromTimeString($times['start_time']);
+        $endTime = Carbon::createFromTimeString($times['end_time']);
+        
+        $segments = [];
+        $current = $startTime->copy();
+
+        while ($current->copy()->addMinutes($incrementMinutes)->lte($endTime)) {
+            $segmentStart = $current->copy();
+            $segmentEnd = $current->copy()->addMinutes($incrementMinutes);
+            
+            $assignedTeams = $this->getTeamsAssignedToSegment(
+                $dayOfWeek,
+                $segmentStart->format('H:i'),
+                $segmentEnd->format('H:i')
+            );
+            
+            $segments[] = [
+                'start_time' => $segmentStart->format('H:i'),
+                'end_time' => $segmentEnd->format('H:i'),
+                'duration_minutes' => $incrementMinutes,
+                'segment_id' => $segmentStart->format('Hi') . '-' . $segmentEnd->format('Hi'),
+                'is_available' => empty($assignedTeams),
+                'assigned_teams' => $assignedTeams,
+            ];
+            
+            $current->addMinutes($incrementMinutes);
+        }
+
+        return $segments;
+    }
+
+    public function getTeamsAssignedToSegment(string $dayOfWeek, string $startTime, string $endTime): array
+    {
+        return $this->activeTeamAssignments()
+            ->where('day_of_week', $dayOfWeek)
+            ->where(function($q) use ($startTime, $endTime) {
+                $q->where('start_time', '<', $endTime)
+                  ->where('end_time', '>', $startTime);
+            })
+            ->with(['team'])
+            ->get()
+            ->map(function ($assignment) {
+                return [
+                    'id' => $assignment->id,
+                    'team_id' => $assignment->team_id,
+                    'team_name' => $assignment->team->name,
+                    'start_time' => $assignment->start_time->format('H:i'),
+                    'end_time' => $assignment->end_time->format('H:i'),
+                ];
+            })
+            ->toArray();
+    }
+
+    public function canAssignTeamToSegment(
+        int $teamId,
+        string $dayOfWeek,
+        string $startTime,
+        string $endTime
+    ): array {
+        $errors = [];
+
+        if (GymTimeSlotTeamAssignment::hasConflictForTeam(
+            $this->id,
+            $teamId,
+            $dayOfWeek,
+            $startTime,
+            $endTime
+        )) {
+            $errors[] = 'Team hat bereits eine Zuordnung zu dieser Zeit.';
+        }
+
+        $times = $this->getTimesForDay($dayOfWeek);
+        if (!$times) {
+            $errors[] = 'Keine Öffnungszeiten für diesen Tag definiert.';
+        } else {
+            if ($startTime < $times['start_time'] || $endTime > $times['end_time']) {
+                $errors[] = 'Zeitfenster liegt außerhalb der Öffnungszeiten.';
+            }
+        }
+
+        $startCarbon = Carbon::createFromTimeString($startTime);
+        $endCarbon = Carbon::createFromTimeString($endTime);
+        $duration = $startCarbon->diffInMinutes($endCarbon);
+
+        if ($duration < 30) {
+            $errors[] = 'Minimale Buchungsdauer von 30 Minuten unterschritten.';
+        }
+
+        if ($duration % 30 !== 0) {
+            $errors[] = 'Buchungsdauer muss in 30-Minuten-Schritten erfolgen.';
+        }
+
+        return $errors;
     }
 
     // ============================

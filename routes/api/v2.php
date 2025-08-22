@@ -240,6 +240,12 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::put('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\GymManagementController::class, 'updateHallTimeSlots']);
     Route::put('time-slots/{slotId}/custom-times', [\App\Http\Controllers\GymManagementController::class, 'updateTimeSlotCustomTimes']);
     
+    // Team Segment Assignments (30-min slots)
+    Route::get('time-slots/{timeSlotId}/segments', [\App\Http\Controllers\GymManagementController::class, 'getTimeSlotSegments']);
+    Route::post('time-slots/assign-team-segment', [\App\Http\Controllers\GymManagementController::class, 'assignTeamToSegment']);
+    Route::delete('team-assignments/{assignmentId}', [\App\Http\Controllers\GymManagementController::class, 'removeTeamSegmentAssignment']);
+    Route::get('time-slots/{timeSlotId}/team-assignments', [\App\Http\Controllers\GymManagementController::class, 'getTimeSlotTeamAssignments']);
+    
     // Time Slot Management
     Route::apiResource('gym-time-slots', \App\Http\Controllers\Api\GymTimeSlotController::class);
     Route::post('gym-time-slots/{timeSlot}/assign', [\App\Http\Controllers\Api\GymTimeSlotController::class, 'assignToTeam']);
