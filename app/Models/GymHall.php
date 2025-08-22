@@ -167,17 +167,6 @@ class GymHall extends Model implements HasMedia
     // ACCESSORS & MUTATORS
     // ============================
 
-    public function getFullAddressAttribute(): string
-    {
-        $parts = array_filter([
-            $this->address_street,
-            $this->address_zip . ' ' . $this->address_city,
-            $this->address_country,
-        ]);
-
-        return implode(', ', $parts);
-    }
-
     public function getIsOpenAttribute(): bool
     {
         if (!$this->is_active) {
@@ -535,6 +524,31 @@ class GymHall extends Model implements HasMedia
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    // ============================
+    // ACCESSORS
+    // ============================
+    
+    public function getFullAddressAttribute(): string
+    {
+        $addressParts = [];
+        
+        if ($this->address_street) {
+            $addressParts[] = $this->address_street;
+        }
+        
+        if ($this->address_zip && $this->address_city) {
+            $addressParts[] = $this->address_zip . ' ' . $this->address_city;
+        } elseif ($this->address_city) {
+            $addressParts[] = $this->address_city;
+        }
+        
+        if ($this->address_country && $this->address_country !== 'Deutschland') {
+            $addressParts[] = $this->address_country;
+        }
+        
+        return implode(', ', $addressParts) ?: 'Keine Adresse angegeben';
     }
 
     // ============================

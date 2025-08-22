@@ -348,11 +348,19 @@ class GymManagementController extends Controller
             $usesCustomTimes = $slotData['uses_custom_times'] ?? false;
             
             if ($usesCustomTimes) {
-                if (empty($slotData['custom_times'])) {
+                // For custom times, we support two formats:
+                // 1. Old format: custom_times object with days as keys
+                // 2. New format: separate slots with day_of_week + start_time + end_time
+                
+                if (!empty($slotData['custom_times'])) {
+                    // Old format with custom_times object - valid
+                } else if (!empty($slotData['day_of_week']) && !empty($slotData['start_time']) && !empty($slotData['end_time'])) {
+                    // New format with individual slots - valid
+                } else {
                     return response()->json([
                         'success' => false,
-                        'message' => "Zeitslot {$index}: Bei individuellen Zeiten müssen custom_times definiert sein.",
-                        'errors' => ["time_slots.{$index}.custom_times" => ['Custom times sind erforderlich.']]
+                        'message' => "Zeitslot {$index}: Bei individuellen Zeiten sind entweder custom_times oder day_of_week + start_time + end_time erforderlich.",
+                        'errors' => ["time_slots.{$index}" => ['Vollständige Zeitangaben sind erforderlich.']]
                     ], 422);
                 }
             } else {

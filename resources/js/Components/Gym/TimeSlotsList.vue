@@ -125,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import TeamAssignmentModal from './TeamAssignmentModal.vue'
 import {
@@ -170,12 +170,26 @@ const groupedTimeSlots = computed(() => {
 
 // Methods
 const refreshTimeSlots = async () => {
+    if (!props.gymHallId) {
+        console.warn('TimeSlotsList: No gymHallId provided')
+        return
+    }
+    
     try {
         loading.value = true
+        console.log('Loading time slots for hall:', props.gymHallId)
+        
         const response = await axios.get(`/gym-management/halls/${props.gymHallId}/time-slots`)
-        timeSlots.value = response.data.data
+        console.log('Time slots response:', response.data)
+        
+        if (response.data.success && response.data.data) {
+            timeSlots.value = response.data.data
+        } else {
+            timeSlots.value = response.data.data || []
+        }
     } catch (error) {
         console.error('Fehler beim Laden der Zeitslots:', error)
+        timeSlots.value = []
     } finally {
         loading.value = false
     }
@@ -232,6 +246,15 @@ const getSlotTypeClass = (type) => {
 
 // Lifecycle
 onMounted(() => {
-    refreshTimeSlots()
+    if (props.gymHallId) {
+        refreshTimeSlots()
+    }
+})
+
+// Watch for gymHallId changes
+watch(() => props.gymHallId, (newId, oldId) => {
+    if (newId && newId !== oldId) {
+        refreshTimeSlots()
+    }
 })
 </script>

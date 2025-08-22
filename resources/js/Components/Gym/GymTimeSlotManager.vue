@@ -256,20 +256,42 @@ const loadTimeSlots = () => {
     if (props.initialTimeSlots.length > 0) {
         const slot = props.initialTimeSlots[0]
         
-        if (slot.uses_custom_times && slot.custom_times) {
+        // Check if we have individual time slots per day or custom_times structure
+        const hasCustomTimesSlot = props.initialTimeSlots.some(slot => slot.uses_custom_times && slot.custom_times)
+        const hasIndividualSlots = props.initialTimeSlots.some(slot => slot.uses_custom_times && slot.day_of_week && !slot.custom_times)
+        
+        if (hasCustomTimesSlot) {
+            // Old structure: one slot with custom_times object
+            const customSlot = props.initialTimeSlots.find(slot => slot.uses_custom_times && slot.custom_times)
             useCustomTimes.value = true
             
-            // Load custom times for each day
             weekDays.forEach(day => {
-                if (slot.custom_times[day.key]) {
+                if (customSlot.custom_times[day.key]) {
                     dayTimes.value[day.key] = {
                         enabled: true,
-                        start_time: slot.custom_times[day.key].start_time,
-                        end_time: slot.custom_times[day.key].end_time
+                        start_time: customSlot.custom_times[day.key].start_time,
+                        end_time: customSlot.custom_times[day.key].end_time
+                    }
+                }
+            })
+        } else if (hasIndividualSlots) {
+            // New structure: separate slots per day with uses_custom_times=true
+            useCustomTimes.value = true
+            
+            weekDays.forEach(day => {
+                const daySlot = props.initialTimeSlots.find(slot => 
+                    slot.day_of_week === day.key && slot.uses_custom_times
+                )
+                if (daySlot && daySlot.start_time && daySlot.end_time) {
+                    dayTimes.value[day.key] = {
+                        enabled: true,
+                        start_time: daySlot.start_time,
+                        end_time: daySlot.end_time
                     }
                 }
             })
         } else {
+            // Standard structure: separate slots per day with same times
             useCustomTimes.value = false
             if (slot.start_time && slot.end_time) {
                 defaultTimes.value = {
@@ -380,31 +402,22 @@ const saveTimeSlots = async () => {
                 })
             })
         } else {
-            // Create time slot with custom times
-            const customTimes = {}
-            let hasAnyTimes = false
-            
+            // Create separate time slots for each enabled day with individual times
             weekDays.forEach(day => {
                 const dayTime = dayTimes.value[day.key]
                 if (dayTime.enabled && dayTime.start_time && dayTime.end_time) {
-                    customTimes[day.key] = {
+                    timeSlots.push({
+                        title: `Öffnungszeiten ${day.name}`,
+                        description: `Individuelle Öffnungszeiten für ${day.name}`,
+                        uses_custom_times: true,
+                        day_of_week: day.key,
                         start_time: dayTime.start_time,
-                        end_time: dayTime.end_time
-                    }
-                    hasAnyTimes = true
+                        end_time: dayTime.end_time,
+                        slot_type: 'training',
+                        valid_from: new Date().toISOString().split('T')[0],
+                    })
                 }
             })
-            
-            if (hasAnyTimes) {
-                timeSlots.push({
-                    title: 'Individuelle Öffnungszeiten',
-                    description: 'Unterschiedliche Öffnungszeiten pro Wochentag',
-                    uses_custom_times: true,
-                    custom_times: customTimes,
-                    slot_type: 'training',
-                    valid_from: new Date().toISOString().split('T')[0],
-                })
-            }
         }
         
         const payload = { time_slots: timeSlots }

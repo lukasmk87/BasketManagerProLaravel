@@ -74,11 +74,11 @@
                                 <div class="mt-4 space-y-2">
                                     <div class="flex items-center text-sm text-gray-600">
                                         <MapPinIcon class="h-4 w-4 mr-2" />
-                                        <span>{{ hall.address || 'Keine Adresse angegeben' }}</span>
+                                        <span>{{ getHallAddress(hall) }}</span>
                                     </div>
                                     <div class="flex items-center text-sm text-gray-600">
                                         <ClockIcon class="h-4 w-4 mr-2" />
-                                        <span>{{ hall.time_slots_count || 0 }} Zeitslots</span>
+                                        <span>{{ hall.time_slots_count || 0 }} Zeitslot{{ hall.time_slots_count !== 1 ? 's' : '' }}</span>
                                     </div>
                                     <div class="flex items-center text-sm text-gray-600">
                                         <CalendarIcon class="h-4 w-4 mr-2" />
@@ -270,5 +270,25 @@ const viewSchedule = (hall) => {
 const closeScheduleModal = () => {
     selectedScheduleHall.value = null
     showScheduleModal.value = false
+}
+
+const getHallAddress = (hall) => {
+    const addressParts = []
+    
+    if (hall.address_street) {
+        addressParts.push(hall.address_street)
+    }
+    
+    if (hall.address_zip && hall.address_city) {
+        addressParts.push(`${hall.address_zip} ${hall.address_city}`)
+    } else if (hall.address_city) {
+        addressParts.push(hall.address_city)
+    }
+    
+    if (addressParts.length === 0) {
+        return 'Keine Adresse angegeben'
+    }
+    
+    return addressParts.join(', ')
 }
 </script>
