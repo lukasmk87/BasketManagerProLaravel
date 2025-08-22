@@ -196,6 +196,9 @@ Route::middleware([
         
         // Custom Times API Routes
         Route::put('/time-slots/{timeSlot}/custom-times', [\App\Http\Controllers\GymManagementController::class, 'updateTimeSlotCustomTimes'])->name('update-custom-times');
+        
+        // Teams API Route
+        Route::get('/teams', [\App\Http\Controllers\GymManagementController::class, 'getTeams'])->name('teams');
     });
     
     // Export Routes

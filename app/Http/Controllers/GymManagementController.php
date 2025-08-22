@@ -6,11 +6,14 @@ use App\Models\GymHall;
 use App\Models\GymBooking;
 use App\Models\GymBookingRequest;
 use App\Models\GymTimeSlot;
+use App\Models\GymTimeSlotTeamAssignment;
+use App\Models\Team;
 use App\Services\GymScheduleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -805,24 +808,51 @@ class GymManagementController extends Controller
      */
     public function getTimeSlotSegments(Request $request, $timeSlotId): JsonResponse
     {
-        $user = Auth::user();
-        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
-        
-        $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
-                $query->where('club_id', $userClub->id);
-            })
-            ->where('id', $timeSlotId)
-            ->firstOrFail();
+        try {
+            $user = Auth::user();
+            $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+            
+            if (!$userClub) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kein Verein gefunden.'
+                ], 404);
+            }
+            
+            $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
+                    $query->where('club_id', $userClub->id);
+                })
+                ->where('id', $timeSlotId)
+                ->first();
 
-        $dayOfWeek = $request->get('day_of_week', 'monday');
-        $incrementMinutes = $request->get('increment_minutes', 30);
+            if (!$timeSlot) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Zeitslot nicht gefunden.'
+                ], 404);
+            }
 
-        $segments = $timeSlot->getAvailableSegmentsForDay($dayOfWeek, $incrementMinutes);
+            $dayOfWeek = $request->get('day_of_week', 'monday');
+            $incrementMinutes = $request->get('increment_minutes', 30);
 
-        return response()->json([
-            'success' => true,
-            'data' => $segments,
-        ]);
+            $segments = $timeSlot->getAvailableSegmentsForDay($dayOfWeek, $incrementMinutes);
+
+            return response()->json([
+                'success' => true,
+                'data' => $segments,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting time slot segments: ' . $e->getMessage(), [
+                'time_slot_id' => $timeSlotId,
+                'user_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Laden der Zeitfenster.'
+            ], 500);
+        }
     }
 
     /**
@@ -929,39 +959,93 @@ class GymManagementController extends Controller
      */
     public function getTimeSlotTeamAssignments(Request $request, $timeSlotId): JsonResponse
     {
+        try {
+            $user = Auth::user();
+            $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+            
+            if (!$userClub) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kein Verein gefunden.'
+                ], 404);
+            }
+            
+            $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
+                    $query->where('club_id', $userClub->id);
+                })
+                ->where('id', $timeSlotId)
+                ->first();
+
+            if (!$timeSlot) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Zeitslot nicht gefunden.'
+                ], 404);
+            }
+
+            $assignments = $timeSlot->activeTeamAssignments()
+                ->with(['team'])
+                ->orderBy('day_of_week')
+                ->orderBy('start_time')
+                ->get()
+                ->groupBy('day_of_week')
+                ->map(function ($dayAssignments) {
+                    return $dayAssignments->map(function ($assignment) {
+                        return [
+                            'id' => $assignment->id,
+                            'team_id' => $assignment->team_id,
+                            'team_name' => $assignment->team?->name ?? 'Unbekanntes Team',
+                            'start_time' => $assignment->start_time ? $assignment->start_time->format('H:i') : null,
+                            'end_time' => $assignment->end_time ? $assignment->end_time->format('H:i') : null,
+                            'duration_minutes' => $assignment->duration_minutes,
+                            'notes' => $assignment->notes,
+                            'assigned_at' => $assignment->assigned_at ? $assignment->assigned_at->format('Y-m-d H:i') : null,
+                        ];
+                    })->toArray();
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $assignments,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting time slot team assignments: ' . $e->getMessage(), [
+                'time_slot_id' => $timeSlotId,
+                'user_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Laden der Team-Zuordnungen.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get teams for team selection in gym management.
+     */
+    public function getTeams(Request $request): JsonResponse
+    {
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
         
-        $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
-                $query->where('club_id', $userClub->id);
-            })
-            ->where('id', $timeSlotId)
-            ->firstOrFail();
-
-        $assignments = $timeSlot->activeTeamAssignments()
-            ->with(['team'])
-            ->orderBy('day_of_week')
-            ->orderBy('start_time')
-            ->get()
-            ->groupBy('day_of_week')
-            ->map(function ($dayAssignments) {
-                return $dayAssignments->map(function ($assignment) {
-                    return [
-                        'id' => $assignment->id,
-                        'team_id' => $assignment->team_id,
-                        'team_name' => $assignment->team->name,
-                        'start_time' => $assignment->start_time->format('H:i'),
-                        'end_time' => $assignment->end_time->format('H:i'),
-                        'duration_minutes' => $assignment->duration_minutes,
-                        'notes' => $assignment->notes,
-                        'assigned_at' => $assignment->assigned_at->format('Y-m-d H:i'),
-                    ];
-                })->toArray();
-            });
-
+        if (!$userClub) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kein Verein gefunden.'
+            ], 404);
+        }
+        
+        $teams = Team::where('club_id', $userClub->id)
+            ->where('is_active', true)
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+        
         return response()->json([
             'success' => true,
-            'data' => $assignments,
+            'data' => $teams
         ]);
     }
 
