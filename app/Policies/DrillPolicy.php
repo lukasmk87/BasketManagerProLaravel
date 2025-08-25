@@ -13,7 +13,7 @@ class DrillPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->can('manage training drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
     }
 
     /**
@@ -22,7 +22,7 @@ class DrillPolicy
     public function view(User $user, Drill $drill): bool
     {
         // Check general permission
-        if ($user->can('view drills')) {
+        if ($user->can('manage training drills')) {
             return true;
         }
 
@@ -49,7 +49,7 @@ class DrillPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->can('manage training drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
     }
 
     /**
@@ -58,7 +58,7 @@ class DrillPolicy
     public function update(User $user, Drill $drill): bool
     {
         // Check general permission
-        if ($user->can('edit drills')) {
+        if ($user->can('manage training drills')) {
             return true;
         }
 
@@ -91,7 +91,7 @@ class DrillPolicy
     public function delete(User $user, Drill $drill): bool
     {
         // Check general permission
-        if ($user->can('delete drills')) {
+        if ($user->can('manage training drills')) {
             return true;
         }
 
@@ -124,7 +124,7 @@ class DrillPolicy
     public function review(User $user, Drill $drill): bool
     {
         // Only users with review permission can review drills
-        if (!$user->can('review drills')) {
+        if (!$user->can('manage training drills')) {
             return false;
         }
 
@@ -217,7 +217,7 @@ class DrillPolicy
      */
     public function restore(User $user, Drill $drill): bool
     {
-        return $user->can('delete drills');
+        return $user->can('manage training drills');
     }
 
     /**
