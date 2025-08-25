@@ -53,6 +53,22 @@ class DrillPolicy
     }
 
     /**
+     * Determine whether the user can update any drill (generic check).
+     */
+    public function updateAny(User $user): bool
+    {
+        return $user->can('manage training drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+    }
+
+    /**
+     * Determine whether the user can delete any drill (generic check).
+     */
+    public function deleteAny(User $user): bool
+    {
+        return $user->can('manage training drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+    }
+
+    /**
      * Determine whether the user can update the model.
      */
     public function update(User $user, Drill $drill): bool

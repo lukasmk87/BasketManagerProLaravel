@@ -106,8 +106,8 @@ class TrainingController extends Controller
             'drills' => $drills,
             'can' => [
                 'create' => $user->can('create', Drill::class),
-                'edit' => $user->can('update', Drill::class),
-                'delete' => $user->can('delete', Drill::class),
+                'update' => $user->can('updateAny', Drill::class),
+                'delete' => $user->can('deleteAny', Drill::class),
             ],
         ]);
     }
