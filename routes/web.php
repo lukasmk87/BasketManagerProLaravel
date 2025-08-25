@@ -266,12 +266,17 @@ foreach ($supportedLocales as $locale) {
             Route::get('/', function () {
                 // Redirect authenticated users to dashboard
                 if (Auth::check()) {
-                    return redirect()->route('dashboard');
+                    return redirect()->route($locale . '.dashboard');
                 }
                 
                 // Show landing page for guests
                 return view('landing');
             })->name('landing');
+            
+            // Include Jetstream Routes for this locale
+            if (file_exists(base_path('vendor/laravel/jetstream/routes/inertia.php'))) {
+                require base_path('vendor/laravel/jetstream/routes/inertia.php');
+            }
             
             // Authenticated routes
             Route::middleware([

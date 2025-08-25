@@ -74,6 +74,10 @@ echo "📊 Checking route status..."
 # Verify routes are working
 php artisan route:list | grep dashboard
 
+# Check if login routes exist for different locales
+echo "🔐 Checking auth routes for locales..."
+php artisan route:list | grep -E "(login|register)" | head -10
+
 echo "✅ Deployment completed successfully!"
 echo ""
 echo "🌐 Dashboard should now be accessible at: https://staging.basketmanager-pro.de/dashboard"
