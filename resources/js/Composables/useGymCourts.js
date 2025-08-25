@@ -39,7 +39,7 @@ export function useGymCourts() {
         error.value = null
 
         try {
-            const response = await axios.get(`/api/gym-halls/${gymHallId}/courts`)
+            const response = await axios.get(`/api/v2/gym-halls/${gymHallId}/courts`)
             if (response.data.success) {
                 courts.value = response.data.data.courts || []
                 return courts.value
@@ -60,7 +60,7 @@ export function useGymCourts() {
         error.value = null
 
         try {
-            const response = await axios.post(`/api/gym-halls/${gymHallId}/courts`, courtData)
+            const response = await axios.post(`/api/v2/gym-halls/${gymHallId}/courts`, courtData)
             if (response.data.success) {
                 const newCourt = response.data.data
                 courts.value.push(newCourt)
@@ -82,7 +82,7 @@ export function useGymCourts() {
         error.value = null
 
         try {
-            const response = await axios.put(`/api/gym-halls/${gymHallId}/courts/${courtId}`, updates)
+            const response = await axios.put(`/api/v2/gym-halls/${gymHallId}/courts/${courtId}`, updates)
             if (response.data.success) {
                 const updatedCourt = response.data.data
                 const index = courts.value.findIndex(court => court.id === courtId)
@@ -107,7 +107,7 @@ export function useGymCourts() {
         error.value = null
 
         try {
-            const response = await axios.delete(`/api/gym-halls/${gymHallId}/courts/${courtId}`)
+            const response = await axios.delete(`/api/v2/gym-halls/${gymHallId}/courts/${courtId}`)
             if (response.data.success) {
                 courts.value = courts.value.filter(court => court.id !== courtId)
                 return true
@@ -125,7 +125,7 @@ export function useGymCourts() {
 
     const getCourtAvailability = async (gymHallId, courtId, date, duration = 30) => {
         try {
-            const response = await axios.get(`/api/gym-halls/${gymHallId}/courts/${courtId}/availability`, {
+            const response = await axios.get(`/api/v2/gym-halls/${gymHallId}/courts/${courtId}/availability`, {
                 params: { date, duration }
             })
             
@@ -142,7 +142,7 @@ export function useGymCourts() {
 
     const getCourtSchedule = async (gymHallId, startDate, endDate) => {
         try {
-            const response = await axios.get(`/api/gym-halls/${gymHallId}/court-schedule`, {
+            const response = await axios.get(`/api/v2/gym-halls/${gymHallId}/court-schedule`, {
                 params: { 
                     start_date: startDate, 
                     end_date: endDate,
@@ -163,7 +163,7 @@ export function useGymCourts() {
 
     const findAvailableSlots = async (gymHallId, date, duration = 30, teamCount = 1) => {
         try {
-            const response = await axios.get(`/api/gym-halls/${gymHallId}/find-slots`, {
+            const response = await axios.get(`/api/v2/gym-halls/${gymHallId}/find-slots`, {
                 params: { date, duration, team_count: teamCount }
             })
             
@@ -180,7 +180,7 @@ export function useGymCourts() {
 
     const getTimeGrid = async (gymHallId, date, slotDuration = 30) => {
         try {
-            const response = await axios.get(`/api/gym-halls/${gymHallId}/time-grid`, {
+            const response = await axios.get(`/api/v2/gym-halls/${gymHallId}/time-grid`, {
                 params: { date, slot_duration: slotDuration }
             })
             
@@ -228,7 +228,7 @@ export function useGymCourts() {
         error.value = null
 
         try {
-            const response = await axios.post(`/api/gym-halls/${gymHallId}/initialize-courts`)
+            const response = await axios.post(`/api/v2/gym-halls/${gymHallId}/initialize-courts`)
             if (response.data.success) {
                 courts.value = response.data.data.courts || []
                 return courts.value

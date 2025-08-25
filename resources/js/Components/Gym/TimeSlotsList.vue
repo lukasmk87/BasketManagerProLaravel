@@ -93,19 +93,28 @@
                                         
                                         <!-- Segment-based assignments -->
                                         <div v-if="getSegmentAssignments(timeSlot).length > 0" class="space-y-1">
-                                            <div class="text-xs text-gray-500 font-medium mb-1">30-Min-Zuordnungen:</div>
+                                            <div class="text-xs text-gray-500 font-medium mb-1">Zeitfenster-Zuordnungen:</div>
                                             <div 
                                                 v-for="assignment in getSegmentAssignments(timeSlot)" 
                                                 :key="assignment.id"
-                                                class="flex items-center justify-between bg-blue-50 rounded px-2 py-1"
+                                                :class="[
+                                                    'flex items-center justify-between rounded px-2 py-1',
+                                                    getAssignmentColorClass(assignment.duration_minutes || 30)
+                                                ]"
                                             >
                                                 <div class="flex items-center space-x-2">
-                                                    <ClockIcon class="w-3 h-3 text-blue-500" />
-                                                    <span class="text-xs text-blue-700 font-medium">
+                                                    <ClockIcon class="w-3 h-3" :class="getAssignmentIconClass(assignment.duration_minutes || 30)" />
+                                                    <span class="text-xs font-medium" :class="getAssignmentTextClass(assignment.duration_minutes || 30)">
                                                         {{ assignment.team_name }}
                                                     </span>
-                                                    <span class="text-xs text-blue-600">
+                                                    <span class="text-xs" :class="getAssignmentSubTextClass(assignment.duration_minutes || 30)">
                                                         ({{ assignment.start_time }}-{{ assignment.end_time }})
+                                                    </span>
+                                                    <span :class="[
+                                                        'inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full',
+                                                        getDurationBadgeClass(assignment.duration_minutes || 30)
+                                                    ]">
+                                                        {{ getDurationLabel(assignment.duration_minutes || 30) }}
                                                     </span>
                                                 </div>
                                             </div>
@@ -133,7 +142,7 @@
                                         @click="openSegmentAssignment(timeSlot)"
                                         class="px-3 py-1 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors"
                                     >
-                                        30-Min-Slots
+                                        Zeitfenster
                                     </button>
                                 </div>
                             </div>
@@ -157,7 +166,7 @@
                 <div class="p-6 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-gray-900">
-                            30-Minuten-Zeitfenster: {{ selectedTimeSlot?.title }}
+                            Zeitfenster-Zuordnung: {{ selectedTimeSlot?.title }}
                         </h3>
                         <button
                             @click="closeSegmentModal"
@@ -347,6 +356,97 @@ const getSlotTypeClass = (type) => {
         'maintenance': 'bg-orange-100 text-orange-800'
     }
     return classes[type] || 'bg-gray-100 text-gray-800'
+}
+
+// Duration-based styling helpers
+const getDurationLabel = (minutes) => {
+    switch (minutes) {
+        case 30:
+            return '30m'
+        case 60:
+            return '1h'
+        case 90:
+            return '1,5h'
+        case 120:
+            return '2h'
+        default:
+            return `${minutes}m`
+    }
+}
+
+const getAssignmentColorClass = (minutes) => {
+    switch (minutes) {
+        case 30:
+            return 'bg-blue-50'
+        case 60:
+            return 'bg-green-50'
+        case 90:
+            return 'bg-orange-50'
+        case 120:
+            return 'bg-purple-50'
+        default:
+            return 'bg-gray-50'
+    }
+}
+
+const getAssignmentIconClass = (minutes) => {
+    switch (minutes) {
+        case 30:
+            return 'text-blue-500'
+        case 60:
+            return 'text-green-500'
+        case 90:
+            return 'text-orange-500'
+        case 120:
+            return 'text-purple-500'
+        default:
+            return 'text-gray-500'
+    }
+}
+
+const getAssignmentTextClass = (minutes) => {
+    switch (minutes) {
+        case 30:
+            return 'text-blue-700'
+        case 60:
+            return 'text-green-700'
+        case 90:
+            return 'text-orange-700'
+        case 120:
+            return 'text-purple-700'
+        default:
+            return 'text-gray-700'
+    }
+}
+
+const getAssignmentSubTextClass = (minutes) => {
+    switch (minutes) {
+        case 30:
+            return 'text-blue-600'
+        case 60:
+            return 'text-green-600'
+        case 90:
+            return 'text-orange-600'
+        case 120:
+            return 'text-purple-600'
+        default:
+            return 'text-gray-600'
+    }
+}
+
+const getDurationBadgeClass = (minutes) => {
+    switch (minutes) {
+        case 30:
+            return 'bg-blue-200 text-blue-800'
+        case 60:
+            return 'bg-green-200 text-green-800'
+        case 90:
+            return 'bg-orange-200 text-orange-800'
+        case 120:
+            return 'bg-purple-200 text-purple-800'
+        default:
+            return 'bg-gray-200 text-gray-800'
+    }
 }
 
 // Lifecycle

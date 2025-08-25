@@ -332,7 +332,7 @@ export function useGymBookings() {
 
     const createMultiCourtBooking = async (bookingData) => {
         try {
-            const response = await axios.post('/api/gym-schedule/multi-court-booking', bookingData)
+            const response = await axios.post('/api/v2/gym-schedule/multi-court-booking', bookingData)
             
             if (response.data.success) {
                 bookings.value.push(response.data.data)

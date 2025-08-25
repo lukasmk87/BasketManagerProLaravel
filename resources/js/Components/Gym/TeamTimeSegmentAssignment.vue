@@ -4,7 +4,7 @@
             <div>
                 <h3 class="text-lg font-semibold text-gray-900">Team-Zeitfenster Zuordnung</h3>
                 <p class="text-sm text-gray-600 mt-1">
-                    Ordnen Sie Teams in 30-Minuten-Schritten zu
+                    Ordnen Sie Teams in flexiblen Zeitspannen zu
                 </p>
             </div>
             <div class="flex items-center space-x-3">
@@ -16,6 +16,15 @@
                     <option value="">Tag auswählen</option>
                     <option v-for="day in weekDays" :key="day.key" :value="day.key">
                         {{ day.name }}
+                    </option>
+                </select>
+                <select
+                    v-model="selectedDuration"
+                    class="rounded border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                    @change="loadSegments"
+                >
+                    <option v-for="duration in availableDurations" :key="duration.minutes" :value="duration.minutes">
+                        {{ duration.label }}
                     </option>
                 </select>
                 <button
@@ -74,8 +83,16 @@
                                 {{ segment.start_time }} - {{ segment.end_time }}
                             </span>
                         </div>
-                        <div class="text-sm text-gray-500">
-                            ({{ segment.duration_minutes }} Min.)
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-500">
+                                ({{ segment.duration_minutes }} Min.)
+                            </span>
+                            <span :class="[
+                                'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
+                                getDurationColorClass(segment.duration_minutes)
+                            ]">
+                                {{ getDurationLabel(segment.duration_minutes) }}
+                            </span>
                         </div>
                     </div>
                     
@@ -189,6 +206,7 @@ const emit = defineEmits(['updated', 'error'])
 
 // State
 const selectedDay = ref('')
+const selectedDuration = ref(30)
 const segments = ref([])
 const availableTeams = ref([])
 const loading = ref(false)
@@ -207,6 +225,13 @@ const weekDays = [
     { key: 'sunday', name: 'Sonntag' }
 ]
 
+const availableDurations = [
+    { minutes: 30, label: '30 Minuten' },
+    { minutes: 60, label: '60 Minuten' },
+    { minutes: 90, label: '90 Minuten' },
+    { minutes: 120, label: '120 Minuten' }
+]
+
 const assignmentForm = ref({
     team_id: '',
     notes: ''
@@ -222,7 +247,7 @@ const loadSegments = async () => {
         const response = await axios.get(`/api/v2/time-slots/${props.timeSlotId}/segments`, {
             params: {
                 day_of_week: selectedDay.value,
-                increment_minutes: 30
+                increment_minutes: selectedDuration.value
             }
         })
         
@@ -335,6 +360,37 @@ const showError = (message) => {
     setTimeout(() => {
         statusMessage.value = null
     }, 5000)
+}
+
+// UI Helper Functions
+const getDurationLabel = (minutes) => {
+    switch (minutes) {
+        case 30:
+            return '30 Min'
+        case 60:
+            return '1 Std'
+        case 90:
+            return '1,5 Std'
+        case 120:
+            return '2 Std'
+        default:
+            return `${minutes} Min`
+    }
+}
+
+const getDurationColorClass = (minutes) => {
+    switch (minutes) {
+        case 30:
+            return 'bg-blue-100 text-blue-800'
+        case 60:
+            return 'bg-green-100 text-green-800'
+        case 90:
+            return 'bg-orange-100 text-orange-800'
+        case 120:
+            return 'bg-purple-100 text-purple-800'
+        default:
+            return 'bg-gray-100 text-gray-800'
+    }
 }
 
 // Lifecycle
