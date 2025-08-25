@@ -107,6 +107,15 @@ Route::middleware([
         Route::get('/sessions', [\App\Http\Controllers\TrainingController::class, 'sessions'])->name('sessions');
         Route::get('/drills', [\App\Http\Controllers\TrainingController::class, 'drills'])->name('drills');
         Route::get('/sessions/{session}', [\App\Http\Controllers\TrainingController::class, 'showSession'])->name('sessions.show');
+        
+        // Drill Management Routes
+        Route::get('/drills/create', [\App\Http\Controllers\TrainingController::class, 'createDrill'])->name('drills.create');
+        Route::post('/drills', [\App\Http\Controllers\TrainingController::class, 'storeDrill'])->name('drills.store');
+        Route::get('/drills/{drill}', [\App\Http\Controllers\TrainingController::class, 'showDrill'])->name('drills.show');
+        Route::get('/drills/{drill}/edit', [\App\Http\Controllers\TrainingController::class, 'editDrill'])->name('drills.edit');
+        Route::put('/drills/{drill}', [\App\Http\Controllers\TrainingController::class, 'updateDrill'])->name('drills.update');
+        Route::patch('/drills/{drill}', [\App\Http\Controllers\TrainingController::class, 'updateDrill'])->name('drills.patch');
+        Route::delete('/drills/{drill}', [\App\Http\Controllers\TrainingController::class, 'destroyDrill'])->name('drills.destroy');
     });
     
     // Statistics Routes

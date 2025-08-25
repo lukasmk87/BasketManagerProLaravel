@@ -14,7 +14,7 @@
                     </SecondaryButton>
                     <PrimaryButton 
                         v-if="can?.create"
-                        @click="showCreateModal = true"
+                        @click="createDrill"
                     >
                         Neue Übung
                     </PrimaryButton>
@@ -276,6 +276,10 @@ function viewDrill(drill) {
 function editDrill(drill) {
     // Implementation for editing a drill
     router.get(`/training/drills/${drill.id}/edit`)
+}
+
+function createDrill() {
+    router.get(route('training.drills.create'))
 }
 
 function changePage(page) {
