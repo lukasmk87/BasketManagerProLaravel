@@ -92,6 +92,13 @@ class RoleAndPermissionSeeder extends Seeder
             'delete training sessions',
             'manage training drills',
             'view training statistics',
+            
+            // Drill Management
+            'view drills',
+            'create drills',
+            'edit drills',
+            'delete drills',
+            'review drills',
 
             // Emergency Contacts
             'view emergency contacts',
@@ -189,6 +196,9 @@ class RoleAndPermissionSeeder extends Seeder
             'view training sessions', 'create training sessions', 'edit training sessions',
             'delete training sessions', 'manage training drills', 'view training statistics',
             
+            // Drills
+            'view drills', 'create drills', 'edit drills', 'delete drills', 'review drills',
+            
             // Emergency
             'view emergency contacts', 'edit emergency contacts', 'generate emergency qr codes',
             'access emergency information',
@@ -248,6 +258,9 @@ class RoleAndPermissionSeeder extends Seeder
             'view training sessions', 'create training sessions', 'edit training sessions',
             'delete training sessions', 'manage training drills', 'view training statistics',
             
+            // Drills
+            'view drills', 'create drills', 'edit drills', 'delete drills', 'review drills',
+            
             // Emergency
             'view emergency contacts', 'edit emergency contacts', 'generate emergency qr codes',
             
@@ -289,6 +302,9 @@ class RoleAndPermissionSeeder extends Seeder
             'view training sessions', 'create training sessions', 'edit training sessions',
             'delete training sessions', 'manage training drills', 'view training statistics',
             
+            // Drills
+            'view drills', 'create drills', 'edit drills', 'delete drills', 'review drills',
+            
             // Emergency
             'view emergency contacts', 'edit emergency contacts',
             
@@ -320,6 +336,9 @@ class RoleAndPermissionSeeder extends Seeder
             // Training
             'view training sessions', 'create training sessions', 'edit training sessions',
             'manage training drills', 'view training statistics',
+            
+            // Drills
+            'view drills', 'create drills', 'edit drills', 'delete drills',
             
             // Emergency
             'view emergency contacts',
