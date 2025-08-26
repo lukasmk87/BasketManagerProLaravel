@@ -338,7 +338,7 @@ function submitForm() {
     processing.value = true
     errors.value = {}
 
-    router.put(route('training.drills.update', props.drill.id), form, {
+    router.put(`/training/drills/${props.drill.id}`, form, {
         onSuccess: () => {
             // Form submitted successfully, redirect will be handled by controller
         },
@@ -353,15 +353,15 @@ function submitForm() {
 
 function deleteDrill() {
     if (confirm('Sind Sie sicher, dass Sie diese Übung löschen möchten?')) {
-        router.delete(route('training.drills.destroy', props.drill.id))
+        router.delete(`/training/drills/${props.drill.id}`)
     }
 }
 
 function viewDrill() {
-    router.get(route('training.drills.show', props.drill.id))
+    router.get(`/training/drills/${props.drill.id}`)
 }
 
 function goBack() {
-    router.get(route('training.drills'))
+    router.get('/training/drills')
 }
 </script>

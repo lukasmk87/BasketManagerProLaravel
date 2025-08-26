@@ -279,11 +279,11 @@ function editDrill(drill) {
 }
 
 function createDrill() {
-    router.get(route('training.drills.create'))
+    router.get('/training/drills/create')
 }
 
 function changePage(page) {
-    router.get(route('training.drills'), {
+    router.get('/training/drills', {
         search: search.value,
         ...filters.value,
         page: page

@@ -49,7 +49,26 @@ class DrillPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('manage training drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        // Check if user has the specific permission
+        if ($user->can('manage training drills')) {
+            return true;
+        }
+        
+        // Check if user has one of the required roles
+        if ($user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin'])) {
+            return true;
+        }
+        
+        // Log authorization failure for debugging (only in development)
+        if (config('app.debug')) {
+            logger('Drill creation denied for user', [
+                'user_id' => $user->id,
+                'user_roles' => $user->getRoleNames(),
+                'user_permissions' => $user->getAllPermissions()->pluck('name'),
+            ]);
+        }
+        
+        return false;
     }
 
     /**

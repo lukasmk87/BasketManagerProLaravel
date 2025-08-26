@@ -143,10 +143,14 @@ class TrainingController extends Controller
      */
     public function storeDrill(CreateDrillRequest $request): RedirectResponse
     {
-        $this->authorize('create', Drill::class);
+        $user = $request->user();
+        
+        if (!$user->can('create', Drill::class)) {
+            abort(403, 'Sie haben keine Berechtigung, Trainingsübungen zu erstellen.');
+        }
 
         $drill = new Drill($request->validated());
-        $drill->created_by_user_id = $request->user()->id;
+        $drill->created_by_user_id = $user->id;
         $drill->status = 'draft';
         $drill->save();
 
@@ -176,7 +180,11 @@ class TrainingController extends Controller
      */
     public function editDrill(Drill $drill): Response
     {
-        $this->authorize('update', $drill);
+        $user = auth()->user();
+        
+        if (!$user->can('update', $drill)) {
+            abort(403, 'Sie haben keine Berechtigung, diese Trainingsübung zu bearbeiten.');
+        }
 
         return Inertia::render('Training/EditDrill', [
             'drill' => $drill,
@@ -188,7 +196,11 @@ class TrainingController extends Controller
      */
     public function updateDrill(UpdateDrillRequest $request, Drill $drill): RedirectResponse
     {
-        $this->authorize('update', $drill);
+        $user = $request->user();
+        
+        if (!$user->can('update', $drill)) {
+            abort(403, 'Sie haben keine Berechtigung, diese Trainingsübung zu bearbeiten.');
+        }
 
         $drill->update($request->validated());
 
@@ -202,7 +214,11 @@ class TrainingController extends Controller
      */
     public function destroyDrill(Drill $drill): RedirectResponse
     {
-        $this->authorize('delete', $drill);
+        $user = auth()->user();
+        
+        if (!$user->can('delete', $drill)) {
+            abort(403, 'Sie haben keine Berechtigung, diese Trainingsübung zu löschen.');
+        }
 
         $drill->delete();
 

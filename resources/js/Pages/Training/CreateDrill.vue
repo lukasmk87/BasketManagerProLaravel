@@ -315,7 +315,7 @@ function submitForm() {
     processing.value = true
     errors.value = {}
 
-    router.post(route('training.drills.store'), form, {
+    router.post('/training/drills', form, {
         onSuccess: () => {
             // Form submitted successfully, redirect will be handled by controller
         },
@@ -329,6 +329,6 @@ function submitForm() {
 }
 
 function goBack() {
-    router.get(route('training.drills'))
+    router.get('/training/drills')
 }
 </script>

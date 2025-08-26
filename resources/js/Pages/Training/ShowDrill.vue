@@ -248,10 +248,10 @@ function formatDate(dateString) {
 }
 
 function editDrill() {
-    router.get(route('training.drills.edit', props.drill.id))
+    router.get(`/training/drills/${props.drill.id}/edit`)
 }
 
 function goBack() {
-    router.get(route('training.drills'))
+    router.get('/training/drills')
 }
 </script>
