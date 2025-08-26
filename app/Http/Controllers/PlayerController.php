@@ -249,6 +249,42 @@ class PlayerController extends Controller
 
         $user = auth()->user();
         
+        // Load player with proper relationships and pivot data
+        $player->load([
+            'teams.club',
+            'user',
+            'parent'
+        ]);
+        
+        // Get the primary team for form population
+        $primaryTeam = $player->primaryTeam();
+        
+        // Structure player data with team-specific fields from pivot
+        $playerData = $player->toArray();
+        
+        if ($primaryTeam) {
+            $playerData['team_id'] = $primaryTeam->id;
+            $playerData['jersey_number'] = $primaryTeam->pivot->jersey_number;
+            $playerData['primary_position'] = $primaryTeam->pivot->primary_position;
+            $playerData['secondary_positions'] = $primaryTeam->pivot->secondary_positions ?? [];
+            $playerData['status'] = $primaryTeam->pivot->status ?? 'active';
+            $playerData['is_captain'] = $primaryTeam->pivot->is_captain ?? false;
+            $playerData['is_starter'] = $primaryTeam->pivot->is_starter ?? false;
+            $playerData['contract_start'] = $primaryTeam->pivot->contract_start;
+            $playerData['contract_end'] = $primaryTeam->pivot->contract_end;
+            $playerData['registration_number'] = $primaryTeam->pivot->registration_number;
+        }
+        
+        // Add user data if available
+        if ($player->user) {
+            $playerData['first_name'] = $player->user->first_name ?? '';
+            $playerData['last_name'] = $player->user->last_name ?? '';
+            $playerData['email'] = $player->user->email ?? '';
+            $playerData['phone'] = $player->user->phone ?? '';
+            $playerData['birth_date'] = $player->user->birth_date ?? '';
+            $playerData['gender'] = $player->user->gender ?? '';
+        }
+        
         $teams = Team::query()
             ->with('club')
             ->select(['id', 'name', 'club_id'])
@@ -269,7 +305,7 @@ class PlayerController extends Controller
             ->get();
 
         return Inertia::render('Players/Edit', [
-            'player' => $player,
+            'player' => $playerData,
             'teams' => $teams,
         ]);
     }

@@ -708,70 +708,70 @@ const formSections = ref([
     { id: 'preferences', name: 'Präferenzen', fields: ['dietary_restrictions', 'allow_photos', 'allow_media_interviews', 'school_name', 'grade_level'] }
 ])
 
-// Extended Form with all fields from Create.vue
+// Extended Form with all fields from Create.vue - with safe property access
 const form = useForm({
     // Basic Information
-    first_name: props.player.first_name || '',
-    last_name: props.player.last_name || '',
-    email: props.player.email || '',
-    phone: props.player.phone || '',
-    birth_date: props.player.birth_date || '',
-    gender: props.player.gender || '',
+    first_name: props.player?.first_name || '',
+    last_name: props.player?.last_name || '',
+    email: props.player?.email || '',
+    phone: props.player?.phone || '',
+    birth_date: props.player?.birth_date || '',
+    gender: props.player?.gender || '',
     
     // Team & Position
-    team_id: props.player.team_id || '',
-    jersey_number: props.player.jersey_number || '',
-    primary_position: props.player.primary_position || '',
-    secondary_positions: props.player.secondary_positions || [],
-    status: props.player.status || 'active',
-    is_captain: props.player.is_captain || false,
-    is_starter: props.player.is_starter || false,
-    is_rookie: props.player.is_rookie || false,
+    team_id: props.player?.team_id || '',
+    jersey_number: props.player?.jersey_number || '',
+    primary_position: props.player?.primary_position || '',
+    secondary_positions: props.player?.secondary_positions || [],
+    status: props.player?.status || 'active',
+    is_captain: props.player?.is_captain || false,
+    is_starter: props.player?.is_starter || false,
+    is_rookie: props.player?.is_rookie || false,
     
     // Physical Information
-    height_cm: props.player.height_cm || props.player.height || null,
-    weight_kg: props.player.weight_kg || props.player.weight || null,
-    dominant_hand: props.player.dominant_hand || '',
-    shoe_size: props.player.shoe_size || '',
+    height_cm: props.player?.height_cm || props.player?.height || null,
+    weight_kg: props.player?.weight_kg || props.player?.weight || null,
+    dominant_hand: props.player?.dominant_hand || '',
+    shoe_size: props.player?.shoe_size || '',
     
     // Basketball Experience
-    started_playing: props.player.started_playing || '',
-    years_experience: props.player.years_experience || null,
-    previous_teams: props.player.previous_teams || [],
-    achievements: props.player.achievements || [],
+    started_playing: props.player?.started_playing || '',
+    years_experience: props.player?.years_experience || null,
+    previous_teams: props.player?.previous_teams || [],
+    achievements: props.player?.achievements || [],
     
     // Medical Information
-    medical_conditions: props.player.medical_conditions || [],
-    allergies: props.player.allergies || [],
-    medications: props.player.medications || [],
-    blood_type: props.player.blood_type || '',
-    medical_clearance: props.player.medical_clearance || false,
-    medical_clearance_expires: props.player.medical_clearance_expires || '',
-    preferred_hospital: props.player.preferred_hospital || '',
-    medical_notes: props.player.medical_notes || '',
+    medical_conditions: props.player?.medical_conditions || [],
+    allergies: props.player?.allergies || [],
+    medications: props.player?.medications || [],
+    blood_type: props.player?.blood_type || '',
+    medical_clearance: props.player?.medical_clearance || false,
+    medical_clearance_expires: props.player?.medical_clearance_expires || '',
+    preferred_hospital: props.player?.preferred_hospital || '',
+    medical_notes: props.player?.medical_notes || '',
     
     // Emergency Contacts
-    emergency_medical_contact: props.player.emergency_medical_contact || '',
-    emergency_medical_phone: props.player.emergency_medical_phone || '',
-    guardian_contacts: props.player.guardian_contacts || [],
+    emergency_medical_contact: props.player?.emergency_medical_contact || '',
+    emergency_medical_phone: props.player?.emergency_medical_phone || '',
+    guardian_contacts: props.player?.guardian_contacts || [],
     
     // Development & Training
-    training_focus_areas: props.player.training_focus_areas || [],
-    development_goals: props.player.development_goals || [],
-    coach_notes: props.player.coach_notes || '',
+    training_focus_areas: props.player?.training_focus_areas || [],
+    development_goals: props.player?.development_goals || [],
+    coach_notes: props.player?.coach_notes || '',
     
     // Academic Information
-    school_name: props.player.school_name || '',
-    grade_level: props.player.grade_level || '',
-    gpa: props.player.gpa || null,
-    academic_eligibility: props.player.academic_eligibility !== undefined ? props.player.academic_eligibility : true,
+    school_name: props.player?.school_name || '',
+    grade_level: props.player?.grade_level || '',
+    gpa: props.player?.gpa || null,
+    academic_eligibility: props.player?.academic_eligibility !== undefined ? props.player.academic_eligibility : true,
     
     // Preferences
-    preferences: props.player.preferences || {},
-    dietary_restrictions: props.player.dietary_restrictions || [],
-    social_media: props.player.social_media || {},
-    allow_photos: props.player.allow_photos !== undefined ? props.player.allow_photos : true,
-    allow_media_interviews: props.player.allow_media_interviews || false,
+    preferences: props.player?.preferences || {},
+    dietary_restrictions: props.player?.dietary_restrictions || [],
+    social_media: props.player?.social_media || {},
+    allow_photos: props.player?.allow_photos !== undefined ? props.player.allow_photos : true,
+    allow_media_interviews: props.player?.allow_media_interviews || false,
 })
 
 // Position Options
