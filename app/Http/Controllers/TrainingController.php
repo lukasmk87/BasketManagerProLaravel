@@ -115,6 +115,7 @@ class TrainingController extends Controller
         $user = $request->user();
         
         $drills = Drill::query()
+            ->accessibleByUser($user->id)
             ->withAvg('ratings', 'rating')
             ->withCount(['ratings', 'favorites'])
             ->orderBy('name')
@@ -160,10 +161,10 @@ class TrainingController extends Controller
             ? \App\Models\Team::with('club')->orderBy('name')->get()
             : $user->coachedTeams()->with('club')->orderBy('name')->get();
 
-        // Get available drills
-        $drills = \App\Models\Drill::where('status', 'active')
+        // Get available drills (active drills + user's own draft drills)
+        $drills = \App\Models\Drill::accessibleByUser($user->id)
             ->orderBy('name')
-            ->get(['id', 'name', 'description', 'estimated_duration']);
+            ->get(['id', 'name', 'description', 'estimated_duration', 'status', 'created_by_user_id']);
 
         return Inertia::render('Training/CreateSession', [
             'teams' => $teams,
@@ -213,10 +214,10 @@ class TrainingController extends Controller
             ? \App\Models\Team::with('club')->orderBy('name')->get()
             : $user->coachedTeams()->with('club')->orderBy('name')->get();
 
-        // Get available drills
-        $drills = \App\Models\Drill::where('status', 'active')
+        // Get available drills (active drills + user's own draft drills)
+        $drills = \App\Models\Drill::accessibleByUser($user->id)
             ->orderBy('name')
-            ->get(['id', 'name', 'description', 'estimated_duration']);
+            ->get(['id', 'name', 'description', 'estimated_duration', 'status', 'created_by_user_id']);
 
         return Inertia::render('Training/EditSession', [
             'session' => $session,
@@ -272,7 +273,7 @@ class TrainingController extends Controller
 
         $drill = new Drill($request->validated());
         $drill->created_by_user_id = $user->id;
-        $drill->status = 'draft';
+        $drill->status = 'active';
         $drill->save();
 
         return redirect()

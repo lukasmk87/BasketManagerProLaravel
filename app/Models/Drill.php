@@ -169,6 +169,17 @@ class Drill extends Model implements HasMedia
                     ->orderBy('average_rating', 'desc');
     }
 
+    public function scopeAccessibleByUser($query, $userId)
+    {
+        return $query->where(function ($q) use ($userId) {
+            $q->where('status', 'active')
+              ->orWhere(function ($subQ) use ($userId) {
+                  $subQ->where('created_by_user_id', $userId)
+                       ->whereIn('status', ['draft', 'active']);
+              });
+        });
+    }
+
     // Accessors
     public function isApproved(): Attribute
     {

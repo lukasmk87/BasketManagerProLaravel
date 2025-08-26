@@ -93,12 +93,21 @@
                                 <h3 class="text-lg font-semibold text-gray-900">
                                     {{ drill.name }}
                                 </h3>
-                                <span 
-                                    :class="getDifficultyClasses(drill.difficulty)"
-                                    class="px-2 py-1 text-xs rounded-full font-medium"
-                                >
-                                    {{ getDifficultyLabel(drill.difficulty) }}
-                                </span>
+                                <div class="flex gap-2">
+                                    <span 
+                                        v-if="drill.status"
+                                        :class="getStatusClasses(drill.status)"
+                                        class="px-2 py-1 text-xs rounded-full font-medium"
+                                    >
+                                        {{ getStatusLabel(drill.status) }}
+                                    </span>
+                                    <span 
+                                        :class="getDifficultyClasses(drill.difficulty)"
+                                        class="px-2 py-1 text-xs rounded-full font-medium"
+                                    >
+                                        {{ getDifficultyLabel(drill.difficulty) }}
+                                    </span>
+                                </div>
                             </div>
 
                             <p class="text-sm text-gray-600 mb-3 line-clamp-3">
@@ -266,6 +275,26 @@ function getDifficultyClasses(difficulty) {
         'advanced': 'bg-red-100 text-red-800'
     }
     return classes[difficulty] || 'bg-gray-100 text-gray-800'
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'draft': 'Entwurf',
+        'active': 'Aktiv',
+        'approved': 'Genehmigt',
+        'inactive': 'Inaktiv'
+    }
+    return labels[status] || status
+}
+
+function getStatusClasses(status) {
+    const classes = {
+        'draft': 'bg-orange-100 text-orange-800',
+        'active': 'bg-green-100 text-green-800',
+        'approved': 'bg-blue-100 text-blue-800',
+        'inactive': 'bg-gray-100 text-gray-800'
+    }
+    return classes[status] || 'bg-gray-100 text-gray-800'
 }
 
 function viewDrill(drill) {

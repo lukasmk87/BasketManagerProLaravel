@@ -231,7 +231,16 @@
                                 >
                                     <div class="flex justify-between items-start">
                                         <div>
-                                            <h4 class="font-medium text-gray-900">{{ drill.name }}</h4>
+                                            <div class="flex items-center">
+                                                <h4 class="font-medium text-gray-900">{{ drill.name }}</h4>
+                                                <span 
+                                                    v-if="drill.status"
+                                                    :class="getStatusClasses(drill.status)"
+                                                    class="ml-2 px-2 py-1 text-xs rounded-full font-medium"
+                                                >
+                                                    {{ getStatusLabel(drill.status) }}
+                                                </span>
+                                            </div>
                                             <p class="text-sm text-gray-600 mt-1">{{ drill.description }}</p>
                                             <div class="flex items-center mt-2 text-xs text-gray-500">
                                                 <span class="bg-gray-100 px-2 py-1 rounded mr-2">{{ formatCategory(drill.category) }}</span>
@@ -430,6 +439,26 @@ function formatCategory(category) {
         'individual': 'Einzeltraining'
     }
     return categoryMap[category] || category
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'draft': 'Entwurf',
+        'active': 'Aktiv',
+        'approved': 'Genehmigt',
+        'inactive': 'Inaktiv'
+    }
+    return labels[status] || status
+}
+
+function getStatusClasses(status) {
+    const classes = {
+        'draft': 'bg-orange-100 text-orange-800',
+        'active': 'bg-green-100 text-green-800',
+        'approved': 'bg-blue-100 text-blue-800',
+        'inactive': 'bg-gray-100 text-gray-800'
+    }
+    return classes[status] || 'bg-gray-100 text-gray-800'
 }
 </script>
 
