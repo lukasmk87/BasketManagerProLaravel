@@ -39,6 +39,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{trainingSession}/attendance', [TrainingSessionController::class, 'attendance'])->name('attendance');
         Route::post('/{trainingSession}/attendance', [TrainingSessionController::class, 'markAttendance'])->name('mark-attendance');
         
+        // Registration Management
+        Route::get('/{trainingSession}/registrations', [TrainingSessionController::class, 'registrations'])->name('registrations');
+        Route::post('/{trainingSession}/register', [TrainingSessionController::class, 'register'])->name('register');
+        Route::delete('/{trainingSession}/cancel-registration', [TrainingSessionController::class, 'cancelRegistration'])->name('cancel-registration');
+        Route::post('/{trainingSession}/bulk-register', [TrainingSessionController::class, 'bulkRegister'])->name('bulk-register');
+        Route::post('/registrations/confirm', [TrainingSessionController::class, 'confirmRegistration'])->name('confirm-registration');
+        Route::post('/registrations/decline', [TrainingSessionController::class, 'declineRegistration'])->name('decline-registration');
+        Route::get('/player-registrations', [TrainingSessionController::class, 'getPlayerRegistrations'])->name('player-registrations');
+        
         // Statistics
         Route::get('/{trainingSession}/statistics', [TrainingSessionController::class, 'statistics'])->name('statistics');
     });

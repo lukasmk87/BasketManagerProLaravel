@@ -35,6 +35,9 @@ class TrainingSession extends Model
         'focus_areas',
         'intensity_level',
         'max_participants',
+        'booking_deadline_hours',
+        'allow_registrations',
+        'enable_waitlist',
         'status',
         'weather_conditions',
         'temperature',
@@ -60,6 +63,9 @@ class TrainingSession extends Model
         'actual_duration' => 'integer',
         'focus_areas' => 'array',
         'max_participants' => 'integer',
+        'booking_deadline_hours' => 'integer',
+        'allow_registrations' => 'boolean',
+        'enable_waitlist' => 'boolean',
         'temperature' => 'decimal:1',
         'weather_appropriate' => 'boolean',
         'required_equipment' => 'array',
@@ -112,6 +118,11 @@ class TrainingSession extends Model
     public function playerPerformances(): HasMany
     {
         return $this->hasMany(PlayerTrainingPerformance::class);
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(TrainingRegistration::class);
     }
 
     // Scopes
@@ -284,6 +295,111 @@ class TrainingSession extends Model
         return $this->drills()
             ->wherePivotNotNull('actual_duration')
             ->sum('training_drills.actual_duration');
+    }
+
+    // Booking-related methods
+    public function getRegistrationDeadline(): Carbon
+    {
+        return $this->scheduled_at->subHours($this->booking_deadline_hours ?? 2);
+    }
+
+    public function isRegistrationOpen(): bool
+    {
+        if (!$this->allow_registrations) {
+            return false;
+        }
+
+        if ($this->status !== 'scheduled') {
+            return false;
+        }
+
+        return now()->isBefore($this->getRegistrationDeadline());
+    }
+
+    public function hasCapacity(?int $additionalParticipants = 1): bool
+    {
+        if (!$this->max_participants) {
+            return true; // No limit set
+        }
+
+        $currentRegistrations = $this->registrations()
+            ->whereIn('status', ['registered', 'confirmed'])
+            ->count();
+
+        return ($currentRegistrations + $additionalParticipants) <= $this->max_participants;
+    }
+
+    public function getAvailableSpots(): int
+    {
+        if (!$this->max_participants) {
+            return 999; // No limit
+        }
+
+        $currentRegistrations = $this->registrations()
+            ->whereIn('status', ['registered', 'confirmed'])
+            ->count();
+
+        return max(0, $this->max_participants - $currentRegistrations);
+    }
+
+    public function getWaitlistCount(): int
+    {
+        return $this->registrations()->where('status', 'waitlist')->count();
+    }
+
+    public function getTotalRegistrations(): int
+    {
+        return $this->registrations()
+            ->whereIn('status', ['registered', 'confirmed', 'waitlist'])
+            ->count();
+    }
+
+    public function getConfirmedParticipants(): int
+    {
+        return $this->registrations()->where('status', 'confirmed')->count();
+    }
+
+    public function getPendingRegistrations(): int
+    {
+        return $this->registrations()->where('status', 'registered')->count();
+    }
+
+    public function isPlayerRegistered(int $playerId): bool
+    {
+        return $this->registrations()
+            ->where('player_id', $playerId)
+            ->whereIn('status', ['registered', 'confirmed', 'waitlist'])
+            ->exists();
+    }
+
+    public function getPlayerRegistration(int $playerId): ?TrainingRegistration
+    {
+        return $this->registrations()
+            ->where('player_id', $playerId)
+            ->first();
+    }
+
+    public function registerPlayer(int $playerId, ?string $notes = null): TrainingRegistration
+    {
+        return TrainingRegistration::createRegistration($this->id, $playerId, $notes);
+    }
+
+    public function getRegistrationSummary(): array
+    {
+        return [
+            'total_registrations' => $this->getTotalRegistrations(),
+            'confirmed_participants' => $this->getConfirmedParticipants(),
+            'pending_registrations' => $this->getPendingRegistrations(),
+            'waitlist_count' => $this->getWaitlistCount(),
+            'available_spots' => $this->getAvailableSpots(),
+            'has_capacity' => $this->hasCapacity(),
+            'registration_open' => $this->isRegistrationOpen(),
+            'registration_deadline' => $this->getRegistrationDeadline()->format('d.m.Y H:i'),
+            'hours_until_deadline' => now()->diffInHours($this->getRegistrationDeadline(), false),
+            'max_participants' => $this->max_participants,
+            'allow_registrations' => $this->allow_registrations,
+            'enable_waitlist' => $this->enable_waitlist,
+        ];
     }
 
     public function getParticipationStats(): array

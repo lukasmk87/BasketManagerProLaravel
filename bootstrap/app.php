@@ -43,6 +43,21 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::prefix('api')
                 ->middleware('api')
                 ->group(base_path('routes/api.php'));
+            
+            // Training API routes
+            \Illuminate\Support\Facades\Route::prefix('api')
+                ->middleware('api')
+                ->group(base_path('routes/api_training.php'));
+            
+            // Tournament API routes
+            \Illuminate\Support\Facades\Route::prefix('api')
+                ->middleware('api')
+                ->group(base_path('routes/api_tournament.php'));
+            
+            // Game Registration API routes
+            \Illuminate\Support\Facades\Route::prefix('api')
+                ->middleware('api')
+                ->group(base_path('routes/api_game_registrations.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

@@ -86,6 +86,12 @@ class Game extends Model implements HasMedia
         'allow_recording',
         'allow_photos',
         'allow_streaming',
+        'registration_deadline_hours',
+        'max_roster_size',
+        'min_roster_size',
+        'allow_player_registrations',
+        'auto_confirm_registrations',
+        'lineup_deadline_hours',
         'stats_verified',
         'stats_verified_at',
         'stats_verified_by',
@@ -135,6 +141,12 @@ class Game extends Model implements HasMedia
         'allow_recording' => 'boolean',
         'allow_photos' => 'boolean',
         'allow_streaming' => 'boolean',
+        'registration_deadline_hours' => 'integer',
+        'max_roster_size' => 'integer',
+        'min_roster_size' => 'integer',
+        'allow_player_registrations' => 'boolean',
+        'auto_confirm_registrations' => 'boolean',
+        'lineup_deadline_hours' => 'integer',
         'stats_verified' => 'boolean',
         'stats_verified_at' => 'datetime',
     ];
@@ -213,6 +225,22 @@ class Game extends Model implements HasMedia
     public function scorekeeperAssignments(): HasMany
     {
         return $this->hasMany(ScorekeeperAssignment::class);
+    }
+
+    /**
+     * Get all player registrations for this game.
+     */
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(GameRegistration::class);
+    }
+
+    /**
+     * Get all player participations for this game.
+     */
+    public function participations(): HasMany
+    {
+        return $this->hasMany(GameParticipation::class);
     }
 
     // ============================
@@ -669,6 +697,217 @@ class Game extends Model implements HasMedia
             ->width(300)
             ->height(200)
             ->sharpen(10);
+    }
+
+    // ============================
+    // REGISTRATION/BOOKING METHODS
+    // ============================
+
+    /**
+     * Get the registration deadline for this game.
+     */
+    public function getRegistrationDeadline(): Carbon
+    {
+        return $this->scheduled_at->subHours($this->registration_deadline_hours ?? 24);
+    }
+
+    /**
+     * Get the lineup deadline for this game.
+     */
+    public function getLineupDeadline(): Carbon
+    {
+        return $this->scheduled_at->subHours($this->lineup_deadline_hours ?? 2);
+    }
+
+    /**
+     * Check if player registration is still open.
+     */
+    public function isRegistrationOpen(): bool
+    {
+        if (!$this->allow_player_registrations) {
+            return false;
+        }
+
+        if (!in_array($this->status, ['scheduled'])) {
+            return false;
+        }
+
+        return now()->isBefore($this->getRegistrationDeadline());
+    }
+
+    /**
+     * Check if lineup changes are still allowed.
+     */
+    public function isLineupChangesAllowed(): bool
+    {
+        if (!in_array($this->status, ['scheduled'])) {
+            return false;
+        }
+
+        return now()->isBefore($this->getLineupDeadline());
+    }
+
+    /**
+     * Check if roster has capacity for more players.
+     */
+    public function hasRosterCapacity(?int $additionalPlayers = 1): bool
+    {
+        $currentParticipants = $this->participations()->count();
+        return ($currentParticipants + $additionalPlayers) <= $this->max_roster_size;
+    }
+
+    /**
+     * Get available roster spots.
+     */
+    public function getAvailableRosterSpots(): int
+    {
+        $currentParticipants = $this->participations()->count();
+        return max(0, $this->max_roster_size - $currentParticipants);
+    }
+
+    /**
+     * Get count of confirmed registrations.
+     */
+    public function getConfirmedRegistrations(): int
+    {
+        return $this->registrations()->where('registration_status', 'confirmed')->count();
+    }
+
+    /**
+     * Get count of pending registrations.
+     */
+    public function getPendingRegistrations(): int
+    {
+        return $this->registrations()->where('registration_status', 'pending')->count();
+    }
+
+    /**
+     * Get count of available players.
+     */
+    public function getAvailablePlayers(): int
+    {
+        return $this->registrations()->where('availability_status', 'available')->count();
+    }
+
+    /**
+     * Get count of unavailable players.
+     */
+    public function getUnavailablePlayers(): int
+    {
+        return $this->registrations()->where('availability_status', 'unavailable')->count();
+    }
+
+    /**
+     * Check if minimum roster requirement is met.
+     */
+    public function hasMinimumRoster(): bool
+    {
+        $participants = $this->participations()->count();
+        return $participants >= $this->min_roster_size;
+    }
+
+    /**
+     * Check if player is registered for this game.
+     */
+    public function isPlayerRegistered(int $playerId): bool
+    {
+        return $this->registrations()
+            ->where('player_id', $playerId)
+            ->exists();
+    }
+
+    /**
+     * Get player's registration for this game.
+     */
+    public function getPlayerRegistration(int $playerId): ?GameRegistration
+    {
+        return $this->registrations()
+            ->where('player_id', $playerId)
+            ->first();
+    }
+
+    /**
+     * Check if player is participating in this game.
+     */
+    public function isPlayerParticipating(int $playerId): bool
+    {
+        return $this->participations()
+            ->where('player_id', $playerId)
+            ->exists();
+    }
+
+    /**
+     * Get player's participation for this game.
+     */
+    public function getPlayerParticipation(int $playerId): ?GameParticipation
+    {
+        return $this->participations()
+            ->where('player_id', $playerId)
+            ->first();
+    }
+
+    /**
+     * Register a player for this game.
+     */
+    public function registerPlayer(int $playerId, string $availabilityStatus = 'available', ?string $notes = null): GameRegistration
+    {
+        return GameRegistration::createRegistration($this->id, $playerId, $availabilityStatus, $notes);
+    }
+
+    /**
+     * Add a player to the game roster.
+     */
+    public function addPlayerToRoster(int $playerId, string $role = 'substitute', ?int $jerseyNumber = null, ?string $position = null): GameParticipation
+    {
+        return GameParticipation::createParticipation($this->id, $playerId, $role, $jerseyNumber, $position);
+    }
+
+    /**
+     * Get registration summary.
+     */
+    public function getRegistrationSummary(): array
+    {
+        return [
+            'total_registrations' => $this->registrations()->count(),
+            'confirmed_registrations' => $this->getConfirmedRegistrations(),
+            'pending_registrations' => $this->getPendingRegistrations(),
+            'available_players' => $this->getAvailablePlayers(),
+            'unavailable_players' => $this->getUnavailablePlayers(),
+            'current_roster_size' => $this->participations()->count(),
+            'max_roster_size' => $this->max_roster_size,
+            'min_roster_size' => $this->min_roster_size,
+            'available_roster_spots' => $this->getAvailableRosterSpots(),
+            'has_roster_capacity' => $this->hasRosterCapacity(),
+            'has_minimum_roster' => $this->hasMinimumRoster(),
+            'registration_open' => $this->isRegistrationOpen(),
+            'lineup_changes_allowed' => $this->isLineupChangesAllowed(),
+            'registration_deadline' => $this->getRegistrationDeadline()->format('d.m.Y H:i'),
+            'lineup_deadline' => $this->getLineupDeadline()->format('d.m.Y H:i'),
+            'hours_until_registration_deadline' => now()->diffInHours($this->getRegistrationDeadline(), false),
+            'hours_until_lineup_deadline' => now()->diffInHours($this->getLineupDeadline(), false),
+            'allow_player_registrations' => $this->allow_player_registrations,
+            'auto_confirm_registrations' => $this->auto_confirm_registrations,
+        ];
+    }
+
+    /**
+     * Get roster lineup organized by role.
+     */
+    public function getRosterLineup(): array
+    {
+        $participations = $this->participations()
+            ->with('player')
+            ->orderByRaw("FIELD(role, 'captain', 'vice_captain', 'starter', 'substitute', 'reserve')")
+            ->get();
+
+        return [
+            'captains' => $participations->where('role', 'captain')->values(),
+            'vice_captains' => $participations->where('role', 'vice_captain')->values(),
+            'starters' => $participations->where('role', 'starter')->values(),
+            'substitutes' => $participations->where('role', 'substitute')->values(),
+            'reserves' => $participations->where('role', 'reserve')->values(),
+            'total_count' => $participations->count(),
+        ];
     }
 
     // ============================
