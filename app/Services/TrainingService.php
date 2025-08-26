@@ -17,10 +17,17 @@ class TrainingService
     public function createTrainingSession(array $data): TrainingSession
     {
         return DB::transaction(function () use ($data) {
+            // Extract drills data before creating session
+            $drillsData = $data['drills'] ?? [];
+            unset($data['drills']);
+            
             $session = TrainingSession::create($data);
 
-            // Auto-add default drills based on session type and focus
-            if (isset($data['auto_add_drills']) && $data['auto_add_drills']) {
+            // Add selected drills to session
+            if (!empty($drillsData)) {
+                $this->syncSessionDrills($session, $drillsData);
+            } elseif (isset($data['auto_add_drills']) && $data['auto_add_drills']) {
+                // Auto-add default drills based on session type and focus
                 $this->addDefaultDrills($session);
             }
 
@@ -36,7 +43,16 @@ class TrainingService
     public function updateTrainingSession(TrainingSession $session, array $data): TrainingSession
     {
         return DB::transaction(function () use ($session, $data) {
+            // Extract drills data before updating session
+            $drillsData = $data['drills'] ?? [];
+            unset($data['drills']);
+            
             $session->update($data);
+
+            // Update session drills if provided
+            if (isset($drillsData)) {
+                $this->syncSessionDrills($session, $drillsData);
+            }
 
             // Update reminders if date changed
             if ($session->wasChanged('scheduled_at')) {
@@ -549,5 +565,29 @@ class TrainingService
         }
 
         return $recommendations;
+    }
+
+    /**
+     * Sync drills with training session
+     *
+     * @param TrainingSession $session
+     * @param array $drillsData
+     * @return void
+     */
+    private function syncSessionDrills(TrainingSession $session, array $drillsData): void
+    {
+        // Clear existing drills
+        $session->drills()->detach();
+        
+        // Add new drills
+        foreach ($drillsData as $drillData) {
+            $session->drills()->attach($drillData['drill_id'], [
+                'order_in_session' => $drillData['order_in_session'] ?? 1,
+                'planned_duration' => $drillData['planned_duration'] ?? 10,
+                'specific_instructions' => $drillData['specific_instructions'] ?? null,
+                'participants_count' => $drillData['participants_count'] ?? null,
+                'status' => $drillData['status'] ?? 'planned',
+            ]);
+        }
     }
 }

@@ -54,6 +54,13 @@ class CreateTrainingSessionRequest extends FormRequest
             'notification_settings.reminder_times' => 'nullable|array',
             'notification_settings.reminder_times.*' => 'integer|min:1',
             'auto_add_drills' => 'boolean',
+            'drills' => 'nullable|array',
+            'drills.*.drill_id' => 'required|exists:drills,id',
+            'drills.*.order_in_session' => 'required|integer|min:1',
+            'drills.*.planned_duration' => 'required|integer|min:1|max:120',
+            'drills.*.specific_instructions' => 'nullable|string|max:1000',
+            'drills.*.participants_count' => 'nullable|integer|min:1',
+            'drills.*.status' => 'string|in:planned,in_progress,completed,skipped,modified',
         ];
     }
 
@@ -79,6 +86,11 @@ class CreateTrainingSessionRequest extends FormRequest
             'session_type.required' => 'Der Trainingstyp muss ausgewählt werden.',
             'intensity_level.required' => 'Das Intensitätslevel muss ausgewählt werden.',
             'temperature.between' => 'Die Temperatur muss zwischen -20°C und 50°C liegen.',
+            'drills.*.drill_id.required' => 'Eine Übung muss ausgewählt werden.',
+            'drills.*.drill_id.exists' => 'Die ausgewählte Übung existiert nicht.',
+            'drills.*.order_in_session.required' => 'Die Reihenfolge der Übung ist erforderlich.',
+            'drills.*.planned_duration.required' => 'Die geplante Dauer ist erforderlich.',
+            'drills.*.planned_duration.max' => 'Die Dauer darf maximal 120 Minuten betragen.',
         ];
     }
 

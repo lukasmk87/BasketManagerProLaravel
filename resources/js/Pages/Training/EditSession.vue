@@ -1,9 +1,9 @@
 <template>
-    <AppLayout :title="`Trainingseinheit bearbeiten: ${session.title || session.team.name}`">
+    <AppLayout :title="`Trainingseinheit bearbeiten: ${form.title}`">
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Trainingseinheit bearbeiten: {{ session.title || session.team.name }}
+                    Trainingseinheit bearbeiten
                 </h2>
             </div>
         </template>
@@ -257,6 +257,15 @@
                                 </div>
                             </div>
 
+                            <!-- Drill Management -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <DrillSelector
+                                    :drills="drills"
+                                    :initial-selected-drills="existingDrills"
+                                    @update:selected-drills="handleDrillsUpdate"
+                                />
+                            </div>
+
                             <!-- Options -->
                             <div class="space-y-4">
                                 <h3 class="text-lg font-medium text-gray-900">Einstellungen</h3>
@@ -288,15 +297,6 @@
                                         />
                                         <span class="ml-2 text-sm text-gray-700">Ärztliche Freigabe erforderlich</span>
                                     </label>
-
-                                    <label class="flex items-center">
-                                        <input
-                                            v-model="form.auto_add_drills"
-                                            type="checkbox"
-                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-offset-0 focus:ring-indigo-200 focus:ring-opacity-50"
-                                        />
-                                        <span class="ml-2 text-sm text-gray-700">Automatisch Übungen hinzufügen</span>
-                                    </label>
                                 </div>
                             </div>
 
@@ -311,7 +311,7 @@
                                     :disabled="processing"
                                     :class="{ 'opacity-25': processing }"
                                 >
-                                    <span v-if="processing">Wird gespeichert...</span>
+                                    <span v-if="processing">Wird aktualisiert...</span>
                                     <span v-else>Änderungen speichern</span>
                                 </PrimaryButton>
                             </div>
@@ -324,11 +324,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
+import DrillSelector from '@/Components/Training/DrillSelector.vue'
 
 const props = defineProps({
     session: Object,
@@ -340,7 +341,10 @@ const processing = ref(false)
 const errors = ref({})
 const focusAreasText = ref('')
 const equipmentText = ref('')
+const selectedDrills = ref([])
+const existingDrills = ref([])
 
+// Form with existing session data
 const form = reactive({
     title: '',
     description: '',
@@ -369,7 +373,75 @@ const form = reactive({
         send_reminders: true,
         reminder_times: [24, 2]
     },
-    auto_add_drills: false,
+    drills: []
+})
+
+// Load existing session data
+onMounted(() => {
+    if (props.session) {
+        // Fill form with existing data
+        form.title = props.session.title || ''
+        form.description = props.session.description || ''
+        form.team_id = props.session.team_id
+        form.trainer_id = props.session.trainer_id
+        form.assistant_trainer_id = props.session.assistant_trainer_id || ''
+        form.planned_duration = props.session.planned_duration || 90
+        form.venue = props.session.venue || ''
+        form.venue_address = props.session.venue_address || ''
+        form.court_type = props.session.court_type || ''
+        form.session_type = props.session.session_type || ''
+        form.intensity_level = props.session.intensity_level || 'medium'
+        form.max_participants = props.session.max_participants || ''
+        form.weather_conditions = props.session.weather_conditions || ''
+        form.temperature = props.session.temperature || ''
+        form.weather_appropriate = props.session.weather_appropriate ?? true
+        form.special_requirements = props.session.special_requirements || ''
+        form.safety_notes = props.session.safety_notes || ''
+        form.is_mandatory = props.session.is_mandatory || false
+        form.allows_late_arrival = props.session.allows_late_arrival ?? true
+        form.requires_medical_clearance = props.session.requires_medical_clearance || false
+
+        // Handle focus areas
+        if (props.session.focus_areas) {
+            form.focus_areas = Array.isArray(props.session.focus_areas) 
+                ? props.session.focus_areas 
+                : JSON.parse(props.session.focus_areas)
+            focusAreasText.value = form.focus_areas.join(', ')
+        }
+
+        // Handle required equipment
+        if (props.session.required_equipment) {
+            form.required_equipment = Array.isArray(props.session.required_equipment)
+                ? props.session.required_equipment
+                : JSON.parse(props.session.required_equipment)
+            equipmentText.value = form.required_equipment.join(', ')
+        }
+
+        // Handle notification settings
+        if (props.session.notification_settings) {
+            form.notification_settings = typeof props.session.notification_settings === 'string'
+                ? JSON.parse(props.session.notification_settings)
+                : props.session.notification_settings
+        }
+
+        // Format scheduled_at for datetime-local input
+        if (props.session.scheduled_at) {
+            const date = new Date(props.session.scheduled_at)
+            form.scheduled_at = date.toISOString().slice(0, 16)
+        }
+
+        // Load existing drills
+        if (props.session.drills && props.session.drills.length > 0) {
+            existingDrills.value = props.session.drills.map(drill => ({
+                ...drill,
+                planned_duration: drill.pivot?.planned_duration || drill.estimated_duration,
+                specific_instructions: drill.pivot?.specific_instructions || '',
+                participants_count: drill.pivot?.participants_count || null,
+                order_in_session: drill.pivot?.order_in_session || 1,
+                isEditing: false
+            }))
+        }
+    }
 })
 
 // Watch for changes in focus areas text and convert to array
@@ -382,56 +454,17 @@ watch(equipmentText, (newValue) => {
     form.required_equipment = newValue ? newValue.split(',').map(item => item.trim()).filter(item => item) : []
 })
 
-// Populate form with session data
-onMounted(() => {
-    // Basic info
-    form.title = props.session.title || ''
-    form.description = props.session.description || ''
-    form.team_id = props.session.team_id || ''
-    form.trainer_id = props.session.trainer_id || 'current_user'
-    form.assistant_trainer_id = props.session.assistant_trainer_id || ''
-    
-    // Convert the scheduled_at to datetime-local format
-    if (props.session.scheduled_at) {
-        const scheduledDate = new Date(props.session.scheduled_at)
-        form.scheduled_at = scheduledDate.toISOString().slice(0, 16)
-    }
-    
-    form.planned_duration = props.session.planned_duration || 90
-    form.venue = props.session.venue || ''
-    form.venue_address = props.session.venue_address || ''
-    form.court_type = props.session.court_type || ''
-    form.session_type = props.session.session_type || ''
-    form.intensity_level = props.session.intensity_level || 'medium'
-    form.max_participants = props.session.max_participants || ''
-    
-    // Arrays
-    form.focus_areas = props.session.focus_areas || []
-    form.required_equipment = props.session.required_equipment || []
-    
-    // Convert arrays to text for editing
-    focusAreasText.value = form.focus_areas.join(', ')
-    equipmentText.value = form.required_equipment.join(', ')
-    
-    // Booleans
-    form.is_mandatory = props.session.is_mandatory || false
-    form.allows_late_arrival = props.session.allows_late_arrival !== false // Default true
-    form.requires_medical_clearance = props.session.requires_medical_clearance || false
-    form.auto_add_drills = props.session.auto_add_drills || false
-    form.weather_appropriate = props.session.weather_appropriate !== false // Default true
-    
-    // Additional fields
-    form.weather_conditions = props.session.weather_conditions || ''
-    form.temperature = props.session.temperature || ''
-    form.special_requirements = props.session.special_requirements || ''
-    form.safety_notes = props.session.safety_notes || ''
-    
-    // Notification settings
-    form.notification_settings = props.session.notification_settings || {
-        send_reminders: true,
-        reminder_times: [24, 2]
-    }
-})
+function handleDrillsUpdate(drills) {
+    selectedDrills.value = drills
+    form.drills = drills.map(drill => ({
+        drill_id: drill.id,
+        order_in_session: drill.order_in_session,
+        planned_duration: drill.planned_duration || drill.estimated_duration,
+        specific_instructions: drill.specific_instructions || '',
+        participants_count: drill.participants_count || null,
+        status: 'planned'
+    }))
+}
 
 function submitForm() {
     processing.value = true
@@ -443,12 +476,30 @@ function submitForm() {
         delete submitData.trainer_id // Let the backend set the current user
     }
 
+    // Ensure CSRF token is fresh before submitting
+    const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
+    if (!csrfToken) {
+        console.error('CSRF token not found, refreshing page');
+        window.location.reload();
+        return;
+    }
+
     router.put(`/training/sessions/${props.session.id}`, submitData, {
+        preserveScroll: true,
         onSuccess: () => {
             // Form submitted successfully, redirect will be handled by controller
         },
         onError: (errorResponse) => {
-            errors.value = errorResponse
+            console.error('Form submission error:', errorResponse);
+            errors.value = errorResponse;
+            
+            // If it's a CSRF error (419), try to refresh the token
+            if (errorResponse.status === 419 || (typeof errorResponse === 'object' && errorResponse['419'])) {
+                console.warn('CSRF token error detected, attempting to refresh');
+                if (window.updateCsrfToken) {
+                    window.updateCsrfToken();
+                }
+            }
         },
         onFinish: () => {
             processing.value = false
@@ -457,6 +508,6 @@ function submitForm() {
 }
 
 function goBack() {
-    router.get(`/training/sessions/${props.session.id}`)
+    router.get('/training/sessions')
 }
 </script>

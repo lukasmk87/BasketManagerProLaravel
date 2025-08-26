@@ -258,6 +258,15 @@
                                 </div>
                             </div>
 
+                            <!-- Drill Management -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <DrillSelector
+                                    :drills="drills"
+                                    :initial-selected-drills="[]"
+                                    @update:selected-drills="handleDrillsUpdate"
+                                />
+                            </div>
+
                             <!-- Options -->
                             <div class="space-y-4">
                                 <h3 class="text-lg font-medium text-gray-900">Einstellungen</h3>
@@ -330,6 +339,7 @@ import { router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
+import DrillSelector from '@/Components/Training/DrillSelector.vue'
 
 const props = defineProps({
     teams: Array,
@@ -340,6 +350,7 @@ const processing = ref(false)
 const errors = ref({})
 const focusAreasText = ref('')
 const equipmentText = ref('')
+const selectedDrills = ref([])
 
 // Get current date and time for minimum datetime
 const minDateTime = computed(() => {
@@ -377,6 +388,7 @@ const form = reactive({
         reminder_times: [24, 2] // 24 hours and 2 hours before
     },
     auto_add_drills: false,
+    drills: []
 })
 
 // Watch for changes in focus areas text and convert to array
@@ -395,6 +407,18 @@ onMounted(() => {
     now.setHours(now.getHours() + 2, 0, 0, 0) // 2 hours from now, rounded to hour
     form.scheduled_at = now.toISOString().slice(0, 16)
 })
+
+function handleDrillsUpdate(drills) {
+    selectedDrills.value = drills
+    form.drills = drills.map(drill => ({
+        drill_id: drill.id,
+        order_in_session: drill.order_in_session,
+        planned_duration: drill.planned_duration || drill.estimated_duration,
+        specific_instructions: drill.specific_instructions || '',
+        participants_count: drill.participants_count || null,
+        status: 'planned'
+    }))
+}
 
 function submitForm() {
     processing.value = true
