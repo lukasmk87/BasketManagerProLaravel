@@ -70,7 +70,7 @@ class CreateDrillRequest extends FormRequest
             'source' => 'nullable|string|max:255',
             'author' => 'nullable|string|max:255',
             'is_public' => 'boolean',
-            'status' => 'sometimes|in:draft,active',
+            'status' => 'sometimes|in:draft,pending_review',
         ];
     }
 

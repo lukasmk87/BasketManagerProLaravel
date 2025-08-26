@@ -234,8 +234,7 @@
                                         :class="{ 'border-red-500': errors.status }"
                                     >
                                         <option value="draft">Entwurf</option>
-                                        <option value="active">Aktiv</option>
-                                        <option value="pending_review">Wartet auf Freigabe</option>
+                                        <option value="pending_review">Zur Prüfung</option>
                                         <option value="approved">Genehmigt</option>
                                         <option value="rejected">Abgelehnt</option>
                                         <option value="archived">Archiviert</option>
@@ -245,11 +244,8 @@
                                         <div v-if="form.status === 'draft'" class="text-orange-600">
                                             <strong>Entwurf:</strong> Übung ist in Entwicklung und nur für Sie sichtbar
                                         </div>
-                                        <div v-else-if="form.status === 'active'" class="text-green-600">
-                                            <strong>Aktiv:</strong> Übung ist einsatzbereit und kann verwendet werden
-                                        </div>
                                         <div v-else-if="form.status === 'pending_review'" class="text-yellow-600">
-                                            <strong>Wartet auf Freigabe:</strong> Übung wartet auf Überprüfung durch einen Reviewer
+                                            <strong>Zur Prüfung:</strong> Übung ist einsatzbereit und wartet auf offizielle Genehmigung
                                         </div>
                                         <div v-else-if="form.status === 'approved'" class="text-blue-600">
                                             <strong>Genehmigt:</strong> Übung ist offiziell freigegeben für alle Benutzer

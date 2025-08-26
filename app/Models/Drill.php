@@ -172,10 +172,10 @@ class Drill extends Model implements HasMedia
     public function scopeAccessibleByUser($query, $userId)
     {
         return $query->where(function ($q) use ($userId) {
-            $q->where('status', 'active')
+            $q->whereIn('status', ['pending_review', 'approved'])
               ->orWhere(function ($subQ) use ($userId) {
                   $subQ->where('created_by_user_id', $userId)
-                       ->whereIn('status', ['draft', 'active']);
+                       ->whereIn('status', ['draft', 'pending_review', 'approved', 'rejected']);
               });
         });
     }

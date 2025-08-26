@@ -444,9 +444,10 @@ function formatCategory(category) {
 function getStatusLabel(status) {
     const labels = {
         'draft': 'Entwurf',
-        'active': 'Aktiv',
+        'pending_review': 'Zur Prüfung',
         'approved': 'Genehmigt',
-        'inactive': 'Inaktiv'
+        'rejected': 'Abgelehnt',
+        'archived': 'Archiviert'
     }
     return labels[status] || status
 }
@@ -454,9 +455,10 @@ function getStatusLabel(status) {
 function getStatusClasses(status) {
     const classes = {
         'draft': 'bg-orange-100 text-orange-800',
-        'active': 'bg-green-100 text-green-800',
+        'pending_review': 'bg-yellow-100 text-yellow-800',
         'approved': 'bg-blue-100 text-blue-800',
-        'inactive': 'bg-gray-100 text-gray-800'
+        'rejected': 'bg-red-100 text-red-800',
+        'archived': 'bg-gray-100 text-gray-800'
     }
     return classes[status] || 'bg-gray-100 text-gray-800'
 }
