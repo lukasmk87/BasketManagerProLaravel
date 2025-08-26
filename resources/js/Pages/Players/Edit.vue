@@ -803,7 +803,7 @@ const showMinorFields = computed(() => {
     if (!form.birth_date) return false
     const today = new Date()
     const birthDate = new Date(form.birth_date)
-    const age = today.getFullYear() - birthDate.getFullYear()
+    let age = today.getFullYear() - birthDate.getFullYear()
     const monthDiff = today.getMonth() - birthDate.getMonth()
     
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
@@ -814,9 +814,9 @@ const showMinorFields = computed(() => {
 })
 
 // Helper Functions
-const hasErrors = (fields) => {
-    return fields.some(field => form.errors[field])
-}
+const hasErrors = computed(() => {
+    return (fields) => fields.some(field => form.errors[field])
+})
 
 const addGuardianContact = () => {
     form.guardian_contacts.push({

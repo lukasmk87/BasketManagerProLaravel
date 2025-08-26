@@ -150,7 +150,7 @@ class PlayerService
 
         try {
             // Handle team transfer if team_id is changing
-            if (isset($data['team_id']) && $data['team_id'] !== $player->team_id) {
+            if (isset($data['team_id']) && (int)$data['team_id'] !== (int)$player->team_id) {
                 $newTeam = Team::findOrFail($data['team_id']);
                 $this->transferPlayer($player, $newTeam);
                 unset($data['team_id']); // Remove from update data as it's handled by transfer

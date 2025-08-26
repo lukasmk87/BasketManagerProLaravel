@@ -559,9 +559,9 @@ const availableAwayTeams = computed(() => {
 })
 
 // Helper Functions
-const hasErrors = (fields) => {
-    return fields.some(field => form.errors[field])
-}
+const hasErrors = computed(() => {
+    return (fields) => fields.some(field => form.errors[field])
+})
 
 const submit = () => {
     // Validate required fields before submission
