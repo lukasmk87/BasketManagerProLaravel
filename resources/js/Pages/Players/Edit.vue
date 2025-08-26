@@ -831,7 +831,19 @@ const removeGuardianContact = (index) => {
 }
 
 const submit = () => {
-    form.put(route('web.players.update', props.player.id))
+    form.put(route('web.players.update', props.player.id), {
+        onError: (errors) => {
+            if (errors.status === 419) {
+                console.warn('CSRF token mismatch in player update form');
+                // The axios interceptor will handle the page refresh
+                return;
+            }
+            console.error('Player update failed:', errors);
+        },
+        onSuccess: () => {
+            console.log('Player updated successfully');
+        }
+    });
 }
 
 const deletePlayerConfirmed = () => {

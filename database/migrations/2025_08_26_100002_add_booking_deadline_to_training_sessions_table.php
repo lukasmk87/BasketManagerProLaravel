@@ -13,13 +13,10 @@ return new class extends Migration
     {
         Schema::table('training_sessions', function (Blueprint $table) {
             // Buchungsfrist in Stunden vor dem Training
-            $table->integer('booking_deadline_hours')->default(2)->after('duration_minutes');
-            
-            // Maximale Teilnehmerzahl (optional)
-            $table->integer('max_participants')->nullable()->after('booking_deadline_hours');
+            $table->integer('booking_deadline_hours')->default(2)->after('planned_duration');
             
             // Ob Buchungen überhaupt erlaubt sind
-            $table->boolean('allow_registrations')->default(true)->after('max_participants');
+            $table->boolean('allow_registrations')->default(true)->after('booking_deadline_hours');
             
             // Warteliste aktiviert
             $table->boolean('enable_waitlist')->default(true)->after('allow_registrations');
@@ -34,7 +31,6 @@ return new class extends Migration
         Schema::table('training_sessions', function (Blueprint $table) {
             $table->dropColumn([
                 'booking_deadline_hours',
-                'max_participants', 
                 'allow_registrations',
                 'enable_waitlist'
             ]);
