@@ -222,6 +222,31 @@
                             <div class="space-y-4">
                                 <h3 class="text-lg font-medium text-gray-900">Zusätzliche Einstellungen</h3>
                                 
+                                <!-- Status Selection -->
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Initial Status
+                                    </label>
+                                    <select
+                                        id="status"
+                                        v-model="form.status"
+                                        class="w-full md:w-1/3 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                        :class="{ 'border-red-500': errors.status }"
+                                    >
+                                        <option value="draft">Entwurf</option>
+                                        <option value="active">Aktiv</option>
+                                    </select>
+                                    <p v-if="errors.status" class="mt-1 text-sm text-red-600">{{ errors.status }}</p>
+                                    <div class="mt-2 text-xs text-gray-500">
+                                        <div v-if="form.status === 'draft'" class="text-orange-600">
+                                            <strong>Entwurf:</strong> Übung ist in Entwicklung und nur für Sie sichtbar
+                                        </div>
+                                        <div v-else-if="form.status === 'active'" class="text-green-600">
+                                            <strong>Aktiv:</strong> Übung ist sofort einsatzbereit und kann verwendet werden
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div class="flex items-center space-x-6">
                                     <label class="flex items-center">
                                         <input
@@ -309,6 +334,7 @@ const form = reactive({
     requires_half_court: false,
     is_competitive: false,
     is_public: false,
+    status: 'active',
 })
 
 function submitForm() {

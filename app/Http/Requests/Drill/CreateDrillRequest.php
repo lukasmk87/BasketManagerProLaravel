@@ -70,6 +70,7 @@ class CreateDrillRequest extends FormRequest
             'source' => 'nullable|string|max:255',
             'author' => 'nullable|string|max:255',
             'is_public' => 'boolean',
+            'status' => 'sometimes|in:draft,active',
         ];
     }
 
@@ -129,6 +130,7 @@ class CreateDrillRequest extends FormRequest
             'search_keywords' => 'Suchbegriffe',
             'source' => 'Quelle',
             'author' => 'Autor',
+            'status' => 'Status',
         ];
     }
 

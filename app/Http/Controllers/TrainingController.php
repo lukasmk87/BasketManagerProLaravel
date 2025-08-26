@@ -273,7 +273,6 @@ class TrainingController extends Controller
 
         $drill = new Drill($request->validated());
         $drill->created_by_user_id = $user->id;
-        $drill->status = 'active';
         $drill->save();
 
         return redirect()
