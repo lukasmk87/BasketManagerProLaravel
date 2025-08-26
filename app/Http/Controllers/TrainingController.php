@@ -163,7 +163,7 @@ class TrainingController extends Controller
         // Get available drills
         $drills = \App\Models\Drill::where('status', 'active')
             ->orderBy('name')
-            ->get(['id', 'name', 'description', 'duration_minutes']);
+            ->get(['id', 'name', 'description', 'estimated_duration']);
 
         return Inertia::render('Training/CreateSession', [
             'teams' => $teams,
@@ -216,7 +216,7 @@ class TrainingController extends Controller
         // Get available drills
         $drills = \App\Models\Drill::where('status', 'active')
             ->orderBy('name')
-            ->get(['id', 'name', 'description', 'duration_minutes']);
+            ->get(['id', 'name', 'description', 'estimated_duration']);
 
         return Inertia::render('Training/EditSession', [
             'session' => $session,
