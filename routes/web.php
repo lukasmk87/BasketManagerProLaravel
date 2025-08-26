@@ -253,6 +253,27 @@ if (file_exists(base_path('vendor/laravel/jetstream/routes/inertia.php'))) {
 // Register routes for all locales with prefix (including default locale for explicit redirect)
 foreach ($supportedLocales as $locale) {
     Route::prefix($locale)->name($locale . '.')->group(function () use ($locale, $defaultLocale) {
+        // Redirect auth routes to non-localized versions with locale in session
+        Route::get('login', function () use ($locale) {
+            session(['locale' => $locale]);
+            return redirect('/login', 301);
+        })->name('login');
+        
+        Route::get('register', function () use ($locale) {
+            session(['locale' => $locale]);
+            return redirect('/register', 301);
+        })->name('register');
+        
+        Route::get('forgot-password', function () use ($locale) {
+            session(['locale' => $locale]);
+            return redirect('/forgot-password', 301);
+        })->name('password.request');
+        
+        Route::get('reset-password/{token}', function ($token) use ($locale) {
+            session(['locale' => $locale]);
+            return redirect("/reset-password/{$token}", 301);
+        })->name('password.reset');
+        
         // For default locale, redirect to non-prefixed version
         if ($locale === $defaultLocale) {
             // Redirect /de to /
@@ -272,7 +293,7 @@ foreach ($supportedLocales as $locale) {
             });
         } else {
             // For other locales, render normally
-            Route::get('/', function () {
+            Route::get('/', function () use ($locale) {
                 // Redirect authenticated users to dashboard
                 if (Auth::check()) {
                     return redirect()->route($locale . '.dashboard');

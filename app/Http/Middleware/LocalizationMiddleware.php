@@ -59,6 +59,11 @@ class LocalizationMiddleware
         $defaultLocale = config('localization.default_locale');
         $hideDefaultLocale = config('localization.url.hide_default_locale', true);
 
+        // Special handling for authentication routes - always redirect to non-localized version
+        if ($this->isAuthRoute($request, $segments, $hasLocaleInUrl)) {
+            return $hasLocaleInUrl; // Redirect if locale is in URL for auth routes
+        }
+
         // If URL has locale prefix but it's the default locale and we should hide it
         if ($hasLocaleInUrl && $locale === $defaultLocale && $hideDefaultLocale) {
             return true;
@@ -86,6 +91,26 @@ class LocalizationMiddleware
         $hasLocaleInUrl = !empty($segments) && $this->localizationService->isValidLocale($segments[0]);
         $defaultLocale = config('localization.default_locale');
         $hideDefaultLocale = config('localization.url.hide_default_locale', true);
+
+        // Special handling for auth routes - always redirect to non-localized version
+        if ($this->isAuthRoute($request, $segments, $hasLocaleInUrl)) {
+            // Set locale in session before redirecting to auth route
+            session(['locale' => $locale]);
+            
+            // Remove locale prefix and redirect to non-localized auth route
+            if ($hasLocaleInUrl) {
+                array_shift($segments);
+            }
+            
+            $newPath = '/' . implode('/', $segments);
+            
+            // Preserve query string
+            if ($request->getQueryString()) {
+                $newPath .= '?' . $request->getQueryString();
+            }
+            
+            return redirect($newPath, 301);
+        }
 
         // Remove existing locale from segments if present
         if ($hasLocaleInUrl) {
@@ -168,5 +193,51 @@ class LocalizationMiddleware
         }
 
         return null;
+    }
+
+    /**
+     * Check if the current route is an authentication route.
+     */
+    protected function isAuthRoute(Request $request, array $segments, bool $hasLocaleInUrl): bool
+    {
+        // Get the segments without locale prefix
+        $pathSegments = $segments;
+        if ($hasLocaleInUrl) {
+            array_shift($pathSegments);
+        }
+
+        // Common authentication routes from Fortify/Jetstream
+        $authRoutes = [
+            'login',
+            'register', 
+            'password/reset',
+            'password/confirm',
+            'email/verify',
+            'two-factor-challenge',
+            'logout',
+            'forgot-password',
+            'reset-password',
+            'user/confirm-password',
+            'user/confirmed-password-status'
+        ];
+
+        // Check if first segment matches any auth route
+        if (!empty($pathSegments)) {
+            $firstSegment = $pathSegments[0];
+            
+            if (in_array($firstSegment, $authRoutes)) {
+                return true;
+            }
+            
+            // Check for nested auth routes like password/reset
+            if (count($pathSegments) >= 2) {
+                $nestedPath = $pathSegments[0] . '/' . $pathSegments[1];
+                if (in_array($nestedPath, $authRoutes)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
