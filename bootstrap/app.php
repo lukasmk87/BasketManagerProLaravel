@@ -47,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            \App\Http\Middleware\VerifyCsrfToken::class,
             \App\Http\Middleware\ResolveTenantMiddleware::class,
             \App\Http\Middleware\ConfigureTenantStripe::class,
             \App\Http\Middleware\LocalizationMiddleware::class,

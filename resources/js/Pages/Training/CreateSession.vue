@@ -406,12 +406,30 @@ function submitForm() {
         delete submitData.trainer_id // Let the backend set the current user
     }
 
+    // Ensure CSRF token is fresh before submitting
+    const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
+    if (!csrfToken) {
+        console.error('CSRF token not found, refreshing page');
+        window.location.reload();
+        return;
+    }
+
     router.post('/training/sessions', submitData, {
+        preserveScroll: true,
         onSuccess: () => {
             // Form submitted successfully, redirect will be handled by controller
         },
         onError: (errorResponse) => {
-            errors.value = errorResponse
+            console.error('Form submission error:', errorResponse);
+            errors.value = errorResponse;
+            
+            // If it's a CSRF error (419), try to refresh the token
+            if (errorResponse.status === 419 || (typeof errorResponse === 'object' && errorResponse['419'])) {
+                console.warn('CSRF token error detected, attempting to refresh');
+                if (window.updateCsrfToken) {
+                    window.updateCsrfToken();
+                }
+            }
         },
         onFinish: () => {
             processing.value = false
