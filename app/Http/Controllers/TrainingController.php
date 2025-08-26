@@ -84,8 +84,26 @@ class TrainingController extends Controller
             ->orderBy('scheduled_at', 'desc')
             ->paginate(20);
 
+        // Get teams and coaches for filters
+        $teams = $user->hasRole(['admin', 'super_admin']) 
+            ? \App\Models\Team::with('club')->orderBy('name')->get()
+            : $user->coachedTeams()->with('club')->orderBy('name')->get();
+
+        $coaches = $user->hasRole(['admin', 'super_admin']) 
+            ? \App\Models\User::whereHas('roles', function ($q) {
+                $q->where('name', 'trainer');
+              })->orderBy('name')->get()
+            : collect([$user]);
+
         return Inertia::render('Training/Sessions', [
             'sessions' => $sessions,
+            'teams' => $teams,
+            'coaches' => $coaches,
+            'can' => [
+                'create' => $user->can('create', TrainingSession::class),
+                'update' => $user->can('updateAny', TrainingSession::class),
+                'delete' => $user->can('deleteAny', TrainingSession::class),
+            ],
         ]);
     }
 
@@ -126,6 +144,109 @@ class TrainingController extends Controller
         return Inertia::render('Training/ShowSession', [
             'session' => $session,
         ]);
+    }
+
+    /**
+     * Show the form for creating a new training session.
+     */
+    public function createSession(): Response
+    {
+        $this->authorize('create', TrainingSession::class);
+
+        $user = auth()->user();
+        
+        // Get teams that the user can create sessions for
+        $teams = $user->hasRole(['admin', 'super_admin']) 
+            ? \App\Models\Team::with('club')->orderBy('name')->get()
+            : $user->coachedTeams()->with('club')->orderBy('name')->get();
+
+        // Get available drills
+        $drills = \App\Models\Drill::where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'description', 'duration_minutes']);
+
+        return Inertia::render('Training/CreateSession', [
+            'teams' => $teams,
+            'drills' => $drills,
+        ]);
+    }
+
+    /**
+     * Store a newly created training session.
+     */
+    public function storeSession(\App\Http\Requests\TrainingSession\CreateTrainingSessionRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->can('create', TrainingSession::class)) {
+            abort(403, 'Sie haben keine Berechtigung, Trainingseinheiten zu erstellen.');
+        }
+
+        try {
+            $session = $this->trainingService->createTrainingSession($request->validated());
+
+            return redirect()
+                ->route('training.sessions.show', $session)
+                ->with('success', 'Trainingseinheit wurde erfolgreich erstellt.');
+        } catch (\Exception $e) {
+            return back()
+                ->withErrors(['error' => 'Fehler beim Erstellen der Trainingseinheit: ' . $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    /**
+     * Show the form for editing a training session.
+     */
+    public function editSession(TrainingSession $session): Response
+    {
+        $user = auth()->user();
+        
+        if (!$user->can('update', $session)) {
+            abort(403, 'Sie haben keine Berechtigung, diese Trainingseinheit zu bearbeiten.');
+        }
+
+        $session->load(['team.club', 'drills']);
+        
+        // Get teams that the user can assign sessions to
+        $teams = $user->hasRole(['admin', 'super_admin']) 
+            ? \App\Models\Team::with('club')->orderBy('name')->get()
+            : $user->coachedTeams()->with('club')->orderBy('name')->get();
+
+        // Get available drills
+        $drills = \App\Models\Drill::where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'description', 'duration_minutes']);
+
+        return Inertia::render('Training/EditSession', [
+            'session' => $session,
+            'teams' => $teams,
+            'drills' => $drills,
+        ]);
+    }
+
+    /**
+     * Update the specified training session.
+     */
+    public function updateSession(\App\Http\Requests\TrainingSession\UpdateTrainingSessionRequest $request, TrainingSession $session): RedirectResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->can('update', $session)) {
+            abort(403, 'Sie haben keine Berechtigung, diese Trainingseinheit zu bearbeiten.');
+        }
+
+        try {
+            $updatedSession = $this->trainingService->updateTrainingSession($session, $request->validated());
+
+            return redirect()
+                ->route('training.sessions.show', $updatedSession)
+                ->with('success', 'Trainingseinheit wurde erfolgreich aktualisiert.');
+        } catch (\Exception $e) {
+            return back()
+                ->withErrors(['error' => 'Fehler beim Aktualisieren der Trainingseinheit: ' . $e->getMessage()])
+                ->withInput();
+        }
     }
 
     /**

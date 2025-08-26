@@ -106,6 +106,13 @@ Route::middleware([
         Route::get('/', [\App\Http\Controllers\TrainingController::class, 'index'])->name('index');
         Route::get('/sessions', [\App\Http\Controllers\TrainingController::class, 'sessions'])->name('sessions');
         Route::get('/drills', [\App\Http\Controllers\TrainingController::class, 'drills'])->name('drills');
+        
+        // Training Session Management Routes (static routes first)
+        Route::get('/sessions/create', [\App\Http\Controllers\TrainingController::class, 'createSession'])->name('sessions.create');
+        Route::post('/sessions', [\App\Http\Controllers\TrainingController::class, 'storeSession'])->name('sessions.store');
+        Route::get('/sessions/{session}/edit', [\App\Http\Controllers\TrainingController::class, 'editSession'])->name('sessions.edit');
+        Route::put('/sessions/{session}', [\App\Http\Controllers\TrainingController::class, 'updateSession'])->name('sessions.update');
+        Route::patch('/sessions/{session}', [\App\Http\Controllers\TrainingController::class, 'updateSession'])->name('sessions.patch');
         Route::get('/sessions/{session}', [\App\Http\Controllers\TrainingController::class, 'showSession'])->name('sessions.show');
         
         // Drill Management Routes

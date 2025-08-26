@@ -22,7 +22,7 @@ class CreateTrainingSessionRequest extends FormRequest
     {
         return [
             'team_id' => 'required|exists:teams,id',
-            'trainer_id' => 'required|exists:users,id',
+            'trainer_id' => 'nullable|exists:users,id',
             'assistant_trainer_id' => 'nullable|exists:users,id|different:trainer_id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
@@ -115,6 +115,13 @@ class CreateTrainingSessionRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // Set trainer_id to current user if not provided
+        if (!$this->has('trainer_id') || empty($this->input('trainer_id'))) {
+            $this->merge([
+                'trainer_id' => auth()->id()
+            ]);
+        }
+
         // Convert boolean strings to actual booleans
         $booleanFields = [
             'weather_appropriate', 'is_mandatory', 'allows_late_arrival', 
