@@ -368,6 +368,7 @@ class GymManagementController extends Controller
                 'time_slots.*.slot_type' => 'required|in:training,game,event,maintenance',
                 'time_slots.*.valid_from' => 'required|date',
                 'time_slots.*.valid_until' => 'nullable|date|after:valid_from',
+                'time_slots.*.supports_parallel_bookings' => 'boolean',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -478,6 +479,7 @@ class GymManagementController extends Controller
                         'slot_type' => $slotData['slot_type'],
                         'valid_from' => $slotData['valid_from'],
                         'valid_until' => $slotData['valid_until'] ?? null,
+                        'supports_parallel_bookings' => $slotData['supports_parallel_bookings'] ?? true,
                         'status' => 'active',
                     ]);
                     $processedSlotIds[] = $timeSlot->id;
@@ -501,6 +503,7 @@ class GymManagementController extends Controller
                     'slot_type' => $slotData['slot_type'],
                     'valid_from' => $slotData['valid_from'],
                     'valid_until' => $slotData['valid_until'] ?? null,
+                    'supports_parallel_bookings' => $slotData['supports_parallel_bookings'] ?? true,
                     'status' => 'active',
                     'is_recurring' => true,
                     'allows_substitution' => true,
@@ -529,7 +532,7 @@ class GymManagementController extends Controller
                     'is_open' => true,
                     'open_time' => $timeSlotData['start_time'],
                     'close_time' => $timeSlotData['end_time'],
-                    'supports_parallel_bookings' => $timeSlotData['supports_parallel_bookings'] ?? false
+                    'supports_parallel_bookings' => $timeSlotData['supports_parallel_bookings'] ?? true
                 ];
             }
         }

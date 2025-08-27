@@ -42,6 +42,7 @@ class GymTimeSlot extends Model
         'max_participants',
         'is_recurring',
         'allows_substitution',
+        'supports_parallel_bookings',
         'excluded_dates',
         'assigned_by',
         'assigned_at',

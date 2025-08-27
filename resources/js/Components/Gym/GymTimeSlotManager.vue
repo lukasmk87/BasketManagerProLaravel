@@ -448,7 +448,8 @@ const toggleCustomTimes = () => {
             dayTimes.value[day] = {
                 enabled: true,
                 start_time: defaultTimes.value.start_time,
-                end_time: defaultTimes.value.end_time
+                end_time: defaultTimes.value.end_time,
+                supports_parallel_bookings: true
             }
         })
     }
@@ -545,7 +546,7 @@ const saveTimeSlots = async () => {
                         end_time: dayTime.end_time,
                         slot_type: 'training',
                         valid_from: new Date().toISOString().split('T')[0],
-                        supports_parallel_bookings: dayTime.supports_parallel_bookings || false,
+                        supports_parallel_bookings: dayTime.supports_parallel_bookings !== undefined ? dayTime.supports_parallel_bookings : true,
                     })
                 }
             })
@@ -622,7 +623,8 @@ const applyToAll = () => {
         dayTimes.value[day.key] = {
             enabled: true,
             start_time: template.start_time,
-            end_time: template.end_time
+            end_time: template.end_time,
+            supports_parallel_bookings: template.supports_parallel_bookings !== undefined ? template.supports_parallel_bookings : true
         }
     })
 }
