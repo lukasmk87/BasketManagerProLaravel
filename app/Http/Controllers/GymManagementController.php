@@ -1003,10 +1003,27 @@ class GymManagementController extends Controller
             );
 
             if (!empty($validationErrors)) {
+                \Log::info('Team assignment validation failed', [
+                    'user_id' => auth()->id(),
+                    'time_slot_id' => $request->gym_time_slot_id,
+                    'team_id' => $request->team_id,
+                    'day_of_week' => $request->day_of_week,
+                    'time_range' => $request->start_time . ' - ' . $request->end_time,
+                    'gym_hall_id' => $timeSlot->gym_hall_id,
+                    'global_parallel_bookings' => $timeSlot->gymHall->supports_parallel_bookings,
+                    'day_specific_parallel_bookings' => $timeSlot->gymHall->supportsParallelBookingsForDay($request->day_of_week),
+                    'validation_errors' => $validationErrors
+                ]);
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Zuordnung nicht möglich',
-                    'errors' => $validationErrors
+                    'message' => 'Zuordnung nicht möglich: ' . implode(' ', $validationErrors),
+                    'errors' => $validationErrors,
+                    'debug_info' => [
+                        'global_parallel_bookings_enabled' => $timeSlot->gymHall->supports_parallel_bookings,
+                        'day_specific_parallel_bookings_enabled' => $timeSlot->gymHall->supportsParallelBookingsForDay($request->day_of_week),
+                        'gym_hall_name' => $timeSlot->gymHall->name
+                    ]
                 ], 422);
             }
 

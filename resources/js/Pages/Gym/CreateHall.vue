@@ -281,7 +281,10 @@
                                                         type="checkbox"
                                                         class="rounded border-gray-300 text-blue-600"
                                                     />
-                                                    <span class="ml-2 text-sm text-gray-700">Parallel-Buchungen</span>
+                                                    <div class="ml-2">
+                                                        <span class="text-sm text-gray-700">Parallel-Buchungen erlauben</span>
+                                                        <p class="text-xs text-gray-500">Ermöglicht mehreren Teams gleichzeitig zu trainieren</p>
+                                                    </div>
                                                 </label>
                                             </div>
                                         </div>
@@ -492,7 +495,7 @@ const form = ref({
     capacity: null,
     hall_type: 'single',
     court_count: 1,
-    supports_parallel_bookings: false,
+    supports_parallel_bookings: true,
     min_booking_duration_minutes: 30,
     booking_increment_minutes: 30,
     opening_time: '08:00',

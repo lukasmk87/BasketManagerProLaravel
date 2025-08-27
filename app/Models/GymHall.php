@@ -232,6 +232,51 @@ class GymHall extends Model implements HasMedia
     }
 
     /**
+     * Remove day-specific parallel booking restrictions and use global setting.
+     */
+    public function normalizeOperatingHoursParallelBookings(): bool
+    {
+        if (!$this->operating_hours) {
+            return true; // Nothing to normalize
+        }
+
+        $operatingHours = $this->operating_hours;
+        $wasModified = false;
+
+        foreach (['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as $day) {
+            if (isset($operatingHours[$day]['supports_parallel_bookings'])) {
+                unset($operatingHours[$day]['supports_parallel_bookings']);
+                $wasModified = true;
+            }
+        }
+
+        if ($wasModified) {
+            $this->operating_hours = $operatingHours;
+            return $this->save();
+        }
+
+        return true;
+    }
+
+    /**
+     * Set parallel booking support for a specific day.
+     */
+    public function setParallelBookingsForDay(string $dayOfWeek, bool $enabled): bool
+    {
+        $dayOfWeek = strtolower($dayOfWeek);
+        $operatingHours = $this->operating_hours ?: [];
+
+        if (!isset($operatingHours[$dayOfWeek])) {
+            $operatingHours[$dayOfWeek] = [];
+        }
+
+        $operatingHours[$dayOfWeek]['supports_parallel_bookings'] = $enabled;
+        $this->operating_hours = $operatingHours;
+
+        return $this->save();
+    }
+
+    /**
      * Get maximum number of parallel teams for a specific day.
      */
     public function getMaxParallelTeamsForDay(string $dayOfWeek): int
