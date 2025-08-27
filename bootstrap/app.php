@@ -103,6 +103,15 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 403);
             }
             
+            // For API requests, return JSON response
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage() ?: 'Sie haben keine Berechtigung für diese Aktion.',
+                    'errors' => [],
+                ], 403);
+            }
+            
             // For regular web requests, return the default Laravel behavior
             return response()->view('errors.403', ['exception' => $e], 403);
         });
@@ -118,8 +127,102 @@ return Application::configure(basePath: dirname(__DIR__))
                     ], 403);
                 }
                 
+                // For API requests, return JSON response
+                if ($request->expectsJson() || $request->is('api/*')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $e->getMessage() ?: 'Sie haben keine Berechtigung für diese Aktion.',
+                        'errors' => [],
+                    ], 403);
+                }
+                
                 // For regular web requests
                 return response()->view('errors.403', ['exception' => $e], 403);
+            }
+        });
+
+        // Handle model not found exceptions for API routes
+        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                \Log::info('Model not found for API request', [
+                    'model' => $e->getModel(),
+                    'url' => $request->fullUrl(),
+                    'user_id' => auth()->id(),
+                    'ip' => $request->ip()
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Der angeforderte Datensatz wurde nicht gefunden.',
+                    'errors' => []
+                ], 404);
+            }
+        });
+
+        // Handle database query exceptions for API routes
+        $exceptions->render(function (\Illuminate\Database\QueryException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                \Log::error('Database query error on API request', [
+                    'sql_error' => $e->getMessage(),
+                    'error_code' => $e->getCode(),
+                    'url' => $request->fullUrl(),
+                    'user_id' => auth()->id(),
+                    'request_data' => $request->all()
+                ]);
+                
+                // Check for specific error types
+                $errorMessage = 'Ein Datenbankfehler ist aufgetreten.';
+                if (str_contains($e->getMessage(), 'Duplicate entry')) {
+                    $errorMessage = 'Dieser Datensatz existiert bereits.';
+                } elseif (str_contains($e->getMessage(), 'foreign key constraint')) {
+                    $errorMessage = 'Operation nicht möglich aufgrund von Datenabhängigkeiten.';
+                }
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage,
+                    'errors' => []
+                ], 422);
+            }
+        });
+
+        // Handle validation exceptions with improved API response format
+        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Die eingegebenen Daten sind ungültig.',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+        });
+
+        // Generic API error handler
+        $exceptions->render(function (\Exception $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                // Only log non-standard exceptions to avoid spam
+                if (!($e instanceof \Illuminate\Validation\ValidationException) &&
+                    !($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) &&
+                    !($e instanceof \Illuminate\Auth\Access\AuthorizationException) &&
+                    !($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException)) {
+                    
+                    \Log::error('Unhandled API exception', [
+                        'exception_class' => get_class($e),
+                        'message' => $e->getMessage(),
+                        'url' => $request->fullUrl(),
+                        'user_id' => auth()->id(),
+                        'request_data' => $request->all(),
+                        'stack_trace' => $e->getTraceAsString()
+                    ]);
+                }
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => app()->environment('production') ? 
+                        'Ein unerwarteter Fehler ist aufgetreten.' : 
+                        $e->getMessage(),
+                    'errors' => []
+                ], 500);
             }
         });
     })->create();

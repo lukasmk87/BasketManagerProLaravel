@@ -1007,21 +1007,38 @@ class GymManagementController extends Controller
                 ], 422);
             }
 
-            $assignment = $timeSlot->assignTeamToSegment(
-                $team,
-                $request->day_of_week,
-                $request->start_time,
-                $request->end_time,
-                $user,
-                $request->notes,
-                $gymCourt
-            );
+            // Use database transaction to ensure data integrity
+            \DB::beginTransaction();
+            try {
+                $assignment = $timeSlot->assignTeamToSegment(
+                    $team,
+                    $request->day_of_week,
+                    $request->start_time,
+                    $request->end_time,
+                    $user,
+                    $request->notes,
+                    $gymCourt
+                );
 
-            if (!$assignment) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Fehler beim Erstellen der Team-Zuordnung.'
-                ], 500);
+                if (!$assignment) {
+                    \DB::rollback();
+                    \Log::error('Failed to create team assignment - assignTeamToSegment returned null', [
+                        'user_id' => auth()->id(),
+                        'time_slot_id' => $request->gym_time_slot_id,
+                        'team_id' => $request->team_id,
+                        'request_data' => $request->all()
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Fehler beim Erstellen der Team-Zuordnung.'
+                    ], 500);
+                }
+                
+                \DB::commit();
+            } catch (\Exception $e) {
+                \DB::rollback();
+                throw $e; // Re-throw to be caught by the outer catch block
             }
 
             return response()->json([
@@ -1037,15 +1054,48 @@ class GymManagementController extends Controller
                 ]
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::info('Validation failed for team assignment', [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all(),
+                'validation_errors' => $e->errors()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Ungültige Eingabedaten.',
                 'errors' => $e->errors()
             ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::warning('Model not found during team assignment', [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all(),
+                'model' => $e->getModel(),
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Ein benötigter Datensatz wurde nicht gefunden.'
+            ], 404);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database error during team assignment', [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all(),
+                'sql_error' => $e->getMessage(),
+                'error_code' => $e->getCode()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Datenbankfehler bei der Zuordnung. Möglicherweise existiert bereits eine Zuordnung für diesen Zeitraum.'
+            ], 422);
         } catch (\Exception $e) {
             \Log::error('Error assigning team to segment: ' . $e->getMessage(), [
                 'user_id' => auth()->id(),
                 'request_data' => $request->all(),
+                'request_url' => request()->fullUrl(),
+                'exception_class' => get_class($e),
+                'stack_trace' => $e->getTraceAsString(),
                 'exception' => $e
             ]);
             

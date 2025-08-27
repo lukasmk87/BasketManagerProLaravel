@@ -119,6 +119,14 @@ class GymHallController extends Controller
     public function show(GymHall $gymHall): JsonResponse
     {
         try {
+            // Verify gym hall exists and is accessible
+            if (!$gymHall->exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sporthalle nicht gefunden.'
+                ], 404);
+            }
+
             $this->authorize('view', $gymHall);
 
             $gymHall->load([
@@ -128,22 +136,63 @@ class GymHallController extends Controller
                 }
             ]);
 
-            // Add additional computed data
+            // Add additional computed data with null safety
             $startOfWeek = now()->startOfWeek();
             $endOfWeek = now()->endOfWeek();
 
-            $additionalData = [
-                'weekly_schedule' => $gymHall->getWeeklySchedule($startOfWeek),
-                'utilization_rate' => $gymHall->getUtilizationRate($startOfWeek, $endOfWeek),
-                'is_open_now' => $gymHall->is_open,
-                'todays_schedule' => $gymHall->getTodaysSchedule(),
-            ];
+            $additionalData = [];
+            
+            try {
+                $additionalData['weekly_schedule'] = $gymHall->getWeeklySchedule($startOfWeek) ?? [];
+            } catch (\Exception $e) {
+                \Log::warning('Failed to get weekly schedule for gym hall', [
+                    'gym_hall_id' => $gymHall->id,
+                    'error' => $e->getMessage()
+                ]);
+                $additionalData['weekly_schedule'] = [];
+            }
+
+            try {
+                $additionalData['utilization_rate'] = $gymHall->getUtilizationRate($startOfWeek, $endOfWeek) ?? 0.0;
+            } catch (\Exception $e) {
+                \Log::warning('Failed to get utilization rate for gym hall', [
+                    'gym_hall_id' => $gymHall->id,
+                    'error' => $e->getMessage()
+                ]);
+                $additionalData['utilization_rate'] = 0.0;
+            }
+
+            try {
+                $additionalData['is_open_now'] = $gymHall->is_open ?? false;
+            } catch (\Exception $e) {
+                \Log::warning('Failed to get is_open status for gym hall', [
+                    'gym_hall_id' => $gymHall->id,
+                    'error' => $e->getMessage()
+                ]);
+                $additionalData['is_open_now'] = false;
+            }
+
+            try {
+                $additionalData['todays_schedule'] = $gymHall->getTodaysSchedule() ?? [];
+            } catch (\Exception $e) {
+                \Log::warning('Failed to get today\'s schedule for gym hall', [
+                    'gym_hall_id' => $gymHall->id,
+                    'error' => $e->getMessage()
+                ]);
+                $additionalData['todays_schedule'] = [];
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => array_merge($gymHall->toArray(), $additionalData)
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            \Log::info('Authorization failed for gym hall view', [
+                'gym_hall_id' => $gymHall->id ?? 'unknown',
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Sie haben keine Berechtigung, diese Sporthalle zu betrachten.'
@@ -152,6 +201,9 @@ class GymHallController extends Controller
             \Log::error('Error showing gym hall: ' . $e->getMessage(), [
                 'gym_hall_id' => $gymHall->id ?? 'unknown',
                 'user_id' => auth()->id(),
+                'request_url' => request()->fullUrl(),
+                'stack_trace' => $e->getTraceAsString(),
+                'exception_class' => get_class($e),
                 'exception' => $e
             ]);
             
