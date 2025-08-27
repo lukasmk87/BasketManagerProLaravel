@@ -263,6 +263,9 @@ class TeamController extends Controller
     {
         $this->authorize('update', $team);
 
+        // Load players relationship to match the show() method
+        $team->load(['players.user']);
+
         $user = auth()->user();
         
         $clubs = Club::query()
@@ -280,8 +283,16 @@ class TeamController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Format team data to match the show() method structure
+        $teamData = $team->toArray();
+        $teamData['players'] = $team->players->map(function($player) {
+            $playerData = $player->toArray();
+            $playerData['user'] = $player->user?->toArray();
+            return $playerData;
+        })->toArray();
+
         return Inertia::render('Teams/Edit', [
-            'team' => $team,
+            'team' => $teamData,
             'clubs' => $clubs->toArray(),
         ]);
     }

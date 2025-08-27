@@ -452,7 +452,7 @@
 
                     <!-- Hall Schedule Tab -->
                     <div v-show="activeTab === 'schedule'" class="p-6">
-                        <TeamHallSchedule :team-id="team.id" />
+                        <TeamHallSchedule :team-id="team.slug" />
                     </div>
                 </div>
             </div>
@@ -529,7 +529,7 @@ const form = useForm({
     is_recruiting: props.team.is_recruiting || false,
     max_players: props.team.max_players || 15,
     min_players: props.team.min_players || 8,
-    training_schedule: props.team.training_schedule || '[]',
+    training_schedule: JSON.stringify(props.team.training_schedule || []),
     description: props.team.description || '',
 })
 
@@ -537,11 +537,11 @@ const deleteForm = useForm({})
 
 const confirmingTeamDeletion = ref(false)
 const showPlayerModal = ref(false)
-const teamPlayers = ref([])
+const teamPlayers = ref(props.team.players || [])
 const activeTab = ref('details')
 
 const trainingSchedules = ref(
-    props.team.training_schedule ? JSON.parse(props.team.training_schedule) : []
+    Array.isArray(props.team.training_schedule) ? props.team.training_schedule : []
 )
 
 watch(trainingSchedules, (value) => {
@@ -571,7 +571,7 @@ const deleteTeamConfirmed = () => {
 // Player management functions
 const loadTeamPlayers = async () => {
     try {
-        const response = await fetch(route('web.teams.players.index', props.team.id))
+        const response = await fetch(route('web.teams.players.index', props.team.slug))
         const data = await response.json()
         teamPlayers.value = data.players || []
     } catch (error) {
@@ -581,7 +581,7 @@ const loadTeamPlayers = async () => {
 
 const updatePlayer = async (player) => {
     try {
-        const response = await fetch(route('web.teams.players.update', [props.team.id, player.id]), {
+        const response = await fetch(route('web.teams.players.update', [props.team.slug, player.id]), {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -617,7 +617,7 @@ const removePlayer = async (player) => {
     }
 
     try {
-        const response = await fetch(route('web.teams.players.detach', [props.team.id, player.id]), {
+        const response = await fetch(route('web.teams.players.detach', [props.team.slug, player.id]), {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
@@ -636,8 +636,10 @@ const removePlayer = async (player) => {
     }
 }
 
-// Load team players when component mounts
+// Load team players when component mounts (only if not already provided)
 onMounted(() => {
-    loadTeamPlayers()
+    if (!props.team.players || props.team.players.length === 0) {
+        loadTeamPlayers()
+    }
 })
 </script>
