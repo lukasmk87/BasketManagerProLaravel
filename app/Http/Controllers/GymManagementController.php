@@ -255,6 +255,9 @@ class GymManagementController extends Controller
             ->orderBy('start_time')
             ->get();
 
+        // Get operating hours with parallel bookings settings
+        $operatingHours = $hall->operating_hours ?? [];
+        
         return response()->json([
             'success' => true,
             'data' => $timeSlots->map(function ($slot) {
@@ -282,6 +285,7 @@ class GymManagementController extends Controller
                     'all_day_times' => $slot->getAllDayTimes(),
                 ];
             }),
+            'operating_hours' => $operatingHours,
         ]);
     }
 

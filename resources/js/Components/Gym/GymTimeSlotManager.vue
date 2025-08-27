@@ -275,8 +275,112 @@ const saveOriginalState = () => {
     originalState.value = getCurrentState()
 }
 
-const loadTimeSlots = () => {
-    if (props.initialTimeSlots.length > 0) {
+const loadTimeSlots = async () => {
+    // Only try to load fresh data from API if we have a valid gymHallId
+    if (props.gymHallId && typeof props.gymHallId === 'number') {
+        try {
+            const response = await window.axios.get(`/api/v2/gym-halls/${props.gymHallId}/time-slots`, {
+                withCredentials: true
+            })
+            
+            if (response.data.success) {
+                const timeSlots = response.data.data
+                const operatingHours = response.data.operating_hours || {}
+                
+                if (timeSlots.length > 0) {
+                    const slot = timeSlots[0]
+                    
+                    // Check if we have individual time slots per day or custom_times structure
+                    const hasCustomTimesSlot = timeSlots.some(slot => slot.uses_custom_times && slot.custom_times)
+                    const hasIndividualSlots = timeSlots.some(slot => slot.uses_custom_times && slot.day_of_week && !slot.custom_times)
+                    
+                    if (hasCustomTimesSlot) {
+                        // Old structure: one slot with custom_times object
+                        const customSlot = timeSlots.find(slot => slot.uses_custom_times && slot.custom_times)
+                        useCustomTimes.value = true
+                        
+                        weekDays.forEach(day => {
+                            if (customSlot.custom_times[day.key]) {
+                                dayTimes.value[day.key] = {
+                                    enabled: true,
+                                    start_time: customSlot.custom_times[day.key].start_time,
+                                    end_time: customSlot.custom_times[day.key].end_time,
+                                    supports_parallel_bookings: customSlot.custom_times[day.key].supports_parallel_bookings || operatingHours[day.key]?.supports_parallel_bookings || true
+                                }
+                            }
+                        })
+                    } else if (hasIndividualSlots) {
+                        // New structure: separate slots per day with uses_custom_times=true
+                        useCustomTimes.value = true
+                        
+                        weekDays.forEach(day => {
+                            const daySlot = timeSlots.find(slot => 
+                                slot.day_of_week === day.key && slot.uses_custom_times
+                            )
+                            if (daySlot && daySlot.start_time && daySlot.end_time) {
+                                dayTimes.value[day.key] = {
+                                    enabled: true,
+                                    start_time: daySlot.start_time,
+                                    end_time: daySlot.end_time,
+                                    supports_parallel_bookings: daySlot.supports_parallel_bookings || operatingHours[day.key]?.supports_parallel_bookings || true
+                                }
+                            }
+                        })
+                    } else {
+                        // Standard structure: separate slots per day with same times
+                        useCustomTimes.value = false
+                        if (slot.start_time && slot.end_time) {
+                            defaultTimes.value = {
+                                start_time: slot.start_time,
+                                end_time: slot.end_time
+                            }
+                        }
+                        
+                        // Apply operating hours data for parallel bookings
+                        weekDays.forEach(day => {
+                            if (operatingHours[day.key]?.is_open) {
+                                dayTimes.value[day.key] = {
+                                    enabled: operatingHours[day.key].is_open,
+                                    start_time: operatingHours[day.key].open_time,
+                                    end_time: operatingHours[day.key].close_time,
+                                    supports_parallel_bookings: operatingHours[day.key].supports_parallel_bookings || true
+                                }
+                            }
+                        })
+                    }
+                } else {
+                    // No slots found, use operating hours if available
+                    useCustomTimes.value = true
+                    weekDays.forEach(day => {
+                        if (operatingHours[day.key]?.is_open) {
+                            dayTimes.value[day.key] = {
+                                enabled: operatingHours[day.key].is_open,
+                                start_time: operatingHours[day.key].open_time,
+                                end_time: operatingHours[day.key].close_time,
+                                supports_parallel_bookings: operatingHours[day.key].supports_parallel_bookings || true
+                            }
+                        }
+                    })
+                }
+                
+                saveOriginalState()
+                return
+            }
+        } catch (error) {
+            // Silently fall back to props data on network errors
+            // Only log if it's not a common network issue
+            if (error.code !== 'ERR_NETWORK' && error.message !== 'Network Error') {
+                console.warn('Failed to load time slots from API:', error)
+            }
+        }
+    }
+    
+    // Fallback: Use props data or initialize with defaults
+    loadFromProps()
+}
+
+const loadFromProps = () => {
+    if (props.initialTimeSlots && props.initialTimeSlots.length > 0) {
         const slot = props.initialTimeSlots[0]
         
         // Check if we have individual time slots per day or custom_times structure
@@ -294,7 +398,7 @@ const loadTimeSlots = () => {
                         enabled: true,
                         start_time: customSlot.custom_times[day.key].start_time,
                         end_time: customSlot.custom_times[day.key].end_time,
-                        supports_parallel_bookings: customSlot.custom_times[day.key].supports_parallel_bookings || false
+                        supports_parallel_bookings: customSlot.custom_times[day.key].supports_parallel_bookings || true
                     }
                 }
             })
@@ -311,7 +415,7 @@ const loadTimeSlots = () => {
                         enabled: true,
                         start_time: daySlot.start_time,
                         end_time: daySlot.end_time,
-                        supports_parallel_bookings: daySlot.supports_parallel_bookings || false
+                        supports_parallel_bookings: daySlot.supports_parallel_bookings || true
                     }
                 }
             })
@@ -524,13 +628,13 @@ const applyToAll = () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
     dayTimes.value = initializeDayTimes()
-    loadTimeSlots()
+    await loadTimeSlots()
 })
 
 // Watch for prop changes
-watch(() => props.initialTimeSlots, () => {
-    loadTimeSlots()
+watch(() => props.initialTimeSlots, async () => {
+    await loadTimeSlots()
 }, { deep: true })
 </script>
