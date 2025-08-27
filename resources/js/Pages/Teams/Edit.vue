@@ -224,54 +224,6 @@
                                 <InputError :message="form.errors.min_players" class="mt-2" />
                             </div>
 
-                            <!-- Training Schedule -->
-                            <div class="md:col-span-2">
-                                <InputLabel value="Trainingszeiten" />
-                                <div class="mt-2 space-y-2">
-                                    <div 
-                                        v-for="(schedule, index) in trainingSchedules" 
-                                        :key="index"
-                                        class="flex items-center gap-2"
-                                    >
-                                        <select
-                                            v-model="schedule.day"
-                                            class="border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                        >
-                                            <option value="">Tag wählen</option>
-                                            <option value="monday">Montag</option>
-                                            <option value="tuesday">Dienstag</option>
-                                            <option value="wednesday">Mittwoch</option>
-                                            <option value="thursday">Donnerstag</option>
-                                            <option value="friday">Freitag</option>
-                                            <option value="saturday">Samstag</option>
-                                            <option value="sunday">Sonntag</option>
-                                        </select>
-                                        <TextInput
-                                            v-model="schedule.time"
-                                            type="time"
-                                            class="flex-1"
-                                        />
-                                        <TextInput
-                                            v-model="schedule.location"
-                                            type="text"
-                                            placeholder="Ort"
-                                            class="flex-1"
-                                        />
-                                        <SecondaryButton
-                                            type="button"
-                                            @click="removeTrainingSchedule(index)"
-                                        >
-                                            Entfernen
-                                        </SecondaryButton>
-                                    </div>
-                                    <PrimaryButton
-                                        type="button"
-                                        @click="addTrainingSchedule"
-                                    >
-                                        Trainingszeit hinzufügen
-                                    </PrimaryButton>
-                                </div>
-                            </div>
 
                             <!-- Description -->
                             <div class="md:col-span-2">
@@ -529,7 +481,6 @@ const form = useForm({
     is_recruiting: props.team.is_recruiting || false,
     max_players: props.team.max_players || 15,
     min_players: props.team.min_players || 8,
-    training_schedule: JSON.stringify(props.team.training_schedule || []),
     description: props.team.description || '',
 })
 
@@ -540,25 +491,6 @@ const showPlayerModal = ref(false)
 const teamPlayers = ref(props.team.players || [])
 const activeTab = ref('details')
 
-const trainingSchedules = ref(
-    Array.isArray(props.team.training_schedule) ? props.team.training_schedule : []
-)
-
-watch(trainingSchedules, (value) => {
-    form.training_schedule = JSON.stringify(value)
-}, { deep: true })
-
-const addTrainingSchedule = () => {
-    trainingSchedules.value.push({
-        day: '',
-        time: '',
-        location: ''
-    })
-}
-
-const removeTrainingSchedule = (index) => {
-    trainingSchedules.value.splice(index, 1)
-}
 
 const submit = () => {
     form.put(route('web.teams.update', props.team.slug))

@@ -50,7 +50,6 @@ class TeamResource extends JsonResource
             'average_player_age' => $this->average_player_age,
             
             // Training & Venue
-            'training_schedule' => $this->training_schedule,
             'practice_times' => $this->practice_times,
             'home_venue' => $this->home_venue,
             'home_venue_address' => $this->home_venue_address,

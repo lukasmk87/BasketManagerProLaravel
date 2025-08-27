@@ -50,12 +50,6 @@ class StoreTeamRequest extends FormRequest
             'venue_details.court_type' => ['nullable', 'string', 'max:100'],
             'venue_details.parking_available' => ['nullable', 'boolean'],
             'venue_details.accessibility' => ['nullable', 'string', 'max:500'],
-            'training_schedule' => ['nullable', 'array'],
-            'training_schedule.*.day' => ['required_with:training_schedule', Rule::in(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])],
-            'training_schedule.*.start_time' => ['required_with:training_schedule', 'date_format:H:i'],
-            'training_schedule.*.end_time' => ['required_with:training_schedule', 'date_format:H:i', 'after:training_schedule.*.start_time'],
-            'training_schedule.*.venue' => ['nullable', 'string', 'max:255'],
-            'training_schedule.*.notes' => ['nullable', 'string', 'max:500'],
             'practice_times' => ['nullable', 'array'],
             'practice_times.*' => ['string', 'max:255'],
             'team_color_primary' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
@@ -101,10 +95,6 @@ class StoreTeamRequest extends FormRequest
             'contact_email.email' => 'Die Kontakt-E-Mail muss eine gültige E-Mail-Adresse sein.',
             'registration_fee.numeric' => 'Die Anmeldegebühr muss eine Zahl sein.',
             'monthly_fee.numeric' => 'Die monatliche Gebühr muss eine Zahl sein.',
-            'training_schedule.*.day.in' => 'Der Trainingstag ist ungültig.',
-            'training_schedule.*.start_time.date_format' => 'Die Startzeit muss im Format HH:MM angegeben werden.',
-            'training_schedule.*.end_time.date_format' => 'Die Endzeit muss im Format HH:MM angegeben werden.',
-            'training_schedule.*.end_time.after' => 'Die Endzeit muss nach der Startzeit liegen.',
         ];
     }
 
@@ -133,7 +123,6 @@ class StoreTeamRequest extends FormRequest
             'is_recruiting' => 'Wirbt neue Spieler',
             'home_venue' => 'Heimspielstätte',
             'venue_details' => 'Spielstätten-Details',
-            'training_schedule' => 'Trainingsplan',
             'practice_times' => 'Trainingszeiten',
             'team_color_primary' => 'Primäre Teamfarbe',
             'team_color_secondary' => 'Sekundäre Teamfarbe',

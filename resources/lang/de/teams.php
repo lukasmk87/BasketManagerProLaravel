@@ -70,7 +70,6 @@ return [
         'slots_available' => 'Freie Plätze',
         'next_game' => 'Nächstes Spiel',
         'last_game' => 'Letztes Spiel',
-        'training_schedule' => 'Trainingsplan',
     ],
 
     'status' => [

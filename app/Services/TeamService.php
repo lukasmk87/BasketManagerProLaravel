@@ -55,17 +55,6 @@ class TeamService
                 'personal_team' => false, // This is a basketball team, not a personal team
             ];
 
-            // Only add training_schedule if it's valid JSON or array
-            if (isset($data['training_schedule'])) {
-                if (is_string($data['training_schedule'])) {
-                    $decoded = json_decode($data['training_schedule'], true);
-                    if ($decoded !== null) {
-                        $teamData['training_schedule'] = $decoded;
-                    }
-                } elseif (is_array($data['training_schedule'])) {
-                    $teamData['training_schedule'] = $data['training_schedule'];
-                }
-            }
 
             Log::info("TeamService::createTeam - Prepared team data", [
                 'team_data' => $teamData,
@@ -436,7 +425,6 @@ class TeamService
             'recent_games' => $this->getRecentGames($team, 10),
             'upcoming_games' => $this->getUpcomingGames($team, 5),
             'training_info' => [
-                'training_schedule' => $team->training_schedule,
                 'practice_times' => $team->practice_times,
                 'home_venue' => $team->home_venue,
                 'venue_details' => $team->venue_details,

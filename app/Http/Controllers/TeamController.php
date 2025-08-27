@@ -164,7 +164,6 @@ class TeamController extends Controller
                 'age_group' => 'nullable|in:u8,u10,u12,u14,u16,u18,u20,senior,masters,veterans',
                 'gender' => 'required|in:male,female,mixed',
                 'is_active' => 'boolean',
-                'training_schedule' => 'nullable|json',
                 'description' => 'nullable|string|max:1000',
             ]);
             
@@ -317,7 +316,6 @@ class TeamController extends Controller
             'is_recruiting' => 'boolean',
             'max_players' => 'required|integer|min:5|max:20',
             'min_players' => 'required|integer|min:3|max:15',
-            'training_schedule' => 'nullable|json',
             'description' => 'nullable|string|max:1000',
         ]);
 

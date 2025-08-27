@@ -70,7 +70,6 @@ return [
         'slots_available' => 'Slots Available',
         'next_game' => 'Next Game',
         'last_game' => 'Last Game',
-        'training_schedule' => 'Training Schedule',
     ],
 
     'status' => [
