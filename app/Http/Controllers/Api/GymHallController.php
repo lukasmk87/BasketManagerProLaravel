@@ -104,7 +104,59 @@ class GymHallController extends Controller
 
         $this->authorize('create', [GymHall::class, $request->input('club_id')]);
 
-        $gymHall = GymHall::create($request->all());
+        // Prepare data for creation, filtering out null/empty values and ensuring proper types
+        $data = collect($request->only([
+            'club_id',
+            'name', 
+            'description',
+            'hall_type',
+            'court_count',
+            'supports_parallel_bookings',
+            'min_booking_duration_minutes',
+            'booking_increment_minutes',
+            'address_street',
+            'address_city', 
+            'address_zip',
+            'address_country',
+            'latitude',
+            'longitude',
+            'capacity',
+            'facilities',
+            'equipment',
+            'opening_time',
+            'closing_time',
+            'operating_hours',
+            'hourly_rate',
+            'contact_name',
+            'contact_phone',
+            'contact_email',
+            'is_active',
+            'requires_key',
+            'access_instructions',
+            'special_rules'
+        ]))->filter(function ($value, $key) {
+            // Keep boolean values even if false, but filter out null/empty strings
+            if ($key === 'supports_parallel_bookings' || $key === 'requires_key' || $key === 'is_active') {
+                return !is_null($value);
+            }
+            // Keep arrays even if empty
+            if (in_array($key, ['facilities', 'equipment', 'operating_hours'])) {
+                return !is_null($value);
+            }
+            // Filter out null or empty string values for other fields
+            return !is_null($value) && $value !== '';
+        })->toArray();
+
+        // Set defaults if not provided
+        $data['hall_type'] = $data['hall_type'] ?? 'single';
+        $data['court_count'] = $data['court_count'] ?? 1;
+        $data['supports_parallel_bookings'] = $data['supports_parallel_bookings'] ?? false;
+        $data['min_booking_duration_minutes'] = $data['min_booking_duration_minutes'] ?? 30;
+        $data['booking_increment_minutes'] = $data['booking_increment_minutes'] ?? 30;
+        $data['is_active'] = $data['is_active'] ?? true;
+        $data['requires_key'] = $data['requires_key'] ?? false;
+
+        $gymHall = GymHall::create($data);
 
         return response()->json([
             'success' => true,
