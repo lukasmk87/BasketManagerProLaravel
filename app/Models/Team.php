@@ -409,6 +409,28 @@ class Team extends JetstreamTeam implements HasMedia
                $this->current_roster_size < $this->max_players;
     }
 
+    /**
+     * Get detailed reasons why team cannot accept new players.
+     */
+    public function getCannotAcceptPlayerReasons(): array
+    {
+        $reasons = [];
+        
+        if (!$this->is_recruiting) {
+            $reasons[] = 'Team nimmt derzeit keine neuen Spieler auf';
+        }
+        
+        if (!$this->is_active) {
+            $reasons[] = 'Team ist nicht aktiv';
+        }
+        
+        if ($this->current_roster_size >= $this->max_players) {
+            $reasons[] = "Team ist voll ({$this->current_roster_size}/{$this->max_players} Spieler)";
+        }
+        
+        return $reasons;
+    }
+
     // ============================
     // JETSTREAM COMPATIBILITY
     // ============================
