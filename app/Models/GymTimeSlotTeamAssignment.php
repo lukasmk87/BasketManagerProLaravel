@@ -34,8 +34,6 @@ class GymTimeSlotTeamAssignment extends Model
 
     protected $casts = [
         'uuid' => 'string',
-        'start_time' => 'datetime:H:i',
-        'end_time' => 'datetime:H:i',
         'duration_minutes' => 'integer',
         'assigned_at' => 'datetime',
         'valid_from' => 'date',

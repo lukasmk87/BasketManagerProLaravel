@@ -1009,6 +1009,7 @@ class GymTimeSlot extends Model
 
         return $this->teamAssignments()->create([
             'uuid' => Str::uuid(),
+            'gym_time_slot_id' => $this->id,
             'team_id' => $team->id,
             'gym_court_id' => $gymCourt?->id,
             'day_of_week' => $dayOfWeek,
