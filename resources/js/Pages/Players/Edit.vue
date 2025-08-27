@@ -679,6 +679,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
+import { CSRFDebugger } from '@/utils/csrfDebugger.js'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
@@ -830,20 +831,68 @@ const removeGuardianContact = (index) => {
     form.guardian_contacts.splice(index, 1)
 }
 
-const submit = () => {
-    form.put(route('web.players.update', props.player.id), {
-        onError: (errors) => {
-            if (errors.status === 419) {
-                console.warn('CSRF token mismatch in player update form');
-                // The axios interceptor will handle the page refresh
-                return;
-            }
-            console.error('Player update failed:', errors);
-        },
-        onSuccess: () => {
-            console.log('Player updated successfully');
+const submit = async () => {
+    // Log form submission for debugging
+    CSRFDebugger.logFormSubmission(route('web.players.update', props.player.id), 'PUT');
+    
+    // Ensure we have a fresh CSRF token before submitting
+    try {
+        // Check if token refresh function is available and refresh if needed
+        if (window.refreshCsrfTokenAndMeta) {
+            CSRFDebugger.log('Refreshing CSRF token before form submission');
+            await window.refreshCsrfTokenAndMeta();
         }
-    });
+        
+        form.put(route('web.players.update', props.player.id), {
+            onError: (errors) => {
+                if (errors.status === 419) {
+                    console.warn('CSRF token mismatch in player update form');
+                    // Show user-friendly error message
+                    alert('Ihre Sitzung ist abgelaufen. Bitte versuchen Sie es erneut.');
+                    // The axios interceptor will handle the retry automatically
+                    return;
+                }
+                console.error('Player update failed:', errors);
+                
+                // Check for validation errors and scroll to first error
+                const firstErrorField = Object.keys(errors)[0];
+                if (firstErrorField) {
+                    const element = document.querySelector(`[name="${firstErrorField}"], #${firstErrorField}`);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        element.focus();
+                    }
+                }
+            },
+            onSuccess: () => {
+                console.log('Player updated successfully');
+            },
+            onBefore: () => {
+                console.log('Starting player update...');
+            },
+            onFinish: () => {
+                console.log('Player update request finished');
+            }
+        });
+    } catch (error) {
+        console.error('Error refreshing CSRF token before form submission:', error);
+        // Continue with form submission even if token refresh fails
+        // The axios interceptor will handle any CSRF issues
+        form.put(route('web.players.update', props.player.id), {
+            onError: (errors) => {
+                if (errors.status === 419) {
+                    console.warn('CSRF token mismatch in player update form');
+                    alert('Ihre Sitzung ist abgelaufen. Die Seite wird neu geladen.');
+                    window.location.reload();
+                    return;
+                }
+                console.error('Player update failed:', errors);
+            },
+            onSuccess: () => {
+                console.log('Player updated successfully');
+            }
+        });
+    }
 }
 
 const deletePlayerConfirmed = () => {

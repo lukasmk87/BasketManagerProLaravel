@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { CSRFDebugger } from './utils/csrfDebugger.js';
+
 window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
@@ -16,11 +18,42 @@ function updateCsrfToken() {
 }
 
 // Function to get fresh CSRF token from Laravel
-function refreshCsrfToken() {
-    return fetch('/sanctum/csrf-cookie', {
-        method: 'GET',
-        credentials: 'same-origin'
-    });
+async function refreshCsrfToken() {
+    try {
+        CSRFDebugger.log('Starting CSRF token refresh');
+        const response = await fetch('/sanctum/csrf-cookie', {
+            method: 'GET',
+            credentials: 'same-origin'
+        });
+        
+        if (response.ok) {
+            CSRFDebugger.logTokenRefresh(true);
+            return response;
+        } else {
+            const error = new Error(`Failed to refresh CSRF token: ${response.status}`);
+            CSRFDebugger.logTokenRefresh(false, error);
+            throw error;
+        }
+    } catch (error) {
+        CSRFDebugger.logTokenRefresh(false, error);
+        throw error;
+    }
+}
+
+// Function to refresh both CSRF cookie and meta token
+async function refreshCsrfTokenAndMeta() {
+    try {
+        await refreshCsrfToken();
+        // Give the server a moment to set the cookie before updating the meta token
+        setTimeout(() => {
+            // Update the token from the cookie that should now be set
+            updateCsrfToken();
+        }, 100);
+        return true;
+    } catch (error) {
+        console.error('Failed to refresh CSRF token and meta:', error);
+        return false;
+    }
 }
 
 // Initial CSRF token setup
@@ -34,45 +67,92 @@ window.axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
 // Add response interceptor to handle 419 CSRF errors
 let isRefreshingToken = false;
 let refreshTokenPromise = null;
+let failedRequestsQueue = [];
 
 window.axios.interceptors.response.use(
     response => response,
-    error => {
+    async error => {
+        const originalRequest = error.config;
+        
         if (error.response && error.response.status === 419) {
-            console.warn('CSRF token mismatch detected, attempting to refresh token');
+            CSRFDebugger.logTokenMismatch();
             
             // Prevent multiple simultaneous token refresh attempts
             if (isRefreshingToken) {
-                return refreshTokenPromise.then(() => {
-                    const newToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
-                    if (newToken) {
-                        error.config.headers['X-CSRF-TOKEN'] = newToken;
-                        return axios(error.config);
-                    }
-                    throw error;
+                CSRFDebugger.log('Token refresh already in progress, queuing request');
+                return new Promise((resolve, reject) => {
+                    failedRequestsQueue.push({ resolve, reject, config: originalRequest });
                 });
             }
             
+            // Mark that we're refreshing the token
             isRefreshingToken = true;
-            refreshTokenPromise = axios.get('/sanctum/csrf-cookie')
-                .then(() => {
-                    // Force a page refresh to get new meta token
-                    window.location.reload();
-                    return Promise.reject(error); // This won't execute due to reload
-                })
-                .catch(refreshError => {
-                    console.error('Failed to refresh CSRF token:', refreshError);
+            originalRequest._retry = true;
+            
+            try {
+                refreshTokenPromise = refreshCsrfToken();
+                await refreshTokenPromise;
+                
+                // Update the token from the new cookie
+                updateCsrfToken();
+                
+                // Get the fresh token
+                const newToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
+                
+                if (newToken) {
+                    // Update the failed request's headers
+                    originalRequest.headers['X-CSRF-TOKEN'] = newToken;
+                    
+                    // Retry all queued requests
+                    failedRequestsQueue.forEach(({ resolve, reject, config }) => {
+                        config.headers['X-CSRF-TOKEN'] = newToken;
+                        axios(config).then(resolve).catch(reject);
+                    });
+                    failedRequestsQueue = [];
+                    
+                    // Retry the original request
+                    return axios(originalRequest);
+                } else {
+                    console.error('Could not get fresh CSRF token from meta tag');
+                    // Fall back to page reload if token refresh fails
                     window.location.reload();
                     return Promise.reject(error);
-                })
-                .finally(() => {
-                    isRefreshingToken = false;
-                    refreshTokenPromise = null;
-                });
+                }
+            } catch (refreshError) {
+                console.error('Failed to refresh CSRF token:', refreshError);
+                // Clear queued requests
+                failedRequestsQueue.forEach(({ reject }) => reject(refreshError));
+                failedRequestsQueue = [];
                 
-            return refreshTokenPromise;
+                // Show user-friendly error message before reloading
+                if (window.confirm('Ihre Sitzung ist abgelaufen. Die Seite wird neu geladen.')) {
+                    window.location.reload();
+                } else {
+                    window.location.reload();
+                }
+                return Promise.reject(error);
+            } finally {
+                isRefreshingToken = false;
+                refreshTokenPromise = null;
+            }
         }
         
+        return Promise.reject(error);
+    }
+);
+
+// Add request interceptor to ensure fresh token on each request
+window.axios.interceptors.request.use(
+    config => {
+        // Ensure we have the latest CSRF token for each request
+        const token = document.head.querySelector('meta[name="csrf-token"]');
+        if (token && token.content) {
+            config.headers['X-CSRF-TOKEN'] = token.content;
+        }
+        
+        return config;
+    },
+    error => {
         return Promise.reject(error);
     }
 );
@@ -80,3 +160,4 @@ window.axios.interceptors.response.use(
 // Export functions to manually manage CSRF token if needed
 window.updateCsrfToken = updateCsrfToken;
 window.refreshCsrfToken = refreshCsrfToken;
+window.refreshCsrfTokenAndMeta = refreshCsrfTokenAndMeta;
