@@ -20,6 +20,7 @@ class GymCourt extends Model
         'name',
         'court_number',
         'is_active',
+        'is_main_court',
         'sort_order',
         'hourly_rate',
         'notes',
@@ -29,6 +30,7 @@ class GymCourt extends Model
     protected $casts = [
         'uuid' => 'string',
         'is_active' => 'boolean',
+        'is_main_court' => 'boolean',
         'sort_order' => 'integer',
         'hourly_rate' => 'decimal:2',
         'metadata' => 'array',
@@ -138,6 +140,68 @@ class GymCourt extends Model
     }
 
     // ============================
+    // MAIN COURT METHODS
+    // ============================
+
+    /**
+     * Set this court as the main court for the hall.
+     * This will automatically unset any other main court in the same hall.
+     */
+    public function setAsMainCourt(): bool
+    {
+        // First, unset any existing main court in this hall
+        self::where('gym_hall_id', $this->gym_hall_id)
+            ->where('id', '!=', $this->id)
+            ->update(['is_main_court' => false]);
+
+        // Set this court as main court
+        return $this->update(['is_main_court' => true]);
+    }
+
+    /**
+     * Unset this court as main court.
+     */
+    public function unsetAsMainCourt(): bool
+    {
+        return $this->update(['is_main_court' => false]);
+    }
+
+    /**
+     * Check if this court has any active bookings during the specified time.
+     */
+    public function hasBookingDuringTime(string $dayOfWeek, string $startTime, string $endTime): bool
+    {
+        return $this->teamAssignments()
+            ->where('day_of_week', $dayOfWeek)
+            ->where('status', 'active')
+            ->where(function($q) use ($startTime, $endTime) {
+                $q->where('start_time', '<', $endTime)
+                  ->where('end_time', '>', $startTime);
+            })
+            ->exists();
+    }
+
+    // ============================
+    // SCOPES
+    // ============================
+
+    /**
+     * Scope to get only main courts.
+     */
+    public function scopeMainCourt($query)
+    {
+        return $query->where('is_main_court', true);
+    }
+
+    /**
+     * Scope to get regular courts (not main courts).
+     */
+    public function scopeRegularCourt($query)
+    {
+        return $query->where('is_main_court', false);
+    }
+
+    // ============================
     // ACTIVITY LOG
     // ============================
 
@@ -145,7 +209,7 @@ class GymCourt extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'name', 'court_number', 'is_active', 'hourly_rate'
+                'name', 'court_number', 'is_active', 'is_main_court', 'hourly_rate'
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();

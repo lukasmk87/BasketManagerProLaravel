@@ -18,6 +18,17 @@
                         {{ day.name }}
                     </option>
                 </select>
+                
+                <!-- Parallel Bookings Status -->
+                <div v-if="selectedDay" class="flex items-center px-3 py-1 rounded-full text-xs font-medium"
+                     :class="supportsParallelBookings 
+                         ? 'bg-green-100 text-green-800' 
+                         : 'bg-orange-100 text-orange-800'">
+                    <div class="w-2 h-2 rounded-full mr-2"
+                         :class="supportsParallelBookings ? 'bg-green-500' : 'bg-orange-500'">
+                    </div>
+                    {{ supportsParallelBookings ? 'Parallel-Buchungen erlaubt' : 'Nur ein Team erlaubt' }}
+                </div>
                 <select
                     v-model="selectedDuration"
                     class="rounded border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
@@ -138,17 +149,22 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Feld (optional)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Feld {{ supportsParallelBookings ? '(optional)' : '(nicht verfügbar)' }}
+                        </label>
                         <select
                             v-model="assignmentForm.gym_court_id"
-                            class="w-full rounded border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                            :disabled="!supportsParallelBookings"
+                            class="w-full rounded border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
                         >
-                            <option value="">Kein Feld auswählen</option>
-                            <option v-for="court in availableCourts" :key="court.id" :value="court.id">
-                                {{ court.name }}
+                            <option value="">{{ supportsParallelBookings ? 'Kein Feld auswählen' : 'Feld-Auswahl nicht möglich' }}</option>
+                            <option v-for="court in availableCourts" :key="court.id" :value="court.id" v-if="supportsParallelBookings">
+                                {{ court.name }}{{ court.is_main_court ? ' ⭐ (Hauptplatz)' : '' }}
                             </option>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">Optional: Spezifisches Feld zuordnen</p>
+                        <p class="text-xs mt-1" :class="supportsParallelBookings ? 'text-gray-500' : 'text-orange-600'">
+                            {{ getCourtSelectionHelpText() }}
+                        </p>
                     </div>
                     
                     <div>
@@ -225,6 +241,7 @@ const segments = ref([])
 const availableTeams = ref([])
 const availableCourts = ref([])
 const loading = ref(false)
+const gymHallData = ref(null)
 const saving = ref(false)
 const statusMessage = ref(null)
 const showAssignmentForm = ref(false)
@@ -251,6 +268,25 @@ const assignmentForm = ref({
     team_id: '',
     gym_court_id: '',
     notes: ''
+})
+
+// Computed
+const supportsParallelBookings = computed(() => {
+    if (!selectedDay.value || !gymHallData.value || !gymHallData.value.operating_hours) {
+        return false
+    }
+    
+    const daySettings = gymHallData.value.operating_hours[selectedDay.value]
+    if (daySettings && daySettings.supports_parallel_bookings !== undefined) {
+        return daySettings.supports_parallel_bookings
+    }
+    
+    // Fallback to global setting
+    return gymHallData.value.supports_parallel_bookings || false
+})
+
+const hasMainCourt = computed(() => {
+    return availableCourts.value.some(court => court.is_main_court)
 })
 
 // Methods
@@ -299,6 +335,19 @@ const loadAvailableCourts = async () => {
         }
     } catch (error) {
         console.error('Fehler beim Laden der Felder:', error)
+    }
+}
+
+const loadGymHallData = async () => {
+    try {
+        // Load gym hall data to get operating hours
+        const response = await axios.get(`/api/v2/gym-halls/${props.gymHallId}`)
+        
+        if (response.data.success) {
+            gymHallData.value = response.data.data
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der Hallendaten:', error)
     }
 }
 
@@ -424,10 +473,23 @@ const getDurationColorClass = (minutes) => {
     }
 }
 
+const getCourtSelectionHelpText = () => {
+    if (!supportsParallelBookings.value) {
+        return 'Parallel-Buchungen für diesen Tag deaktiviert - nur ein Team erlaubt'
+    }
+    
+    if (hasMainCourt.value) {
+        return 'Optional: Spezifisches Feld zuordnen. ⚠️ Hauptplatz blockiert andere Felder'
+    }
+    
+    return 'Optional: Spezifisches Feld zuordnen für Parallel-Buchungen'
+}
+
 // Lifecycle
 onMounted(() => {
     loadAvailableTeams()
     loadAvailableCourts()
+    loadGymHallData()
 })
 
 // Watch for changes

@@ -1089,7 +1089,8 @@ class GymTimeSlot extends Model
         int $teamId,
         string $dayOfWeek,
         string $startTime,
-        string $endTime
+        string $endTime,
+        int $gymCourtId = null
     ): array {
         $errors = [];
 
@@ -1122,6 +1123,91 @@ class GymTimeSlot extends Model
 
         if ($duration % 30 !== 0) {
             $errors[] = 'Buchungsdauer muss in 30-Minuten-Schritten erfolgen.';
+        }
+
+        // Check parallel bookings restrictions considering main court logic
+        $gymHall = $this->gymHall;
+        
+        // Check if we're trying to book the main court
+        $mainCourt = $gymHall->getMainCourt();
+        $isBookingMainCourt = $mainCourt && $gymCourtId == $mainCourt->id;
+        
+        // Check if main court is already booked during this time
+        $mainCourtIsBooked = $gymHall->hasMainCourtBooking($dayOfWeek, $startTime, $endTime);
+        
+        // Get effective parallel booking rules (considering main court)
+        $effectiveParallelBookingsAllowed = $gymHall->allowsParallelBookingsForTime($dayOfWeek, $startTime, $endTime);
+        
+        if ($isBookingMainCourt) {
+            // If trying to book main court, check if any other courts are occupied
+            $otherCourtAssignments = $this->activeTeamAssignments()
+                ->where('day_of_week', $dayOfWeek)
+                ->where('team_id', '!=', $teamId)
+                ->where('gym_court_id', '!=', $mainCourt->id)
+                ->whereNotNull('gym_court_id')
+                ->where(function($q) use ($startTime, $endTime) {
+                    $q->where('start_time', '<', $endTime)
+                      ->where('end_time', '>', $startTime);
+                })
+                ->with(['team', 'gymCourt'])
+                ->get();
+
+            if ($otherCourtAssignments->count() > 0) {
+                $occupiedCourts = $otherCourtAssignments->map(function($assignment) {
+                    return $assignment->team->name . ' (' . $assignment->gymCourt->name . ')';
+                })->join(', ');
+                $errors[] = "Hauptplatz kann nicht gebucht werden - andere Felder sind bereits belegt: {$occupiedCourts}";
+            }
+        } elseif ($mainCourtIsBooked) {
+            // If main court is booked, no other bookings allowed
+            $errors[] = "Keine weiteren Buchungen möglich - der Hauptplatz ist zu dieser Zeit belegt.";
+        } elseif (!$effectiveParallelBookingsAllowed) {
+            // Standard parallel booking rules
+            $existingAssignments = $this->activeTeamAssignments()
+                ->where('day_of_week', $dayOfWeek)
+                ->where('team_id', '!=', $teamId)
+                ->where(function($q) use ($startTime, $endTime) {
+                    $q->where('start_time', '<', $endTime)
+                      ->where('end_time', '>', $startTime);
+                })
+                ->with(['team'])
+                ->get();
+
+            if ($existingAssignments->count() > 0) {
+                $teamNames = $existingAssignments->pluck('team.name')->join(', ');
+                $errors[] = "Für diesen Tag sind keine Parallel-Buchungen erlaubt. Bereits belegt von: {$teamNames}";
+            }
+        } else {
+            // Parallel bookings allowed - check effective capacity
+            $effectiveMaxTeams = $gymHall->getEffectiveMaxParallelTeams($dayOfWeek, $startTime, $endTime);
+            
+            $overlappingAssignments = $this->activeTeamAssignments()
+                ->where('day_of_week', $dayOfWeek)
+                ->where('team_id', '!=', $teamId)
+                ->where(function($q) use ($startTime, $endTime) {
+                    $q->where('start_time', '<', $endTime)
+                      ->where('end_time', '>', $startTime);
+                })
+                ->count();
+
+            if ($overlappingAssignments >= $effectiveMaxTeams) {
+                $errors[] = "Maximale Anzahl paralleler Teams ({$effectiveMaxTeams}) für diesen Tag bereits erreicht.";
+            }
+
+            // If a court is specified, check for court conflicts
+            if ($gymCourtId) {
+                $courtConflict = GymTimeSlotTeamAssignment::hasConflictForCourt(
+                    $this->id,
+                    $gymCourtId,
+                    $dayOfWeek,
+                    $startTime,
+                    $endTime
+                );
+                
+                if ($courtConflict) {
+                    $errors[] = 'Das ausgewählte Feld ist zu dieser Zeit bereits belegt.';
+                }
+            }
         }
 
         return $errors;

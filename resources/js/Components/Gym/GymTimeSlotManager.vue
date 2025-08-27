@@ -91,24 +91,46 @@
                     </div>
                 </div>
 
-                <div v-if="dayTimes[day.key].enabled" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Öffnung</label>
-                        <input
-                            v-model="dayTimes[day.key].start_time"
-                            type="time"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
-                            @change="onDayTimesChange"
-                        />
+                <div v-if="dayTimes[day.key].enabled" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Öffnung</label>
+                            <input
+                                v-model="dayTimes[day.key].start_time"
+                                type="time"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                @change="onDayTimesChange"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Schließung</label>
+                            <input
+                                v-model="dayTimes[day.key].end_time"
+                                type="time"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                @change="onDayTimesChange"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Schließung</label>
-                        <input
-                            v-model="dayTimes[day.key].end_time"
-                            type="time"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
-                            @change="onDayTimesChange"
-                        />
+                    
+                    <!-- Parallel Bookings Option -->
+                    <div class="pt-2 border-t border-gray-200">
+                        <label class="flex items-center">
+                            <input
+                                v-model="dayTimes[day.key].supports_parallel_bookings"
+                                type="checkbox"
+                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                @change="onDayTimesChange"
+                            />
+                            <span class="ml-2 text-sm text-gray-700">
+                                Parallel-Buchungen an diesem Tag erlauben
+                            </span>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1 ml-6">
+                            {{ dayTimes[day.key].supports_parallel_bookings 
+                                ? 'Mehrere Teams können zur gleichen Zeit trainieren (je nach verfügbaren Feldern)' 
+                                : 'Nur ein Team kann zur gleichen Zeit trainieren' }}
+                        </p>
                     </div>
                 </div>
 
@@ -221,7 +243,8 @@ const initializeDayTimes = () => {
         times[day.key] = {
             enabled: false,
             start_time: props.defaultOpenTime,
-            end_time: props.defaultCloseTime
+            end_time: props.defaultCloseTime,
+            supports_parallel_bookings: true
         }
     })
     return times
@@ -270,7 +293,8 @@ const loadTimeSlots = () => {
                     dayTimes.value[day.key] = {
                         enabled: true,
                         start_time: customSlot.custom_times[day.key].start_time,
-                        end_time: customSlot.custom_times[day.key].end_time
+                        end_time: customSlot.custom_times[day.key].end_time,
+                        supports_parallel_bookings: customSlot.custom_times[day.key].supports_parallel_bookings || false
                     }
                 }
             })
@@ -286,7 +310,8 @@ const loadTimeSlots = () => {
                     dayTimes.value[day.key] = {
                         enabled: true,
                         start_time: daySlot.start_time,
-                        end_time: daySlot.end_time
+                        end_time: daySlot.end_time,
+                        supports_parallel_bookings: daySlot.supports_parallel_bookings || false
                     }
                 }
             })
@@ -399,6 +424,7 @@ const saveTimeSlots = async () => {
                     end_time: defaultTimes.value.end_time,
                     slot_type: 'training',
                     valid_from: new Date().toISOString().split('T')[0],
+                    supports_parallel_bookings: true, // Default for standard times - parallel bookings enabled
                 })
             })
         } else {
@@ -415,6 +441,7 @@ const saveTimeSlots = async () => {
                         end_time: dayTime.end_time,
                         slot_type: 'training',
                         valid_from: new Date().toISOString().split('T')[0],
+                        supports_parallel_bookings: dayTime.supports_parallel_bookings || false,
                     })
                 }
             })

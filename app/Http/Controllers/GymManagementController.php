@@ -486,9 +486,31 @@ class GymManagementController extends Controller
                 ->delete();
         }
 
+        // Update hall's operating hours from the time slots
+        $operatingHours = [];
+        foreach ($request->time_slots as $timeSlotData) {
+            if (isset($timeSlotData['day_of_week']) && 
+                isset($timeSlotData['start_time']) && 
+                isset($timeSlotData['end_time'])) {
+                
+                $dayKey = $timeSlotData['day_of_week'];
+                $operatingHours[$dayKey] = [
+                    'is_open' => true,
+                    'open_time' => $timeSlotData['start_time'],
+                    'close_time' => $timeSlotData['end_time'],
+                    'supports_parallel_bookings' => $timeSlotData['supports_parallel_bookings'] ?? false
+                ];
+            }
+        }
+        
+        // Update hall's operating hours if we have data
+        if (!empty($operatingHours)) {
+            $hall->update(['operating_hours' => $operatingHours]);
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Zeitslots erfolgreich aktualisiert.',
+            'message' => 'Zeitslots und Öffnungszeiten erfolgreich aktualisiert.',
             'data' => collect($createdSlots)->map(function ($slot) {
                 return [
                     'id' => $slot->id,
@@ -911,23 +933,9 @@ class GymManagementController extends Controller
             $team->id,
             $request->day_of_week,
             $request->start_time,
-            $request->end_time
+            $request->end_time,
+            $gymCourt?->id
         );
-
-        // Additional validation for court conflicts
-        if ($gymCourt) {
-            $courtConflict = \App\Models\GymTimeSlotTeamAssignment::hasConflictForCourt(
-                $timeSlot->id,
-                $gymCourt->id,
-                $request->day_of_week,
-                $request->start_time,
-                $request->end_time
-            );
-            
-            if ($courtConflict) {
-                $validationErrors[] = "Das ausgewählte Feld ist zu dieser Zeit bereits belegt.";
-            }
-        }
 
         if (!empty($validationErrors)) {
             return response()->json([
@@ -1102,7 +1110,7 @@ class GymManagementController extends Controller
         $courts = $hall->courts()
             ->orderBy('sort_order')
             ->orderBy('court_number')
-            ->get(['id', 'name', 'court_number', 'is_active', 'metadata']);
+            ->get(['id', 'name', 'court_number', 'is_active', 'is_main_court', 'metadata']);
 
         return response()->json([
             'success' => true,
@@ -1112,6 +1120,7 @@ class GymManagementController extends Controller
                     'name' => $court->name,
                     'court_number' => $court->court_number,
                     'is_active' => $court->is_active,
+                    'is_main_court' => $court->is_main_court,
                     'court_identifier' => $court->court_identifier,
                     'color_code' => $court->color_code,
                 ];
@@ -1143,12 +1152,25 @@ class GymManagementController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'is_active' => 'boolean',
+            'is_main_court' => 'boolean',
         ]);
 
+        // Handle main court setting
+        if ($request->has('is_main_court') && $request->is_main_court) {
+            // Set as main court (automatically unsets other main courts)
+            $court->setAsMainCourt();
+        } elseif ($request->has('is_main_court') && !$request->is_main_court && $court->is_main_court) {
+            // Unset as main court
+            $court->unsetAsMainCourt();
+        }
+        
         $court->update([
             'name' => $request->name,
             'is_active' => $request->is_active ?? $court->is_active,
         ]);
+        
+        // Refresh to get updated main court status
+        $court->refresh();
 
         return response()->json([
             'success' => true,
@@ -1158,6 +1180,7 @@ class GymManagementController extends Controller
                 'name' => $court->name,
                 'court_number' => $court->court_number,
                 'is_active' => $court->is_active,
+                'is_main_court' => $court->is_main_court,
                 'court_identifier' => $court->court_identifier,
                 'color_code' => $court->color_code,
             ]
@@ -1209,6 +1232,7 @@ class GymManagementController extends Controller
                 'name' => $court->name,
                 'court_number' => $court->court_number,
                 'is_active' => $court->is_active,
+                'is_main_court' => $court->is_main_court,
                 'court_identifier' => $court->court_identifier,
                 'color_code' => $court->color_code,
             ]

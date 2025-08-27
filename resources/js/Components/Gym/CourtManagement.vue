@@ -67,8 +67,17 @@
                                 :style="{ backgroundColor: court.color_code }"
                             ></div>
                             <div>
-                                <p class="text-sm font-medium text-gray-900">{{ court.name }}</p>
-                                <p class="text-xs text-gray-500">Feld Nr. {{ court.court_number }}</p>
+                                <div class="flex items-center space-x-2">
+                                    <p class="text-sm font-medium text-gray-900">{{ court.name }}</p>
+                                    <!-- Main Court Icon -->
+                                    <svg v-if="court.is_main_court" class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <p class="text-xs text-gray-500">Feld Nr. {{ court.court_number }}</p>
+                                    <span v-if="court.is_main_court" class="text-xs text-yellow-600 font-medium">Hauptplatz</span>
+                                </div>
                             </div>
                             <span :class="[
                                 'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
@@ -81,6 +90,22 @@
                         </div>
                         
                         <div class="flex items-center space-x-2">
+                            <!-- Main Court Toggle -->
+                            <button
+                                @click="toggleMainCourt(court)"
+                                :class="[
+                                    'p-2 rounded-md transition-colors',
+                                    court.is_main_court
+                                        ? 'text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50'
+                                        : 'text-gray-400 hover:text-yellow-600 hover:bg-yellow-50'
+                                ]"
+                                :title="court.is_main_court ? 'Als Hauptplatz entfernen' : 'Als Hauptplatz setzen'"
+                            >
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                            </button>
+                            
                             <button
                                 @click="editCourt(court)"
                                 class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
@@ -159,16 +184,33 @@
                         <p class="text-xs text-gray-500 mt-1">Eindeutige Nummer für dieses Feld</p>
                     </div>
                     
-                    <div v-if="editingCourt" class="flex items-center">
-                        <input
-                            id="court-active"
-                            v-model="courtForm.is_active"
-                            type="checkbox"
-                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <label for="court-active" class="ml-2 text-sm text-gray-900">
-                            Feld ist aktiv
-                        </label>
+                    <div v-if="editingCourt" class="space-y-3">
+                        <div class="flex items-center">
+                            <input
+                                id="court-active"
+                                v-model="courtForm.is_active"
+                                type="checkbox"
+                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <label for="court-active" class="ml-2 text-sm text-gray-900">
+                                Feld ist aktiv
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input
+                                id="court-main"
+                                v-model="courtForm.is_main_court"
+                                type="checkbox"
+                                class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                            />
+                            <label for="court-main" class="ml-2 text-sm text-gray-900">
+                                Als Hauptplatz markieren
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 ml-6">
+                            Wenn der Hauptplatz belegt ist, sind keine Parallel-Buchungen möglich
+                        </p>
                     </div>
                 </div>
                 
@@ -229,7 +271,8 @@ const editingCourt = ref(null)
 const courtForm = ref({
     name: '',
     court_number: null,
-    is_active: true
+    is_active: true,
+    is_main_court: false
 })
 
 // Methods
@@ -255,7 +298,8 @@ const openCreateCourtModal = () => {
     courtForm.value = {
         name: '',
         court_number: courts.value.length + 1,
-        is_active: true
+        is_active: true,
+        is_main_court: false
     }
     showCourtModal.value = true
 }
@@ -265,7 +309,8 @@ const editCourt = (court) => {
     courtForm.value = {
         name: court.name,
         court_number: court.court_number,
-        is_active: court.is_active
+        is_active: court.is_active,
+        is_main_court: court.is_main_court
     }
     showCourtModal.value = true
 }
@@ -276,7 +321,8 @@ const closeCourtModal = () => {
     courtForm.value = {
         name: '',
         court_number: null,
-        is_active: true
+        is_active: true,
+        is_main_court: false
     }
 }
 
@@ -290,7 +336,8 @@ const saveCourt = async () => {
             // Update existing court
             response = await axios.put(`/gym-management/courts/${editingCourt.value.id}`, {
                 name: courtForm.value.name,
-                is_active: courtForm.value.is_active
+                is_active: courtForm.value.is_active,
+                is_main_court: courtForm.value.is_main_court
             })
         } else {
             // Create new court
@@ -338,6 +385,26 @@ const toggleCourtStatus = async (court) => {
     } catch (error) {
         console.error('Fehler beim Ändern des Status:', error)
         showError('Fehler beim Ändern des Feld-Status')
+    }
+}
+
+const toggleMainCourt = async (court) => {
+    try {
+        const response = await axios.put(`/gym-management/courts/${court.id}`, {
+            name: court.name,
+            is_active: court.is_active,
+            is_main_court: !court.is_main_court
+        })
+        
+        if (response.data.success) {
+            const action = court.is_main_court ? 'entfernt' : 'gesetzt'
+            showSuccess(`Hauptplatz-Status ${action}`)
+            await refreshCourts()
+            emit('updated')
+        }
+    } catch (error) {
+        console.error('Fehler beim Ändern des Hauptplatz-Status:', error)
+        showError('Fehler beim Ändern des Hauptplatz-Status')
     }
 }
 

@@ -244,6 +244,62 @@ class GymHall extends Model implements HasMedia
         return max(1, $this->court_count);
     }
 
+    /**
+     * Get the main court for this hall.
+     */
+    public function getMainCourt(): ?GymCourt
+    {
+        return $this->courts()->mainCourt()->first();
+    }
+
+    /**
+     * Check if the main court has any bookings during the specified time.
+     */
+    public function hasMainCourtBooking(string $dayOfWeek, string $startTime, string $endTime): bool
+    {
+        $mainCourt = $this->getMainCourt();
+        
+        if (!$mainCourt) {
+            return false;
+        }
+
+        return $mainCourt->hasBookingDuringTime($dayOfWeek, $startTime, $endTime);
+    }
+
+    /**
+     * Get effective maximum parallel teams considering main court status.
+     */
+    public function getEffectiveMaxParallelTeams(string $dayOfWeek, string $startTime, string $endTime): int
+    {
+        $baseMax = $this->getMaxParallelTeamsForDay($dayOfWeek);
+        
+        // If main court is booked during this time, only allow 1 team total
+        if ($this->hasMainCourtBooking($dayOfWeek, $startTime, $endTime)) {
+            return 1;
+        }
+        
+        return $baseMax;
+    }
+
+    /**
+     * Check if parallel bookings are effectively allowed for a specific time.
+     * Takes into account both day settings and main court status.
+     */
+    public function allowsParallelBookingsForTime(string $dayOfWeek, string $startTime, string $endTime): bool
+    {
+        // First check if parallel bookings are allowed for this day
+        if (!$this->supportsParallelBookingsForDay($dayOfWeek)) {
+            return false;
+        }
+        
+        // If main court is booked, no parallel bookings allowed
+        if ($this->hasMainCourtBooking($dayOfWeek, $startTime, $endTime)) {
+            return false;
+        }
+        
+        return true;
+    }
+
     public function getHallTypeDisplayAttribute(): string
     {
         return match($this->hall_type) {
