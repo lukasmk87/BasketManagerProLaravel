@@ -20,7 +20,7 @@ class GymHallPolicy
 
         // If club ID is provided, check if user belongs to that club
         if ($clubId) {
-            return $user->clubs()->where('club_id', $clubId)->exists();
+            return $user->clubs()->where('clubs.id', $clubId)->exists();
         }
 
         // Users can view gym halls for clubs they belong to
@@ -32,8 +32,13 @@ class GymHallPolicy
      */
     public function view(User $user, GymHall $gymHall): bool
     {
+        // Admin users can view all gym halls
+        if ($user->hasAnyRole(['admin', 'super_admin'])) {
+            return true;
+        }
+
         // Users can view gym halls in their club
-        return $user->clubs()->where('club_id', $gymHall->club_id)->exists();
+        return $user->clubs()->where('clubs.id', $gymHall->club_id)->exists();
     }
 
     /**
@@ -52,7 +57,7 @@ class GymHallPolicy
 
         // Only club admins and owners can create gym halls
         return $user->clubs()
-            ->where('club_id', $clubId)
+            ->where('clubs.id', $clubId)
             ->wherePivotIn('role', ['admin', 'owner'])
             ->exists();
     }
@@ -69,7 +74,7 @@ class GymHallPolicy
 
         // Only club admins and owners can update gym halls
         return $user->clubs()
-            ->where('club_id', $gymHall->club_id)
+            ->where('clubs.id', $gymHall->club_id)
             ->wherePivotIn('role', ['admin', 'owner'])
             ->exists();
     }
@@ -86,7 +91,7 @@ class GymHallPolicy
 
         // Only club admins and owners can delete gym halls
         return $user->clubs()
-            ->where('club_id', $gymHall->club_id)
+            ->where('clubs.id', $gymHall->club_id)
             ->wherePivotIn('role', ['admin', 'owner'])
             ->exists();
     }
@@ -119,7 +124,7 @@ class GymHallPolicy
 
         // Club admins, owners, and trainers can manage time slots
         return $user->clubs()
-            ->where('club_id', $gymHall->club_id)
+            ->where('clubs.id', $gymHall->club_id)
             ->wherePivotIn('role', ['admin', 'owner', 'trainer'])
             ->exists();
     }
@@ -130,7 +135,7 @@ class GymHallPolicy
     public function viewBookings(User $user, GymHall $gymHall): bool
     {
         // All club members can view bookings
-        return $user->clubs()->where('club_id', $gymHall->club_id)->exists();
+        return $user->clubs()->where('clubs.id', $gymHall->club_id)->exists();
     }
 
     /**
@@ -145,7 +150,7 @@ class GymHallPolicy
 
         // Club admins, owners, and trainers can view statistics
         return $user->clubs()
-            ->where('club_id', $gymHall->club_id)
+            ->where('clubs.id', $gymHall->club_id)
             ->wherePivotIn('role', ['admin', 'owner', 'trainer'])
             ->exists();
     }

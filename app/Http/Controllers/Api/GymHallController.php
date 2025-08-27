@@ -118,30 +118,48 @@ class GymHallController extends Controller
      */
     public function show(GymHall $gymHall): JsonResponse
     {
-        $this->authorize('view', $gymHall);
+        try {
+            $this->authorize('view', $gymHall);
 
-        $gymHall->load([
-            'club',
-            'timeSlots' => function ($query) {
-                $query->active()->with('team:id,name,short_name');
-            }
-        ]);
+            $gymHall->load([
+                'club',
+                'timeSlots' => function ($query) {
+                    $query->active()->with('team:id,name,short_name');
+                }
+            ]);
 
-        // Add additional computed data
-        $startOfWeek = now()->startOfWeek();
-        $endOfWeek = now()->endOfWeek();
+            // Add additional computed data
+            $startOfWeek = now()->startOfWeek();
+            $endOfWeek = now()->endOfWeek();
 
-        $additionalData = [
-            'weekly_schedule' => $gymHall->getWeeklySchedule($startOfWeek),
-            'utilization_rate' => $gymHall->getUtilizationRate($startOfWeek, $endOfWeek),
-            'is_open_now' => $gymHall->is_open,
-            'todays_schedule' => $gymHall->getTodaysSchedule(),
-        ];
+            $additionalData = [
+                'weekly_schedule' => $gymHall->getWeeklySchedule($startOfWeek),
+                'utilization_rate' => $gymHall->getUtilizationRate($startOfWeek, $endOfWeek),
+                'is_open_now' => $gymHall->is_open,
+                'todays_schedule' => $gymHall->getTodaysSchedule(),
+            ];
 
-        return response()->json([
-            'success' => true,
-            'data' => array_merge($gymHall->toArray(), $additionalData)
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => array_merge($gymHall->toArray(), $additionalData)
+            ]);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sie haben keine Berechtigung, diese Sporthalle zu betrachten.'
+            ], 403);
+        } catch (\Exception $e) {
+            \Log::error('Error showing gym hall: ' . $e->getMessage(), [
+                'gym_hall_id' => $gymHall->id ?? 'unknown',
+                'user_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Laden der Hallendaten.'
+            ], 500);
+        }
     }
 
     /**
@@ -688,15 +706,7 @@ class GymHallController extends Controller
     public function getCourts(GymHall $gymHall): JsonResponse
     {
         try {
-            $user = Auth::user();
-            $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
-            
-            if (!$userClub || $gymHall->club_id !== $userClub->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Keine Berechtigung für diese Halle.'
-                ], 403);
-            }
+            $this->authorize('view', $gymHall);
 
             $courts = $gymHall->courts()
                 ->active()
@@ -721,9 +731,14 @@ class GymHallController extends Controller
                     'total' => $courts->count()
                 ]
             ]);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung für diese Halle.'
+            ], 403);
         } catch (\Exception $e) {
             \Log::error('Error getting courts: ' . $e->getMessage(), [
-                'gym_hall_id' => $gymHall->id,
+                'gym_hall_id' => $gymHall->id ?? 'unknown',
                 'user_id' => auth()->id(),
                 'exception' => $e
             ]);
@@ -741,15 +756,7 @@ class GymHallController extends Controller
     public function getTimeGrid(Request $request, GymHall $gymHall): JsonResponse
     {
         try {
-            $user = Auth::user();
-            $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
-            
-            if (!$userClub || $gymHall->club_id !== $userClub->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Keine Berechtigung für diese Halle.'
-                ], 403);
-            }
+            $this->authorize('view', $gymHall);
 
             $request->validate([
                 'date' => 'required|date',
@@ -796,9 +803,20 @@ class GymHallController extends Controller
                     ]
                 ]
             ]);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung für diese Halle.'
+            ], 403);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ungültige Eingabedaten.',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             \Log::error('Error getting time grid: ' . $e->getMessage(), [
-                'gym_hall_id' => $gymHall->id,
+                'gym_hall_id' => $gymHall->id ?? 'unknown',
                 'user_id' => auth()->id(),
                 'request_data' => $request->all(),
                 'exception' => $e

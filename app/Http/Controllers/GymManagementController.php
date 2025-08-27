@@ -242,12 +242,27 @@ class GymManagementController extends Controller
      */
     public function getHallTimeSlots(Request $request, $hallId): JsonResponse
     {
-        $user = Auth::user();
-        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
-        
-        $hall = GymHall::where('id', $hallId)
-            ->where('club_id', $userClub->id)
-            ->firstOrFail();
+        try {
+            $user = Auth::user();
+            $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+            
+            if (!$userClub) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Keine Vereinszuordnung gefunden. Bitte wenden Sie sich an den Administrator.'
+                ], 422);
+            }
+            
+            $hall = GymHall::where('id', $hallId)
+                ->where('club_id', $userClub->id)
+                ->first();
+                
+            if (!$hall) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sporthalle nicht gefunden oder keine Berechtigung.'
+                ], 404);
+            }
 
         $timeSlots = GymTimeSlot::where('gym_hall_id', $hall->id)
             ->with(['team'])
@@ -258,35 +273,47 @@ class GymManagementController extends Controller
         // Get operating hours with parallel bookings settings
         $operatingHours = $hall->operating_hours ?? [];
         
-        return response()->json([
-            'success' => true,
-            'data' => $timeSlots->map(function ($slot) {
-                return [
-                    'id' => $slot->id,
-                    'uuid' => $slot->uuid,
-                    'title' => $slot->title,
-                    'description' => $slot->description,
-                    'day_of_week' => $slot->day_of_week,
-                    'uses_custom_times' => $slot->uses_custom_times,
-                    'custom_times' => $slot->custom_times,
-                    'start_time' => $slot->start_time?->format('H:i'),
-                    'end_time' => $slot->end_time?->format('H:i'),
-                    'duration_minutes' => $slot->duration_minutes,
-                    'team' => $slot->team ? [
-                        'id' => $slot->team->id,
-                        'name' => $slot->team->name,
-                    ] : null,
-                    'status' => $slot->status,
-                    'slot_type' => $slot->slot_type,
-                    'is_recurring' => $slot->is_recurring,
-                    'allows_substitution' => $slot->allows_substitution,
-                    'valid_from' => $slot->valid_from?->format('Y-m-d'),
-                    'valid_until' => $slot->valid_until?->format('Y-m-d'),
-                    'all_day_times' => $slot->getAllDayTimes(),
-                ];
-            }),
-            'operating_hours' => $operatingHours,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $timeSlots->map(function ($slot) {
+                    return [
+                        'id' => $slot->id,
+                        'uuid' => $slot->uuid,
+                        'title' => $slot->title,
+                        'description' => $slot->description,
+                        'day_of_week' => $slot->day_of_week,
+                        'uses_custom_times' => $slot->uses_custom_times,
+                        'custom_times' => $slot->custom_times,
+                        'start_time' => $slot->start_time?->format('H:i'),
+                        'end_time' => $slot->end_time?->format('H:i'),
+                        'duration_minutes' => $slot->duration_minutes,
+                        'team' => $slot->team ? [
+                            'id' => $slot->team->id,
+                            'name' => $slot->team->name,
+                        ] : null,
+                        'status' => $slot->status,
+                        'slot_type' => $slot->slot_type,
+                        'is_recurring' => $slot->is_recurring,
+                        'allows_substitution' => $slot->allows_substitution,
+                        'valid_from' => $slot->valid_from?->format('Y-m-d'),
+                        'valid_until' => $slot->valid_until?->format('Y-m-d'),
+                        'all_day_times' => $slot->getAllDayTimes(),
+                    ];
+                }),
+                'operating_hours' => $operatingHours,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting hall time slots: ' . $e->getMessage(), [
+                'hall_id' => $hallId,
+                'user_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Laden der Zeitslots.'
+            ], 500);
+        }
     }
 
     /**
@@ -886,91 +913,147 @@ class GymManagementController extends Controller
      */
     public function assignTeamToSegment(Request $request): JsonResponse
     {
-        $user = Auth::user();
-        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
-        
-        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Keine Berechtigung zum Zuordnen von Teams.'
-            ], 403);
-        }
-
-        $request->validate([
-            'gym_time_slot_id' => 'required|exists:gym_time_slots,id',
-            'team_id' => 'required|exists:teams,id',
-            'gym_court_id' => 'nullable|exists:gym_courts,id',
-            'day_of_week' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
-            'start_time' => 'required|string',
-            'end_time' => 'required|string|after:start_time',
-            'notes' => 'nullable|string|max:500',
-        ]);
-
-        $timeSlot = GymTimeSlot::whereHas('gymHall', function ($query) use ($userClub) {
-                $query->where('club_id', $userClub->id);
-            })
-            ->where('id', $request->gym_time_slot_id)
-            ->firstOrFail();
-
-        $team = \App\Models\Team::where('id', $request->team_id)
-            ->where('club_id', $userClub->id)
-            ->firstOrFail();
-
-        // Validate court belongs to the same hall if specified
-        $gymCourt = null;
-        if ($request->gym_court_id) {
-            $gymCourt = \App\Models\GymCourt::where('id', $request->gym_court_id)
-                ->where('gym_hall_id', $timeSlot->gym_hall_id)
-                ->where('is_active', true)
-                ->first();
-                
-            if (!$gymCourt) {
+        try {
+            $user = Auth::user();
+            $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+            
+            if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Das ausgewählte Feld gehört nicht zu dieser Halle oder ist nicht aktiv.',
-                    'errors' => ['gym_court_id' => ['Ungültiges Feld ausgewählt.']]
+                    'message' => 'Keine Berechtigung zum Zuordnen von Teams.'
+                ], 403);
+            }
+
+            if (!$userClub) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Keine Vereinszuordnung gefunden. Bitte wenden Sie sich an den Administrator.'
                 ], 422);
             }
-        }
 
-        $validationErrors = $timeSlot->canAssignTeamToSegment(
-            $team->id,
-            $request->day_of_week,
-            $request->start_time,
-            $request->end_time,
-            $gymCourt?->id
-        );
+            $request->validate([
+                'gym_time_slot_id' => 'required|exists:gym_time_slots,id',
+                'team_id' => 'required|exists:teams,id',
+                'gym_court_id' => 'nullable|exists:gym_courts,id',
+                'day_of_week' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+                'start_time' => 'required|string',
+                'end_time' => 'required|string|after:start_time',
+                'notes' => 'nullable|string|max:500',
+            ]);
 
-        if (!empty($validationErrors)) {
+            $timeSlot = GymTimeSlot::with(['gymHall', 'gymHall.courts'])
+                ->whereHas('gymHall', function ($query) use ($userClub) {
+                    $query->where('club_id', $userClub->id);
+                })
+                ->where('id', $request->gym_time_slot_id)
+                ->first();
+                
+            if (!$timeSlot) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Zeitslot nicht gefunden oder keine Berechtigung.'
+                ], 404);
+            }
+
+            $team = \App\Models\Team::where('id', $request->team_id)
+                ->where('club_id', $userClub->id)
+                ->first();
+                
+            if (!$team) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Team nicht gefunden oder keine Berechtigung.'
+                ], 404);
+            }
+
+            // Validate court belongs to the same hall if specified
+            $gymCourt = null;
+            if ($request->gym_court_id) {
+                $gymCourt = \App\Models\GymCourt::where('id', $request->gym_court_id)
+                    ->where('gym_hall_id', $timeSlot->gym_hall_id)
+                    ->where('is_active', true)
+                    ->first();
+                    
+                if (!$gymCourt) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Das ausgewählte Feld gehört nicht zu dieser Halle oder ist nicht aktiv.',
+                        'errors' => ['gym_court_id' => ['Ungültiges Feld ausgewählt.']]
+                    ], 422);
+                }
+            }
+
+            // Additional validation for time slot
+            if (!$timeSlot->gymHall) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Zeitslot hat keine zugehörige Sporthalle.'
+                ], 422);
+            }
+
+            $validationErrors = $timeSlot->canAssignTeamToSegment(
+                $team->id,
+                $request->day_of_week,
+                $request->start_time,
+                $request->end_time,
+                $gymCourt?->id
+            );
+
+            if (!empty($validationErrors)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Zuordnung nicht möglich',
+                    'errors' => $validationErrors
+                ], 422);
+            }
+
+            $assignment = $timeSlot->assignTeamToSegment(
+                $team,
+                $request->day_of_week,
+                $request->start_time,
+                $request->end_time,
+                $user,
+                $request->notes,
+                $gymCourt
+            );
+
+            if (!$assignment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Fehler beim Erstellen der Team-Zuordnung.'
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Team erfolgreich dem Zeitfenster zugeordnet.',
+                'data' => [
+                    'id' => $assignment->id,
+                    'team_name' => $team->name,
+                    'time_range' => $assignment->time_range ?? 'N/A',
+                    'day_name' => $assignment->day_name ?? 'N/A',
+                    'court_name' => $gymCourt?->name,
+                    'court_id' => $gymCourt?->id,
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Zuordnung nicht möglich',
-                'errors' => $validationErrors
+                'message' => 'Ungültige Eingabedaten.',
+                'errors' => $e->errors()
             ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error assigning team to segment: ' . $e->getMessage(), [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Zuordnen des Teams.'
+            ], 500);
         }
-
-        $assignment = $timeSlot->assignTeamToSegment(
-            $team,
-            $request->day_of_week,
-            $request->start_time,
-            $request->end_time,
-            $user,
-            $request->notes,
-            $gymCourt
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Team erfolgreich dem Zeitfenster zugeordnet.',
-            'data' => [
-                'id' => $assignment->id,
-                'team_name' => $team->name,
-                'time_range' => $assignment->time_range,
-                'day_name' => $assignment->day_name,
-                'court_name' => $gymCourt?->name,
-                'court_id' => $gymCourt?->id,
-            ]
-        ]);
     }
 
     /**

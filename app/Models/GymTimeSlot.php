@@ -679,9 +679,18 @@ class GymTimeSlot extends Model
     public function getTimesForDay(string $dayOfWeek): ?array
     {
         if (!$this->uses_custom_times || !$this->custom_times) {
+            // Handle null values properly
+            if (!$this->start_time || !$this->end_time) {
+                return null;
+            }
+            
             return [
-                'start_time' => $this->start_time?->format('H:i'),
-                'end_time' => $this->end_time?->format('H:i'),
+                'start_time' => $this->start_time instanceof \Carbon\Carbon 
+                    ? $this->start_time->format('H:i') 
+                    : $this->start_time,
+                'end_time' => $this->end_time instanceof \Carbon\Carbon 
+                    ? $this->end_time->format('H:i') 
+                    : $this->end_time,
             ];
         }
 
@@ -1108,25 +1117,46 @@ class GymTimeSlot extends Model
         if (!$times) {
             $errors[] = 'Keine Öffnungszeiten für diesen Tag definiert.';
         } else {
-            if ($startTime < $times['start_time'] || $endTime > $times['end_time']) {
-                $errors[] = 'Zeitfenster liegt außerhalb der Öffnungszeiten.';
+            // Convert times to Carbon instances for proper comparison
+            try {
+                $slotStart = Carbon::createFromTimeString($times['start_time']);
+                $slotEnd = Carbon::createFromTimeString($times['end_time']);
+                $requestStart = Carbon::createFromTimeString($startTime);
+                $requestEnd = Carbon::createFromTimeString($endTime);
+                
+                if ($requestStart->lt($slotStart) || $requestEnd->gt($slotEnd)) {
+                    $errors[] = "Zeitfenster liegt außerhalb der Öffnungszeiten ({$times['start_time']} - {$times['end_time']}).";
+                }
+            } catch (\Exception $e) {
+                $errors[] = 'Ungültiges Zeitformat.';
             }
         }
 
-        $startCarbon = Carbon::createFromTimeString($startTime);
-        $endCarbon = Carbon::createFromTimeString($endTime);
-        $duration = $startCarbon->diffInMinutes($endCarbon);
+        // Validate time format and duration
+        try {
+            $startCarbon = Carbon::createFromTimeString($startTime);
+            $endCarbon = Carbon::createFromTimeString($endTime);
+            $duration = $startCarbon->diffInMinutes($endCarbon);
 
-        if ($duration < 30) {
-            $errors[] = 'Minimale Buchungsdauer von 30 Minuten unterschritten.';
-        }
+            if ($duration < 30) {
+                $errors[] = 'Minimale Buchungsdauer von 30 Minuten unterschritten.';
+            }
 
-        if ($duration % 30 !== 0) {
-            $errors[] = 'Buchungsdauer muss in 30-Minuten-Schritten erfolgen.';
+            if ($duration % 30 !== 0) {
+                $errors[] = 'Buchungsdauer muss in 30-Minuten-Schritten erfolgen.';
+            }
+        } catch (\Exception $e) {
+            $errors[] = 'Ungültiges Zeitformat für Start- oder Endzeit.';
+            return $errors; // Return early if time format is invalid
         }
 
         // Check parallel bookings restrictions considering main court logic
         $gymHall = $this->gymHall;
+        
+        if (!$gymHall) {
+            $errors[] = 'Zugehörige Sporthalle nicht gefunden.';
+            return $errors;
+        }
         
         // Check if we're trying to book the main court
         $mainCourt = $gymHall->getMainCourt();
