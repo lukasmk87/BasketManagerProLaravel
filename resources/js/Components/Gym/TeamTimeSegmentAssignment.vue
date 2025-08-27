@@ -123,7 +123,7 @@
                     Team zuordnen: {{ selectedSegment.start_time }} - {{ selectedSegment.end_time }}
                 </h4>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Team</label>
                         <select
@@ -135,6 +135,20 @@
                                 {{ team.name }}
                             </option>
                         </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Feld (optional)</label>
+                        <select
+                            v-model="assignmentForm.gym_court_id"
+                            class="w-full rounded border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                        >
+                            <option value="">Kein Feld auswählen</option>
+                            <option v-for="court in availableCourts" :key="court.id" :value="court.id">
+                                {{ court.name }}
+                            </option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Optional: Spezifisches Feld zuordnen</p>
                     </div>
                     
                     <div>
@@ -209,6 +223,7 @@ const selectedDay = ref('')
 const selectedDuration = ref(30)
 const segments = ref([])
 const availableTeams = ref([])
+const availableCourts = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const statusMessage = ref(null)
@@ -234,6 +249,7 @@ const availableDurations = [
 
 const assignmentForm = ref({
     team_id: '',
+    gym_court_id: '',
     notes: ''
 })
 
@@ -274,10 +290,23 @@ const loadAvailableTeams = async () => {
     }
 }
 
+const loadAvailableCourts = async () => {
+    try {
+        const response = await axios.get(`/gym-management/halls/${props.gymHallId}/courts`)
+        
+        if (response.data.success) {
+            availableCourts.value = response.data.data.filter(court => court.is_active)
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der Felder:', error)
+    }
+}
+
 const openTeamSelection = (segment) => {
     selectedSegment.value = segment
     assignmentForm.value = {
         team_id: '',
+        gym_court_id: '',
         notes: ''
     }
     showAssignmentForm.value = true
@@ -288,6 +317,7 @@ const cancelAssignment = () => {
     showAssignmentForm.value = false
     assignmentForm.value = {
         team_id: '',
+        gym_court_id: '',
         notes: ''
     }
 }
@@ -301,6 +331,7 @@ const saveAssignment = async () => {
         const response = await axios.post('/api/v2/time-slots/assign-team-segment', {
             gym_time_slot_id: props.timeSlotId,
             team_id: assignmentForm.value.team_id,
+            gym_court_id: assignmentForm.value.gym_court_id || null,
             day_of_week: selectedDay.value,
             start_time: selectedSegment.value.start_time,
             end_time: selectedSegment.value.end_time,
@@ -396,6 +427,7 @@ const getDurationColorClass = (minutes) => {
 // Lifecycle
 onMounted(() => {
     loadAvailableTeams()
+    loadAvailableCourts()
 })
 
 // Watch for changes

@@ -209,6 +209,41 @@ class GymHall extends Model implements HasMedia
         return $this->supports_parallel_bookings && $this->is_multi_court;
     }
 
+    /**
+     * Check if parallel bookings are supported for a specific day.
+     */
+    public function supportsParallelBookingsForDay(string $dayOfWeek): bool
+    {
+        // Convert day name to lowercase for consistency
+        $dayOfWeek = strtolower($dayOfWeek);
+        
+        // If operating_hours has day-specific parallel booking settings, use those
+        if ($this->operating_hours && isset($this->operating_hours[$dayOfWeek])) {
+            $daySettings = $this->operating_hours[$dayOfWeek];
+            
+            // Check if parallel bookings are explicitly set for this day
+            if (isset($daySettings['supports_parallel_bookings'])) {
+                return $daySettings['supports_parallel_bookings'];
+            }
+        }
+        
+        // Fall back to global setting
+        return $this->supports_parallel_bookings;
+    }
+
+    /**
+     * Get maximum number of parallel teams for a specific day.
+     */
+    public function getMaxParallelTeamsForDay(string $dayOfWeek): int
+    {
+        if (!$this->supportsParallelBookingsForDay($dayOfWeek)) {
+            return 1;
+        }
+        
+        // With parallel bookings enabled, maximum teams equals number of courts
+        return max(1, $this->court_count);
+    }
+
     public function getHallTypeDisplayAttribute(): string
     {
         return match($this->hall_type) {

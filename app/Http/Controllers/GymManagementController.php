@@ -873,6 +873,7 @@ class GymManagementController extends Controller
         $request->validate([
             'gym_time_slot_id' => 'required|exists:gym_time_slots,id',
             'team_id' => 'required|exists:teams,id',
+            'gym_court_id' => 'nullable|exists:gym_courts,id',
             'day_of_week' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'start_time' => 'required|string',
             'end_time' => 'required|string|after:start_time',
@@ -889,12 +890,44 @@ class GymManagementController extends Controller
             ->where('club_id', $userClub->id)
             ->firstOrFail();
 
+        // Validate court belongs to the same hall if specified
+        $gymCourt = null;
+        if ($request->gym_court_id) {
+            $gymCourt = \App\Models\GymCourt::where('id', $request->gym_court_id)
+                ->where('gym_hall_id', $timeSlot->gym_hall_id)
+                ->where('is_active', true)
+                ->first();
+                
+            if (!$gymCourt) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Das ausgewählte Feld gehört nicht zu dieser Halle oder ist nicht aktiv.',
+                    'errors' => ['gym_court_id' => ['Ungültiges Feld ausgewählt.']]
+                ], 422);
+            }
+        }
+
         $validationErrors = $timeSlot->canAssignTeamToSegment(
             $team->id,
             $request->day_of_week,
             $request->start_time,
             $request->end_time
         );
+
+        // Additional validation for court conflicts
+        if ($gymCourt) {
+            $courtConflict = \App\Models\GymTimeSlotTeamAssignment::hasConflictForCourt(
+                $timeSlot->id,
+                $gymCourt->id,
+                $request->day_of_week,
+                $request->start_time,
+                $request->end_time
+            );
+            
+            if ($courtConflict) {
+                $validationErrors[] = "Das ausgewählte Feld ist zu dieser Zeit bereits belegt.";
+            }
+        }
 
         if (!empty($validationErrors)) {
             return response()->json([
@@ -910,7 +943,8 @@ class GymManagementController extends Controller
             $request->start_time,
             $request->end_time,
             $user,
-            $request->notes
+            $request->notes,
+            $gymCourt
         );
 
         return response()->json([
@@ -921,6 +955,8 @@ class GymManagementController extends Controller
                 'team_name' => $team->name,
                 'time_range' => $assignment->time_range,
                 'day_name' => $assignment->day_name,
+                'court_name' => $gymCourt?->name,
+                'court_id' => $gymCourt?->id,
             ]
         ]);
     }
@@ -984,7 +1020,7 @@ class GymManagementController extends Controller
             }
 
             $assignments = $timeSlot->activeTeamAssignments()
-                ->with(['team'])
+                ->with(['team', 'gymCourt'])
                 ->orderBy('day_of_week')
                 ->orderBy('start_time')
                 ->get()
@@ -995,6 +1031,8 @@ class GymManagementController extends Controller
                             'id' => $assignment->id,
                             'team_id' => $assignment->team_id,
                             'team_name' => $assignment->team?->name ?? 'Unbekanntes Team',
+                            'gym_court_id' => $assignment->gym_court_id,
+                            'court_name' => $assignment->gymCourt?->name,
                             'start_time' => $assignment->start_time ? $assignment->start_time->format('H:i') : null,
                             'end_time' => $assignment->end_time ? $assignment->end_time->format('H:i') : null,
                             'duration_minutes' => $assignment->duration_minutes,
@@ -1046,6 +1084,134 @@ class GymManagementController extends Controller
         return response()->json([
             'success' => true,
             'data' => $teams
+        ]);
+    }
+
+    /**
+     * Get courts for a specific gym hall.
+     */
+    public function getHallCourts(Request $request, $hallId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        $hall = GymHall::where('id', $hallId)
+            ->where('club_id', $userClub->id)
+            ->firstOrFail();
+
+        $courts = $hall->courts()
+            ->orderBy('sort_order')
+            ->orderBy('court_number')
+            ->get(['id', 'name', 'court_number', 'is_active', 'metadata']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $courts->map(function ($court) {
+                return [
+                    'id' => $court->id,
+                    'name' => $court->name,
+                    'court_number' => $court->court_number,
+                    'is_active' => $court->is_active,
+                    'court_identifier' => $court->court_identifier,
+                    'color_code' => $court->color_code,
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * Update a gym court.
+     */
+    public function updateCourt(Request $request, $courtId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung zum Bearbeiten von Feldern.'
+            ], 403);
+        }
+
+        $court = \App\Models\GymCourt::whereHas('gymHall', function ($query) use ($userClub) {
+                $query->where('club_id', $userClub->id);
+            })
+            ->where('id', $courtId)
+            ->firstOrFail();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'is_active' => 'boolean',
+        ]);
+
+        $court->update([
+            'name' => $request->name,
+            'is_active' => $request->is_active ?? $court->is_active,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Feld erfolgreich aktualisiert.',
+            'data' => [
+                'id' => $court->id,
+                'name' => $court->name,
+                'court_number' => $court->court_number,
+                'is_active' => $court->is_active,
+                'court_identifier' => $court->court_identifier,
+                'color_code' => $court->color_code,
+            ]
+        ]);
+    }
+
+    /**
+     * Create a new court for a gym hall.
+     */
+    public function createCourt(Request $request, $hallId): JsonResponse
+    {
+        $user = Auth::user();
+        $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+        
+        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung zum Erstellen von Feldern.'
+            ], 403);
+        }
+
+        $hall = GymHall::where('id', $hallId)
+            ->where('club_id', $userClub->id)
+            ->firstOrFail();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'court_number' => 'required|integer|min:1|unique:gym_courts,court_number,NULL,id,gym_hall_id,' . $hall->id,
+        ]);
+
+        $court = $hall->courts()->create([
+            'uuid' => \Illuminate\Support\Str::uuid(),
+            'name' => $request->name,
+            'court_number' => $request->court_number,
+            'is_active' => true,
+            'sort_order' => $request->court_number,
+            'metadata' => [
+                'identifier' => (string) $request->court_number,
+                'color_code' => '#3B82F6',
+                'court_type' => 'full',
+            ]
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Feld erfolgreich erstellt.',
+            'data' => [
+                'id' => $court->id,
+                'name' => $court->name,
+                'court_number' => $court->court_number,
+                'is_active' => $court->is_active,
+                'court_identifier' => $court->court_identifier,
+                'color_code' => $court->color_code,
+            ]
         ]);
     }
 

@@ -181,6 +181,17 @@
                             >
                                 Team-Zuordnungen
                             </button>
+                            <button
+                                @click="activeTab = 'courts'"
+                                :class="[
+                                    'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                    activeTab === 'courts'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ]"
+                            >
+                                Felder verwalten
+                            </button>
                         </nav>
                     </div>
 
@@ -199,6 +210,14 @@
                     <TimeSlotsList
                         v-if="selectedScheduleHall.id && activeTab === 'teams'"
                         :gym-hall-id="selectedScheduleHall.id"
+                        @updated="refreshData"
+                    />
+
+                    <!-- Courts Tab -->
+                    <CourtManagement
+                        v-if="selectedScheduleHall.id && activeTab === 'courts'"
+                        :gym-hall-id="selectedScheduleHall.id"
+                        :gym-hall="selectedScheduleHall"
                         @updated="refreshData"
                     />
                 </div>
@@ -226,6 +245,7 @@ import DialogModal from '@/Components/DialogModal.vue'
 import GymHallModal from '@/Components/Gym/GymHallModal.vue'
 import GymTimeSlotManager from '@/Components/Gym/GymTimeSlotManager.vue'
 import TimeSlotsList from '@/Components/Gym/TimeSlotsList.vue'
+import CourtManagement from '@/Components/Gym/CourtManagement.vue'
 import {
     BuildingStorefrontIcon,
     PlusIcon,

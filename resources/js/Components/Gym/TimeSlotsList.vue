@@ -109,6 +109,7 @@
                                                     </span>
                                                     <span class="text-xs" :class="getAssignmentSubTextClass(assignment.duration_minutes || 30)">
                                                         ({{ assignment.start_time }}-{{ assignment.end_time }})
+                                                        {{ assignment.court_name ? `- ${assignment.court_name}` : '' }}
                                                     </span>
                                                     <span :class="[
                                                         'inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full',
@@ -131,18 +132,12 @@
                                 </div>
                                 
                                 <!-- Actions -->
-                                <div class="flex flex-col items-end space-y-2 ml-4">
-                                    <button
-                                        @click="openTeamAssignment(timeSlot)"
-                                        class="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
-                                    >
-                                        {{ timeSlot.team ? 'Team ändern' : 'Team zuordnen' }}
-                                    </button>
+                                <div class="flex flex-col items-end ml-4">
                                     <button
                                         @click="openSegmentAssignment(timeSlot)"
                                         class="px-3 py-1 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors"
                                     >
-                                        Zeitfenster
+                                        Team & Zeitfenster zuordnen
                                     </button>
                                 </div>
                             </div>
@@ -151,14 +146,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Team Assignment Modal -->
-        <TeamAssignmentModal
-            :show="showTeamModal"
-            :time-slot="selectedTimeSlot"
-            @close="closeTeamModal"
-            @updated="handleTeamUpdated"
-        />
 
         <!-- Team Segment Assignment Modal -->
         <div v-if="showSegmentModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
@@ -193,7 +180,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
-import TeamAssignmentModal from './TeamAssignmentModal.vue'
 import TeamTimeSegmentAssignment from './TeamTimeSegmentAssignment.vue'
 import {
     ClockIcon,
@@ -215,7 +201,6 @@ const emit = defineEmits(['updated'])
 // State
 const timeSlots = ref([])
 const loading = ref(false)
-const showTeamModal = ref(false)
 const showSegmentModal = ref(false)
 const selectedTimeSlot = ref(null)
 const segmentAssignments = ref({})
@@ -265,21 +250,6 @@ const refreshTimeSlots = async () => {
     } finally {
         loading.value = false
     }
-}
-
-const openTeamAssignment = (timeSlot) => {
-    selectedTimeSlot.value = timeSlot
-    showTeamModal.value = true
-}
-
-const closeTeamModal = () => {
-    selectedTimeSlot.value = null
-    showTeamModal.value = false
-}
-
-const handleTeamUpdated = () => {
-    refreshTimeSlots()
-    emit('updated')
 }
 
 const openSegmentAssignment = (timeSlot) => {

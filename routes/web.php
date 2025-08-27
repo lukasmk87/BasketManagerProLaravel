@@ -215,6 +215,11 @@ Route::middleware([
         
         // Teams API Route
         Route::get('/teams', [\App\Http\Controllers\GymManagementController::class, 'getTeams'])->name('teams');
+        
+        // Court Management API Routes
+        Route::get('/halls/{hall}/courts', [\App\Http\Controllers\GymManagementController::class, 'getHallCourts'])->name('hall-courts');
+        Route::post('/halls/{hall}/courts', [\App\Http\Controllers\GymManagementController::class, 'createCourt'])->name('create-court');
+        Route::put('/courts/{court}', [\App\Http\Controllers\GymManagementController::class, 'updateCourt'])->name('update-court');
     });
     
     // Export Routes

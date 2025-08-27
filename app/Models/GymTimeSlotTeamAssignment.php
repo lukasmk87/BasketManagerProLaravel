@@ -18,6 +18,7 @@ class GymTimeSlotTeamAssignment extends Model
         'uuid',
         'gym_time_slot_id',
         'team_id',
+        'gym_court_id',
         'day_of_week',
         'start_time',
         'end_time',
@@ -80,6 +81,11 @@ class GymTimeSlotTeamAssignment extends Model
     public function assignedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function gymCourt(): BelongsTo
+    {
+        return $this->belongsTo(GymCourt::class);
     }
 
     // ============================
@@ -179,6 +185,30 @@ class GymTimeSlotTeamAssignment extends Model
         return $query->exists();
     }
 
+    public static function hasConflictForCourt(
+        int $gymTimeSlotId,
+        int $gymCourtId,
+        string $dayOfWeek,
+        string $startTime,
+        string $endTime,
+        $excludeId = null
+    ): bool {
+        $query = static::where('gym_time_slot_id', $gymTimeSlotId)
+            ->where('gym_court_id', $gymCourtId)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('status', 'active')
+            ->where(function($q) use ($startTime, $endTime) {
+                $q->where('start_time', '<', $endTime)
+                  ->where('end_time', '>', $startTime);
+            });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
+    }
+
     public static function getConflictsForTimeSlot(
         int $gymTimeSlotId,
         string $dayOfWeek,
@@ -206,6 +236,8 @@ class GymTimeSlotTeamAssignment extends Model
                 'time_range' => $assignment->time_range,
                 'start_time' => $assignment->start_time->format('H:i'),
                 'end_time' => $assignment->end_time->format('H:i'),
+                'court_name' => $assignment->gymCourt?->name ?? null,
+                'court_id' => $assignment->gym_court_id,
             ];
         })->toArray();
     }

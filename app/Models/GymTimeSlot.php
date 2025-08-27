@@ -990,7 +990,8 @@ class GymTimeSlot extends Model
         string $startTime,
         string $endTime,
         User $assignedBy,
-        string $notes = null
+        string $notes = null,
+        GymCourt $gymCourt = null
     ): GymTimeSlotTeamAssignment {
         $startCarbon = Carbon::createFromTimeString($startTime);
         $endCarbon = Carbon::createFromTimeString($endTime);
@@ -999,6 +1000,7 @@ class GymTimeSlot extends Model
         return $this->teamAssignments()->create([
             'uuid' => Str::uuid(),
             'team_id' => $team->id,
+            'gym_court_id' => $gymCourt?->id,
             'day_of_week' => $dayOfWeek,
             'start_time' => $startTime,
             'end_time' => $endTime,
