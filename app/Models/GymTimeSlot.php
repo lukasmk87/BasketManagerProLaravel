@@ -11,6 +11,12 @@ use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Carbon\Carbon;
+use App\Models\GymCourt;
+use App\Models\Team;
+use App\Models\User;
+use App\Models\GymBooking;
+use App\Models\GymBookingRequest;
+use App\Models\GymTimeSlotTeamAssignment;
 
 class GymTimeSlot extends Model
 {
