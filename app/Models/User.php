@@ -138,18 +138,20 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Get the teams coached by this user as assistant coach.
+     * Returns a query builder to match the behavior of coachedTeams().
      */
     public function assistantCoachedTeams()
     {
-        return Team::whereJsonContains('assistant_coaches', $this->id)->get();
+        return Team::whereJsonContains('assistant_coaches', $this->id);
     }
 
     /**
      * Get all teams coached by this user (head + assistant).
+     * Returns a collection of teams.
      */
     public function allCoachedTeams()
     {
-        return $this->coachedTeams()->get()->merge($this->assistantCoachedTeams());
+        return $this->coachedTeams()->get()->merge($this->assistantCoachedTeams()->get());
     }
 
     /**

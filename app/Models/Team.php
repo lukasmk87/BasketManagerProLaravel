@@ -169,6 +169,71 @@ class Team extends JetstreamTeam implements HasMedia
     }
 
     /**
+     * Get all members of this team (Jetstream compatibility).
+     * This includes players, coaches, and staff.
+     */
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'team_user')
+            ->withPivot([
+                'role',
+                'joined_at',
+                'left_at',
+                'is_active',
+                'jersey_number',
+                'is_starter',
+                'is_captain',
+                'coaching_license',
+                'coaching_certifications',
+                'coaching_specialties',
+                'responsibilities',
+                'access_permissions',
+                'contract_start',
+                'contract_end',
+                'salary',
+                'contract_terms',
+                'performance_metrics',
+                'notes',
+                'performance_rating',
+                'emergency_contact_name',
+                'emergency_contact_phone'
+            ])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get active members of this team.
+     */
+    public function activeMembers(): BelongsToMany
+    {
+        return $this->members()->wherePivot('is_active', true);
+    }
+
+    /**
+     * Get members by role.
+     */
+    public function membersByRole(string $role): BelongsToMany
+    {
+        return $this->members()->wherePivot('role', $role);
+    }
+
+    /**
+     * Get all coaches (head coach and assistant coaches) through members relationship.
+     */
+    public function coachMembers(): BelongsToMany
+    {
+        return $this->members()->whereIn('role', ['head_coach', 'assistant_coach']);
+    }
+
+    /**
+     * Get all players through members relationship.
+     */
+    public function playerMembers(): BelongsToMany
+    {
+        return $this->members()->wherePivot('role', 'player');
+    }
+
+    /**
      * Get the players on this team.
      */
     public function players(): BelongsToMany
@@ -441,7 +506,12 @@ class Team extends JetstreamTeam implements HasMedia
     public function hasUser($user): bool
     {
         if ($user instanceof User) {
-            // Check if user is a player on this team
+            // Check through members relationship
+            if ($this->activeMembers()->where('user_id', $user->id)->exists()) {
+                return true;
+            }
+            
+            // Check if user is a player on this team (backward compatibility)
             if ($user->playerProfile && $user->playerProfile->team_id === $this->id) {
                 return true;
             }
@@ -457,27 +527,15 @@ class Team extends JetstreamTeam implements HasMedia
 
     /**
      * Get all of the users that belong to the team.
+     * This method integrates both Jetstream team members and basketball-specific members.
      */
     public function allUsers()
     {
-        // Get Jetstream team members
+        // Get Jetstream team members (if any)
         $jetstreamUsers = parent::allUsers();
         
-        // Get basketball team members (players, coaches)
-        $basketballUsers = collect();
-        
-        // Add players
-        $players = $this->players()->with('user')->get();
-        foreach ($players as $player) {
-            if ($player->user) {
-                $basketballUsers->push($player->user);
-            }
-        }
-        
-        // Add head coach
-        if ($this->headCoach) {
-            $basketballUsers->push($this->headCoach);
-        }
+        // Get basketball team members through the members relationship
+        $basketballUsers = $this->activeMembers()->get();
         
         // Merge and deduplicate
         return $jetstreamUsers->merge($basketballUsers)->unique('id');

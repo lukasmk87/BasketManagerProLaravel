@@ -358,7 +358,7 @@ class UserService
         // Coach statistics
         if ($user->isCoach()) {
             $coachedTeams = $user->coachedTeams;
-            $assistantCoachedTeams = $user->assistantCoachedTeams;
+            $assistantCoachedTeams = $user->assistantCoachedTeams()->get();
             
             $stats['coach_stats'] = [
                 'head_coach_teams' => $coachedTeams->count(),
