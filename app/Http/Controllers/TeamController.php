@@ -416,18 +416,16 @@ class TeamController extends Controller
                     ->exists();
 
                 if ($existingJersey) {
-                    return response()->json([
-                        'error' => "Trikotnummer {$validated['jersey_number']} ist bereits vergeben."
-                    ], 422);
+                    return redirect()->back()->withErrors([
+                        'jersey_number' => "Trikotnummer {$validated['jersey_number']} ist bereits vergeben."
+                    ]);
                 }
             }
 
             $team->players()->attach($playerId, $pivotData);
         }
 
-        return response()->json([
-            'message' => 'Spieler wurde(n) erfolgreich zum Team hinzugefügt.',
-        ]);
+        return redirect()->back()->with('success', 'Spieler wurde(n) erfolgreich zum Team hinzugefügt.');
     }
 
     /**
