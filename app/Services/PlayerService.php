@@ -152,6 +152,14 @@ class PlayerService
             // Handle team transfer if team_id is changing
             if (isset($data['team_id']) && (int)$data['team_id'] !== (int)$player->team_id) {
                 $newTeam = Team::findOrFail($data['team_id']);
+                
+                // Provide more detailed error message for team capacity issues
+                if (!$newTeam->canAcceptNewPlayer()) {
+                    $reasons = $newTeam->getCannotAcceptPlayerReasons();
+                    $reasonText = implode(', ', $reasons);
+                    throw new \InvalidArgumentException("Ziel-Team kann keine neuen Spieler aufnehmen. Grund: {$reasonText}");
+                }
+                
                 $this->transferPlayer($player, $newTeam);
                 unset($data['team_id']); // Remove from update data as it's handled by transfer
             }
@@ -412,7 +420,9 @@ class PlayerService
             
             // Check if new team can accept the player
             if (!$newTeam->canAcceptNewPlayer()) {
-                throw new \InvalidArgumentException('Ziel-Team kann keine neuen Spieler aufnehmen.');
+                $reasons = $newTeam->getCannotAcceptPlayerReasons();
+                $reasonText = implode(', ', $reasons);
+                throw new \InvalidArgumentException("Ziel-Team kann keine neuen Spieler aufnehmen. Grund: {$reasonText}");
             }
 
             // Check for jersey number conflicts
