@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\Club;
+use App\Models\Player;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;

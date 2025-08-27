@@ -452,7 +452,7 @@
 
                     <!-- Hall Schedule Tab -->
                     <div v-show="activeTab === 'schedule'" class="p-6">
-                        <TeamHallSchedule :team-id="team.slug" />
+                        <TeamHallSchedule :team-id="team.id" />
                     </div>
                 </div>
             </div>
@@ -621,14 +621,22 @@ const removePlayer = async (player) => {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
             }
         })
 
         if (response.ok) {
             await loadTeamPlayers()
         } else {
-            const data = await response.json()
-            alert(data.error || 'Fehler beim Entfernen des Spielers')
+            let errorMessage = 'Fehler beim Entfernen des Spielers'
+            try {
+                const data = await response.json()
+                errorMessage = data.error || data.message || errorMessage
+            } catch (e) {
+                // Response wasn't JSON, use default error message
+            }
+            alert(errorMessage)
         }
     } catch (error) {
         console.error('Fehler beim Entfernen des Spielers:', error)

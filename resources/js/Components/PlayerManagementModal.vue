@@ -229,7 +229,7 @@ const searchPlayers = () => {
 const addPlayers = () => {
     form.player_ids = selectedPlayerIds.value
     
-    form.post(route('web.teams.players.attach', props.team.id), {
+    form.post(route('web.teams.players.attach', props.team.slug), {
         preserveScroll: true,
         onSuccess: (response) => {
             emit('playersAdded')
