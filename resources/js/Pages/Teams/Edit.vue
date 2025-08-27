@@ -184,6 +184,46 @@
                                 </label>
                             </div>
 
+                            <!-- Recruiting Status -->
+                            <div class="md:col-span-2">
+                                <label class="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        v-model="form.is_recruiting"
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                    />
+                                    <span class="ml-2">Team nimmt neue Spieler auf</span>
+                                </label>
+                            </div>
+
+                            <!-- Max Players -->
+                            <div>
+                                <InputLabel for="max_players" value="Max. Spieler" />
+                                <TextInput
+                                    id="max_players"
+                                    v-model="form.max_players"
+                                    type="number"
+                                    class="mt-1 block w-full"
+                                    min="5"
+                                    max="20"
+                                />
+                                <InputError :message="form.errors.max_players" class="mt-2" />
+                            </div>
+
+                            <!-- Min Players -->
+                            <div>
+                                <InputLabel for="min_players" value="Min. Spieler" />
+                                <TextInput
+                                    id="min_players"
+                                    v-model="form.min_players"
+                                    type="number"
+                                    class="mt-1 block w-full"
+                                    min="3"
+                                    max="15"
+                                />
+                                <InputError :message="form.errors.min_players" class="mt-2" />
+                            </div>
+
                             <!-- Training Schedule -->
                             <div class="md:col-span-2">
                                 <InputLabel value="Trainingszeiten" />
@@ -486,6 +526,9 @@ const form = useForm({
     age_group: props.team.age_group || '',
     gender: props.team.gender || 'male',
     is_active: props.team.is_active || false,
+    is_recruiting: props.team.is_recruiting || false,
+    max_players: props.team.max_players || 15,
+    min_players: props.team.min_players || 8,
     training_schedule: props.team.training_schedule || '[]',
     description: props.team.description || '',
 })
