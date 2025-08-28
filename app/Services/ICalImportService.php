@@ -336,4 +336,147 @@ class ICalImportService
 
         return $teams->unique()->sort()->values();
     }
+
+    /**
+     * Import games with explicit team mapping.
+     */
+    public function importGamesWithTeamMapping(Collection $parsedGames, array $teamMapping, int $selectedTeamId): array
+    {
+        $importedCount = 0;
+        $skippedCount = 0;
+        $errors = [];
+
+        foreach ($parsedGames as $gameData) {
+            try {
+                // Check if this game involves the selected team using the mapping
+                $homeTeamMapped = $teamMapping[$gameData['home_team_raw']] ?? null;
+                $awayTeamMapped = $teamMapping[$gameData['away_team_raw']] ?? null;
+
+                // Skip games that don't involve the selected team
+                if ($homeTeamMapped != $selectedTeamId && $awayTeamMapped != $selectedTeamId) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                // Skip games where opponent is not mapped (ignore)
+                if ($homeTeamMapped == $selectedTeamId && $awayTeamMapped === null) {
+                    $skippedCount++;
+                    continue;
+                }
+                if ($awayTeamMapped == $selectedTeamId && $homeTeamMapped === null) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                // Check for existing game
+                if ($this->gameExists($selectedTeamId, $gameData['external_game_id'], $gameData['scheduled_at'])) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                $isHomeGame = ($homeTeamMapped == $selectedTeamId);
+
+                // Create game data
+                $createData = [
+                    'external_game_id' => $gameData['external_game_id'],
+                    'scheduled_at' => $gameData['scheduled_at'],
+                    'venue' => $gameData['venue'],
+                    'venue_address' => $gameData['venue_address'],
+                    'venue_code' => $gameData['venue_code'],
+                    'import_source' => 'ical',
+                    'import_metadata' => array_merge($gameData['import_metadata'], [
+                        'team_mapping' => $teamMapping,
+                        'selected_team_id' => $selectedTeamId,
+                    ]),
+                    'type' => 'regular_season',
+                    'season' => $this->determineSeason($gameData['scheduled_at']),
+                    'status' => 'scheduled',
+                    'is_home_game' => $isHomeGame,
+                ];
+
+                if ($isHomeGame) {
+                    $createData['home_team_id'] = $selectedTeamId;
+                    if ($awayTeamMapped && $awayTeamMapped != $selectedTeamId) {
+                        $createData['away_team_id'] = $awayTeamMapped;
+                    } else {
+                        $createData['away_team_name'] = $gameData['away_team_raw'];
+                    }
+                } else {
+                    $createData['away_team_id'] = $selectedTeamId;
+                    if ($homeTeamMapped && $homeTeamMapped != $selectedTeamId) {
+                        $createData['home_team_id'] = $homeTeamMapped;
+                    } else {
+                        $createData['home_team_name'] = $gameData['home_team_raw'];
+                    }
+                }
+
+                Game::create($createData);
+                $importedCount++;
+
+            } catch (\Exception $e) {
+                $errors[] = "Fehler beim Importieren von Spiel {$gameData['home_team_raw']} vs {$gameData['away_team_raw']}: " . $e->getMessage();
+                Log::error('Game import with mapping error', [
+                    'game_data' => $gameData,
+                    'team_mapping' => $teamMapping,
+                    'selected_team_id' => $selectedTeamId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return [
+            'imported' => $importedCount,
+            'skipped' => $skippedCount,
+            'errors' => $errors,
+            'total' => $parsedGames->count()
+        ];
+    }
+
+    /**
+     * Preview games with explicit team mapping.
+     */
+    public function previewGamesWithTeamMapping(Collection $parsedGames, array $teamMapping, int $selectedTeamId): Collection
+    {
+        return $parsedGames->map(function ($gameData) use ($teamMapping, $selectedTeamId) {
+            $homeTeamMapped = $teamMapping[$gameData['home_team_raw']] ?? null;
+            $awayTeamMapped = $teamMapping[$gameData['away_team_raw']] ?? null;
+
+            // Skip games that don't involve the selected team
+            if ($homeTeamMapped != $selectedTeamId && $awayTeamMapped != $selectedTeamId) {
+                return null;
+            }
+
+            // Skip games where opponent is not mapped (ignore)
+            if ($homeTeamMapped == $selectedTeamId && $awayTeamMapped === null) {
+                return null;
+            }
+            if ($awayTeamMapped == $selectedTeamId && $homeTeamMapped === null) {
+                return null;
+            }
+
+            $isHomeGame = ($homeTeamMapped == $selectedTeamId);
+            $exists = $this->gameExists($selectedTeamId, $gameData['external_game_id'], $gameData['scheduled_at']);
+
+            // Get team names for display
+            $selectedTeam = Team::find($selectedTeamId);
+            $homeTeamDisplay = $isHomeGame ? $selectedTeam->name : 
+                ($homeTeamMapped && $homeTeamMapped != $selectedTeamId ? Team::find($homeTeamMapped)->name : $gameData['home_team_raw']);
+            $awayTeamDisplay = !$isHomeGame ? $selectedTeam->name : 
+                ($awayTeamMapped && $awayTeamMapped != $selectedTeamId ? Team::find($awayTeamMapped)->name : $gameData['away_team_raw']);
+
+            return [
+                'home_team_display' => $homeTeamDisplay,
+                'away_team_display' => $awayTeamDisplay,
+                'scheduled_at' => $gameData['scheduled_at'],
+                'venue' => $gameData['venue'],
+                'venue_address' => $gameData['venue_address'],
+                'venue_code' => $gameData['venue_code'],
+                'is_home_game' => $isHomeGame,
+                'already_exists' => $exists,
+                'season' => $this->determineSeason($gameData['scheduled_at']),
+                'can_import' => !$exists,
+                'external_game_id' => $gameData['external_game_id'],
+            ];
+        })->filter();
+    }
 }

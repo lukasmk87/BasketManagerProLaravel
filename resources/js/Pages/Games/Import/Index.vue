@@ -36,8 +36,8 @@
                         <div class="ml-3">
                             <p class="text-sm text-blue-700">
                                 <strong>Spiele aus iCAL-Dateien importieren</strong><br>
-                                Laden Sie iCAL-Dateien von basketball-bund.net oder anderen Quellen hoch, um Spiele automatisch zu importieren. 
-                                Gegnerische Teams werden als externe Teams gespeichert.
+                                Laden Sie iCAL-Dateien von basketball-bund.net oder anderen Quellen hoch. 
+                                Nach dem Upload können Sie die Teams aus der Datei den entsprechenden Teams in Ihrem System zuordnen.
                             </p>
                         </div>
                     </div>
@@ -115,7 +115,7 @@
                                         Verarbeite...
                                     </span>
                                     <span v-else>
-                                        📂 Datei hochladen & Vorschau
+                                        🔍 Datei analysieren
                                     </span>
                                 </PrimaryButton>
                             </div>
@@ -234,10 +234,10 @@ const uploadFile = () => {
         return
     }
 
-    form.post(route('games.import.preview'), {
+    form.post(route('games.import.analyze'), {
         forceFormData: true,
         onSuccess: () => {
-            // Will redirect to preview page
+            // Will redirect to team mapping page
         },
         onError: (errors) => {
             console.log('Upload errors:', errors)

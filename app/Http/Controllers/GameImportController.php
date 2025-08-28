@@ -57,9 +57,9 @@ class GameImportController extends Controller
     }
 
     /**
-     * Upload and preview iCAL file.
+     * Analyze iCAL file and extract teams for mapping.
      */
-    public function previewICal(Request $request)
+    public function analyzeICal(Request $request)
     {
         $request->validate([
             'ical_file' => 'required|file|mimes:ics|max:2048',
@@ -83,31 +83,33 @@ class GameImportController extends Controller
                 return back()->withErrors(['ical_file' => 'Keine Spiele in der iCAL-Datei gefunden.']);
             }
 
-            // Generate preview
-            $preview = $this->importService->previewGamesForTeam($parsedGames, $team);
+            // Extract all teams from the iCAL
+            $icalTeams = $this->importService->getTeamsFromGames($parsedGames);
             
-            if ($preview->isEmpty()) {
-                return back()->withErrors(['team_id' => 'Keine Spiele für das ausgewählte Team gefunden.']);
+            if ($icalTeams->isEmpty()) {
+                return back()->withErrors(['ical_file' => 'Keine Teams in der iCAL-Datei gefunden.']);
             }
+
+            // Get available teams for mapping
+            $availableTeams = $this->getAvailableTeams($user);
 
             // Store parsed data in session for later import
             session([
                 'parsed_games_' . $team->id => $parsedGames->toArray(),
                 'import_file_name' => $file->getClientOriginalName(),
+                'selected_team_id' => $team->id,
             ]);
 
-            return Inertia::render('Games/Import/Preview', [
-                'team' => $team->load('club'),
-                'preview' => $preview,
+            return Inertia::render('Games/Import/TeamMapping', [
+                'selectedTeam' => $team->load('club'),
+                'icalTeams' => $icalTeams,
+                'availableTeams' => $availableTeams,
                 'fileName' => $file->getClientOriginalName(),
                 'totalGames' => $parsedGames->count(),
-                'matchingGames' => $preview->count(),
-                'newGames' => $preview->where('can_import', true)->count(),
-                'existingGames' => $preview->where('already_exists', true)->count(),
             ]);
 
         } catch (\Exception $e) {
-            Log::error('iCAL preview error', [
+            Log::error('iCAL analyze error', [
                 'user_id' => Auth::id(),
                 'team_id' => $request->team_id,
                 'error' => $e->getMessage()
@@ -115,6 +117,80 @@ class GameImportController extends Controller
 
             return back()->withErrors(['ical_file' => 'Fehler beim Verarbeiten der iCAL-Datei: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Save team mapping and show preview.
+     */
+    public function mapTeams(Request $request)
+    {
+        $request->validate([
+            'team_id' => 'required|exists:teams,id',
+            'team_mapping' => 'required|array',
+            'team_mapping.*' => 'nullable|exists:teams,id',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $team = Team::findOrFail($request->team_id);
+
+            // Check permissions
+            $this->checkTeamAccess($user, $team);
+
+            // Get parsed games from session
+            $sessionKey = 'parsed_games_' . $team->id;
+            $parsedGamesArray = session($sessionKey);
+            
+            if (!$parsedGamesArray) {
+                return back()->withErrors(['general' => 'Session abgelaufen. Bitte laden Sie die Datei erneut hoch.']);
+            }
+
+            $parsedGames = collect($parsedGamesArray);
+            $teamMapping = array_filter($request->team_mapping, function($value) {
+                return $value !== null;
+            });
+
+            // Generate preview with team mapping
+            $preview = $this->importService->previewGamesWithTeamMapping($parsedGames, $teamMapping, $team->id);
+            
+            if ($preview->isEmpty()) {
+                return back()->withErrors(['general' => 'Keine importierbaren Spiele für das ausgewählte Team mit der gewählten Zuordnung gefunden.']);
+            }
+
+            // Store team mapping in session
+            session([
+                'team_mapping_' . $team->id => $teamMapping,
+            ]);
+
+            return Inertia::render('Games/Import/Preview', [
+                'team' => $team->load('club'),
+                'preview' => $preview,
+                'fileName' => session('import_file_name'),
+                'totalGames' => $parsedGames->count(),
+                'matchingGames' => $preview->count(),
+                'newGames' => $preview->where('can_import', true)->count(),
+                'existingGames' => $preview->where('already_exists', true)->count(),
+                'usingTeamMapping' => true,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Team mapping error', [
+                'user_id' => Auth::id(),
+                'team_id' => $request->team_id,
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->withErrors(['general' => 'Fehler beim Verarbeiten der Team-Zuordnung: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Upload and preview iCAL file (legacy method for backward compatibility).
+     */
+    public function previewICal(Request $request)
+    {
+        // Redirect to the new analyze flow
+        return $this->analyzeICal($request);
     }
 
     /**
@@ -148,11 +224,20 @@ class GameImportController extends Controller
 
             $parsedGames = collect($parsedGamesArray);
 
-            // Import games
-            $result = $this->importService->importGamesForTeam($parsedGames, $team);
+            // Check if we have team mapping or use legacy method
+            $teamMappingKey = 'team_mapping_' . $team->id;
+            $teamMapping = session($teamMappingKey);
+
+            if ($teamMapping) {
+                // Use new team mapping method
+                $result = $this->importService->importGamesWithTeamMapping($parsedGames, $teamMapping, $team->id);
+            } else {
+                // Fallback to legacy method
+                $result = $this->importService->importGamesForTeam($parsedGames, $team);
+            }
 
             // Clear session data
-            session()->forget([$sessionKey, 'import_file_name']);
+            session()->forget([$sessionKey, 'import_file_name', $teamMappingKey, 'selected_team_id']);
 
             $message = "Import abgeschlossen: {$result['imported']} Spiele importiert";
             if ($result['skipped'] > 0) {
@@ -367,5 +452,36 @@ class GameImportController extends Controller
         }
 
         abort(403, 'Keine Import-Berechtigung.');
+    }
+
+    /**
+     * Get available teams for the user based on their role.
+     */
+    private function getAvailableTeams($user)
+    {
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            // Admins see all teams
+            return Team::with('club')->where('is_active', true)->orderBy('name')->get();
+        } elseif ($user->hasRole('club_admin')) {
+            // Club admins see only their club's teams
+            $clubIds = $user->clubs()->pluck('clubs.id');
+            return Team::with('club')
+                ->whereIn('club_id', $clubIds)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+        } elseif ($user->hasRole(['trainer', 'head_coach'])) {
+            // Trainers see only their teams
+            return Team::with('club')
+                ->where('is_active', true)
+                ->where(function ($query) use ($user) {
+                    $query->where('head_coach_id', $user->id)
+                          ->orWhereJsonContains('assistant_coaches', $user->id);
+                })
+                ->orderBy('name')
+                ->get();
+        }
+
+        return collect();
     }
 }
