@@ -117,6 +117,79 @@ const clubVerificationStatus = computed(() => {
                     color="orange" />
             </div>
 
+            <!-- Quick Actions -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">
+                            Schnellaktionen
+                        </h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Spielplan Import -->
+                        <a :href="route('games.import.index')" 
+                           class="flex items-center justify-center p-4 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 rounded-lg transition-colors group">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-6 h-6 text-blue-600 group-hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-blue-900 group-hover:text-blue-800">
+                                        Spielplan importieren
+                                    </div>
+                                    <div class="text-xs text-blue-600">
+                                        iCAL-Dateien hochladen
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+
+                        <!-- Neues Spiel -->
+                        <a :href="route('web.games.create')" 
+                           class="flex items-center justify-center p-4 bg-green-50 border border-green-200 hover:bg-green-100 hover:border-green-300 rounded-lg transition-colors group">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-6 h-6 text-green-600 group-hover:text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-green-900 group-hover:text-green-800">
+                                        Neues Spiel
+                                    </div>
+                                    <div class="text-xs text-green-600">
+                                        Manuell erstellen
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+
+                        <!-- Import-Verlauf -->
+                        <a :href="route('games.import.history')" 
+                           class="flex items-center justify-center p-4 bg-purple-50 border border-purple-200 hover:bg-purple-100 hover:border-purple-300 rounded-lg transition-colors group">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-6 h-6 text-purple-600 group-hover:text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-purple-900 group-hover:text-purple-800">
+                                        Import-Verlauf
+                                    </div>
+                                    <div class="text-xs text-purple-600">
+                                        Statistiken anzeigen
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Teams Overview -->
             <div class="bg-white overflow-hidden shadow rounded-lg">
                 <div class="p-6">

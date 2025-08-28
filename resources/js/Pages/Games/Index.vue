@@ -5,7 +5,20 @@
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                     Spiele
                 </h2>
-                <div>
+                <div class="flex space-x-3">
+                    <!-- Import Button (nur für Club Admins, Trainer, Admins) -->
+                    <SecondaryButton 
+                        v-if="$page.props.auth.user && ($page.props.auth.user.roles?.includes('club_admin') || $page.props.auth.user.roles?.includes('trainer') || $page.props.auth.user.roles?.includes('admin') || $page.props.auth.user.roles?.includes('super_admin'))"
+                        :href="route('games.import.index')"
+                        as="Link"
+                        class="flex items-center"
+                    >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                        </svg>
+                        Import
+                    </SecondaryButton>
+                    
                     <PrimaryButton 
                         v-if="can.create"
                         :href="route('web.games.create')"
@@ -192,6 +205,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
+import SecondaryButton from '@/Components/SecondaryButton.vue'
 import { Link } from '@inertiajs/vue3'
 
 defineProps({
