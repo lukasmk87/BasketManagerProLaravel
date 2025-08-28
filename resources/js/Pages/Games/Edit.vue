@@ -6,7 +6,7 @@
                     Spiel bearbeiten: {{ game.home_team_display_name }} vs {{ game.away_team_display_name }}
                 </h2>
                 <SecondaryButton 
-                    :href="route('games.show', game.id)"
+                    :href="route('web.games.show', game.id)"
                     as="Link"
                 >
                     Zurück
@@ -717,10 +717,10 @@ const submit = () => {
         form.away_team_name = ''
     }
     
-    form.put(route('games.update', props.game.id))
+    form.put(route('web.games.update', props.game.id))
 }
 
 const deleteGameConfirmed = () => {
-    deleteForm.delete(route('games.destroy', props.game.id))
+    deleteForm.delete(route('web.games.destroy', props.game.id))
 }
 </script>
