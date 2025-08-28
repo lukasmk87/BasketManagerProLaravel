@@ -21,7 +21,7 @@ class GameController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        
+
         // Get games based on user permissions
         $games = Game::query()
             ->with(['homeTeam.club', 'awayTeam.club'])
@@ -33,16 +33,16 @@ class GameController extends Controller
                 return $query->where(function ($q) use ($user) {
                     $q->whereHas('homeTeam', function ($subQ) use ($user) {
                         $subQ->where('head_coach_id', $user->id)
-                             ->orWhereJsonContains('assistant_coaches', $user->id)
-                             ->orWhereHas('club.users', function ($clubQ) use ($user) {
-                                 $clubQ->where('user_id', $user->id);
-                             });
+                            ->orWhereJsonContains('assistant_coaches', $user->id)
+                            ->orWhereHas('club.users', function ($clubQ) use ($user) {
+                                $clubQ->where('user_id', $user->id);
+                            });
                     })->orWhereHas('awayTeam', function ($subQ) use ($user) {
                         $subQ->where('head_coach_id', $user->id)
-                             ->orWhereJsonContains('assistant_coaches', $user->id)
-                             ->orWhereHas('club.users', function ($clubQ) use ($user) {
-                                 $clubQ->where('user_id', $user->id);
-                             });
+                            ->orWhereJsonContains('assistant_coaches', $user->id)
+                            ->orWhereHas('club.users', function ($clubQ) use ($user) {
+                                $clubQ->where('user_id', $user->id);
+                            });
                     });
                 });
             })
@@ -152,13 +152,17 @@ class GameController extends Controller
             'homeTeam.club',
             'awayTeam.club',
             'gameActions.player',
-            'liveGame'
+            'liveGame',
         ]);
 
         $gameStats = null;
         if ($game->status === 'finished') {
             $gameStats = $this->statisticsService->getGameStatistics($game);
         }
+
+        // Add computed display names for safe frontend access
+        $game->home_team_display_name = $game->getHomeTeamDisplayName();
+        $game->away_team_display_name = $game->getAwayTeamDisplayName();
 
         return Inertia::render('Games/Show', [
             'game' => $game,

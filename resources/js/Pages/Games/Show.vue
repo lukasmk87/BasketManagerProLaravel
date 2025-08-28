@@ -1,5 +1,5 @@
 <template>
-    <AppLayout :title="`Spiel: ${game.homeTeam.name} vs ${game.awayTeam.name}`">
+    <AppLayout :title="`Spiel: ${homeTeamName} vs ${awayTeamName}`">
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -50,9 +50,9 @@
                             <!-- Home Team -->
                             <div class="text-center">
                                 <h3 class="text-2xl font-bold text-gray-900">
-                                    {{ game.homeTeam.name }}
+                                    {{ homeTeamName }}
                                 </h3>
-                                <p class="text-gray-600">{{ game.homeTeam.club.name }}</p>
+                                <p v-if="homeClubName" class="text-gray-600">{{ homeClubName }}</p>
                                 <p v-if="game.status === 'finished'" class="text-5xl font-bold mt-4">
                                     {{ game.home_score }}
                                 </p>
@@ -66,9 +66,9 @@
                             <!-- Away Team -->
                             <div class="text-center">
                                 <h3 class="text-2xl font-bold text-gray-900">
-                                    {{ game.awayTeam.name }}
+                                    {{ awayTeamName }}
                                 </h3>
-                                <p class="text-gray-600">{{ game.awayTeam.club.name }}</p>
+                                <p v-if="awayClubName" class="text-gray-600">{{ awayClubName }}</p>
                                 <p v-if="game.status === 'finished'" class="text-5xl font-bold mt-4">
                                     {{ game.away_score }}
                                 </p>
@@ -149,7 +149,7 @@
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     <tr>
                                         <td class="px-4 py-2 text-sm font-medium text-gray-900">
-                                            {{ game.homeTeam.name }}
+                                            {{ homeTeamName }}
                                         </td>
                                         <td class="px-4 py-2 text-sm text-center">{{ game.quarter_scores.home.q1 || 0 }}</td>
                                         <td class="px-4 py-2 text-sm text-center">{{ game.quarter_scores.home.q2 || 0 }}</td>
@@ -162,7 +162,7 @@
                                     </tr>
                                     <tr>
                                         <td class="px-4 py-2 text-sm font-medium text-gray-900">
-                                            {{ game.awayTeam.name }}
+                                            {{ awayTeamName }}
                                         </td>
                                         <td class="px-4 py-2 text-sm text-center">{{ game.quarter_scores.away.q1 || 0 }}</td>
                                         <td class="px-4 py-2 text-sm text-center">{{ game.quarter_scores.away.q2 || 0 }}</td>
@@ -186,7 +186,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Home Team Stats -->
                             <div>
-                                <h4 class="font-medium text-gray-900 mb-2">{{ game.homeTeam.name }}</h4>
+                                <h4 class="font-medium text-gray-900 mb-2">{{ homeTeamName }}</h4>
                                 <dl class="space-y-2">
                                     <div class="flex justify-between">
                                         <dt class="text-sm text-gray-500">Feldwurfquote</dt>
@@ -213,7 +213,7 @@
 
                             <!-- Away Team Stats -->
                             <div>
-                                <h4 class="font-medium text-gray-900 mb-2">{{ game.awayTeam.name }}</h4>
+                                <h4 class="font-medium text-gray-900 mb-2">{{ awayTeamName }}</h4>
                                 <dl class="space-y-2">
                                     <div class="flex justify-between">
                                         <dt class="text-sm text-gray-500">Feldwurfquote</dt>
@@ -246,6 +246,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
@@ -254,6 +255,35 @@ const props = defineProps({
     game: Object,
     gameStats: Object,
     can: Object,
+})
+
+// Computed properties for safe team name access
+const homeTeamName = computed(() => {
+    if (props.game.home_team_name) {
+        return props.game.home_team_name
+    }
+    return props.game.homeTeam?.name || 'Unbekanntes Team'
+})
+
+const awayTeamName = computed(() => {
+    if (props.game.away_team_name) {
+        return props.game.away_team_name
+    }
+    return props.game.awayTeam?.name || 'Unbekanntes Team'
+})
+
+const homeClubName = computed(() => {
+    if (props.game.homeTeam?.club?.name) {
+        return props.game.homeTeam.club.name
+    }
+    return ''
+})
+
+const awayClubName = computed(() => {
+    if (props.game.awayTeam?.club?.name) {
+        return props.game.awayTeam.club.name
+    }
+    return ''
 })
 
 function formatDateTime(dateString) {
