@@ -27,6 +27,30 @@ const hasMultipleClubs = computed(() => allClubs.value.length > 1);
 const clubVerificationStatus = computed(() => {
     return primaryClub.value.is_verified ? 'Verifiziert' : 'Nicht verifiziert';
 });
+
+// Helper function to get safe team name display
+const getTeamDisplayName = (game, isHome = true) => {
+    const teamKey = isHome ? 'homeTeam' : 'awayTeam';
+    const nameKey = isHome ? 'home_team_name' : 'away_team_name';
+    const displayKey = isHome ? 'home_team_display_name' : 'away_team_display_name';
+    
+    // First check if we have a display name from the controller
+    if (game[displayKey]) {
+        return game[displayKey];
+    }
+    
+    // Then check if we have the team relation
+    if (game[teamKey] && game[teamKey].name) {
+        return game[teamKey].name;
+    }
+    
+    // Finally check for external team name
+    if (game[nameKey]) {
+        return game[nameKey];
+    }
+    
+    return 'Unbekanntes Team';
+};
 </script>
 
 <template>
@@ -244,9 +268,9 @@ const clubVerificationStatus = computed(() => {
                                  class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                 <div class="flex-1">
                                     <div class="flex items-center space-x-2 text-sm font-medium text-gray-900">
-                                        <span>{{ game.home_team.name }}</span>
+                                        <span>{{ getTeamDisplayName(game, true) }}</span>
                                         <span class="text-gray-500">vs</span>
-                                        <span>{{ game.away_team.name }}</span>
+                                        <span>{{ getTeamDisplayName(game, false) }}</span>
                                     </div>
                                     <div class="text-xs text-gray-500 mt-1">
                                         {{ new Date(game.scheduled_at).toLocaleDateString('de-DE', { 

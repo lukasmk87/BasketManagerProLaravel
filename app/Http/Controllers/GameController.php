@@ -196,8 +196,12 @@ class GameController extends Controller
             ->get();
 
         return Inertia::render('Games/Edit', [
-            'game' => $game,
+            'game' => $game->load(['homeTeam', 'awayTeam']),
             'teams' => $teams,
+            'can' => [
+                'update' => $request->user()->can('update', $game),
+                'delete' => $request->user()->can('delete', $game),
+            ],
         ]);
     }
 

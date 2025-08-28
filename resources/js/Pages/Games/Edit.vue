@@ -3,7 +3,7 @@
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Spiel bearbeiten: {{ game.homeTeam.name }} vs {{ game.awayTeam.name }}
+                    Spiel bearbeiten: {{ game.homeTeam?.name || 'Team auswählen' }} vs {{ game.awayTeam?.name || 'Team auswählen' }}
                 </h2>
                 <SecondaryButton 
                     :href="route('games.show', game.id)"

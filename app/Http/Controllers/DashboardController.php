@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\UserService;
-use App\Services\TeamService;
-use App\Services\PlayerService;
-use App\Services\ClubService;
-use App\Services\StatisticsService;
-use App\Models\User;
 use App\Models\Club;
-use App\Models\Team;
-use App\Models\Player;
 use App\Models\Game;
+use App\Models\Player;
+use App\Models\Team;
+use App\Models\User;
+use App\Services\ClubService;
+use App\Services\PlayerService;
+use App\Services\StatisticsService;
+use App\Services\TeamService;
+use App\Services\UserService;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,7 +33,7 @@ class DashboardController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        
+
         // Determine primary role for dashboard routing
         $primaryRole = $this->getPrimaryRole($user);
 
@@ -70,7 +69,7 @@ class DashboardController extends Controller
     {
         try {
             $systemStats = $this->userService->getUserStatistics();
-            
+
             $dashboardStats = [
                 'system_overview' => [
                     'total_users' => $systemStats['total_users'],
@@ -126,8 +125,9 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to load admin dashboard', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return ['error' => 'Dashboard-Daten konnten nicht geladen werden.'];
         }
     }
@@ -165,6 +165,7 @@ class DashboardController extends Controller
                     ->get()
                     ->map(function ($team) {
                         $totalGames = ($team->home_games_count ?? 0) + ($team->away_games_count ?? 0);
+
                         return [
                             'id' => $team->id,
                             'name' => $team->name,
@@ -191,8 +192,8 @@ class DashboardController extends Controller
                         ];
                     }),
                 'upcoming_games' => Game::whereHas('homeTeam', function ($query) use ($primaryClub) {
-                        $query->where('club_id', $primaryClub->id);
-                    })
+                    $query->where('club_id', $primaryClub->id);
+                })
                     ->orWhereHas('awayTeam', function ($query) use ($primaryClub) {
                         $query->where('club_id', $primaryClub->id);
                     })
@@ -201,7 +202,14 @@ class DashboardController extends Controller
                     ->where('status', 'scheduled')
                     ->orderBy('scheduled_at')
                     ->limit(10)
-                    ->get(),
+                    ->get()
+                    ->map(function ($game) {
+                        // Add display names for safe access in frontend
+                        $game->home_team_display_name = $game->homeTeam ? $game->homeTeam->name : $game->home_team_name;
+                        $game->away_team_display_name = $game->awayTeam ? $game->awayTeam->name : $game->away_team_name;
+
+                        return $game;
+                    }),
                 'all_clubs' => $adminClubs->map(function ($club) {
                     return [
                         'id' => $club->id,
@@ -216,8 +224,9 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to load club admin dashboard', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return ['error' => 'Dashboard-Daten konnten nicht geladen werden.'];
         }
     }
@@ -311,8 +320,9 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to load trainer dashboard', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return ['error' => 'Dashboard-Daten konnten nicht geladen werden.'];
         }
     }
@@ -324,15 +334,15 @@ class DashboardController extends Controller
     {
         try {
             $player = $user->playerProfile;
-            
-            if (!$player) {
+
+            if (! $player) {
                 return ['message' => 'Sie haben kein Spielerprofil.'];
             }
 
             // Get the player's active team
             $team = $player->teams()->wherePivot('is_active', true)->first();
-            
-            if (!$team) {
+
+            if (! $team) {
                 return ['message' => 'Sie sind aktuell keinem Team zugeordnet.'];
             }
 
@@ -395,8 +405,9 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to load player dashboard', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return ['error' => 'Dashboard-Daten konnten nicht geladen werden.'];
         }
     }
@@ -472,8 +483,8 @@ class DashboardController extends Controller
 
         // Priority order for role determination
         $rolePriority = [
-            'super_admin', 'admin', 'club_admin', 'trainer', 
-            'assistant_coach', 'scorer', 'player', 'parent', 'team_manager', 'guest', 'referee', 'member'
+            'super_admin', 'admin', 'club_admin', 'trainer',
+            'assistant_coach', 'scorer', 'player', 'parent', 'team_manager', 'guest', 'referee', 'member',
         ];
 
         foreach ($rolePriority as $role) {
@@ -543,11 +554,11 @@ class DashboardController extends Controller
     private function formatBytes(int $bytes, int $precision = 2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
+
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
             $bytes /= 1024;
         }
 
-        return round($bytes, $precision) . ' ' . $units[$i];
+        return round($bytes, $precision).' '.$units[$i];
     }
 }
