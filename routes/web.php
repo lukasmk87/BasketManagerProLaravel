@@ -101,6 +101,17 @@ Route::middleware([
     Route::patch('games/{game}', [\App\Http\Controllers\GameController::class, 'update'])->name('web.games.patch');
     Route::delete('games/{game}', [\App\Http\Controllers\GameController::class, 'destroy'])->name('web.games.destroy');
     
+    // Game Import Routes
+    Route::prefix('games/import')->name('games.import.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\GameImportController::class, 'index'])->name('index');
+        Route::post('/preview', [\App\Http\Controllers\GameImportController::class, 'previewICal'])->name('preview');
+        Route::post('/import', [\App\Http\Controllers\GameImportController::class, 'importICal'])->name('import');
+        Route::post('/cancel', [\App\Http\Controllers\GameImportController::class, 'cancel'])->name('cancel');
+        Route::get('/history', [\App\Http\Controllers\GameImportController::class, 'history'])->name('history');
+        Route::get('/select-team', [\App\Http\Controllers\GameImportController::class, 'selectTeam'])->name('select-team');
+        Route::post('/teams/{team}/quick-import', [\App\Http\Controllers\GameImportController::class, 'quickImport'])->name('quick-import');
+    });
+    
     // Training Routes
     Route::prefix('training')->name('training.')->group(function () {
         Route::get('/', [\App\Http\Controllers\TrainingController::class, 'index'])->name('index');

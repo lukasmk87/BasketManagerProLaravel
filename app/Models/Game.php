@@ -27,11 +27,19 @@ class Game extends Model implements HasMedia
         'uuid',
         'home_team_id',
         'away_team_id',
+        'away_team_name',
+        'home_team_name',
         'scheduled_at',
         'actual_start_time',
         'actual_end_time',
         'venue',
         'venue_address',
+        'venue_code',
+        'import_source',
+        'external_game_id',
+        'import_metadata',
+        'external_url',
+        'is_home_game',
         'type',
         'season',
         'league',
@@ -105,6 +113,8 @@ class Game extends Model implements HasMedia
         'scheduled_at' => 'datetime',
         'actual_start_time' => 'datetime',
         'actual_end_time' => 'datetime',
+        'import_metadata' => 'array',
+        'is_home_game' => 'boolean',
         'home_team_score' => 'integer',
         'away_team_score' => 'integer',
         'period_scores' => 'array',
@@ -244,6 +254,66 @@ class Game extends Model implements HasMedia
     }
 
     // ============================
+    // EXTERNAL TEAM SUPPORT METHODS
+    // ============================
+
+    /**
+     * Get the display name for the home team.
+     */
+    public function getHomeTeamDisplayName(): string
+    {
+        if ($this->home_team_name) {
+            return $this->home_team_name;
+        }
+        
+        return $this->homeTeam ? $this->homeTeam->name : 'Unbekanntes Team';
+    }
+
+    /**
+     * Get the display name for the away team.
+     */
+    public function getAwayTeamDisplayName(): string
+    {
+        if ($this->away_team_name) {
+            return $this->away_team_name;
+        }
+        
+        return $this->awayTeam ? $this->awayTeam->name : 'Unbekanntes Team';
+    }
+
+    /**
+     * Check if the away team is external (not in our system).
+     */
+    public function isAwayTeamExternal(): bool
+    {
+        return $this->away_team_id === null && !empty($this->away_team_name);
+    }
+
+    /**
+     * Check if the home team is external (not in our system).
+     */
+    public function isHomeTeamExternal(): bool
+    {
+        return $this->home_team_id === null && !empty($this->home_team_name);
+    }
+
+    /**
+     * Check if this game involves any external teams.
+     */
+    public function hasExternalTeams(): bool
+    {
+        return $this->isAwayTeamExternal() || $this->isHomeTeamExternal();
+    }
+
+    /**
+     * Check if the game was imported from an external source.
+     */
+    public function isImported(): bool
+    {
+        return $this->import_source !== 'manual';
+    }
+
+    // ============================
     // SCOPES
     // ============================
 
@@ -313,6 +383,52 @@ class Game extends Model implements HasMedia
         return $query->whereHas('liveGame', function ($q) {
             $q->where('is_being_broadcasted', true);
         });
+    }
+
+    /**
+     * Scope a query to only include games with external teams.
+     */
+    public function scopeWithExternalTeams($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('away_team_id')->whereNotNull('away_team_name')
+              ->orWhere(function ($subQ) {
+                  $subQ->whereNull('home_team_id')->whereNotNull('home_team_name');
+              });
+        });
+    }
+
+    /**
+     * Scope a query to only include games with internal teams only.
+     */
+    public function scopeInternalOnly($query)
+    {
+        return $query->whereNotNull('home_team_id')
+                    ->whereNotNull('away_team_id');
+    }
+
+    /**
+     * Scope a query to filter by import source.
+     */
+    public function scopeFromSource($query, string $source)
+    {
+        return $query->where('import_source', $source);
+    }
+
+    /**
+     * Scope a query to only include imported games.
+     */
+    public function scopeImported($query)
+    {
+        return $query->where('import_source', '!=', 'manual');
+    }
+
+    /**
+     * Scope a query to filter games by venue code.
+     */
+    public function scopeAtVenueCode($query, string $venueCode)
+    {
+        return $query->where('venue_code', $venueCode);
     }
 
     // ============================

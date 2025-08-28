@@ -32,10 +32,13 @@
                     </div>
                     <div>
                         <div class="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                            {{ game.home_team?.name || 'Home Team' }}
+                            {{ homeTeamName }}
                         </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                            Heim
+                        <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span>Heim</span>
+                            <span v-if="game.import_source !== 'manual'" class="bg-blue-100 text-blue-800 px-1 py-0.5 rounded text-xs">
+                                Import
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -59,15 +62,21 @@
                 <div class="flex items-center space-x-3">
                     <div class="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
                         <span class="text-xs font-bold text-red-600 dark:text-red-400">
-                            {{ game.away_team?.short_name?.slice(0, 2) || 'A' }}
+                            {{ awayTeamInitials }}
                         </span>
                     </div>
                     <div>
                         <div class="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                            {{ game.away_team?.name || 'Away Team' }}
+                            {{ awayTeamName }}
                         </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                            Gast
+                        <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span>Gast</span>
+                            <span v-if="isExternalAwayTeam" class="bg-orange-100 text-orange-800 px-1 py-0.5 rounded text-xs">
+                                Extern
+                            </span>
+                            <span v-else-if="game.import_source !== 'manual'" class="bg-blue-100 text-blue-800 px-1 py-0.5 rounded text-xs">
+                                Import
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -91,7 +100,7 @@
                 </span>
             </div>
             <div>
-                {{ game.venue }}
+                {{ venueDisplay }}
             </div>
         </div>
 
@@ -239,9 +248,9 @@ const winner = computed(() => {
     if (!props.isFinished) return null
     
     if (homeScore.value > awayScore.value) {
-        return props.game.home_team
+        return { name: homeTeamName.value }
     } else if (awayScore.value > homeScore.value) {
-        return props.game.away_team
+        return { name: awayTeamName.value }
     }
     
     return null // Tie
@@ -250,6 +259,42 @@ const winner = computed(() => {
 const marginOfVictory = computed(() => {
     if (!props.isFinished) return 0
     return Math.abs(homeScore.value - awayScore.value)
+})
+
+// External team support
+const homeTeamName = computed(() => {
+    return props.game.home_team_name || props.game.home_team?.name || 'Home Team'
+})
+
+const awayTeamName = computed(() => {
+    return props.game.away_team_name || props.game.away_team?.name || 'Away Team'
+})
+
+const awayTeamInitials = computed(() => {
+    if (props.game.away_team?.short_name) {
+        return props.game.away_team.short_name.slice(0, 2)
+    }
+    if (props.game.away_team_name) {
+        // Extract initials from external team name
+        return props.game.away_team_name
+            .split(' ')
+            .map(word => word.charAt(0))
+            .slice(0, 2)
+            .join('')
+            .toUpperCase()
+    }
+    return 'A'
+})
+
+const isExternalAwayTeam = computed(() => {
+    return props.game.away_team_id === null && props.game.away_team_name
+})
+
+const venueDisplay = computed(() => {
+    if (props.game.venue && props.game.venue_code) {
+        return `${props.game.venue} (${props.game.venue_code})`
+    }
+    return props.game.venue || props.game.venue_code || ''
 })
 
 // Methods

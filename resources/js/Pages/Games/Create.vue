@@ -60,14 +60,47 @@
                                     <InputError :message="form.errors.home_team_id" class="mt-2" />
                                 </div>
 
-                                <!-- Away Team -->
+                                <!-- Away Team Type Selection -->
                                 <div>
+                                    <InputLabel value="Gegnerisches Team*" />
+                                    <div class="mt-2 space-y-4">
+                                        <div class="flex items-center">
+                                            <input
+                                                id="opponent_type_internal"
+                                                v-model="opponentType"
+                                                name="opponent_type"
+                                                type="radio"
+                                                value="internal"
+                                                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                                            />
+                                            <label for="opponent_type_internal" class="ml-3 block text-sm font-medium text-gray-700">
+                                                Internes Team (aus unserem System)
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input
+                                                id="opponent_type_external"
+                                                v-model="opponentType"
+                                                name="opponent_type"
+                                                type="radio"
+                                                value="external"
+                                                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                                            />
+                                            <label for="opponent_type_external" class="ml-3 block text-sm font-medium text-gray-700">
+                                                Externes Team (Freitext)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Internal Away Team -->
+                                <div v-if="opponentType === 'internal'">
                                     <InputLabel for="away_team_id" value="Auswärtsteam*" />
                                     <select
                                         id="away_team_id"
                                         v-model="form.away_team_id"
                                         class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                        required
+                                        :required="opponentType === 'internal'"
                                         :disabled="!form.home_team_id"
                                     >
                                         <option value="">Team auswählen</option>
@@ -80,6 +113,23 @@
                                         </option>
                                     </select>
                                     <InputError :message="form.errors.away_team_id" class="mt-2" />
+                                </div>
+
+                                <!-- External Away Team -->
+                                <div v-if="opponentType === 'external'">
+                                    <InputLabel for="away_team_name" value="Auswärtsteam (Name)*" />
+                                    <TextInput
+                                        id="away_team_name"
+                                        v-model="form.away_team_name"
+                                        type="text"
+                                        class="mt-1 block w-full"
+                                        placeholder="z.B. SV Brackwede 2"
+                                        :required="opponentType === 'external'"
+                                    />
+                                    <InputError :message="form.errors.away_team_name" class="mt-2" />
+                                    <p class="mt-1 text-sm text-gray-500">
+                                        Geben Sie den Namen des gegnerischen Teams ein, wie er angezeigt werden soll.
+                                    </p>
                                 </div>
 
                                 <!-- Scheduled Date/Time -->
@@ -107,6 +157,22 @@
                                         placeholder="z.B. Sporthalle Am Stadtpark"
                                     />
                                     <InputError :message="form.errors.venue" class="mt-2" />
+                                </div>
+
+                                <!-- Venue Code (Hallennummer) -->
+                                <div>
+                                    <InputLabel for="venue_code" value="Hallennummer" />
+                                    <TextInput
+                                        id="venue_code"
+                                        v-model="form.venue_code"
+                                        type="text"
+                                        class="mt-1 block w-full"
+                                        placeholder="z.B. 502A160"
+                                    />
+                                    <InputError :message="form.errors.venue_code" class="mt-2" />
+                                    <p class="mt-1 text-sm text-gray-500">
+                                        Hallennummer oder -kennzeichnung (z.B. aus Spielplänen)
+                                    </p>
                                 </div>
 
                                 <!-- Venue Address -->
@@ -490,13 +556,18 @@ const formSections = ref([
     { id: 'weather', name: 'Wetter', fields: ['weather_conditions', 'temperature', 'court_conditions'] }
 ])
 
+// Opponent Type Management
+const opponentType = ref('internal')
+
 const form = useForm({
     // Basic Information
     home_team_id: '',
     away_team_id: '',
+    away_team_name: '',
     scheduled_at: '',
     venue: '',
     venue_address: '',
+    venue_code: '',
     type: 'regular_season',
     season: getCurrentSeason(),
     league: '',
@@ -564,14 +635,27 @@ const hasErrors = computed(() => {
 })
 
 const submit = () => {
+    // Clear away team data based on opponent type
+    if (opponentType.value === 'external') {
+        form.away_team_id = null
+    } else {
+        form.away_team_name = ''
+    }
+    
     // Validate required fields before submission
     const requiredFields = [
         { field: 'home_team_id', section: 'basic' },
-        { field: 'away_team_id', section: 'basic' },
         { field: 'scheduled_at', section: 'basic' },
         { field: 'type', section: 'basic' },
         { field: 'season', section: 'basic' },
     ]
+    
+    // Add opponent-specific required field
+    if (opponentType.value === 'internal') {
+        requiredFields.push({ field: 'away_team_id', section: 'basic' })
+    } else {
+        requiredFields.push({ field: 'away_team_name', section: 'basic' })
+    }
     
     // Find first missing required field
     for (const { field, section } of requiredFields) {

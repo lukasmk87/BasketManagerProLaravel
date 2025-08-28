@@ -85,15 +85,55 @@ class GameController extends Controller
 
         $validated = $request->validate([
             'home_team_id' => 'required|exists:teams,id',
-            'away_team_id' => 'required|exists:teams,id|different:home_team_id',
+            'away_team_id' => 'nullable|exists:teams,id|different:home_team_id',
+            'away_team_name' => 'nullable|string|max:255',
+            'home_team_name' => 'nullable|string|max:255',
             'scheduled_at' => 'required|date|after:now',
-            'location' => 'nullable|string|max:255',
-            'game_type' => 'required|in:league,friendly,playoff,tournament',
+            'venue' => 'nullable|string|max:255',
+            'venue_address' => 'nullable|string|max:500',
+            'venue_code' => 'nullable|string|max:50',
+            'type' => 'required|in:regular_season,playoff,championship,friendly,tournament,scrimmage',
             'season' => 'required|string|max:9',
             'league' => 'nullable|string|max:255',
-            'round' => 'nullable|string|max:50',
-            'notes' => 'nullable|string|max:1000',
+            'division' => 'nullable|string|max:255',
+            'pre_game_notes' => 'nullable|string|max:1000',
+            // Tournament fields
+            'tournament_id' => 'nullable|string|max:255',
+            'tournament_round' => 'nullable|string|max:100',
+            'tournament_game_number' => 'nullable|integer|min:1',
+            // Game rules
+            'total_periods' => 'nullable|integer|min:1|max:8',
+            'period_length_minutes' => 'nullable|integer|min:1|max:30',
+            'overtime_length_minutes' => 'nullable|integer|min:1|max:15',
+            // Event details
+            'capacity' => 'nullable|integer|min:0',
+            'allow_spectators' => 'nullable|boolean',
+            'allow_media' => 'nullable|boolean',
+            // Media
+            'is_streamed' => 'nullable|boolean',
+            'stream_url' => 'nullable|url|max:255',
+            'allow_recording' => 'nullable|boolean',
+            'allow_photos' => 'nullable|boolean',
+            'allow_streaming' => 'nullable|boolean',
+            // Safety
+            'medical_staff_present' => 'nullable|string|max:255',
+            // Weather
+            'weather_conditions' => 'nullable|in:sunny,cloudy,rainy,snowy,indoor',
+            'temperature' => 'nullable|integer|min:-20|max:50',
+            'court_conditions' => 'nullable|in:excellent,good,fair,poor,wet,slippery',
         ]);
+
+        // Validation: either away_team_id OR away_team_name must be provided
+        if (empty($validated['away_team_id']) && empty($validated['away_team_name'])) {
+            return back()->withErrors([
+                'away_team_id' => 'Entweder ein internes Team oder ein externer Teamname muss angegeben werden.',
+                'away_team_name' => 'Entweder ein internes Team oder ein externer Teamname muss angegeben werden.',
+            ]);
+        }
+
+        // Add import source and determine if it's a home game
+        $validated['import_source'] = 'manual';
+        $validated['is_home_game'] = true; // Manual creation defaults to home games
 
         $game = Game::create($validated);
 
