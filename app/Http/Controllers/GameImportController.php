@@ -127,7 +127,6 @@ class GameImportController extends Controller
         $request->validate([
             'team_id' => 'required|exists:teams,id',
             'team_mapping' => 'required|array',
-            'team_mapping.*' => 'nullable|exists:teams,id',
         ]);
 
         try {
@@ -136,6 +135,15 @@ class GameImportController extends Controller
 
             // Check permissions
             $this->checkTeamAccess($user, $team);
+
+            // Validate team mapping values manually
+            foreach ($request->team_mapping as $icalTeam => $teamId) {
+                if ($teamId !== null && !Team::where('id', $teamId)->exists()) {
+                    return back()->withErrors([
+                        'team_mapping' => "Das ausgewählte Team mit ID {$teamId} existiert nicht."
+                    ]);
+                }
+            }
 
             // Get parsed games from session
             $sessionKey = 'parsed_games_' . $team->id;

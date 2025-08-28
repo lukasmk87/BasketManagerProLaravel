@@ -407,21 +407,15 @@ class ICalImportService
                 $homeTeamMapped = $teamMapping[$gameData['home_team_raw']] ?? null;
                 $awayTeamMapped = $teamMapping[$gameData['away_team_raw']] ?? null;
 
-                // Skip games that don't involve the selected team
-                if ($homeTeamMapped != $selectedTeamId && $awayTeamMapped != $selectedTeamId) {
+                // Game must involve the selected team (either as home or away)
+                $involvesSelectedTeam = ($homeTeamMapped == $selectedTeamId || $awayTeamMapped == $selectedTeamId);
+                
+                if (!$involvesSelectedTeam) {
                     $skippedCount++;
                     continue;
                 }
 
-                // Skip games where opponent is not mapped (ignore)
-                if ($homeTeamMapped == $selectedTeamId && $awayTeamMapped === null) {
-                    $skippedCount++;
-                    continue;
-                }
-                if ($awayTeamMapped == $selectedTeamId && $homeTeamMapped === null) {
-                    $skippedCount++;
-                    continue;
-                }
+                // Allow external teams: if opponent is not mapped, treat as external team
 
                 // Check for existing game
                 if ($this->gameExists($selectedTeamId, $gameData['external_game_id'], $gameData['scheduled_at'])) {
@@ -496,19 +490,14 @@ class ICalImportService
             $homeTeamMapped = $teamMapping[$gameData['home_team_raw']] ?? null;
             $awayTeamMapped = $teamMapping[$gameData['away_team_raw']] ?? null;
 
-            // Skip games that don't involve the selected team
-            if ($homeTeamMapped != $selectedTeamId && $awayTeamMapped != $selectedTeamId) {
+            // Game must involve the selected team (either as home or away)
+            $involvesSelectedTeam = ($homeTeamMapped == $selectedTeamId || $awayTeamMapped == $selectedTeamId);
+            
+            if (!$involvesSelectedTeam) {
                 return null;
             }
 
-            // Skip games where opponent is not mapped (ignore)
-            if ($homeTeamMapped == $selectedTeamId && $awayTeamMapped === null) {
-                return null;
-            }
-            if ($awayTeamMapped == $selectedTeamId && $homeTeamMapped === null) {
-                return null;
-            }
-
+            // Allow external teams: if opponent is not mapped, treat as external team
             $isHomeGame = ($homeTeamMapped == $selectedTeamId);
             $exists = $this->gameExists($selectedTeamId, $gameData['external_game_id'], $gameData['scheduled_at']);
 
