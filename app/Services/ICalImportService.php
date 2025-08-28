@@ -29,8 +29,8 @@ class ICalImportService
 
             return $games;
         } catch (\Exception $e) {
-            Log::error('Error parsing iCAL file: ' . $e->getMessage());
-            throw new \Exception('Fehler beim Lesen der iCAL-Datei: ' . $e->getMessage());
+            Log::error('Error parsing iCAL file: '.$e->getMessage());
+            throw new \Exception('Fehler beim Lesen der iCAL-Datei: '.$e->getMessage());
         }
     }
 
@@ -49,7 +49,7 @@ class ICalImportService
             // Parse teams and venue code from summary
             // Format: "Gütersloher TV 4-SV Brackwede 2, 502A160 (SpNr. 0)"
             $gameInfo = $this->parseGameSummary($summary);
-            if (!$gameInfo) {
+            if (! $gameInfo) {
                 return null;
             }
 
@@ -75,10 +75,11 @@ class ICalImportService
                 'import_source' => 'ical',
             ];
         } catch (\Exception $e) {
-            Log::warning('Error parsing iCAL event: ' . $e->getMessage(), [
+            Log::warning('Error parsing iCAL event: '.$e->getMessage(), [
                 'event_summary' => $summary ?? 'unknown',
-                'event_uid' => $uid ?? 'unknown'
+                'event_uid' => $uid ?? 'unknown',
             ]);
+
             return null;
         }
     }
@@ -112,19 +113,19 @@ class ICalImportService
             // Priority 1: Number followed by dash and capital letter (most reliable)
             // Handles: "Rheda 2-Gütersloher TV 4", "TV 4-SV Brackwede 2"
             '/^(.+?\d)\s*-\s*([A-Z].+)$/i',
-            
+
             // Priority 2: Look for known team names that appear frequently
             // Handles "Something-Gütersloher TV 4", "Something-Bad Oeynhausen Baskets 2", etc.
             '/^(.*)\s*-\s*((?:Gütersloher|Bad\s+Oeynhausen|Löhne)\s+.+)$/i',
-            
+
             // Priority 3: Common team prefixes after dash with greedy matching
             // Changed from lazy (.+?) to greedy (.*) to handle "FC Rot-Weiß Kirchlengern"
             '/^(.*)\s*-\s*((?:SV|TV|TG|FC|BC|TSV|TSVE|DJK|TuSpo)\s+.+)$/i',
-            
+
             // Priority 4: Team name ending with number
             // Handles: "Something-Team Name 2"
             '/^(.+?)\s*-\s*(.+?\s+\d+)$/i',
-            
+
             // Priority 5: Use last dash as fallback
             '/^(.+)-(.+)$/',
         ];
@@ -133,17 +134,17 @@ class ICalImportService
             if (preg_match($pattern, trim($summary), $matches)) {
                 $homeTeam = trim($matches[1]);
                 $awayTeam = trim($matches[2]);
-                
+
                 // Additional validation: Check if we split at a color combination
                 // This prevents splitting "FC Rot-Weiß" into "FC Rot" and "Weiß"
-                if (preg_match('/(Rot|Grün|Blau|Gelb|Schwarz|Weiß|Weiss)$/i', $homeTeam) && 
+                if (preg_match('/(Rot|Grün|Blau|Gelb|Schwarz|Weiß|Weiss)$/i', $homeTeam) &&
                     preg_match('/^(Rot|Grün|Blau|Gelb|Schwarz|Weiß|Weiss)/i', $awayTeam)) {
                     // We likely split at a color combination, try next pattern
                     continue;
                 }
-                
+
                 // Validate both teams have content
-                if (!empty($homeTeam) && !empty($awayTeam)) {
+                if (! empty($homeTeam) && ! empty($awayTeam)) {
                     // Log if we used a fallback pattern for debugging
                     if ($index >= 3) {
                         Log::warning('Used fallback pattern for team splitting', [
@@ -151,10 +152,10 @@ class ICalImportService
                             'home_team' => $homeTeam,
                             'away_team' => $awayTeam,
                             'pattern_index' => $index,
-                            'pattern_used' => $pattern
+                            'pattern_used' => $pattern,
                         ]);
                     }
-                    
+
                     return [
                         'home_team' => $homeTeam,
                         'away_team' => $awayTeam,
@@ -168,7 +169,7 @@ class ICalImportService
         // If no pattern matched, log the failure for debugging
         Log::error('Failed to parse team names from game summary', [
             'original_summary' => $summary,
-            'cleaned_summary' => trim($summary)
+            'cleaned_summary' => trim($summary),
         ]);
 
         return null;
@@ -185,36 +186,36 @@ class ICalImportService
 
         // Try to split by comma - first part is often venue, rest is address
         $parts = array_map('trim', explode(',', $location));
-        
+
         if (count($parts) == 1) {
             // Only address provided
             return [
                 'venue' => null,
-                'address' => $parts[0]
+                'address' => $parts[0],
             ];
         }
 
         // Multiple parts - assume first is venue name if it doesn't contain numbers
         $firstPart = $parts[0];
-        if (!preg_match('/\d/', $firstPart)) {
+        if (! preg_match('/\d/', $firstPart)) {
             // First part doesn't contain numbers, likely venue name
             return [
                 'venue' => $firstPart,
-                'address' => implode(', ', array_slice($parts, 1))
+                'address' => implode(', ', array_slice($parts, 1)),
             ];
         }
 
         // All parts seem to be address
         return [
             'venue' => null,
-            'address' => $location
+            'address' => $location,
         ];
     }
 
     /**
      * Import games for a specific team, matching team names.
      */
-    public function importGamesForTeam(Collection $parsedGames, Team $team): array
+    public function importGamesForTeam(Collection $parsedGames, Team $team, string $gameType = 'regular_season'): array
     {
         $importedCount = 0;
         $skippedCount = 0;
@@ -226,14 +227,16 @@ class ICalImportService
                 $isHomeGame = $this->isTeamMatch($team->name, $gameData['home_team_raw']);
                 $isAwayGame = $this->isTeamMatch($team->name, $gameData['away_team_raw']);
 
-                if (!$isHomeGame && !$isAwayGame) {
+                if (! $isHomeGame && ! $isAwayGame) {
                     $skippedCount++;
+
                     continue;
                 }
 
                 // Check for existing game
                 if ($this->gameExists($team->id, $gameData['external_game_id'], $gameData['scheduled_at'])) {
                     $skippedCount++;
+
                     continue;
                 }
 
@@ -246,7 +249,7 @@ class ICalImportService
                     'venue_code' => $gameData['venue_code'],
                     'import_source' => 'ical',
                     'import_metadata' => $gameData['import_metadata'],
-                    'type' => 'regular_season',
+                    'type' => $gameType,
                     'season' => $this->determineSeason($gameData['scheduled_at']),
                     'status' => 'scheduled',
                     'is_home_game' => $isHomeGame,
@@ -256,7 +259,7 @@ class ICalImportService
                     $createData['home_team_id'] = $team->id;
                     $createData['away_team_name'] = $gameData['away_team_raw'];
                 } else {
-                    $createData['away_team_id'] = $team->id;  
+                    $createData['away_team_id'] = $team->id;
                     $createData['home_team_name'] = $gameData['home_team_raw'];
                 }
 
@@ -264,11 +267,11 @@ class ICalImportService
                 $importedCount++;
 
             } catch (\Exception $e) {
-                $errors[] = "Fehler beim Importieren von Spiel {$gameData['home_team_raw']} vs {$gameData['away_team_raw']}: " . $e->getMessage();
+                $errors[] = "Fehler beim Importieren von Spiel {$gameData['home_team_raw']} vs {$gameData['away_team_raw']}: ".$e->getMessage();
                 Log::error('Game import error', [
                     'game_data' => $gameData,
                     'team_id' => $team->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -277,7 +280,7 @@ class ICalImportService
             'imported' => $importedCount,
             'skipped' => $skippedCount,
             'errors' => $errors,
-            'total' => $parsedGames->count()
+            'total' => $parsedGames->count(),
         ];
     }
 
@@ -318,12 +321,12 @@ class ICalImportService
     private function gameExists(int $teamId, string $externalGameId, Carbon $scheduledAt): bool
     {
         return Game::where(function ($query) use ($teamId) {
-                $query->where('home_team_id', $teamId)
-                      ->orWhere('away_team_id', $teamId);
-            })
+            $query->where('home_team_id', $teamId)
+                ->orWhere('away_team_id', $teamId);
+        })
             ->where(function ($query) use ($externalGameId, $scheduledAt) {
                 $query->where('external_game_id', $externalGameId)
-                      ->orWhere('scheduled_at', $scheduledAt);
+                    ->orWhere('scheduled_at', $scheduledAt);
             })
             ->exists();
     }
@@ -340,22 +343,22 @@ class ICalImportService
         // Games from Sep-Dec belong to the season starting that year
         // Games from Jan-Mar belong to the season that started previous year
         if ($month >= 9) {
-            return $year . '/' . ($year + 1);
+            return $year.'/'.($year + 1);
         } else {
-            return ($year - 1) . '/' . $year;
+            return ($year - 1).'/'.$year;
         }
     }
 
     /**
      * Preview games before import - returns processed game data without saving.
      */
-    public function previewGamesForTeam(Collection $parsedGames, Team $team): Collection
+    public function previewGamesForTeam(Collection $parsedGames, Team $team, string $gameType = 'regular_season'): Collection
     {
-        return $parsedGames->map(function ($gameData) use ($team) {
+        return $parsedGames->map(function ($gameData) use ($team, $gameType) {
             $isHomeGame = $this->isTeamMatch($team->name, $gameData['home_team_raw']);
             $isAwayGame = $this->isTeamMatch($team->name, $gameData['away_team_raw']);
 
-            if (!$isHomeGame && !$isAwayGame) {
+            if (! $isHomeGame && ! $isAwayGame) {
                 return null;
             }
 
@@ -371,7 +374,8 @@ class ICalImportService
                 'is_home_game' => $isHomeGame,
                 'already_exists' => $exists,
                 'season' => $this->determineSeason($gameData['scheduled_at']),
-                'can_import' => !$exists,
+                'game_type' => $gameType,
+                'can_import' => ! $exists,
                 'external_game_id' => $gameData['external_game_id'],
             ];
         })->filter();
@@ -395,7 +399,7 @@ class ICalImportService
     /**
      * Import games with explicit team mapping.
      */
-    public function importGamesWithTeamMapping(Collection $parsedGames, array $teamMapping, int $selectedTeamId): array
+    public function importGamesWithTeamMapping(Collection $parsedGames, array $teamMapping, int $selectedTeamId, string $gameType = 'regular_season'): array
     {
         $importedCount = 0;
         $skippedCount = 0;
@@ -409,9 +413,10 @@ class ICalImportService
 
                 // Game must involve the selected team (either as home or away)
                 $involvesSelectedTeam = ($homeTeamMapped == $selectedTeamId || $awayTeamMapped == $selectedTeamId);
-                
-                if (!$involvesSelectedTeam) {
+
+                if (! $involvesSelectedTeam) {
                     $skippedCount++;
+
                     continue;
                 }
 
@@ -420,6 +425,7 @@ class ICalImportService
                 // Check for existing game
                 if ($this->gameExists($selectedTeamId, $gameData['external_game_id'], $gameData['scheduled_at'])) {
                     $skippedCount++;
+
                     continue;
                 }
 
@@ -437,7 +443,7 @@ class ICalImportService
                         'team_mapping' => $teamMapping,
                         'selected_team_id' => $selectedTeamId,
                     ]),
-                    'type' => 'regular_season',
+                    'type' => $gameType,
                     'season' => $this->determineSeason($gameData['scheduled_at']),
                     'status' => 'scheduled',
                     'is_home_game' => $isHomeGame,
@@ -463,12 +469,12 @@ class ICalImportService
                 $importedCount++;
 
             } catch (\Exception $e) {
-                $errors[] = "Fehler beim Importieren von Spiel {$gameData['home_team_raw']} vs {$gameData['away_team_raw']}: " . $e->getMessage();
+                $errors[] = "Fehler beim Importieren von Spiel {$gameData['home_team_raw']} vs {$gameData['away_team_raw']}: ".$e->getMessage();
                 Log::error('Game import with mapping error', [
                     'game_data' => $gameData,
                     'team_mapping' => $teamMapping,
                     'selected_team_id' => $selectedTeamId,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -477,23 +483,23 @@ class ICalImportService
             'imported' => $importedCount,
             'skipped' => $skippedCount,
             'errors' => $errors,
-            'total' => $parsedGames->count()
+            'total' => $parsedGames->count(),
         ];
     }
 
     /**
      * Preview games with explicit team mapping.
      */
-    public function previewGamesWithTeamMapping(Collection $parsedGames, array $teamMapping, int $selectedTeamId): Collection
+    public function previewGamesWithTeamMapping(Collection $parsedGames, array $teamMapping, int $selectedTeamId, string $gameType = 'regular_season'): Collection
     {
-        return $parsedGames->map(function ($gameData) use ($teamMapping, $selectedTeamId) {
+        return $parsedGames->map(function ($gameData) use ($teamMapping, $selectedTeamId, $gameType) {
             $homeTeamMapped = $teamMapping[$gameData['home_team_raw']] ?? null;
             $awayTeamMapped = $teamMapping[$gameData['away_team_raw']] ?? null;
 
             // Game must involve the selected team (either as home or away)
             $involvesSelectedTeam = ($homeTeamMapped == $selectedTeamId || $awayTeamMapped == $selectedTeamId);
-            
-            if (!$involvesSelectedTeam) {
+
+            if (! $involvesSelectedTeam) {
                 return null;
             }
 
@@ -503,9 +509,9 @@ class ICalImportService
 
             // Get team names for display
             $selectedTeam = Team::find($selectedTeamId);
-            $homeTeamDisplay = $isHomeGame ? $selectedTeam->name : 
+            $homeTeamDisplay = $isHomeGame ? $selectedTeam->name :
                 ($homeTeamMapped && $homeTeamMapped != $selectedTeamId ? Team::find($homeTeamMapped)->name : $gameData['home_team_raw']);
-            $awayTeamDisplay = !$isHomeGame ? $selectedTeam->name : 
+            $awayTeamDisplay = ! $isHomeGame ? $selectedTeam->name :
                 ($awayTeamMapped && $awayTeamMapped != $selectedTeamId ? Team::find($awayTeamMapped)->name : $gameData['away_team_raw']);
 
             return [
@@ -518,7 +524,8 @@ class ICalImportService
                 'is_home_game' => $isHomeGame,
                 'already_exists' => $exists,
                 'season' => $this->determineSeason($gameData['scheduled_at']),
-                'can_import' => !$exists,
+                'game_type' => $gameType,
+                'can_import' => ! $exists,
                 'external_game_id' => $gameData['external_game_id'],
             ];
         })->filter();

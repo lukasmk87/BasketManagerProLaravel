@@ -80,6 +80,9 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Saison
                                     </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Spieltyp
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -129,6 +132,11 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {{ game.season }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <span :class="getGameTypeClasses(game.game_type)" class="px-2 py-1 text-xs font-medium rounded-full">
+                                            {{ getGameTypeLabel(game.game_type) }}
+                                        </span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -197,6 +205,7 @@ const props = defineProps({
     matchingGames: Number,
     newGames: Number,
     existingGames: Number,
+    gameType: String,
 })
 
 const form = useForm({
@@ -242,5 +251,29 @@ const formatDateTime = (dateTimeString) => {
     }
     
     return `${date.toLocaleDateString('de-DE', dateOptions)} • ${date.toLocaleTimeString('de-DE', timeOptions)}`
+}
+
+const getGameTypeLabel = (gameType) => {
+    const labels = {
+        'regular_season': 'Liga',
+        'playoff': 'Playoff',
+        'championship': 'Meisterschaft',
+        'friendly': 'Freundschaftsspiel',
+        'tournament': 'Turnier',
+        'scrimmage': 'Trainingsspiel'
+    }
+    return labels[gameType] || gameType
+}
+
+const getGameTypeClasses = (gameType) => {
+    const classes = {
+        'regular_season': 'bg-blue-100 text-blue-800',
+        'playoff': 'bg-purple-100 text-purple-800',
+        'championship': 'bg-yellow-100 text-yellow-800',
+        'friendly': 'bg-green-100 text-green-800',
+        'tournament': 'bg-orange-100 text-orange-800',
+        'scrimmage': 'bg-gray-100 text-gray-800'
+    }
+    return classes[gameType] || 'bg-gray-100 text-gray-800'
 }
 </script>

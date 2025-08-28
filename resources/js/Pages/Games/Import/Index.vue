@@ -75,6 +75,28 @@
                                 </p>
                             </div>
 
+                            <!-- Game Type Selection -->
+                            <div>
+                                <InputLabel for="game_type" value="Spieltyp*" />
+                                <select
+                                    id="game_type"
+                                    v-model="form.game_type"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                    required
+                                >
+                                    <option value="regular_season">Liga</option>
+                                    <option value="playoff">Playoff</option>
+                                    <option value="championship">Meisterschaft</option>
+                                    <option value="friendly">Freundschaftsspiel</option>
+                                    <option value="tournament">Turnier</option>
+                                    <option value="scrimmage">Trainingsspiel</option>
+                                </select>
+                                <InputError :message="form.errors.game_type" class="mt-2" />
+                                <p class="mt-1 text-sm text-gray-500">
+                                    Wählen Sie den Typ der zu importierenden Spiele aus.
+                                </p>
+                            </div>
+
                             <!-- File Upload -->
                             <div>
                                 <InputLabel for="ical_file" value="iCAL-Datei (.ics)*" />
@@ -204,6 +226,7 @@ const props = defineProps({
 // Form and file handling
 const form = useForm({
     team_id: '',
+    game_type: 'regular_season',
     ical_file: null,
 })
 
