@@ -52,8 +52,6 @@ class ApiVersioningMiddleware
     protected function isApiRoute(Request $request): bool
     {
         return $request->is('api/*') || 
-               $request->expectsJson() || 
-               $request->wantsJson() ||
                str_starts_with($request->getPathInfo(), '/api/');
     }
 

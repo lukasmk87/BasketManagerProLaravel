@@ -190,7 +190,7 @@ class PlayerController extends Controller
 
         $player = $this->playerService->createPlayer($validated);
 
-        return redirect()->route('players.show', $player)
+        return redirect()->route('web.players.show', $player)
             ->with('success', 'Spieler wurde erfolgreich erstellt.');
     }
 
@@ -413,7 +413,7 @@ class PlayerController extends Controller
 
         $this->playerService->updatePlayer($player, $validated);
 
-        return redirect()->route('players.show', $player)
+        return redirect()->route('web.players.show', $player)
             ->with('success', 'Spieler wurde erfolgreich aktualisiert.');
     }
 
@@ -426,7 +426,7 @@ class PlayerController extends Controller
 
         $this->playerService->deletePlayer($player);
 
-        return redirect()->route('players.index')
+        return redirect()->route('web.players.index')
             ->with('success', 'Spieler wurde erfolgreich gelöscht.');
     }
 

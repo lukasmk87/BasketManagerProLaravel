@@ -137,7 +137,7 @@ class GameController extends Controller
 
         $game = Game::create($validated);
 
-        return redirect()->route('games.show', $game)
+        return redirect()->route('web.games.show', $game)
             ->with('success', 'Spiel wurde erfolgreich erstellt.');
     }
 
@@ -184,7 +184,7 @@ class GameController extends Controller
 
         // Only allow editing of scheduled games
         if ($game->status !== 'scheduled') {
-            return redirect()->route('games.show', $game)
+            return redirect()->route('web.games.show', $game)
                 ->with('error', 'Nur geplante Spiele können bearbeitet werden.');
         }
 
@@ -265,7 +265,7 @@ class GameController extends Controller
 
         $game->update($validated);
 
-        return redirect()->route('games.show', $game)
+        return redirect()->route('web.games.show', $game)
             ->with('success', 'Spiel wurde erfolgreich aktualisiert.');
     }
 
@@ -278,13 +278,13 @@ class GameController extends Controller
 
         // Only allow deletion of scheduled games
         if ($game->status !== 'scheduled') {
-            return redirect()->route('games.show', $game)
+            return redirect()->route('web.games.show', $game)
                 ->with('error', 'Nur geplante Spiele können gelöscht werden.');
         }
 
         $game->delete();
 
-        return redirect()->route('games.index')
+        return redirect()->route('web.games.index')
             ->with('success', 'Spiel wurde erfolgreich gelöscht.');
     }
 }
