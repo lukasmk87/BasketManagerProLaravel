@@ -86,6 +86,7 @@ class ICalImportService
     /**
      * Parse the game summary to extract teams, venue code, and game number.
      * Format: "Gütersloher TV 4-SV Brackwede 2, 502A160 (SpNr. 0)"
+     * Handle teams with hyphens like "DJK Grün-Weiss Rheda 2-Gütersloher TV 4"
      */
     private function parseGameSummary(string $summary): ?array
     {
@@ -99,22 +100,76 @@ class ICalImportService
             $summary = preg_replace('/\s*\(SpNr\.\s*\d+\)/', '', $summary);
         }
 
-        // Extract venue code: pattern like "502A160"
+        // Extract venue code after comma: pattern like "502A160"
         $venueCode = null;
         if (preg_match('/,\s*([A-Z0-9]+)\s*$/', $summary, $matches)) {
             $venueCode = $matches[1];
             $summary = preg_replace('/,\s*[A-Z0-9]+\s*$/', '', $summary);
         }
 
-        // Split teams by dash
-        if (preg_match('/^(.+?)-(.+)$/', trim($summary), $matches)) {
-            return [
-                'home_team' => trim($matches[1]),
-                'away_team' => trim($matches[2]),
-                'venue_code' => $venueCode,
-                'game_number' => $gameNumber,
-            ];
+        // Try to intelligently split teams with multiple patterns
+        $patterns = [
+            // Priority 1: Number followed by dash and capital letter (most reliable)
+            // Handles: "Rheda 2-Gütersloher TV 4", "TV 4-SV Brackwede 2"
+            '/^(.+?\d)\s*-\s*([A-Z].+)$/i',
+            
+            // Priority 2: Look for known team names that appear frequently
+            // Handles "Something-Gütersloher TV 4", "Something-Bad Oeynhausen Baskets 2", etc.
+            '/^(.*)\s*-\s*((?:Gütersloher|Bad\s+Oeynhausen|Löhne)\s+.+)$/i',
+            
+            // Priority 3: Common team prefixes after dash with greedy matching
+            // Changed from lazy (.+?) to greedy (.*) to handle "FC Rot-Weiß Kirchlengern"
+            '/^(.*)\s*-\s*((?:SV|TV|TG|FC|BC|TSV|TSVE|DJK|TuSpo)\s+.+)$/i',
+            
+            // Priority 4: Team name ending with number
+            // Handles: "Something-Team Name 2"
+            '/^(.+?)\s*-\s*(.+?\s+\d+)$/i',
+            
+            // Priority 5: Use last dash as fallback
+            '/^(.+)-(.+)$/',
+        ];
+
+        foreach ($patterns as $index => $pattern) {
+            if (preg_match($pattern, trim($summary), $matches)) {
+                $homeTeam = trim($matches[1]);
+                $awayTeam = trim($matches[2]);
+                
+                // Additional validation: Check if we split at a color combination
+                // This prevents splitting "FC Rot-Weiß" into "FC Rot" and "Weiß"
+                if (preg_match('/(Rot|Grün|Blau|Gelb|Schwarz|Weiß|Weiss)$/i', $homeTeam) && 
+                    preg_match('/^(Rot|Grün|Blau|Gelb|Schwarz|Weiß|Weiss)/i', $awayTeam)) {
+                    // We likely split at a color combination, try next pattern
+                    continue;
+                }
+                
+                // Validate both teams have content
+                if (!empty($homeTeam) && !empty($awayTeam)) {
+                    // Log if we used a fallback pattern for debugging
+                    if ($index >= 3) {
+                        Log::warning('Used fallback pattern for team splitting', [
+                            'original_summary' => $summary,
+                            'home_team' => $homeTeam,
+                            'away_team' => $awayTeam,
+                            'pattern_index' => $index,
+                            'pattern_used' => $pattern
+                        ]);
+                    }
+                    
+                    return [
+                        'home_team' => $homeTeam,
+                        'away_team' => $awayTeam,
+                        'venue_code' => $venueCode,
+                        'game_number' => $gameNumber,
+                    ];
+                }
+            }
         }
+
+        // If no pattern matched, log the failure for debugging
+        Log::error('Failed to parse team names from game summary', [
+            'original_summary' => $summary,
+            'cleaned_summary' => trim($summary)
+        ]);
 
         return null;
     }

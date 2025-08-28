@@ -84,7 +84,6 @@
                                                 <select
                                                     v-model="form.team_mapping[icalTeam]"
                                                     class="block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                                    @change="updateMappingStatus(icalTeam)"
                                                 >
                                                     <option value="">-- Nicht zuordnen --</option>
                                                     <option value="selectedTeam">{{ selectedTeam.name }} (Importiertes Team)</option>
@@ -265,29 +264,35 @@ const selectedTeamMappingsCount = computed(() => {
 });
 
 // Methods
-const updateMappingStatus = (icalTeam) => {
-    // Convert 'selectedTeam' to actual team ID for submission
-    if (form.team_mapping[icalTeam] === 'selectedTeam') {
-        form.team_mapping[icalTeam] = props.selectedTeam.id;
-    }
-};
-
 const submitMapping = () => {
+    console.log('Submit mapping called');
+    console.log('Form data:', form.team_mapping);
+    
     // Prepare the mapping data for submission
     const mappingData = {};
     Object.keys(form.team_mapping).forEach(icalTeam => {
         const value = form.team_mapping[icalTeam];
-        if (value && value !== '' && value !== 'selectedTeam') {
-            mappingData[icalTeam] = parseInt(value);
-        } else if (value === 'selectedTeam') {
+        if (value === 'selectedTeam') {
+            // Convert 'selectedTeam' to actual team ID for submission
             mappingData[icalTeam] = props.selectedTeam.id;
+        } else if (value && value !== '') {
+            mappingData[icalTeam] = parseInt(value);
         }
     });
+
+    console.log('Mapping data to submit:', mappingData);
 
     form.transform((data) => ({
         ...data,
         team_mapping: mappingData
-    })).post(route('games.import.map-teams'));
+    })).post(route('games.import.map-teams'), {
+        onSuccess: () => {
+            console.log('Mapping submission successful');
+        },
+        onError: (errors) => {
+            console.log('Mapping submission errors:', errors);
+        }
+    });
 };
 
 const resetMapping = () => {
