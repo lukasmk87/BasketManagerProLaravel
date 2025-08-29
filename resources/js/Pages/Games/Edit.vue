@@ -69,6 +69,41 @@
                                     <InputError :message="form.errors.home_team_id" class="mt-2" />
                                 </div>
 
+                                <!-- Game Type (Home/Away) -->
+                                <div>
+                                    <InputLabel value="Spielart*" />
+                                    <div class="mt-2 space-y-4">
+                                        <div class="flex items-center">
+                                            <input
+                                                id="game_type_home"
+                                                v-model="gameLocation"
+                                                name="game_location"
+                                                type="radio"
+                                                value="home"
+                                                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                                                :disabled="game.status !== 'scheduled'"
+                                            />
+                                            <label for="game_type_home" class="ml-3 block text-sm font-medium text-gray-700">
+                                                Heimspiel
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input
+                                                id="game_type_away"
+                                                v-model="gameLocation"
+                                                name="game_location"
+                                                type="radio"
+                                                value="away"
+                                                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                                                :disabled="game.status !== 'scheduled'"
+                                            />
+                                            <label for="game_type_away" class="ml-3 block text-sm font-medium text-gray-700">
+                                                Auswärtsspiel
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Away Team Type Selection -->
                                 <div>
                                     <InputLabel value="Gegnerisches Team*" />
@@ -622,6 +657,9 @@ const formSections = ref([
     { id: 'weather', name: 'Wetter', fields: ['weather_conditions', 'temperature', 'court_conditions'] }
 ])
 
+// Game Location Management - determine from existing game data
+const gameLocation = ref(props.game.is_home_game ? 'home' : 'away')
+
 // Opponent Type Management - determine from existing game data
 const opponentType = ref(props.game.away_team_id ? 'internal' : 'external')
 
@@ -679,6 +717,9 @@ const form = useForm({
     weather_conditions: props.game.weather_conditions || '',
     temperature: props.game.temperature || null,
     court_conditions: props.game.court_conditions || '',
+    
+    // Home/Away designation
+    is_home_game: props.game.is_home_game ?? true,
 })
 
 const deleteForm = useForm({})
@@ -710,6 +751,9 @@ function getStatusLabel(status) {
 }
 
 const submit = () => {
+    // Set is_home_game flag
+    form.is_home_game = gameLocation.value === 'home'
+    
     // Clear away team data based on opponent type
     if (opponentType.value === 'external') {
         form.away_team_id = null

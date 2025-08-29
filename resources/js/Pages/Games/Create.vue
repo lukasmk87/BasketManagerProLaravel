@@ -603,6 +603,9 @@ const form = useForm({
     weather_conditions: '',
     temperature: null,
     court_conditions: '',
+    
+    // Home/Away designation
+    is_home_game: true,
 })
 
 // Calculate current season (e.g., "2023/2024")

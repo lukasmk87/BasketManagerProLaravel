@@ -121,6 +121,8 @@ class GameController extends Controller
             'weather_conditions' => 'nullable|in:sunny,cloudy,rainy,snowy,indoor',
             'temperature' => 'nullable|integer|min:-20|max:50',
             'court_conditions' => 'nullable|in:excellent,good,fair,poor,wet,slippery',
+            // Home/Away designation
+            'is_home_game' => 'required|boolean',
         ]);
 
         // Validation: either away_team_id OR away_team_name must be provided
@@ -131,9 +133,8 @@ class GameController extends Controller
             ]);
         }
 
-        // Add import source and determine if it's a home game
+        // Add import source
         $validated['import_source'] = 'manual';
-        $validated['is_home_game'] = true; // Manual creation defaults to home games
 
         $game = Game::create($validated);
 
@@ -253,6 +254,8 @@ class GameController extends Controller
             'weather_conditions' => 'nullable|in:sunny,cloudy,rainy,snowy,indoor',
             'temperature' => 'nullable|integer|min:-20|max:50',
             'court_conditions' => 'nullable|in:excellent,good,fair,poor,wet,slippery',
+            // Home/Away designation
+            'is_home_game' => 'required|boolean',
         ]);
 
         // Validation: either away_team_id OR away_team_name must be provided

@@ -214,6 +214,7 @@ class ICalImportService
 
     /**
      * Import games for a specific team, matching team names.
+     * This method now imports BOTH home and away games for the team.
      */
     public function importGamesForTeam(Collection $parsedGames, Team $team, string $gameType = 'regular_season'): array
     {
@@ -227,6 +228,7 @@ class ICalImportService
                 $isHomeGame = $this->isTeamMatch($team->name, $gameData['home_team_raw']);
                 $isAwayGame = $this->isTeamMatch($team->name, $gameData['away_team_raw']);
 
+                // Skip games that don't involve this team at all
                 if (! $isHomeGame && ! $isAwayGame) {
                     $skippedCount++;
 
@@ -240,7 +242,7 @@ class ICalImportService
                     continue;
                 }
 
-                // Create game data
+                // Create game data - now handles both home and away games
                 $createData = [
                     'external_game_id' => $gameData['external_game_id'],
                     'scheduled_at' => $gameData['scheduled_at'],
@@ -256,9 +258,11 @@ class ICalImportService
                 ];
 
                 if ($isHomeGame) {
+                    // Team is playing at home
                     $createData['home_team_id'] = $team->id;
                     $createData['away_team_name'] = $gameData['away_team_raw'];
                 } else {
+                    // Team is playing away
                     $createData['away_team_id'] = $team->id;
                     $createData['home_team_name'] = $gameData['home_team_raw'];
                 }
@@ -398,6 +402,7 @@ class ICalImportService
 
     /**
      * Import games with explicit team mapping.
+     * This method now imports BOTH home and away games for the selected team.
      */
     public function importGamesWithTeamMapping(Collection $parsedGames, array $teamMapping, int $selectedTeamId, string $gameType = 'regular_season'): array
     {
@@ -420,8 +425,6 @@ class ICalImportService
                     continue;
                 }
 
-                // Allow external teams: if opponent is not mapped, treat as external team
-
                 // Check for existing game
                 if ($this->gameExists($selectedTeamId, $gameData['external_game_id'], $gameData['scheduled_at'])) {
                     $skippedCount++;
@@ -431,7 +434,7 @@ class ICalImportService
 
                 $isHomeGame = ($homeTeamMapped == $selectedTeamId);
 
-                // Create game data
+                // Create game data - now handles both home and away games
                 $createData = [
                     'external_game_id' => $gameData['external_game_id'],
                     'scheduled_at' => $gameData['scheduled_at'],
@@ -442,6 +445,7 @@ class ICalImportService
                     'import_metadata' => array_merge($gameData['import_metadata'], [
                         'team_mapping' => $teamMapping,
                         'selected_team_id' => $selectedTeamId,
+                        'is_home_game' => $isHomeGame,
                     ]),
                     'type' => $gameType,
                     'season' => $this->determineSeason($gameData['scheduled_at']),
@@ -450,6 +454,7 @@ class ICalImportService
                 ];
 
                 if ($isHomeGame) {
+                    // Selected team is playing at home
                     $createData['home_team_id'] = $selectedTeamId;
                     if ($awayTeamMapped && $awayTeamMapped != $selectedTeamId) {
                         $createData['away_team_id'] = $awayTeamMapped;
@@ -457,6 +462,7 @@ class ICalImportService
                         $createData['away_team_name'] = $gameData['away_team_raw'];
                     }
                 } else {
+                    // Selected team is playing away
                     $createData['away_team_id'] = $selectedTeamId;
                     if ($homeTeamMapped && $homeTeamMapped != $selectedTeamId) {
                         $createData['home_team_id'] = $homeTeamMapped;
