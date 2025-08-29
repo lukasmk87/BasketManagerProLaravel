@@ -148,7 +148,7 @@ const teamRoleTranslation = computed(() => {
                         <div v-else class="space-y-4">
                             <div class="text-center p-4 bg-blue-50 rounded-lg">
                                 <div class="text-lg font-semibold text-blue-900 mb-2">
-                                    {{ nextGame.home_team.name }} vs {{ nextGame.away_team.name }}
+                                    {{ nextGame.home_team?.name || nextGame.home_team_name || 'TBD' }} vs {{ nextGame.away_team?.name || nextGame.away_team_name || 'TBD' }}
                                 </div>
                                 <div class="text-sm text-blue-700">
                                     {{ new Date(nextGame.scheduled_at).toLocaleDateString('de-DE', { 
@@ -191,19 +191,19 @@ const teamRoleTranslation = computed(() => {
                         <div v-else class="space-y-4">
                             <div class="text-center p-4 rounded-lg"
                                  :class="{
-                                     'bg-green-50': lastGame.home_team_score > lastGame.away_team_score && lastGame.home_team.name === primaryTeam.name,
-                                     'bg-green-50': lastGame.away_team_score > lastGame.home_team_score && lastGame.away_team.name === primaryTeam.name,
-                                     'bg-red-50': lastGame.home_team_score < lastGame.away_team_score && lastGame.home_team.name === primaryTeam.name,
-                                     'bg-red-50': lastGame.away_team_score < lastGame.home_team_score && lastGame.away_team.name === primaryTeam.name,
+                                     'bg-green-50': lastGame.home_team_score > lastGame.away_team_score && (lastGame.home_team?.name || lastGame.home_team_name) === primaryTeam.name,
+                                     'bg-green-50': lastGame.away_team_score > lastGame.home_team_score && (lastGame.away_team?.name || lastGame.away_team_name) === primaryTeam.name,
+                                     'bg-red-50': lastGame.home_team_score < lastGame.away_team_score && (lastGame.home_team?.name || lastGame.home_team_name) === primaryTeam.name,
+                                     'bg-red-50': lastGame.away_team_score < lastGame.home_team_score && (lastGame.away_team?.name || lastGame.away_team_name) === primaryTeam.name,
                                      'bg-gray-50': lastGame.home_team_score === lastGame.away_team_score
                                  }">
                                 <div class="text-lg font-semibold mb-2"
                                      :class="{
-                                         'text-green-900': (lastGame.home_team_score > lastGame.away_team_score && lastGame.home_team.name === primaryTeam.name) || (lastGame.away_team_score > lastGame.home_team_score && lastGame.away_team.name === primaryTeam.name),
-                                         'text-red-900': (lastGame.home_team_score < lastGame.away_team_score && lastGame.home_team.name === primaryTeam.name) || (lastGame.away_team_score < lastGame.home_team_score && lastGame.away_team.name === primaryTeam.name),
+                                         'text-green-900': (lastGame.home_team_score > lastGame.away_team_score && (lastGame.home_team?.name || lastGame.home_team_name) === primaryTeam.name) || (lastGame.away_team_score > lastGame.home_team_score && (lastGame.away_team?.name || lastGame.away_team_name) === primaryTeam.name),
+                                         'text-red-900': (lastGame.home_team_score < lastGame.away_team_score && (lastGame.home_team?.name || lastGame.home_team_name) === primaryTeam.name) || (lastGame.away_team_score < lastGame.home_team_score && (lastGame.away_team?.name || lastGame.away_team_name) === primaryTeam.name),
                                          'text-gray-900': lastGame.home_team_score === lastGame.away_team_score
                                      }">
-                                    {{ lastGame.home_team.name }} {{ lastGame.home_team_score }} : {{ lastGame.away_team_score }} {{ lastGame.away_team.name }}
+                                    {{ lastGame.home_team?.name || lastGame.home_team_name || 'TBD' }} {{ lastGame.home_team_score }} : {{ lastGame.away_team_score }} {{ lastGame.away_team?.name || lastGame.away_team_name || 'TBD' }}
                                 </div>
                                 <div class="text-sm text-gray-600">
                                     {{ new Date(lastGame.scheduled_at).toLocaleDateString('de-DE', { 
