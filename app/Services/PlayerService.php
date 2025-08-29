@@ -268,8 +268,11 @@ class PlayerService
     /**
      * Get player statistics for a specific season.
      */
-    public function getPlayerStatistics(Player $player, string $season): array
+    public function getPlayerStatistics(Player $player, ?string $season = null): array
     {
+        // Use provided season, or fallback to current season
+        $season = $season ?? config('basketball.season.current');
+        
         $stats = App::make(StatisticsService::class)->getPlayerSeasonStats($player, $season);
         
         // Add player-specific calculations

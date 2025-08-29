@@ -243,7 +243,9 @@ class PlayerController extends Controller
             'insurance_expired'
         ]);
 
-        $playerStats = $this->playerService->getPlayerStatistics($player, $player->primaryTeam()?->season);
+        // Get season from player's team or use current season as fallback
+        $season = $player->primaryTeam()?->season ?? config('basketball.season.current');
+        $playerStats = $this->playerService->getPlayerStatistics($player, $season);
 
         return Inertia::render('Players/Show', [
             'player' => $player,
