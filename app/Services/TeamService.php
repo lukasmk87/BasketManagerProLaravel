@@ -287,14 +287,17 @@ class TeamService
             $user = User::findOrFail($playerData['user_id']);
             
             // Check if user is already on another active team in the same league/season
-            $existingMembership = $user->players()
-                ->whereHas('team', function ($query) use ($team) {
-                    $query->where('season', $team->season)
-                          ->where('league', $team->league)
-                          ->where('is_active', true);
-                })
-                ->where('status', 'active')
-                ->first();
+            $player = $user->playerProfile;
+            $existingMembership = null;
+            
+            if ($player && $player->status === 'active') {
+                $existingMembership = $player->teams()
+                    ->where('teams.season', $team->season)
+                    ->where('teams.league', $team->league)
+                    ->where('teams.is_active', true)
+                    ->wherePivot('status', 'active')
+                    ->first();
+            }
 
             if ($existingMembership) {
                 throw new \InvalidArgumentException('Spieler ist bereits in einem anderen aktiven Team in dieser Liga registriert.');

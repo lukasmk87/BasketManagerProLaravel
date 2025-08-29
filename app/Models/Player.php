@@ -20,6 +20,20 @@ class Player extends Model implements HasMedia
     use HasFactory, SoftDeletes, LogsActivity, InteractsWithMedia;
 
     /**
+     * The model's default attribute values.
+     */
+    protected $attributes = [
+        'dominant_hand' => 'right',
+        'years_experience' => 0,
+        'status' => 'active',
+        'is_rookie' => false,
+        'medical_clearance' => false,
+        'academic_eligibility' => true,
+        'allow_photos' => true,
+        'allow_media_interviews' => false,
+    ];
+
+    /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
@@ -220,6 +234,14 @@ class Player extends Model implements HasMedia
     public function parent(): BelongsTo
     {
         return $this->belongsTo(User::class, 'parent_user_id');
+    }
+
+    /**
+     * Get the emergency contacts for the player (through user).
+     */
+    public function emergencyContacts(): HasMany
+    {
+        return $this->hasMany(EmergencyContact::class, 'user_id', 'user_id');
     }
 
     /**

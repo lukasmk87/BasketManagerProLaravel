@@ -294,7 +294,40 @@ class User extends Authenticatable implements MustVerifyEmail
     public function scopePlayers($query)
     {
         return $query->where('player_profile_active', true)
-                    ->whereHas('playerProfile');
+                    ->whereHas('playerProfile', function($q) {
+                        $q->where('status', 'active');
+                    });
+    }
+
+    /**
+     * Scope a query to only include users with active player profiles.
+     */
+    public function scopeWithActivePlayerProfile($query)
+    {
+        return $query->where('player_profile_active', true)
+                    ->whereHas('playerProfile', function($q) {
+                        $q->where('status', 'active');
+                    });
+    }
+
+    /**
+     * Scope a query to users whose player profile is in active teams.
+     */
+    public function scopeInCurrentTeam($query, $season = null, $league = null)
+    {
+        return $query->whereHas('playerProfile', function($q) use ($season, $league) {
+            $q->where('status', 'active')
+              ->whereHas('teams', function($teamQuery) use ($season, $league) {
+                  if ($season) {
+                      $teamQuery->where('teams.season', $season);
+                  }
+                  if ($league !== null) {
+                      $teamQuery->where('teams.league', $league);
+                  }
+                  $teamQuery->where('teams.is_active', true)
+                           ->wherePivot('status', 'active');
+              });
+        });
     }
 
     /**

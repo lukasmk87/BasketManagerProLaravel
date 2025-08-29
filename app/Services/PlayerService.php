@@ -42,7 +42,7 @@ class PlayerService
                 if (!empty($data['jersey_number'])) {
                     $existingPlayer = $team->players()
                         ->where('player_team.jersey_number', $data['jersey_number'])
-                        ->where('status', 'active')
+                        ->wherePivot('status', 'active')
                         ->first();
                     
                     if ($existingPlayer) {
@@ -51,14 +51,17 @@ class PlayerService
                 }
 
                 // Check if user is already on another active team in the same league/season
-                $existingMembership = $user->players()
-                    ->whereHas('team', function ($query) use ($team) {
-                        $query->where('season', $team->season)
-                              ->where('league', $team->league)
-                              ->where('is_active', true);
-                    })
-                    ->where('status', 'active')
-                    ->first();
+                $player = $user->playerProfile;
+                $existingMembership = null;
+                
+                if ($player && $player->status === 'active') {
+                    $existingMembership = $player->teams()
+                        ->where('teams.season', $team->season)
+                        ->where('teams.league', $team->league)
+                        ->where('teams.is_active', true)
+                        ->wherePivot('status', 'active')
+                        ->first();
+                }
 
                 if ($existingMembership) {
                     throw new \InvalidArgumentException('Spieler ist bereits in einem anderen aktiven Team in dieser Liga registriert.');
@@ -93,7 +96,7 @@ class PlayerService
                 'gpa' => $data['gpa'] ?? null,
                 'height_cm' => $data['height_cm'] ?? null,
                 'weight_kg' => $data['weight_kg'] ?? null,
-                'dominant_hand' => $data['dominant_hand'] ?? null,
+                'dominant_hand' => $data['dominant_hand'] ?? 'right',
                 'years_experience' => $data['years_experience'] ?? 0,
                 'previous_teams' => $data['previous_teams'] ?? null,
                 'training_focus_areas' => $data['training_focus_areas'] ?? null,
@@ -171,8 +174,8 @@ class PlayerService
             if (isset($data['jersey_number']) && $data['jersey_number'] !== $player->jersey_number && $player->team) {
                 $existingPlayer = $player->team->players()
                     ->where('player_team.jersey_number', $data['jersey_number'])
-                    ->where('status', 'active')
-                    ->where('id', '!=', $player->id)
+                    ->wherePivot('status', 'active')
+                    ->where('players.id', '!=', $player->id)
                     ->first();
                 
                 if ($existingPlayer) {
@@ -432,7 +435,7 @@ class PlayerService
             if ($player->jersey_number) {
                 $existingPlayer = $newTeam->players()
                     ->where('player_team.jersey_number', $player->jersey_number)
-                    ->where('status', 'active')
+                    ->wherePivot('status', 'active')
                     ->first();
                 
                 if ($existingPlayer) {
