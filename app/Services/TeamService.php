@@ -281,6 +281,9 @@ class TeamService
                 }
             }
 
+            if (!isset($playerData['user_id'])) {
+                throw new \InvalidArgumentException('Benutzer-ID ist erforderlich.');
+            }
             $user = User::findOrFail($playerData['user_id']);
             
             // Check if user is already on another active team in the same league/season

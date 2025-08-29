@@ -254,7 +254,7 @@ const teamStarters = computed(() => {
                         <div v-else class="space-y-4">
                             <div class="text-center p-4 bg-blue-50 rounded-lg">
                                 <div class="text-lg font-semibold text-blue-900 mb-2">
-                                    {{ nextGame.home_team.name }} vs {{ nextGame.away_team.name }}
+                                    {{ nextGame.home_team?.name || nextGame.home_team_name || 'TBD' }} vs {{ nextGame.away_team?.name || nextGame.away_team_name || 'TBD' }}
                                 </div>
                                 <div class="text-sm text-blue-700">
                                     {{ new Date(nextGame.scheduled_at).toLocaleDateString('de-DE', { 

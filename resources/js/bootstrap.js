@@ -114,7 +114,44 @@ window.axios.interceptors.response.use(
                     return axios(originalRequest);
                 } else {
                     console.error('Could not get fresh CSRF token from meta tag');
-                    // Fall back to page reload if token refresh fails
+                    // Try to get token from API endpoint as fallback
+                    try {
+                        const tokenResponse = await fetch('/api/csrf-token', {
+                            method: 'GET',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        
+                        if (tokenResponse.ok) {
+                            const tokenData = await tokenResponse.json();
+                            if (tokenData.token) {
+                                // Update meta tag
+                                const metaTag = document.head.querySelector('meta[name="csrf-token"]');
+                                if (metaTag) {
+                                    metaTag.content = tokenData.token;
+                                }
+                                
+                                // Update request headers
+                                originalRequest.headers['X-CSRF-TOKEN'] = tokenData.token;
+                                
+                                // Retry queued requests
+                                failedRequestsQueue.forEach(({ resolve, reject, config }) => {
+                                    config.headers['X-CSRF-TOKEN'] = tokenData.token;
+                                    axios(config).then(resolve).catch(reject);
+                                });
+                                failedRequestsQueue = [];
+                                
+                                return axios(originalRequest);
+                            }
+                        }
+                    } catch (apiError) {
+                        console.error('API token refresh also failed:', apiError);
+                    }
+                    
+                    // Final fallback to page reload
                     window.location.reload();
                     return Promise.reject(error);
                 }

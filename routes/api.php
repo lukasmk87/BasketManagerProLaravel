@@ -16,6 +16,21 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
+| CSRF Token Endpoint
+|--------------------------------------------------------------------------
+|
+| Provides a fresh CSRF token for client-side applications.
+| This endpoint is accessible without authentication for token refresh.
+|
+*/
+Route::get('/csrf-token', function () {
+    return response()->json([
+        'token' => csrf_token()
+    ]);
+})->name('api.csrf-token');
+
+/*
+|--------------------------------------------------------------------------
 | API Version Information Endpoint
 |--------------------------------------------------------------------------
 |

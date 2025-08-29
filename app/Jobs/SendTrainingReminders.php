@@ -221,6 +221,15 @@ class SendTrainingReminders implements ShouldQueue
     private function sendNotification(array $recipient, array $notificationData): void
     {
         try {
+            // Validate user_id exists
+            if (!isset($recipient['user_id'])) {
+                \Log::warning('SendTrainingReminders: user_id missing in recipient data', [
+                    'recipient' => $recipient,
+                    'session_id' => $this->trainingSession->id ?? null
+                ]);
+                return;
+            }
+            
             // Create database notification
             \App\Models\User::find($recipient['user_id'])?->notifications()->create([
                 'type' => 'training_reminder',

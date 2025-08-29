@@ -280,9 +280,9 @@ const chartData = computed(() => {
                              class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
                             <div class="flex-1">
                                 <div class="flex items-center space-x-2 text-sm font-medium text-gray-900">
-                                    <span>{{ game.home_team.name }}</span>
+                                    <span>{{ game.home_team?.name || game.home_team_name || 'TBD' }}</span>
                                     <span class="text-gray-500">vs</span>
-                                    <span>{{ game.away_team.name }}</span>
+                                    <span>{{ game.away_team?.name || game.away_team_name || 'TBD' }}</span>
                                 </div>
                                 <div class="text-xs text-gray-500 mt-1">
                                     {{ new Date(game.scheduled_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) }}
@@ -321,9 +321,9 @@ const chartData = computed(() => {
                              class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div class="flex-1">
                                 <div class="flex items-center space-x-2 text-sm font-medium text-gray-900">
-                                    <span>{{ game.home_team.name }}</span>
+                                    <span>{{ game.home_team?.name || game.home_team_name || 'TBD' }}</span>
                                     <span class="text-gray-500">vs</span>
-                                    <span>{{ game.away_team.name }}</span>
+                                    <span>{{ game.away_team?.name || game.away_team_name || 'TBD' }}</span>
                                 </div>
                                 <div class="text-xs text-gray-500 mt-1">
                                     {{ new Date(game.scheduled_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) }}

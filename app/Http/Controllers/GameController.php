@@ -154,6 +154,7 @@ class GameController extends Controller
             'awayTeam.club',
             'gameActions.player',
             'liveGame',
+            'registrations.player',
         ]);
 
         $gameStats = null;
@@ -165,9 +166,18 @@ class GameController extends Controller
         $game->home_team_display_name = $game->getHomeTeamDisplayName();
         $game->away_team_display_name = $game->getAwayTeamDisplayName();
 
+        // Get current player's registration if they are a player
+        $currentPlayerRegistration = null;
+        if (auth()->user()->player) {
+            $currentPlayerRegistration = $game->registrations()
+                ->where('player_id', auth()->user()->player->id)
+                ->first();
+        }
+
         return Inertia::render('Games/Show', [
             'game' => $game,
             'statistics' => $gameStats,
+            'currentPlayerRegistration' => $currentPlayerRegistration,
             'can' => [
                 'update' => auth()->user()->can('update', $game),
                 'delete' => auth()->user()->can('delete', $game),

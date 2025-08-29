@@ -92,6 +92,17 @@
                     </div>
                 </div>
 
+                <!-- Player Registration (for players) -->
+                <PlayerRegistration 
+                    v-if="$page.props.auth.user?.player"
+                    type="training"
+                    :entity-id="session.id"
+                    :current-registration="currentPlayerRegistration"
+                    :deadline="session.registration_deadline"
+                    @registration-updated="refreshRegistrationData"
+                    class="mb-6"
+                />
+
                 <!-- Training Plan -->
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mb-6">
                     <div class="p-6">
@@ -234,10 +245,12 @@ import { computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
+import PlayerRegistration from '@/Components/PlayerRegistration.vue'
 
 const props = defineProps({
     session: Object,
     can: Object,
+    currentPlayerRegistration: Object,
 })
 
 const totalDuration = computed(() => {
@@ -329,6 +342,11 @@ function getAttendanceStatusClasses(status) {
 
 function editSession() {
     router.get(`/training/sessions/${props.session.id}/edit`)
+}
+
+function refreshRegistrationData() {
+    // Refresh the page to get updated registration data
+    window.location.reload()
 }
 
 function addDrill() {

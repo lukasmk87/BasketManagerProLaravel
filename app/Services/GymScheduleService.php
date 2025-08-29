@@ -510,6 +510,9 @@ class GymScheduleService
 
             $timeSlot = GymTimeSlot::findOrFail($bookingData['gym_time_slot_id']);
             $team = Team::findOrFail($bookingData['team_id']);
+            if (!isset($bookingData['booked_by_user_id'])) {
+                throw new \InvalidArgumentException('booked_by_user_id ist erforderlich.');
+            }
             $bookedBy = User::findOrFail($bookingData['booked_by_user_id']);
             $date = Carbon::parse($bookingData['booking_date']);
             $startTime = $bookingData['start_time'];

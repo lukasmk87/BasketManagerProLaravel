@@ -91,13 +91,17 @@
                                         {{ formatDateTime(game.scheduled_at) }}
                                     </dd>
                                 </div>
-                                <div v-if="game.location">
-                                    <dt class="text-sm font-medium text-gray-500">Spielort</dt>
-                                    <dd class="mt-1 text-sm text-gray-900">{{ game.location }}</dd>
-                                </div>
                                 <div>
                                     <dt class="text-sm font-medium text-gray-500">Spieltyp</dt>
-                                    <dd class="mt-1 text-sm text-gray-900">{{ getGameTypeLabel(game.game_type) }}</dd>
+                                    <dd class="mt-1 text-sm text-gray-900">{{ getGameTypeLabel(game.type) }}</dd>
+                                </div>
+                                <div v-if="game.venue">
+                                    <dt class="text-sm font-medium text-gray-500">Spielort</dt>
+                                    <dd class="mt-1 text-sm text-gray-900">{{ game.venue }}</dd>
+                                </div>
+                                <div v-if="game.venue_address">
+                                    <dt class="text-sm font-medium text-gray-500">Adresse</dt>
+                                    <dd class="mt-1 text-sm text-gray-900">{{ game.venue_address }}</dd>
                                 </div>
                                 <div>
                                     <dt class="text-sm font-medium text-gray-500">Saison</dt>
@@ -106,6 +110,10 @@
                                 <div v-if="game.league">
                                     <dt class="text-sm font-medium text-gray-500">Liga</dt>
                                     <dd class="mt-1 text-sm text-gray-900">{{ game.league }}</dd>
+                                </div>
+                                <div v-if="game.division">
+                                    <dt class="text-sm font-medium text-gray-500">Division</dt>
+                                    <dd class="mt-1 text-sm text-gray-900">{{ game.division }}</dd>
                                 </div>
                                 <div v-if="game.round">
                                     <dt class="text-sm font-medium text-gray-500">Spieltag/Runde</dt>
@@ -185,6 +193,17 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Player Registration (for players) -->
+                <PlayerRegistration 
+                    v-if="$page.props.auth.user?.player"
+                    type="game"
+                    :entity-id="game.id"
+                    :current-registration="currentPlayerRegistration"
+                    :deadline="game.booking_deadline"
+                    @registration-updated="refreshRegistrationData"
+                    class="mb-6"
+                />
 
                 <!-- Game Statistics (if available) -->
                 <div v-if="gameStats" class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
@@ -286,11 +305,13 @@ import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 import DangerButton from '@/Components/DangerButton.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
+import PlayerRegistration from '@/Components/PlayerRegistration.vue'
 
 const props = defineProps({
     game: Object,
     gameStats: Object,
     can: Object,
+    currentPlayerRegistration: Object,
 })
 
 // Delete functionality
@@ -303,6 +324,11 @@ const deleteGameConfirmed = () => {
             // Will redirect to games index
         }
     })
+}
+
+const refreshRegistrationData = () => {
+    // Refresh the page to get updated registration data
+    window.location.reload()
 }
 
 // Computed properties for safe team name access
@@ -369,10 +395,12 @@ function getStatusClasses(status) {
 
 function getGameTypeLabel(type) {
     const labels = {
-        'league': 'Liga',
-        'friendly': 'Freundschaftsspiel',
+        'regular_season': 'Liga',
         'playoff': 'Playoff',
-        'tournament': 'Turnier'
+        'championship': 'Meisterschaft',
+        'friendly': 'Freundschaftsspiel',
+        'tournament': 'Turnier',
+        'scrimmage': 'Testspielserie'
     }
     return labels[type] || type
 }

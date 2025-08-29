@@ -2,7 +2,7 @@
     <AppLayout title="Live Scoring">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                Live Scoring: {{ game.home_team.name }} vs {{ game.away_team.name }}
+                Live Scoring: {{ game.home_team?.name || game.home_team_name || 'TBD' }} vs {{ game.away_team?.name || game.away_team_name || 'TBD' }}
             </h2>
         </template>
 
@@ -18,7 +18,7 @@
                                         {{ liveGame?.current_score_home || game.home_team_score || 0 }}
                                     </div>
                                     <div class="text-sm text-gray-600 dark:text-gray-400">
-                                        {{ game.home_team.name }}
+                                        {{ game.home_team?.name || game.home_team_name || 'TBD' }}
                                     </div>
                                 </div>
                                 
@@ -31,7 +31,7 @@
                                         {{ liveGame?.current_score_away || game.away_team_score || 0 }}
                                     </div>
                                     <div class="text-sm text-gray-600 dark:text-gray-400">
-                                        {{ game.away_team.name }}
+                                        {{ game.away_team?.name || game.away_team_name || 'TBD' }}
                                     </div>
                                 </div>
                             </div>
@@ -105,14 +105,14 @@
                                 class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
                                 :disabled="processing || liveGame?.is_in_timeout"
                             >
-                                Timeout {{ game.home_team.name }} ({{ liveGame?.timeouts_home_remaining || 5 }})
+                                Timeout {{ game.home_team?.name || game.home_team_name || 'TBD' }} ({{ liveGame?.timeouts_home_remaining || 5 }})
                             </button>
                             <button
                                 @click="startTimeout('away')"
                                 class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
                                 :disabled="processing || liveGame?.is_in_timeout"
                             >
-                                Timeout {{ game.away_team.name }} ({{ liveGame?.timeouts_away_remaining || 5 }})
+                                Timeout {{ game.away_team?.name || game.away_team_name || 'TBD' }} ({{ liveGame?.timeouts_away_remaining || 5 }})
                             </button>
                             <button
                                 @click="startTimeout('official')"

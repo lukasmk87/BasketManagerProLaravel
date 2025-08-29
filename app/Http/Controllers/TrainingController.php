@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TrainingSession;
-use App\Models\Drill;
-use App\Services\TrainingService;
 use App\Http\Requests\Drill\CreateDrillRequest;
 use App\Http\Requests\Drill\UpdateDrillRequest;
-use Illuminate\Http\Request;
+use App\Models\Drill;
+use App\Models\TrainingSession;
+use App\Services\TrainingService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,17 +24,17 @@ class TrainingController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        
+
         $upcomingSessions = TrainingSession::query()
             ->with(['team.club'])
             ->where('scheduled_at', '>', now())
-            ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
+            ->when(! $user->hasRole('admin') && ! $user->hasRole('super_admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
-                      ->orWhereJsonContains('assistant_coaches', $user->id)
-                      ->orWhereHas('club.users', function ($subQ) use ($user) {
-                          $subQ->where('user_id', $user->id);
-                      });
+                        ->orWhereJsonContains('assistant_coaches', $user->id)
+                        ->orWhereHas('club.users', function ($subQ) use ($user) {
+                            $subQ->where('user_id', $user->id);
+                        });
                 });
             })
             ->orderBy('scheduled_at')
@@ -44,13 +44,13 @@ class TrainingController extends Controller
         $recentSessions = TrainingSession::query()
             ->with(['team.club'])
             ->where('scheduled_at', '<', now())
-            ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
+            ->when(! $user->hasRole('admin') && ! $user->hasRole('super_admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
-                      ->orWhereJsonContains('assistant_coaches', $user->id)
-                      ->orWhereHas('club.users', function ($subQ) use ($user) {
-                          $subQ->where('user_id', $user->id);
-                      });
+                        ->orWhereJsonContains('assistant_coaches', $user->id)
+                        ->orWhereHas('club.users', function ($subQ) use ($user) {
+                            $subQ->where('user_id', $user->id);
+                        });
                 });
             })
             ->orderBy('scheduled_at', 'desc')
@@ -69,30 +69,30 @@ class TrainingController extends Controller
     public function sessions(Request $request): Response
     {
         $user = $request->user();
-        
+
         $sessions = TrainingSession::query()
             ->with(['team.club', 'drills'])
-            ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
+            ->when(! $user->hasRole('admin') && ! $user->hasRole('super_admin'), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
-                      ->orWhereJsonContains('assistant_coaches', $user->id)
-                      ->orWhereHas('club.users', function ($subQ) use ($user) {
-                          $subQ->where('user_id', $user->id);
-                      });
+                        ->orWhereJsonContains('assistant_coaches', $user->id)
+                        ->orWhereHas('club.users', function ($subQ) use ($user) {
+                            $subQ->where('user_id', $user->id);
+                        });
                 });
             })
             ->orderBy('scheduled_at', 'desc')
             ->paginate(20);
 
         // Get teams and coaches for filters
-        $teams = $user->hasRole(['admin', 'super_admin']) 
+        $teams = $user->hasRole(['admin', 'super_admin'])
             ? \App\Models\Team::with('club')->orderBy('name')->get()
             : $user->coachedTeams()->with('club')->orderBy('name')->get();
 
-        $coaches = $user->hasRole(['admin', 'super_admin']) 
+        $coaches = $user->hasRole(['admin', 'super_admin'])
             ? \App\Models\User::whereHas('roles', function ($q) {
                 $q->where('name', 'trainer');
-              })->orderBy('name')->get()
+            })->orderBy('name')->get()
             : collect([$user]);
 
         return Inertia::render('Training/Sessions', [
@@ -113,7 +113,7 @@ class TrainingController extends Controller
     public function drills(Request $request): Response
     {
         $user = $request->user();
-        
+
         $drills = Drill::query()
             ->accessibleByUser($user->id)
             ->withAvg('ratings', 'rating')
@@ -139,11 +139,25 @@ class TrainingController extends Controller
         $session->load([
             'team.club',
             'drills',
-            'attendance.player.user'
+            'attendance.player.user',
+            'registrations.player',
         ]);
+
+        // Get current player's registration if they are a player
+        $currentPlayerRegistration = null;
+        if (auth()->user()->player) {
+            $currentPlayerRegistration = $session->registrations()
+                ->where('player_id', auth()->user()->player->id)
+                ->first();
+        }
 
         return Inertia::render('Training/ShowSession', [
             'session' => $session,
+            'currentPlayerRegistration' => $currentPlayerRegistration,
+            'can' => [
+                'update' => auth()->user()->can('update', $session),
+                'delete' => auth()->user()->can('delete', $session),
+            ],
         ]);
     }
 
@@ -155,9 +169,9 @@ class TrainingController extends Controller
         $this->authorize('create', TrainingSession::class);
 
         $user = auth()->user();
-        
+
         // Get teams that the user can create sessions for
-        $teams = $user->hasRole(['admin', 'super_admin']) 
+        $teams = $user->hasRole(['admin', 'super_admin'])
             ? \App\Models\Team::with('club')->orderBy('name')->get()
             : $user->coachedTeams()->with('club')->orderBy('name')->get();
 
@@ -178,8 +192,8 @@ class TrainingController extends Controller
     public function storeSession(\App\Http\Requests\TrainingSession\CreateTrainingSessionRequest $request): RedirectResponse
     {
         $user = $request->user();
-        
-        if (!$user->can('create', TrainingSession::class)) {
+
+        if (! $user->can('create', TrainingSession::class)) {
             abort(403, 'Sie haben keine Berechtigung, Trainingseinheiten zu erstellen.');
         }
 
@@ -191,7 +205,7 @@ class TrainingController extends Controller
                 ->with('success', 'Trainingseinheit wurde erfolgreich erstellt.');
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Fehler beim Erstellen der Trainingseinheit: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Fehler beim Erstellen der Trainingseinheit: '.$e->getMessage()])
                 ->withInput();
         }
     }
@@ -202,15 +216,15 @@ class TrainingController extends Controller
     public function editSession(TrainingSession $session): Response
     {
         $user = auth()->user();
-        
-        if (!$user->can('update', $session)) {
+
+        if (! $user->can('update', $session)) {
             abort(403, 'Sie haben keine Berechtigung, diese Trainingseinheit zu bearbeiten.');
         }
 
         $session->load(['team.club', 'drills']);
-        
+
         // Get teams that the user can assign sessions to
-        $teams = $user->hasRole(['admin', 'super_admin']) 
+        $teams = $user->hasRole(['admin', 'super_admin'])
             ? \App\Models\Team::with('club')->orderBy('name')->get()
             : $user->coachedTeams()->with('club')->orderBy('name')->get();
 
@@ -232,8 +246,8 @@ class TrainingController extends Controller
     public function updateSession(\App\Http\Requests\TrainingSession\UpdateTrainingSessionRequest $request, TrainingSession $session): RedirectResponse
     {
         $user = $request->user();
-        
-        if (!$user->can('update', $session)) {
+
+        if (! $user->can('update', $session)) {
             abort(403, 'Sie haben keine Berechtigung, diese Trainingseinheit zu bearbeiten.');
         }
 
@@ -245,7 +259,7 @@ class TrainingController extends Controller
                 ->with('success', 'Trainingseinheit wurde erfolgreich aktualisiert.');
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Fehler beim Aktualisieren der Trainingseinheit: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Fehler beim Aktualisieren der Trainingseinheit: '.$e->getMessage()])
                 ->withInput();
         }
     }
@@ -266,8 +280,8 @@ class TrainingController extends Controller
     public function storeDrill(CreateDrillRequest $request): RedirectResponse
     {
         $user = $request->user();
-        
-        if (!$user->can('create', Drill::class)) {
+
+        if (! $user->can('create', Drill::class)) {
             abort(403, 'Sie haben keine Berechtigung, Trainingsübungen zu erstellen.');
         }
 
@@ -302,8 +316,8 @@ class TrainingController extends Controller
     public function editDrill(Drill $drill): Response
     {
         $user = auth()->user();
-        
-        if (!$user->can('update', $drill)) {
+
+        if (! $user->can('update', $drill)) {
             abort(403, 'Sie haben keine Berechtigung, diese Trainingsübung zu bearbeiten.');
         }
 
@@ -318,8 +332,8 @@ class TrainingController extends Controller
     public function updateDrill(UpdateDrillRequest $request, Drill $drill): RedirectResponse
     {
         $user = $request->user();
-        
-        if (!$user->can('update', $drill)) {
+
+        if (! $user->can('update', $drill)) {
             abort(403, 'Sie haben keine Berechtigung, diese Trainingsübung zu bearbeiten.');
         }
 
@@ -336,8 +350,8 @@ class TrainingController extends Controller
     public function destroyDrill(Drill $drill): RedirectResponse
     {
         $user = auth()->user();
-        
-        if (!$user->can('delete', $drill)) {
+
+        if (! $user->can('delete', $drill)) {
             abort(403, 'Sie haben keine Berechtigung, diese Trainingsübung zu löschen.');
         }
 

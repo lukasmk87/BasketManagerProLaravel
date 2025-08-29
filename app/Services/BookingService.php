@@ -3,11 +3,11 @@
 namespace App\Services;
 
 use App\Models\Game;
-use App\Models\GameRegistration;
 use App\Models\GameParticipation;
+use App\Models\GameRegistration;
 use App\Models\Player;
-use App\Models\TrainingSession;
 use App\Models\TrainingRegistration;
+use App\Models\TrainingSession;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
@@ -21,9 +21,9 @@ class BookingService
     public function registerForTraining(int $trainingSessionId, int $playerId, ?string $notes = null): TrainingRegistration
     {
         $session = TrainingSession::findOrFail($trainingSessionId);
-        
+
         $this->validateTrainingRegistration($session, $playerId);
-        
+
         return DB::transaction(function () use ($session, $playerId, $notes) {
             return $session->registerPlayer($playerId, $notes);
         });
@@ -37,7 +37,7 @@ class BookingService
         $session = TrainingSession::findOrFail($trainingSessionId);
         $registration = $session->getPlayerRegistration($playerId);
 
-        if (!$registration) {
+        if (! $registration) {
             throw new Exception('Keine Anmeldung für diese Trainingseinheit gefunden.');
         }
 
@@ -52,7 +52,7 @@ class BookingService
     public function confirmTrainingRegistration(int $registrationId, int $confirmedByUserId, ?string $notes = null): bool
     {
         $registration = TrainingRegistration::findOrFail($registrationId);
-        
+
         return DB::transaction(function () use ($registration, $confirmedByUserId, $notes) {
             return $registration->confirm($confirmedByUserId, $notes);
         });
@@ -64,7 +64,7 @@ class BookingService
     public function declineTrainingRegistration(int $registrationId, int $declinedByUserId, ?string $reason = null): bool
     {
         $registration = TrainingRegistration::findOrFail($registrationId);
-        
+
         return DB::transaction(function () use ($registration, $declinedByUserId, $reason) {
             return $registration->decline($declinedByUserId, $reason);
         });
@@ -76,9 +76,9 @@ class BookingService
     public function registerForGame(int $gameId, int $playerId, string $availabilityStatus = 'available', ?string $notes = null): GameRegistration
     {
         $game = Game::findOrFail($gameId);
-        
+
         $this->validateGameRegistration($game, $playerId);
-        
+
         return DB::transaction(function () use ($game, $playerId, $availabilityStatus, $notes) {
             return $game->registerPlayer($playerId, $availabilityStatus, $notes);
         });
@@ -92,7 +92,7 @@ class BookingService
         $game = Game::findOrFail($gameId);
         $registration = $game->getPlayerRegistration($playerId);
 
-        if (!$registration) {
+        if (! $registration) {
             throw new Exception('Keine Anmeldung für dieses Spiel gefunden.');
         }
 
@@ -107,7 +107,7 @@ class BookingService
     public function confirmGameRegistration(int $registrationId, int $confirmedByUserId, ?string $notes = null): bool
     {
         $registration = GameRegistration::findOrFail($registrationId);
-        
+
         return DB::transaction(function () use ($registration, $confirmedByUserId, $notes) {
             return $registration->confirm($confirmedByUserId, $notes);
         });
@@ -124,9 +124,9 @@ class BookingService
         ?string $position = null
     ): GameParticipation {
         $game = Game::findOrFail($gameId);
-        
+
         $this->validateGameParticipation($game, $playerId, $jerseyNumber);
-        
+
         return DB::transaction(function () use ($game, $playerId, $role, $jerseyNumber, $position) {
             return $game->addPlayerToRoster($playerId, $role, $jerseyNumber, $position);
         });
@@ -140,12 +140,13 @@ class BookingService
         $game = Game::findOrFail($gameId);
         $participation = $game->getPlayerParticipation($playerId);
 
-        if (!$participation) {
+        if (! $participation) {
             throw new Exception('Spieler ist nicht im Kader für dieses Spiel.');
         }
 
         return DB::transaction(function () use ($participation) {
             $participation->delete();
+
             return true;
         });
     }
@@ -165,12 +166,12 @@ class BookingService
                     $registration = $session->registerPlayer($playerId, $notes);
                     $results['success'][] = [
                         'player_id' => $playerId,
-                        'registration' => $registration
+                        'registration' => $registration,
                     ];
                 } catch (Exception $e) {
                     $results['errors'][] = [
                         'player_id' => $playerId,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ];
                 }
             }
@@ -198,18 +199,151 @@ class BookingService
                     $registration = $game->registerPlayer($playerId, $availabilityStatus, $notes);
                     $results['success'][] = [
                         'player_id' => $playerId,
-                        'registration' => $registration
+                        'registration' => $registration,
                     ];
                 } catch (Exception $e) {
                     $results['errors'][] = [
                         'player_id' => $playerId,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ];
                 }
             }
         });
 
         return $results;
+    }
+
+    /**
+     * Register for training with flexible status.
+     */
+    public function registerForTraining(int $trainingSessionId, int $playerId, string $status = 'registered', ?string $notes = null): TrainingRegistration
+    {
+        $session = TrainingSession::findOrFail($trainingSessionId);
+
+        return DB::transaction(function () use ($session, $playerId, $status, $notes) {
+            // Check if registration already exists
+            $existingRegistration = $session->registrations()
+                ->where('player_id', $playerId)
+                ->first();
+
+            if ($existingRegistration) {
+                // Update existing registration
+                $existingRegistration->update([
+                    'status' => $status,
+                    'registration_notes' => $notes,
+                    'cancelled_at' => $status === 'cancelled' ? now() : null,
+                    'cancellation_reason' => $status === 'cancelled' ? $notes : null,
+                ]);
+
+                return $existingRegistration;
+            }
+
+            // Create new registration
+            return TrainingRegistration::create([
+                'training_session_id' => $trainingSessionId,
+                'player_id' => $playerId,
+                'status' => $status,
+                'registered_at' => now(),
+                'registration_notes' => $notes,
+                'cancelled_at' => $status === 'cancelled' ? now() : null,
+                'cancellation_reason' => $status === 'cancelled' ? $notes : null,
+            ]);
+        });
+    }
+
+    /**
+     * Update training registration status.
+     */
+    public function updateTrainingRegistration(int $trainingSessionId, int $playerId, string $status, ?string $notes = null, ?string $cancellationReason = null): bool
+    {
+        $session = TrainingSession::findOrFail($trainingSessionId);
+        $registration = $session->registrations()->where('player_id', $playerId)->first();
+
+        if (! $registration) {
+            throw new Exception('Keine Anmeldung für diese Trainingseinheit gefunden.');
+        }
+
+        return DB::transaction(function () use ($registration, $status, $notes, $cancellationReason) {
+            return $registration->update([
+                'status' => $status,
+                'registration_notes' => $notes,
+                'cancelled_at' => $status === 'cancelled' ? now() : null,
+                'cancellation_reason' => $status === 'cancelled' ? $cancellationReason : null,
+            ]);
+        });
+    }
+
+    /**
+     * Confirm training registration (by trainer).
+     */
+    public function confirmTrainingRegistration(int $registrationId, int $confirmerId, ?string $trainerNotes = null): bool
+    {
+        $registration = TrainingRegistration::findOrFail($registrationId);
+
+        return DB::transaction(function () use ($registration, $confirmerId, $trainerNotes) {
+            return $registration->update([
+                'status' => 'confirmed',
+                'trainer_notes' => $trainerNotes,
+                'confirmed_by_user_id' => $confirmerId,
+                'confirmed_at' => now(),
+            ]);
+        });
+    }
+
+    /**
+     * Bulk register for training sessions.
+     */
+    public function bulkRegisterForTraining(int $trainingSessionId, array $players): array
+    {
+        $results = ['success' => [], 'errors' => []];
+
+        return DB::transaction(function () use ($trainingSessionId, $players, &$results) {
+            foreach ($players as $playerData) {
+                try {
+                    $registration = $this->registerForTraining(
+                        $trainingSessionId,
+                        $playerData['player_id'],
+                        $playerData['status'] ?? 'registered',
+                        $playerData['registration_notes'] ?? null
+                    );
+
+                    $results['success'][] = [
+                        'player_id' => $playerData['player_id'],
+                        'registration' => $registration,
+                    ];
+                } catch (Exception $e) {
+                    $results['errors'][] = [
+                        'player_id' => $playerData['player_id'],
+                        'error' => $e->getMessage(),
+                    ];
+                }
+            }
+        });
+
+        return $results;
+    }
+
+    /**
+     * Get training registrations for a player.
+     */
+    public function getTrainingRegistrations(int $playerId, ?Carbon $startDate = null, ?Carbon $endDate = null): Collection
+    {
+        $query = TrainingRegistration::query()
+            ->with(['trainingSession.team'])
+            ->where('player_id', $playerId);
+
+        if ($startDate || $endDate) {
+            $query->whereHas('trainingSession', function ($q) use ($startDate, $endDate) {
+                if ($startDate) {
+                    $q->where('scheduled_at', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $q->where('scheduled_at', '<=', $endDate);
+                }
+            });
+        }
+
+        return $query->orderBy('registered_at', 'desc')->get();
     }
 
     /**
@@ -311,7 +445,7 @@ class BookingService
                     'hours_until_deadline' => now()->diffInHours($deadline, false),
                     'is_registered' => $registration !== null,
                     'registration_status' => $registration?->status,
-                    'can_register' => $session->isRegistrationOpen() && !$registration,
+                    'can_register' => $session->isRegistrationOpen() && ! $registration,
                 ];
             }
         }
@@ -336,14 +470,14 @@ class BookingService
                 $deadlines[] = [
                     'type' => 'game_registration',
                     'id' => $game->id,
-                    'title' => "vs " . ($game->homeTeam->name ?? 'TBD'),
+                    'title' => 'vs '.($game->homeTeam->name ?? 'TBD'),
                     'scheduled_at' => $game->scheduled_at,
                     'deadline' => $registrationDeadline,
                     'hours_until_deadline' => now()->diffInHours($registrationDeadline, false),
                     'is_registered' => $registration !== null,
                     'registration_status' => $registration?->registration_status,
                     'availability_status' => $registration?->availability_status,
-                    'can_register' => $game->isRegistrationOpen() && !$registration,
+                    'can_register' => $game->isRegistrationOpen() && ! $registration,
                 ];
             }
 
@@ -351,11 +485,11 @@ class BookingService
                 $deadlines[] = [
                     'type' => 'game_lineup',
                     'id' => $game->id,
-                    'title' => "Aufstellung vs " . ($game->homeTeam->name ?? 'TBD'),
+                    'title' => 'Aufstellung vs '.($game->homeTeam->name ?? 'TBD'),
                     'scheduled_at' => $game->scheduled_at,
                     'deadline' => $lineupDeadline,
                     'hours_until_deadline' => now()->diffInHours($lineupDeadline, false),
-                    'is_final' => !$game->isLineupChangesAllowed(),
+                    'is_final' => ! $game->isLineupChangesAllowed(),
                 ];
             }
         }
@@ -373,7 +507,7 @@ class BookingService
      */
     protected function validateTrainingRegistration(TrainingSession $session, int $playerId): void
     {
-        if (!$session->isRegistrationOpen()) {
+        if (! $session->isRegistrationOpen()) {
             throw new Exception('Anmeldefrist für diese Trainingseinheit ist bereits abgelaufen.');
         }
 
@@ -381,17 +515,17 @@ class BookingService
             throw new Exception('Spieler ist bereits für diese Trainingseinheit angemeldet.');
         }
 
-        if (!$session->hasCapacity() && !$session->enable_waitlist) {
+        if (! $session->hasCapacity() && ! $session->enable_waitlist) {
             throw new Exception('Trainingseinheit ist bereits ausgebucht und Warteliste ist nicht aktiviert.');
         }
 
         // Check if player exists and is active
         $player = Player::find($playerId);
-        if (!$player) {
+        if (! $player) {
             throw new Exception('Spieler nicht gefunden.');
         }
 
-        if (!$player->is_active) {
+        if (! $player->is_active) {
             throw new Exception('Spieler ist nicht aktiv und kann sich nicht anmelden.');
         }
     }
@@ -401,7 +535,7 @@ class BookingService
      */
     protected function validateGameRegistration(Game $game, int $playerId): void
     {
-        if (!$game->isRegistrationOpen()) {
+        if (! $game->isRegistrationOpen()) {
             throw new Exception('Anmeldefrist für dieses Spiel ist bereits abgelaufen.');
         }
 
@@ -411,11 +545,11 @@ class BookingService
 
         // Check if player exists and is active
         $player = Player::find($playerId);
-        if (!$player) {
+        if (! $player) {
             throw new Exception('Spieler nicht gefunden.');
         }
 
-        if (!$player->is_active) {
+        if (! $player->is_active) {
             throw new Exception('Spieler ist nicht aktiv und kann sich nicht anmelden.');
         }
     }
@@ -425,7 +559,7 @@ class BookingService
      */
     protected function validateGameParticipation(Game $game, int $playerId, ?int $jerseyNumber = null): void
     {
-        if (!$game->isLineupChangesAllowed()) {
+        if (! $game->isLineupChangesAllowed()) {
             throw new Exception('Kader-Änderungen sind für dieses Spiel nicht mehr erlaubt.');
         }
 
@@ -433,7 +567,7 @@ class BookingService
             throw new Exception('Spieler ist bereits im Kader für dieses Spiel.');
         }
 
-        if (!$game->hasRosterCapacity()) {
+        if (! $game->hasRosterCapacity()) {
             throw new Exception('Kader ist bereits voll.');
         }
 
@@ -449,11 +583,11 @@ class BookingService
 
         // Check if player exists and is active
         $player = Player::find($playerId);
-        if (!$player) {
+        if (! $player) {
             throw new Exception('Spieler nicht gefunden.');
         }
 
-        if (!$player->is_active) {
+        if (! $player->is_active) {
             throw new Exception('Spieler ist nicht aktiv und kann nicht zum Kader hinzugefügt werden.');
         }
     }

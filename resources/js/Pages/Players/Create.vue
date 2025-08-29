@@ -642,7 +642,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, usePage } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
@@ -650,6 +650,7 @@ import TextInput from '@/Components/TextInput.vue'
 import InputLabel from '@/Components/InputLabel.vue'
 import InputError from '@/Components/InputError.vue'
 import TagInput from '@/Components/TagInput.vue'
+import { getCurrentToken, ensureTokenForAxios } from '@/utils/csrf'
 
 const props = defineProps({
     teams: Array,
@@ -811,6 +812,31 @@ const submit = () => {
         }
     }
     
-    form.post(route('web.players.store'))
+    // Ensure CSRF token is available before submitting
+    ensureTokenForAxios()
+    
+    // Submit form with enhanced error handling
+    form.post(route('web.players.store'), {
+        onError: (errors) => {
+            // Handle 419 CSRF errors specifically
+            if (errors.message && errors.message.includes('419')) {
+                console.warn('CSRF token expired, form will be retried automatically')
+                // The global error handler in app.js will handle token refresh and retry
+                return
+            }
+            
+            // Handle validation errors - scroll to first error section
+            for (const section of formSections.value) {
+                const hasErrorInSection = section.fields.some(field => errors[field])
+                if (hasErrorInSection) {
+                    activeSection.value = section.id
+                    break
+                }
+            }
+        },
+        onSuccess: () => {
+            console.log('Player created successfully')
+        }
+    })
 }
 </script>

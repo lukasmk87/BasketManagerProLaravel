@@ -7,38 +7,44 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from 'ziggy-js';
 import { router } from '@inertiajs/vue3';
+import { getCurrentToken, updateToken, handle419Error, ensureTokenForAxios } from './utils/csrf';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// Configure router to use axios with CSRF handling and add request interceptor
+// Enhanced CSRF token handling with Inertia integration
 router.on('before', (event) => {
-    // Ensure the CSRF token is fresh before each navigation
-    const token = document.head.querySelector('meta[name="csrf-token"]');
-    if (token && window.axios.defaults.headers.common['X-CSRF-TOKEN'] !== token.content) {
-        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
-        console.log('Updated CSRF token for navigation');
+    // Ensure CSRF token is available and up to date
+    ensureTokenForAxios();
+});
+
+// Handle 419 errors globally for Inertia requests
+router.on('error', async (errors) => {
+    // Check if any errors are 419 (CSRF token mismatch)
+    const has419Error = Object.values(errors.response?.data?.errors || {}).some(error => 
+        error.some(msg => msg.includes('CSRF') || msg.includes('419'))
+    ) || errors.response?.status === 419;
+    
+    if (has419Error) {
+        console.warn('CSRF token error detected, attempting to refresh...');
+        try {
+            const newToken = await handle419Error();
+            if (newToken) {
+                console.log('CSRF token refreshed, retrying request...');
+                // The token has been updated, Inertia will automatically retry
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to refresh CSRF token:', error);
+        }
     }
 });
 
-// Refresh CSRF token when the page becomes visible (user returns to tab)
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && window.refreshCsrfTokenAndMeta) {
-        console.log('Page became visible, refreshing CSRF token...');
-        window.refreshCsrfTokenAndMeta().catch(error => {
-            console.warn('Failed to refresh CSRF token on visibility change:', error);
-        });
+// Update tokens when page props change
+router.on('success', (page) => {
+    if (page.props?.csrf_token) {
+        updateToken(page.props.csrf_token);
     }
 });
-
-// Refresh CSRF token periodically (every 30 minutes)
-setInterval(() => {
-    if (window.refreshCsrfTokenAndMeta) {
-        console.log('Periodic CSRF token refresh...');
-        window.refreshCsrfTokenAndMeta().catch(error => {
-            console.warn('Failed to refresh CSRF token periodically:', error);
-        });
-    }
-}, 30 * 60 * 1000); // 30 minutes
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,

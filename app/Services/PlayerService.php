@@ -23,6 +23,9 @@ class PlayerService
 
         try {
             // Validate user exists
+            if (!isset($data['user_id'])) {
+                throw new \InvalidArgumentException('Benutzer-ID ist erforderlich.');
+            }
             $user = User::findOrFail($data['user_id']);
             
             // Validate team exists if provided

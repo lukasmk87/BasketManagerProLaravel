@@ -57,7 +57,7 @@ const getGameStatus = (game) => {
 const getGameResult = (game, teamName) => {
     if (game.status !== 'completed') return null;
     
-    const isHome = game.home_team.name === teamName;
+    const isHome = (game.home_team?.name || game.home_team_name) === teamName;
     const teamScore = isHome ? game.home_team_score : game.away_team_score;
     const opponentScore = isHome ? game.away_team_score : game.home_team_score;
     
@@ -147,11 +147,11 @@ const handleViewAllRecent = () => {
                             <!-- Teams -->
                             <div class="flex items-center space-x-3 mb-2">
                                 <div class="text-sm font-medium text-gray-900">
-                                    {{ game.home_team.name }}
+                                    {{ game.home_team?.name || game.home_team_name || 'TBD' }}
                                 </div>
                                 <div class="text-sm text-gray-500">vs</div>
                                 <div class="text-sm font-medium text-gray-900">
-                                    {{ game.away_team.name }}
+                                    {{ game.away_team?.name || game.away_team_name || 'TBD' }}
                                 </div>
                             </div>
                             
@@ -217,7 +217,7 @@ const handleViewAllRecent = () => {
                             <!-- Teams and Score -->
                             <div class="flex items-center space-x-3 mb-2">
                                 <div class="text-sm font-medium text-gray-900">
-                                    {{ game.home_team.name }}
+                                    {{ game.home_team?.name || game.home_team_name || 'TBD' }}
                                 </div>
                                 <div class="text-lg font-bold"
                                      :class="{
@@ -237,7 +237,7 @@ const handleViewAllRecent = () => {
                                     {{ game.away_team_score }}
                                 </div>
                                 <div class="text-sm font-medium text-gray-900">
-                                    {{ game.away_team.name }}
+                                    {{ game.away_team?.name || game.away_team_name || 'TBD' }}
                                 </div>
                             </div>
                             
