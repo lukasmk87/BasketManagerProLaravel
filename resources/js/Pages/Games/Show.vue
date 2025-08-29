@@ -13,6 +13,13 @@
                     >
                         Bearbeiten
                     </SecondaryButton>
+                    <DangerButton
+                        v-if="can?.delete && game.status === 'scheduled'"
+                        type="button"
+                        @click="confirmingGameDeletion = true"
+                    >
+                        Löschen
+                    </DangerButton>
                     <PrimaryButton 
                         v-if="game.status === 'scheduled' && can?.score"
                         :href="route('games.live-scoring', game.id)"
@@ -242,20 +249,61 @@
                 </div>
             </div>
         </div>
+
+        <!-- Delete Game Confirmation Modal -->
+        <ConfirmationModal :show="confirmingGameDeletion" @close="confirmingGameDeletion = false">
+            <template #title>
+                Spiel löschen
+            </template>
+
+            <template #content>
+                Sind Sie sicher, dass Sie dieses Spiel löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+            </template>
+
+            <template #footer>
+                <SecondaryButton @click="confirmingGameDeletion = false">
+                    Abbrechen
+                </SecondaryButton>
+
+                <DangerButton
+                    class="ml-3"
+                    :class="{ 'opacity-25': deleteForm.processing }"
+                    :disabled="deleteForm.processing"
+                    @click="deleteGameConfirmed"
+                >
+                    Spiel löschen
+                </DangerButton>
+            </template>
+        </ConfirmationModal>
     </AppLayout>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
+import DangerButton from '@/Components/DangerButton.vue'
+import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 
 const props = defineProps({
     game: Object,
     gameStats: Object,
     can: Object,
 })
+
+// Delete functionality
+const confirmingGameDeletion = ref(false)
+const deleteForm = useForm({})
+
+const deleteGameConfirmed = () => {
+    deleteForm.delete(route('web.games.destroy', props.game.id), {
+        onSuccess: () => {
+            // Will redirect to games index
+        }
+    })
+}
 
 // Computed properties for safe team name access
 const homeTeamName = computed(() => {

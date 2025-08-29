@@ -163,11 +163,23 @@
                                             v-if="game.can?.update && game.status === 'scheduled'"
                                             :href="route('web.games.edit', game.id)"
                                             class="text-gray-400 hover:text-gray-500"
+                                            title="Bearbeiten"
                                         >
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
                                         </Link>
+                                        
+                                        <button
+                                            v-if="game.can?.delete && game.status === 'scheduled'"
+                                            @click="confirmDeleteGame(game)"
+                                            class="text-red-400 hover:text-red-500"
+                                            title="Löschen"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -199,19 +211,81 @@
                 </div>
             </div>
         </div>
+
+        <!-- Delete Game Confirmation Modal -->
+        <ConfirmationModal :show="confirmingGameDeletion" @close="confirmingGameDeletion = false">
+            <template #title>
+                Spiel löschen
+            </template>
+
+            <template #content>
+                <div v-if="gameToDelete">
+                    Sind Sie sicher, dass Sie das Spiel <strong>{{ gameToDelete.home_team?.name }} vs {{ gameToDelete.away_team?.name }}</strong> 
+                    vom {{ formatDate(gameToDelete.scheduled_at) }} löschen möchten?
+                    <br><br>
+                    Diese Aktion kann nicht rückgängig gemacht werden.
+                </div>
+            </template>
+
+            <template #footer>
+                <SecondaryButton @click="cancelDelete">
+                    Abbrechen
+                </SecondaryButton>
+
+                <DangerButton
+                    class="ml-3"
+                    :class="{ 'opacity-25': deleteForm.processing }"
+                    :disabled="deleteForm.processing"
+                    @click="deleteGameConfirmed"
+                >
+                    Spiel löschen
+                </DangerButton>
+            </template>
+        </ConfirmationModal>
     </AppLayout>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import { useForm, Link } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
-import { Link } from '@inertiajs/vue3'
+import DangerButton from '@/Components/DangerButton.vue'
+import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 
 defineProps({
     games: Object,
     can: Object,
 })
+
+// Delete functionality
+const confirmingGameDeletion = ref(false)
+const gameToDelete = ref(null)
+const deleteForm = useForm({})
+
+const confirmDeleteGame = (game) => {
+    gameToDelete.value = game
+    confirmingGameDeletion.value = true
+}
+
+const cancelDelete = () => {
+    confirmingGameDeletion.value = false
+    gameToDelete.value = null
+}
+
+const deleteGameConfirmed = () => {
+    if (gameToDelete.value) {
+        deleteForm.delete(route('web.games.destroy', gameToDelete.value.id), {
+            onSuccess: () => {
+                cancelDelete()
+            },
+            onError: () => {
+                // Error handling is done by Inertia
+            }
+        })
+    }
+}
 
 const getStatusText = (status) => {
     const statusTexts = {
