@@ -39,30 +39,26 @@ class UserService
                 'email' => $data['email'],
                 'password' => $data['password'],
                 'phone' => $data['phone'] ?? null,
-                'birth_date' => $data['birth_date'] ?? null,
+                'date_of_birth' => $data['date_of_birth'] ?? $data['birth_date'] ?? null,
                 'gender' => $data['gender'] ?? null,
-                'address' => $data['address'] ?? null,
-                'city' => $data['city'] ?? null,
-                'state' => $data['state'] ?? null,
-                'postal_code' => $data['postal_code'] ?? null,
-                'country' => $data['country'] ?? 'DE',
+                'address_street' => $data['address_street'] ?? $data['address'] ?? null,
+                'address_city' => $data['address_city'] ?? $data['city'] ?? null,
+                'address_state' => $data['address_state'] ?? $data['state'] ?? null,
+                'address_zip' => $data['address_zip'] ?? $data['postal_code'] ?? null,
+                'address_country' => $data['address_country'] ?? $data['country'] ?? 'DE',
                 'language' => $data['language'] ?? 'de',
                 'timezone' => $data['timezone'] ?? 'Europe/Berlin',
-                'date_format' => $data['date_format'] ?? 'd.m.Y',
-                'time_format' => $data['time_format'] ?? 'H:i',
                 'is_active' => $data['is_active'] ?? true,
                 'email_verified_at' => $data['email_verified_at'] ?? null,
                 'last_login_at' => null,
-                'avatar_url' => $data['avatar_url'] ?? null,
                 'emergency_contact_name' => $data['emergency_contact_name'] ?? null,
                 'emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
                 'emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
-                'medical_notes' => $data['medical_notes'] ?? null,
                 'allergies' => $data['allergies'] ?? null,
                 'medications' => $data['medications'] ?? null,
-                'consent_marketing' => $data['consent_marketing'] ?? false,
-                'consent_data_processing' => $data['consent_data_processing'] ?? true,
-                'consent_medical_info_sharing' => $data['consent_medical_info_sharing'] ?? false,
+                'marketing_consent' => $data['marketing_consent'] ?? $data['consent_marketing'] ?? false,
+                'gdpr_consent' => $data['gdpr_consent'] ?? $data['consent_data_processing'] ?? true,
+                'medical_consent' => $data['medical_consent'] ?? $data['consent_medical_info_sharing'] ?? false,
                 'two_factor_confirmed_at' => null,
                 'two_factor_recovery_codes' => null,
                 'two_factor_secret' => null,
@@ -93,7 +89,7 @@ class UserService
                 $user->generated_password = $generatedPassword;
             }
 
-            return $user->fresh(['roles', 'playerProfile.team']);
+            return $user->fresh(['roles', 'playerProfile']);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -150,7 +146,7 @@ class UserService
                 'password_changed' => isset($data['password'])
             ]);
 
-            return $user->fresh(['roles', 'playerProfile.team']);
+            return $user->fresh(['roles', 'playerProfile']);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -409,10 +405,12 @@ class UserService
         }
 
         // Add player team
-        if ($user->isPlayer() && $user->playerProfile && $user->playerProfile->team) {
+        if ($user->isPlayer() && $user->playerProfile) {
             $playerTeam = $user->playerProfile->team()->with('club')->first();
-            $playerTeam->role_in_team = 'player';
-            $teams->push($playerTeam);
+            if ($playerTeam) {
+                $playerTeam->role_in_team = 'player';
+                $teams->push($playerTeam);
+            }
         }
 
         return $teams->unique('id')->values()->toArray();

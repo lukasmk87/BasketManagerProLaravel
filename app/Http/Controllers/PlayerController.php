@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Player;
 use App\Models\Team;
 use App\Services\PlayerService;
+use App\Services\UserService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -12,7 +13,8 @@ use Inertia\Response;
 class PlayerController extends Controller
 {
     public function __construct(
-        private PlayerService $playerService
+        private PlayerService $playerService,
+        private UserService $userService
     ) {}
 
     /**
@@ -188,7 +190,22 @@ class PlayerController extends Controller
             ]);
         }
 
-        $player = $this->playerService->createPlayer($validated);
+        // Create user first
+        $userData = [
+            'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'date_of_birth' => $validated['birth_date'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+        ];
+        
+        $user = $this->userService->createUser($userData);
+        
+        // Prepare player data with user_id
+        $playerData = $validated;
+        $playerData['user_id'] = $user->id;
+        
+        $player = $this->playerService->createPlayer($playerData);
 
         return redirect()->route('web.players.show', $player)
             ->with('success', 'Spieler wurde erfolgreich erstellt.');

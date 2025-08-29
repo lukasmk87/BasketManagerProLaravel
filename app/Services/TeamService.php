@@ -293,7 +293,7 @@ class TeamService
                           ->where('league', $team->league)
                           ->where('is_active', true);
                 })
-                ->where('players.status', 'active')
+                ->where('status', 'active')
                 ->first();
 
             if ($existingMembership) {

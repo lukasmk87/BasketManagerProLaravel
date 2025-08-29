@@ -41,7 +41,7 @@ class PlayerService
                 // Validate jersey number uniqueness within team
                 if (!empty($data['jersey_number'])) {
                     $existingPlayer = $team->players()
-                        ->where('jersey_number', $data['jersey_number'])
+                        ->where('player_team.jersey_number', $data['jersey_number'])
                         ->where('status', 'active')
                         ->first();
                     
@@ -170,7 +170,7 @@ class PlayerService
             // Validate jersey number uniqueness if changing
             if (isset($data['jersey_number']) && $data['jersey_number'] !== $player->jersey_number && $player->team) {
                 $existingPlayer = $player->team->players()
-                    ->where('jersey_number', $data['jersey_number'])
+                    ->where('player_team.jersey_number', $data['jersey_number'])
                     ->where('status', 'active')
                     ->where('id', '!=', $player->id)
                     ->first();
@@ -431,7 +431,7 @@ class PlayerService
             // Check for jersey number conflicts
             if ($player->jersey_number) {
                 $existingPlayer = $newTeam->players()
-                    ->where('jersey_number', $player->jersey_number)
+                    ->where('player_team.jersey_number', $player->jersey_number)
                     ->where('status', 'active')
                     ->first();
                 

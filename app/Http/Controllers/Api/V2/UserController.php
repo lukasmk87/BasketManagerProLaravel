@@ -207,7 +207,10 @@ class UserController extends Controller
 
         // Add player team
         if ($user->isPlayer() && $user->playerProfile) {
-            $teams->push($user->playerProfile->team()->with('club')->first());
+            $playerTeam = $user->playerProfile->team()->with('club')->first();
+            if ($playerTeam) {
+                $teams->push($playerTeam);
+            }
         }
 
         return response()->json([

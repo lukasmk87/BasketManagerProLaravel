@@ -47,26 +47,62 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'phone',
-        'birth_date',
+        'date_of_birth',
         'gender',
-        'bio',
-        'timezone',
-        'language',
+        'nationality',
+        'address_street',
+        'address_city',
+        'address_state',
+        'address_zip',
+        'address_country',
         'avatar_path',
+        'bio',
+        'social_links',
+        'basketball_experience',
+        'preferred_positions',
+        'skill_level',
         'preferences',
         'notification_settings',
-        'player_profile_active',
-        'coaching_certifications',
+        'privacy_settings',
+        'language',
+        'timezone',
+        'date_format',
+        'time_format',
+        'is_active',
+        'is_verified',
+        'verified_at',
+        'account_type',
+        'two_factor_enabled',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
         'last_login_at',
         'last_login_ip',
-        'is_active',
-        'subscription_tier',
-        'api_quota_reset_at',
-        'current_api_usage',
-        'api_key_hash',
-        'api_access_enabled',
-        'api_key_last_used_at',
-        'rate_limit_cache',
+        'login_count',
+        'parent_id',
+        'is_minor',
+        'guardian_consent_date',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'emergency_contact_relationship',
+        'blood_type',
+        'medical_conditions',
+        'allergies',
+        'medications',
+        'medical_consent',
+        'medical_consent_date',
+        'gdpr_consent',
+        'gdpr_consent_at',
+        'marketing_consent',
+        'marketing_consent_at',
+        'consent_history',
+        'occupation',
+        'employer',
+        'education_level',
+        'coaching_certifications',
+        'referee_certifications',
+        'background_check_completed',
+        'background_check_date',
     ];
 
     /**
@@ -126,6 +162,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function playerProfile(): HasOne
     {
         return $this->hasOne(Player::class);
+    }
+
+    /**
+     * Get the user's current team (for Jetstream compatibility).
+     * Returns the current Jetstream team relationship.
+     */
+    public function team()
+    {
+        // For Jetstream compatibility, return the currentTeam relationship
+        return $this->currentTeam();
     }
 
     /**
