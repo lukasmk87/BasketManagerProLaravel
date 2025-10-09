@@ -92,6 +92,17 @@
         .feature-card:hover .feature-icon {
             transform: scale(1.1);
         }
+        .future-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-left: 0.25rem;
+            vertical-align: middle;
+        }
     </style>
 </head>
 
@@ -327,7 +338,11 @@
                         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 5 Teams</li>
                         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 125 Spieler</li>
                         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Training Management</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Video-Analyse</li>
+                        <li class="flex items-center justify-center">
+                            <span class="text-orange-500 mr-2">🎬</span>
+                            <span>Video-Analyse</span>
+                            <span class="future-badge">AB Q2 2026</span>
+                        </li>
                         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Turniere</li>
                     </ul>
                     <a href="{{ route('register') }}" class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 transition-colors block">
@@ -345,9 +360,17 @@
                     <ul class="space-y-3 text-gray-600 mb-8">
                         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 15 Teams</li>
                         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 375 Spieler</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> ML Analytics</li>
+                        <li class="flex items-center justify-center">
+                            <span class="text-orange-500 mr-2">🎬</span>
+                            <span>Video-Analyse</span>
+                            <span class="future-badge">AB Q2 2026</span>
+                        </li>
+                        <li class="flex items-center justify-center">
+                            <span class="text-purple-500 mr-2">🤖</span>
+                            <span>ML Analytics</span>
+                            <span class="future-badge">AB Q3 2026</span>
+                        </li>
                         <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> API Zugang</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Priority Support</li>
                     </ul>
                     <a href="{{ route('register') }}" class="w-full bg-gray-900 text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-colors block">
                         Kostenlos starten
@@ -566,7 +589,7 @@
                     <ul class="space-y-2 text-gray-400">
                         <li><a href="#features" class="hover:text-orange-500">Features</a></li>
                         <li><a href="#pricing" class="hover:text-orange-500">Preise</a></li>
-                        <li><a href="#" class="hover:text-orange-500">Roadmap</a></li>
+                        <li><a href="{{ route('roadmap') }}" class="hover:text-orange-500">Roadmap</a></li>
                         <li><a href="#" class="hover:text-orange-500">Changelog</a></li>
                     </ul>
                 </div>

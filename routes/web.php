@@ -30,6 +30,10 @@ Route::get('/welcome', function () {
     ]);
 })->name('welcome');
 
+Route::get('/roadmap', function () {
+    return view('roadmap');
+})->name('roadmap');
+
 Route::middleware([
     'auth:web',
     config('jetstream.auth_session'),
