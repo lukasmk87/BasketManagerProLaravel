@@ -453,12 +453,15 @@ class Club extends Model implements HasMedia
     {
         $this->addMediaCollection('logo')
             ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/svg+xml']);
+            ->useDisk('public')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/svg+xml', 'image/jpg']);
 
         $this->addMediaCollection('gallery')
+            ->useDisk('public')
             ->acceptsMimeTypes(['image/jpeg', 'image/png']);
 
         $this->addMediaCollection('documents')
+            ->useDisk('public')
             ->acceptsMimeTypes(['application/pdf', 'application/msword']);
     }
 

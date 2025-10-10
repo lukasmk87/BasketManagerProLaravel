@@ -22,6 +22,60 @@
                         <div class="mb-8">
                             <h3 class="text-lg font-medium text-gray-900 mb-4">Grundinformationen</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Logo Upload Section -->
+                                <div class="md:col-span-2">
+                                    <InputLabel for="logo" value="Vereinslogo" />
+                                    <div class="mt-2 flex items-center space-x-6">
+                                        <!-- Logo Preview -->
+                                        <div class="shrink-0">
+                                            <img
+                                                v-if="logoPreview"
+                                                :src="logoPreview"
+                                                alt="Club Logo Vorschau"
+                                                class="h-24 w-24 object-cover rounded-lg border-2 border-gray-300"
+                                            />
+                                            <div
+                                                v-else
+                                                class="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50"
+                                            >
+                                                <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+
+                                        <!-- Upload Controls -->
+                                        <div class="flex-1">
+                                            <input
+                                                type="file"
+                                                ref="logoInput"
+                                                @change="handleLogoChange"
+                                                accept="image/jpeg,image/png,image/jpg,image/svg+xml"
+                                                class="hidden"
+                                            />
+                                            <div class="flex space-x-3">
+                                                <SecondaryButton
+                                                    type="button"
+                                                    @click="$refs.logoInput.click()"
+                                                >
+                                                    Logo hochladen
+                                                </SecondaryButton>
+                                                <DangerButton
+                                                    v-if="logoPreview"
+                                                    type="button"
+                                                    @click="removeLogo"
+                                                >
+                                                    Entfernen
+                                                </DangerButton>
+                                            </div>
+                                            <p class="mt-2 text-xs text-gray-500">
+                                                JPEG, PNG, JPG oder SVG. Maximal 2MB.
+                                            </p>
+                                            <InputError :message="form.errors.logo" class="mt-2" />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Name -->
                                 <div class="md:col-span-2">
                                     <InputLabel for="name" value="Club-Name*" />
@@ -388,11 +442,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
+import DangerButton from '@/Components/DangerButton.vue'
 import TextInput from '@/Components/TextInput.vue'
 import InputLabel from '@/Components/InputLabel.vue'
 import InputError from '@/Components/InputError.vue'
@@ -405,46 +460,76 @@ const form = useForm({
     website: '',
     email: '',
     phone: '',
-    
+
     // Detailed address fields
     address_street: '',
     address_city: '',
     address_state: '',
     address_zip: '',
     address_country: '',
-    
+
     // Basketball-specific fields
     facilities: null,
-    
+
     // Club colors
-    primary_color: '',
-    secondary_color: '',
-    accent_color: '',
-    
+    primary_color: '#000000',
+    secondary_color: '#FFFFFF',
+    accent_color: '#FFD700',
+
     // Status fields
     is_active: true,
     is_verified: false,
-    
+
     // Emergency contacts
     emergency_contact_name: '',
     emergency_contact_phone: '',
     emergency_contact_email: '',
-    
+
     // Financial information
     membership_fee: null,
     currency: 'EUR',
-    
+
     // Social media and other fields
     social_links: null,
     default_language: 'de',
     supported_languages: null,
     settings: null,
     preferences: null,
+
+    // Logo
+    logo: null,
 })
+
+const logoPreview = ref(null)
+const logoInput = ref(null)
 
 const currentYear = computed(() => new Date().getFullYear())
 
+const handleLogoChange = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+        form.logo = file
+
+        // Create preview
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            logoPreview.value = e.target.result
+        }
+        reader.readAsDataURL(file)
+    }
+}
+
+const removeLogo = () => {
+    form.logo = null
+    logoPreview.value = null
+    if (logoInput.value) {
+        logoInput.value.value = ''
+    }
+}
+
 const submit = () => {
-    form.post(route('web.clubs.store'))
+    form.post(route('web.clubs.store'), {
+        forceFormData: true,
+    })
 }
 </script>

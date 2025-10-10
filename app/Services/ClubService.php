@@ -629,6 +629,70 @@ class ClubService
     }
 
     /**
+     * Upload and attach logo to club.
+     */
+    public function uploadClubLogo(Club $club, $logo): Club
+    {
+        try {
+            // Delete old logo if exists
+            if ($club->hasMedia('logo')) {
+                $club->clearMediaCollection('logo');
+            }
+
+            // Upload new logo using Spatie Media Library
+            $club->addMedia($logo)
+                ->usingName($club->name . ' Logo')
+                ->usingFileName(time() . '_' . $logo->getClientOriginalName())
+                ->toMediaCollection('logo');
+
+            Log::info("Club logo uploaded successfully", [
+                'club_id' => $club->id,
+                'club_name' => $club->name,
+            ]);
+
+            return $club->fresh();
+
+        } catch (\Exception $e) {
+            Log::error("Failed to upload club logo", [
+                'club_id' => $club->id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Delete club logo.
+     */
+    public function deleteClubLogo(Club $club): Club
+    {
+        try {
+            if ($club->hasMedia('logo')) {
+                $club->clearMediaCollection('logo');
+            }
+
+            // Also clear logo_path if it exists
+            if ($club->logo_path) {
+                $club->update(['logo_path' => null]);
+            }
+
+            Log::info("Club logo deleted successfully", [
+                'club_id' => $club->id,
+                'club_name' => $club->name,
+            ]);
+
+            return $club->fresh();
+
+        } catch (\Exception $e) {
+            Log::error("Failed to delete club logo", [
+                'club_id' => $club->id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Generate a unique slug for the club.
      */
     private function generateUniqueSlug(string $name, ?int $excludeId = null): string
@@ -639,15 +703,15 @@ class ClubService
 
         while (true) {
             $query = Club::where('slug', $slug);
-            
+
             if ($excludeId) {
                 $query->where('id', '!=', $excludeId);
             }
-            
+
             if (!$query->exists()) {
                 break;
             }
-            
+
             $slug = $baseSlug . '-' . $counter;
             $counter++;
         }

@@ -50,6 +50,10 @@ Route::middleware([
     Route::put('clubs/{club}', [\App\Http\Controllers\ClubController::class, 'update'])->name('web.clubs.update');
     Route::patch('clubs/{club}', [\App\Http\Controllers\ClubController::class, 'update'])->name('web.clubs.patch');
     Route::delete('clubs/{club}', [\App\Http\Controllers\ClubController::class, 'destroy'])->name('web.clubs.destroy');
+
+    // Club Logo Management Routes
+    Route::post('clubs/{club}/logo', [\App\Http\Controllers\ClubController::class, 'uploadLogo'])->name('web.clubs.logo.upload');
+    Route::delete('clubs/{club}/logo', [\App\Http\Controllers\ClubController::class, 'deleteLogo'])->name('web.clubs.logo.delete');
     
     // Basketball Teams Routes (explicit names to avoid conflicts with Jetstream teams)
     Route::get('basketball-teams', [\App\Http\Controllers\TeamController::class, 'index'])->name('web.teams.index');

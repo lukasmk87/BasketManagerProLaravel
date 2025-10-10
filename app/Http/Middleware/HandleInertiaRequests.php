@@ -45,8 +45,8 @@ class HandleInertiaRequests extends Middleware
                     }
 
                     // Check if user has team features enabled (from Jetstream)
-                    $userHasTeamFeatures = class_exists('\Laravel\Jetstream\Jetstream') 
-                        ? \Laravel\Jetstream\Jetstream::userHasTeamFeatures($user) 
+                    $userHasTeamFeatures = class_exists('\Laravel\Jetstream\Jetstream')
+                        ? \Laravel\Jetstream\Jetstream::userHasTeamFeatures($user)
                         : false;
 
                     // Load current team if user has team features
@@ -58,12 +58,38 @@ class HandleInertiaRequests extends Middleware
                         'all_teams' => $userHasTeamFeatures ? $user->allTeams()->values() : null,
                         'current_team' => $userHasTeamFeatures ? $user->currentTeam : null,
                     ]), [
-                        'two_factor_enabled' => class_exists('\Laravel\Fortify\Features') 
+                        'two_factor_enabled' => class_exists('\Laravel\Fortify\Features')
                             && \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::twoFactorAuthentication())
                             && ! is_null($user->two_factor_secret),
                     ]);
                 },
             ],
+            'currentClub' => function () use ($request) {
+                if (! $user = $request->user()) {
+                    return null;
+                }
+
+                // Get the first club the user belongs to (primary club)
+                // You can modify this logic based on your multi-tenant needs
+                $club = $user->clubs()
+                    ->wherePivot('is_active', true)
+                    ->orderBy('club_user.created_at', 'asc')
+                    ->first();
+
+                if (!$club) {
+                    return null;
+                }
+
+                return [
+                    'id' => $club->id,
+                    'name' => $club->name,
+                    'short_name' => $club->short_name,
+                    'logo_url' => $club->logo_url,
+                    'primary_color' => $club->primary_color,
+                    'secondary_color' => $club->secondary_color,
+                    'accent_color' => $club->accent_color,
+                ];
+            },
             'jetstream' => function () use ($request) {
                 if (!class_exists('\Laravel\Jetstream\Jetstream')) {
                     return null;

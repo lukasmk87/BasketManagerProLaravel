@@ -70,48 +70,56 @@ class ClubController extends Controller
             'website' => 'nullable|url|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
-            
+
             // Detailed address fields
             'address_street' => 'nullable|string|max:255',
             'address_city' => 'nullable|string|max:255',
             'address_state' => 'nullable|string|max:255',
             'address_zip' => 'nullable|string|max:20',
             'address_country' => 'nullable|string|max:2',
-            
+
             // Basketball-specific fields
             'facilities' => 'nullable|json',
-            
+
             // Club colors for branding
             'primary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
             'secondary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
             'accent_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
-            
+
             // Status fields
             'is_active' => 'boolean',
             'is_verified' => 'boolean',
-            
+
             // Emergency contacts
             'emergency_contact_name' => 'nullable|string|max:255',
             'emergency_contact_phone' => 'nullable|string|max:50',
             'emergency_contact_email' => 'nullable|email|max:255',
-            
+
             // Financial information
             'membership_fee' => 'nullable|numeric|min:0|max:9999.99',
             'currency' => 'nullable|string|max:3',
-            
+
             // Social media links
             'social_links' => 'nullable|json',
-            
+
             // Language settings
             'default_language' => 'nullable|string|max:5',
             'supported_languages' => 'nullable|json',
-            
+
             // Additional settings
             'settings' => 'nullable|json',
             'preferences' => 'nullable|json',
+
+            // Logo upload
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048',
         ]);
 
         $club = $this->clubService->createClub($validated);
+
+        // Handle logo upload if provided
+        if ($request->hasFile('logo')) {
+            $this->clubService->uploadClubLogo($club, $request->file('logo'));
+        }
 
         return redirect()->route('web.clubs.show', $club)
             ->with('success', 'Club wurde erfolgreich erstellt.');
@@ -170,42 +178,42 @@ class ClubController extends Controller
             'website' => 'nullable|url|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
-            
+
             // Detailed address fields
             'address_street' => 'nullable|string|max:255',
             'address_city' => 'nullable|string|max:255',
             'address_state' => 'nullable|string|max:255',
             'address_zip' => 'nullable|string|max:20',
             'address_country' => 'nullable|string|max:2',
-            
+
             // Basketball-specific fields
             'facilities' => 'nullable|json',
-            
+
             // Club colors for branding
             'primary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
             'secondary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
             'accent_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
-            
+
             // Status fields
             'is_active' => 'boolean',
             'is_verified' => 'boolean',
-            
+
             // Emergency contacts
             'emergency_contact_name' => 'nullable|string|max:255',
             'emergency_contact_phone' => 'nullable|string|max:50',
             'emergency_contact_email' => 'nullable|email|max:255',
-            
+
             // Financial information
             'membership_fee' => 'nullable|numeric|min:0|max:9999.99',
             'currency' => 'nullable|string|max:3',
-            
+
             // Social media links
             'social_links' => 'nullable|json',
-            
+
             // Language settings
             'default_language' => 'nullable|string|max:5',
             'supported_languages' => 'nullable|json',
-            
+
             // Additional settings
             'settings' => 'nullable|json',
             'preferences' => 'nullable|json',
@@ -228,5 +236,46 @@ class ClubController extends Controller
 
         return redirect()->route('web.clubs.index')
             ->with('success', 'Club wurde erfolgreich gelöscht.');
+    }
+
+    /**
+     * Upload club logo.
+     */
+    public function uploadLogo(Request $request, Club $club)
+    {
+        $this->authorize('update', $club);
+
+        $validated = $request->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,svg|max:2048',
+        ]);
+
+        try {
+            $this->clubService->uploadClubLogo($club, $request->file('logo'));
+
+            return redirect()->back()
+                ->with('success', 'Club-Logo wurde erfolgreich hochgeladen.');
+        } catch (\Exception $e) {
+            \Log::error('Logo upload failed', [
+                'club_id' => $club->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['logo' => 'Fehler beim Hochladen: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Delete club logo.
+     */
+    public function deleteLogo(Club $club)
+    {
+        $this->authorize('update', $club);
+
+        $this->clubService->deleteClubLogo($club);
+
+        return redirect()->back()
+            ->with('success', 'Club-Logo wurde erfolgreich entfernt.');
     }
 }

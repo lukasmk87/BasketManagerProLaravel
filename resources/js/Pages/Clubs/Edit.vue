@@ -22,6 +22,60 @@
                         <div class="mb-8">
                             <h3 class="text-lg font-medium text-gray-900 mb-4">Grundinformationen</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Logo Upload Section -->
+                                <div class="md:col-span-2">
+                                    <InputLabel for="logo" value="Vereinslogo" />
+                                    <div class="mt-2 flex items-center space-x-6">
+                                        <!-- Current Logo Preview -->
+                                        <div class="shrink-0">
+                                            <img
+                                                v-if="logoPreview || club.logo_url"
+                                                :src="logoPreview || club.logo_url"
+                                                alt="Club Logo"
+                                                class="h-24 w-24 object-cover rounded-lg border-2 border-gray-300"
+                                            />
+                                            <div
+                                                v-else
+                                                class="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50"
+                                            >
+                                                <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+
+                                        <!-- Upload Controls -->
+                                        <div class="flex-1">
+                                            <input
+                                                type="file"
+                                                ref="logoInput"
+                                                @change="handleLogoChange"
+                                                accept="image/jpeg,image/png,image/jpg,image/svg+xml"
+                                                class="hidden"
+                                            />
+                                            <div class="flex space-x-3">
+                                                <SecondaryButton
+                                                    type="button"
+                                                    @click="$refs.logoInput.click()"
+                                                >
+                                                    Neues Logo hochladen
+                                                </SecondaryButton>
+                                                <DangerButton
+                                                    v-if="club.logo_url || logoPreview"
+                                                    type="button"
+                                                    @click="removeLogo"
+                                                >
+                                                    Logo entfernen
+                                                </DangerButton>
+                                            </div>
+                                            <p class="mt-2 text-xs text-gray-500">
+                                                JPEG, PNG, JPG oder SVG. Maximal 2MB.
+                                            </p>
+                                            <InputError :message="form.errors.logo" class="mt-2" />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Name -->
                                 <div class="md:col-span-2">
                                     <InputLabel for="name" value="Club-Name*" />
@@ -448,35 +502,35 @@ const form = useForm({
     website: props.club.website || '',
     email: props.club.email || '',
     phone: props.club.phone || '',
-    
+
     // Detailed address fields
     address_street: props.club.address_street || '',
     address_city: props.club.address_city || '',
     address_state: props.club.address_state || '',
     address_zip: props.club.address_zip || '',
     address_country: props.club.address_country || '',
-    
+
     // Basketball-specific fields
     facilities: props.club.facilities || null,
-    
+
     // Club colors
-    primary_color: props.club.primary_color || '',
-    secondary_color: props.club.secondary_color || '',
-    accent_color: props.club.accent_color || '',
-    
+    primary_color: props.club.primary_color || '#000000',
+    secondary_color: props.club.secondary_color || '#FFFFFF',
+    accent_color: props.club.accent_color || '#FFD700',
+
     // Status fields
     is_active: props.club.is_active ?? true,
     is_verified: props.club.is_verified ?? false,
-    
+
     // Emergency contacts
     emergency_contact_name: props.club.emergency_contact_name || '',
     emergency_contact_phone: props.club.emergency_contact_phone || '',
     emergency_contact_email: props.club.emergency_contact_email || '',
-    
+
     // Financial information
     membership_fee: props.club.membership_fee || null,
     currency: props.club.currency || 'EUR',
-    
+
     // Social media and other fields
     social_links: props.club.social_links || null,
     default_language: props.club.default_language || 'de',
@@ -487,10 +541,60 @@ const form = useForm({
 
 const deleteForm = useForm({})
 const confirmingClubDeletion = ref(false)
+const logoPreview = ref(null)
+const logoInput = ref(null)
 
 const currentYear = computed(() => new Date().getFullYear())
 
+const handleLogoChange = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+        // Create preview
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            logoPreview.value = e.target.result
+        }
+        reader.readAsDataURL(file)
+
+        // Upload logo immediately via separate endpoint
+        const logoForm = useForm({
+            logo: file
+        })
+
+        logoForm.post(route('web.clubs.logo.upload', props.club.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Logo uploaded successfully
+                logoForm.reset()
+            },
+            onError: () => {
+                // Reset preview on error
+                logoPreview.value = null
+                if (logoInput.value) {
+                    logoInput.value.value = ''
+                }
+            }
+        })
+    }
+}
+
+const removeLogo = () => {
+    if (confirm('Möchten Sie das Logo wirklich entfernen?')) {
+        const deleteForm = useForm({})
+        deleteForm.delete(route('web.clubs.logo.delete', props.club.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                logoPreview.value = null
+                if (logoInput.value) {
+                    logoInput.value.value = ''
+                }
+            }
+        })
+    }
+}
+
 const submit = () => {
+    // Only submit club data, logo is handled separately
     form.put(route('web.clubs.update', props.club.id))
 }
 
