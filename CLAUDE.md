@@ -10,13 +10,16 @@ BasketManager Pro is a production-ready Laravel-based basketball club management
 
 - **Framework**: Laravel 12.x
 - **PHP Version**: 8.2+
-- **Frontend**: Vue.js 3.x + Inertia.js + Tailwind CSS
-- **Database**: MySQL/PostgreSQL with Row Level Security
-- **Cache/Queue**: Redis
+- **Frontend**: Vue.js 3.x + Inertia.js 2.0 + Tailwind CSS 3.4
+- **Database**: MySQL 8.0+ / PostgreSQL 14+ with Row Level Security
+- **Cache/Queue**: Redis 7.0+
 - **Real-time**: Laravel Broadcasting + Pusher WebSockets
-- **Authentication**: Laravel Sanctum + Jetstream
-- **Payments**: Stripe (Laravel Cashier) with multi-tenant subscriptions
+- **Authentication**: Laravel Sanctum 4.0 + Jetstream 5.3
+- **Payments**: Stripe (Laravel Cashier 15.7+) with multi-tenant subscriptions
 - **PWA**: Full Progressive Web App implementation
+- **PDF Generation**: DomPDF (barryvdh/laravel-dompdf)
+- **Excel Export**: Maatwebsite Excel
+- **Permissions**: Spatie Laravel Permission 6.21+
 
 ## Multi-Tenant Architecture
 
@@ -51,11 +54,13 @@ php artisan db:seed
 
 ### Development
 ```bash
-composer dev          # Starts server, queue, logs (pail), and vite concurrently
-php artisan serve     # Server only
-php artisan queue:work
-php artisan schedule:work
-npm run dev           # Vite dev server
+composer dev          # ⭐ Recommended: Starts server + queue + logs (pail) + vite concurrently
+                      #    Uses npx concurrently with color-coded output
+php artisan serve     # Laravel server only (port 8000)
+php artisan queue:listen --tries=1  # Queue worker with single retry
+php artisan pail --timeout=0        # Real-time log viewer
+php artisan schedule:work           # Run scheduler in foreground
+npm run dev           # Vite dev server only
 ```
 
 ### Testing
@@ -103,14 +108,15 @@ php artisan manage:webhooks          # Manage Stripe webhook endpoints
 
 ## Service-Oriented Architecture
 
-Core services in `app/Services/`:
+Core services in `app/Services/` with domain-based subdirectory organization:
 
 **Domain Services:**
 - `ClubService`, `TeamService`, `PlayerService` - Core basketball entities
 - `LiveScoringService` - Real-time game scoring with broadcasting
 - `StatisticsService` - Basketball statistics calculation (FG%, 3P%, etc.)
 - `TrainingService` - Training session and drill management
-- `TournamentService` - Tournament brackets and progression
+- `TournamentService`, `TournamentProgressionService`, `TournamentAnalyticsService` - Tournament management
+- `BracketGeneratorService` - Tournament bracket generation
 
 **Infrastructure Services:**
 - `TenantService` - Multi-tenant scope management
@@ -118,33 +124,69 @@ Core services in `app/Services/`:
 - `GDPRComplianceService` - GDPR Article 15/17/20/30 compliance
 - `EmergencyAccessService` - QR-code based emergency contacts
 - `SecurityMonitoringService` - Security event tracking
+- `TwoFactorAuthService` - 2FA implementation
 
-**Integration Services:**
-- `Stripe/StripeCheckoutService` - Payment processing
-- `Federation/DBBApiService` - DBB (German Basketball Federation) API
-- `Federation/FIBAApiService` - FIBA API integration
+**Integration Services (Subdirectories):**
+- `Stripe/` - Stripe payment integration (7 services):
+  - `StripeCheckoutService`, `CheckoutService` - Payment processing
+  - `StripeSubscriptionService` - Subscription management
+  - `StripePaymentService` - Payment handling
+  - `PaymentMethodService` - Payment method management
+  - `CashierTenantManager` - Multi-tenant Cashier integration
+  - `StripeClientManager` - Stripe client configuration
+  - `WebhookEventProcessor` - Webhook event handling
+- `Federation/` - Basketball federation APIs:
+  - `DBBApiService` - DBB (German Basketball Federation) API
+  - `FIBAApiService` - FIBA API integration
 - `PWAService` - Progressive Web App features
 - `PushNotificationService` - WebPush notifications
+- `QRCodeService` - QR code generation
 
 **Performance Services:**
 - `BasketballCacheService` - Basketball-specific caching strategies
 - `DatabasePerformanceMonitor` - Query performance tracking
 - `ApiResponseOptimizationService` - API response optimization
 - `EnterpriseRateLimitService` - Tenant-aware rate limiting
+- `QueryOptimizationService` - Database query optimization
+- `MemoryOptimizationService` - Memory usage optimization
+
+**Specialized Services:**
+- `AIVideoAnalysisService` - AI-powered video analysis
+- `VideoProcessingService` - Video processing and storage
+- `BookingService`, `GymScheduleService` - Facility scheduling
+- `ICalImportService` - Calendar import functionality
+- `LocalizationService` - Multi-language support
+- `UserService` - User management operations
 
 ## Route Organization
 
-Routes are modular and feature-based:
-- `routes/web.php` - Main web routes with locale prefixes
-- `routes/api.php` - API v2 endpoints
-- `routes/api/` - Versioned API routes (v1, v2)
-- `routes/emergency.php` - QR-code emergency access
-- `routes/gdpr.php` - GDPR compliance endpoints
+Routes are modular and feature-based for better maintainability:
+
+**Core Routes:**
+- `routes/web.php` - Main web routes with locale prefixes (`/{locale}/...`)
+- `routes/api.php` - Main API v2 endpoints
+- `routes/console.php` - Artisan console commands
+
+**Feature-Specific API Routes:**
+- `routes/api_training.php` - Training and drill management API
+- `routes/api_tournament.php` - Tournament management API
+- `routes/api_game_registrations.php` - Game registration API
+
+**Integration Routes:**
 - `routes/subscription.php` - Stripe subscription management
-- `routes/federation.php` - DBB/FIBA API routes
-- `routes/pwa.php` - PWA manifest and service worker
+- `routes/checkout.php` - Stripe checkout flows
 - `routes/webhooks.php` - Stripe webhook handlers
-- `routes/channels.php` - Broadcasting channels
+- `routes/federation.php` - DBB/FIBA federation API routes
+
+**Specialized Routes:**
+- `routes/emergency.php` - QR-code emergency access (no auth required)
+- `routes/gdpr.php` - GDPR compliance endpoints (data export/deletion)
+- `routes/pwa.php` - PWA manifest and service worker
+- `routes/security.php` - Security and 2FA endpoints
+- `routes/notifications.php` - Push notification endpoints
+
+**Real-time:**
+- `routes/channels.php` - Broadcasting channel authorization
 
 ## Real-time Broadcasting
 
@@ -237,10 +279,46 @@ All personal data access logged via `spatie/laravel-activitylog`.
 
 ## Testing Strategy
 
+**Test Infrastructure:**
 - Feature tests for all API endpoints and web routes
 - Unit tests for services and statistics calculations
-- `BasketballTestCase` provides basketball-specific test helpers
-- Test database configured in `.env.testing`
+- In-memory SQLite database for fast test execution (configured in `phpunit.xml`)
+- Test environment automatically disables Telescope, Pulse, Nightwatch
+
+**BasketballTestCase Base Class:**
+
+Extend `Tests\BasketballTestCase` instead of `TestCase` for basketball-specific tests. It provides:
+
+*Pre-configured Test Data:*
+- `$adminUser`, `$clubAdminUser`, `$trainerUser`, `$playerUser` - Users with different roles
+- `$testClub` - Sample basketball club
+- `$testTeam` - Sample team with coach assigned
+- `$testPlayer` - Sample player on the team
+
+*Helper Methods:*
+```php
+// Authentication helpers
+$this->actingAsAdmin()      // Authenticate as admin
+$this->actingAsClubAdmin()  // Authenticate as club admin
+$this->actingAsTrainer()    // Authenticate as trainer
+$this->actingAsPlayer()     // Authenticate as player
+
+// Data creation helpers
+$this->createTestGame($homeTeam, $awayTeam)  // Create a test game
+$this->createTeamRoster($team, $count)       // Create roster of N players
+$this->createSampleStatistics($player)       // Generate sample stats
+
+// Assertion helpers
+$this->assertUserHasBasketballRole($user, 'trainer')
+$this->assertUserCanAccess($user, 'manage-games')
+$this->assertStatisticsCorrect($stats, $expected)
+```
+
+**Running Tests:**
+```bash
+composer test                    # Runs config:clear + phpunit
+php artisan test --filter=GameTest  # Run single test file
+```
 
 Test users available for all 11 roles (see `TEST_USERS.md`).
 
