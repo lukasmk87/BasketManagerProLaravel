@@ -407,6 +407,7 @@ class LimitEnforcementService
             match($resourceType) {
                 'team' => $this->tenant->increment('current_teams_count'),
                 'user' => $this->tenant->increment('current_users_count'),
+                'player' => $this->tenant->increment('current_players_count'),
                 default => null,
             };
 
@@ -436,6 +437,7 @@ class LimitEnforcementService
             match($resourceType) {
                 'team' => $this->tenant->decrement('current_teams_count'),
                 'user' => $this->tenant->decrement('current_users_count'),
+                'player' => $this->tenant->decrement('current_players_count'),
                 default => null,
             };
 

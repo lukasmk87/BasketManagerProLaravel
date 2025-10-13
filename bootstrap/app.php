@@ -38,7 +38,11 @@ return Application::configure(basePath: dirname(__DIR__))
             // GDPR compliance routes (mixed web/api middleware)
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/gdpr.php'));
-            
+
+            // Admin routes (web middleware with admin auth)
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/admin.php'));
+
             // Register API routes LAST to avoid conflicts with web routes
             \Illuminate\Support\Facades\Route::prefix('api')
                 ->middleware('api')
@@ -84,6 +88,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Register middleware aliases
         $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'tenant' => \App\Http\Middleware\ResolveTenantMiddleware::class,
             'api.version' => \App\Http\Middleware\ApiVersioningMiddleware::class,
             'feature.gate' => \App\Http\Middleware\EnforceFeatureGates::class,

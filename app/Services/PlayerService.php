@@ -19,6 +19,10 @@ class PlayerService
      */
     public function createPlayer(array $data): Player
     {
+        // Limit-Check VOR der Transaction
+        $limitEnforcement = App::make(LimitEnforcementService::class);
+        $limitEnforcement->enforcePlayerLimit();
+
         DB::beginTransaction();
 
         try {
@@ -128,6 +132,9 @@ class PlayerService
             }
 
             DB::commit();
+
+            // Resource-Tracking NACH erfolgreichem Commit
+            $limitEnforcement->trackResourceCreation('player');
 
             Log::info("Player created successfully", [
                 'player_id' => $player->id,
@@ -253,6 +260,11 @@ class PlayerService
             }
 
             DB::commit();
+
+            // Resource-Tracking für Deletion
+            $limitEnforcement = App::make(LimitEnforcementService::class);
+            $limitEnforcement->trackResourceDeletion('player');
+
             return true;
 
         } catch (\Exception $e) {

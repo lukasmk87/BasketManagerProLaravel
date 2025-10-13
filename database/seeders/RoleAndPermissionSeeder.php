@@ -143,6 +143,12 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Legal Pages Management
             'manage legal pages',
+
+            // Subscription & Tenant Management
+            'manage-subscriptions',
+            'view tenant subscriptions',
+            'edit tenant subscriptions',
+            'manage subscription plans',
         ];
 
         foreach ($permissions as $permission) {
@@ -228,6 +234,9 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Legal Pages
             'manage legal pages',
+
+            // Subscription Management
+            'manage-subscriptions', 'view tenant subscriptions', 'edit tenant subscriptions', 'manage subscription plans',
         ]);
 
         // Club Administrator Role
