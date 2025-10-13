@@ -497,22 +497,27 @@ class Tenant extends Model
     {
         return $this->hasMany(Team::class);
     }
-    
+
+    public function trainingSessions()
+    {
+        return $this->hasManyThrough(TrainingSession::class, Team::class);
+    }
+
     public function players()
     {
         return $this->hasMany(Player::class);
     }
-    
+
     public function games()
     {
         return $this->hasMany(Game::class);
     }
-    
+
     public function tournaments()
     {
         return $this->hasMany(Tournament::class);
     }
-    
+
     public function clubs()
     {
         return $this->hasMany(Club::class);

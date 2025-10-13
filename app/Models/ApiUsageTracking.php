@@ -12,7 +12,13 @@ class ApiUsageTracking extends Model
 {
     use HasFactory;
 
+    /**
+     * Explicitly set table name (singular form).
+     */
+    protected $table = 'api_usage_tracking';
+
     protected $fillable = [
+        'tenant_id',
         'user_id',
         'api_key_hash',
         'ip_address',
@@ -55,6 +61,11 @@ class ApiUsageTracking extends Model
     // ============================
     // RELATIONSHIPS
     // ============================
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     public function user(): BelongsTo
     {
