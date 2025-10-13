@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tenant_plan_customizations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('tenants')->onDelete('cascade');
+            $table->foreignUuid('tenant_id')->constrained('tenants')->onDelete('cascade');
             $table->foreignId('subscription_plan_id')->nullable()->constrained('subscription_plans')->onDelete('set null');
             $table->json('custom_features')->nullable(); // Additional features not in plan
             $table->json('disabled_features')->nullable(); // Features to disable from plan
