@@ -25,9 +25,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('plans', SubscriptionPlanController::class);
     Route::post('plans/{plan}/clone', [SubscriptionPlanController::class, 'clone'])->name('plans.clone');
 
-    // Tenant Subscription Management
+    // Tenant Management (CRUD)
     Route::get('tenants', [TenantSubscriptionController::class, 'index'])->name('tenants.index');
+    Route::get('tenants/create', [TenantSubscriptionController::class, 'create'])->name('tenants.create');
+    Route::post('tenants', [TenantSubscriptionController::class, 'store'])->name('tenants.store');
     Route::get('tenants/{tenant}', [TenantSubscriptionController::class, 'show'])->name('tenants.show');
+    Route::get('tenants/{tenant}/edit', [TenantSubscriptionController::class, 'edit'])->name('tenants.edit');
+    Route::put('tenants/{tenant}', [TenantSubscriptionController::class, 'update'])->name('tenants.update');
+    Route::delete('tenants/{tenant}', [TenantSubscriptionController::class, 'destroy'])->name('tenants.destroy');
+
+    // Tenant Subscription & Limits Management
     Route::put('tenants/{tenant}/subscription', [TenantSubscriptionController::class, 'updateSubscription'])->name('tenants.subscription.update');
     Route::put('tenants/{tenant}/limits', [TenantSubscriptionController::class, 'updateLimits'])->name('tenants.limits.update');
     Route::post('tenants/{tenant}/customization', [TenantSubscriptionController::class, 'createCustomization'])->name('tenants.customization.create');
