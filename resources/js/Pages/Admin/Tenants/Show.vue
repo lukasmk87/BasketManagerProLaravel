@@ -103,6 +103,7 @@ const onCustomizationCreated = () => {
                         ← Zurück
                     </Link>
                     <Link
+                        v-if="tenant?.id"
                         :href="route('admin.tenants.edit', tenant.id)"
                         class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50"
                     >
@@ -111,7 +112,7 @@ const onCustomizationCreated = () => {
                         </svg>
                         Bearbeiten
                     </Link>
-                    <PrimaryButton @click="showCustomizationModal = true">
+                    <PrimaryButton v-if="tenant?.id" @click="showCustomizationModal = true">
                         Customization erstellen
                     </PrimaryButton>
                 </div>
