@@ -18,10 +18,6 @@ use Illuminate\Support\Facades\Log;
 
 class TenantSubscriptionController extends Controller
 {
-    public function __construct(
-        private LimitEnforcementService $limitEnforcement
-    ) {}
-
     /**
      * Display a listing of tenants with subscription details.
      */
@@ -45,8 +41,9 @@ class TenantSubscriptionController extends Controller
         $tenant->load(['subscriptionPlan', 'activeCustomization', 'planCustomizations']);
 
         // Get current limits and usage
-        $this->limitEnforcement->setTenant($tenant);
-        $limits = $this->limitEnforcement->getAllLimits();
+        $limitEnforcement = app(LimitEnforcementService::class);
+        $limitEnforcement->setTenant($tenant);
+        $limits = $limitEnforcement->getAllLimits();
 
         // Get available subscription plans
         $availablePlans = SubscriptionPlan::active()

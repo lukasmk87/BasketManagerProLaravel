@@ -11,18 +11,15 @@ use Illuminate\Support\Facades\Log;
 
 class UsageLimitsController extends Controller
 {
-    public function __construct(
-        private LimitEnforcementService $limitEnforcement
-    ) {}
-
     /**
      * Get usage limits for a specific tenant.
      */
     public function getLimits(Tenant $tenant): JsonResponse
     {
         try {
-            $this->limitEnforcement->setTenant($tenant);
-            $limits = $this->limitEnforcement->getAllLimits();
+            $limitEnforcement = app(LimitEnforcementService::class);
+            $limitEnforcement->setTenant($tenant);
+            $limits = $limitEnforcement->getAllLimits();
 
             // Transform limits data for UsageLimitResource
             $limitsCollection = collect($limits)->map(function ($data, $metric) {
@@ -67,8 +64,9 @@ class UsageLimitsController extends Controller
                 ->where('is_active', true)
                 ->chunk(100, function ($tenants) use (&$approachingLimits, &$atLimits, &$unlimitedTenants) {
                     foreach ($tenants as $tenant) {
-                        $this->limitEnforcement->setTenant($tenant);
-                        $limits = $this->limitEnforcement->getAllLimits();
+                        $limitEnforcement = app(LimitEnforcementService::class);
+                        $limitEnforcement->setTenant($tenant);
+                        $limits = $limitEnforcement->getAllLimits();
 
                         foreach ($limits as $metric => $data) {
                             // Skip unlimited metrics
@@ -92,7 +90,7 @@ class UsageLimitsController extends Controller
                                 ];
                             }
                             // Approaching limit (80-99%)
-                            elseif ($this->limitEnforcement->isApproachingLimit($metric)) {
+                            elseif ($limitEnforcement->isApproachingLimit($metric)) {
                                 $approachingLimits[] = [
                                     'tenant_id' => $tenant->id,
                                     'tenant_name' => $tenant->name,

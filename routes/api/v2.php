@@ -255,53 +255,58 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::post('time-slots/assign-team-segment', [\App\Http\Controllers\GymManagementController::class, 'assignTeamToSegment']);
     Route::delete('team-assignments/{assignmentId}', [\App\Http\Controllers\GymManagementController::class, 'removeTeamSegmentAssignment']);
     Route::get('time-slots/{timeSlotId}/team-assignments', [\App\Http\Controllers\GymManagementController::class, 'getTimeSlotTeamAssignments']);
-    
+
     // Time Slot Management
-    Route::apiResource('gym-time-slots', \App\Http\Controllers\Api\GymTimeSlotController::class);
-    Route::post('gym-time-slots/{timeSlot}/assign', [\App\Http\Controllers\Api\GymTimeSlotController::class, 'assignToTeam']);
-    Route::delete('gym-time-slots/{timeSlot}/unassign', [\App\Http\Controllers\Api\GymTimeSlotController::class, 'unassignFromTeam']);
-    Route::post('gym-time-slots/{timeSlot}/generate-bookings', [\App\Http\Controllers\Api\GymTimeSlotController::class, 'generateBookings']);
-    
+    // TODO: Implement GymTimeSlotController
+    // Route::apiResource('gym-time-slots', \App\Http\Controllers\Api\GymTimeSlotController::class);
+    // Route::post('gym-time-slots/{timeSlot}/assign', [\App\Http\Controllers\Api\GymTimeSlotController::class, 'assignToTeam']);
+    // Route::delete('gym-time-slots/{timeSlot}/unassign', [\App\Http\Controllers\Api\GymTimeSlotController::class, 'unassignFromTeam']);
+    // Route::post('gym-time-slots/{timeSlot}/generate-bookings', [\App\Http\Controllers\Api\GymTimeSlotController::class, 'generateBookings']);
+
     // Booking Management
-    Route::apiResource('gym-bookings', \App\Http\Controllers\Api\GymBookingController::class);
-    Route::post('gym-bookings/{booking}/release', [\App\Http\Controllers\Api\GymBookingController::class, 'release']);
-    Route::post('gym-bookings/{booking}/cancel', [\App\Http\Controllers\Api\GymBookingController::class, 'cancel']);
-    Route::post('gym-bookings/{booking}/request', [\App\Http\Controllers\Api\GymBookingController::class, 'requestBooking']);
-    Route::get('gym-bookings/available-for-team/{team}', [\App\Http\Controllers\Api\GymBookingController::class, 'availableForTeam']);
-    
+    // TODO: Implement GymBookingController
+    // Route::apiResource('gym-bookings', \App\Http\Controllers\Api\GymBookingController::class);
+    // Route::post('gym-bookings/{booking}/release', [\App\Http\Controllers\Api\GymBookingController::class, 'release']);
+    // Route::post('gym-bookings/{booking}/cancel', [\App\Http\Controllers\Api\GymBookingController::class, 'cancel']);
+    // Route::post('gym-bookings/{booking}/request', [\App\Http\Controllers\Api\GymBookingController::class, 'requestBooking']);
+    // Route::get('gym-bookings/available-for-team/{team}', [\App\Http\Controllers\Api\GymBookingController::class, 'availableForTeam']);
+
     // Booking Request Management
     Route::apiResource('gym-booking-requests', \App\Http\Controllers\Api\GymBookingRequestController::class);
     Route::post('gym-booking-requests/{request}/approve', [\App\Http\Controllers\Api\GymBookingRequestController::class, 'approve']);
     Route::post('gym-booking-requests/{request}/reject', [\App\Http\Controllers\Api\GymBookingRequestController::class, 'reject']);
     Route::get('gym-booking-requests/for-team/{team}', [\App\Http\Controllers\Api\GymBookingRequestController::class, 'forTeam']);
     Route::get('gym-booking-requests/by-team/{team}', [\App\Http\Controllers\Api\GymBookingRequestController::class, 'byTeam']);
-    
+
     // Club-wide Gym Schedule Management
-    Route::prefix('clubs/{club}/gym-management')->name('api.clubs.gym.')->group(function () {
-        Route::get('schedule', [\App\Http\Controllers\Api\GymScheduleController::class, 'clubSchedule']);
-        Route::get('utilization', [\App\Http\Controllers\Api\GymScheduleController::class, 'utilization']);
-        Route::get('conflicts', [\App\Http\Controllers\Api\GymScheduleController::class, 'conflicts']);
-        Route::get('available-times', [\App\Http\Controllers\Api\GymScheduleController::class, 'availableTimes']);
-    });
-    
+    // TODO: Implement GymScheduleController
+    // Route::prefix('clubs/{club}/gym-management')->name('api.clubs.gym.')->group(function () {
+    //     Route::get('schedule', [\App\Http\Controllers\Api\GymScheduleController::class, 'clubSchedule']);
+    //     Route::get('utilization', [\App\Http\Controllers\Api\GymScheduleController::class, 'utilization']);
+    //     Route::get('conflicts', [\App\Http\Controllers\Api\GymScheduleController::class, 'conflicts']);
+    //     Route::get('available-times', [\App\Http\Controllers\Api\GymScheduleController::class, 'availableTimes']);
+    // });
+
     // Team-specific Gym Management
-    Route::prefix('teams/{team}/gym-management')->name('api.teams.gym.')->group(function () {
-        Route::get('bookings', [\App\Http\Controllers\Api\GymScheduleController::class, 'teamBookings']);
-        Route::get('requests', [\App\Http\Controllers\Api\GymScheduleController::class, 'teamRequests']);
-        Route::get('available-times', [\App\Http\Controllers\Api\GymScheduleController::class, 'teamAvailableTimes']);
-        Route::get('statistics', [\App\Http\Controllers\Api\GymScheduleController::class, 'teamStatistics']);
-    });
-    
+    // TODO: Implement GymScheduleController
+    // Route::prefix('teams/{team}/gym-management')->name('api.teams.gym.')->group(function () {
+    //     Route::get('bookings', [\App\Http\Controllers\Api\GymScheduleController::class, 'teamBookings']);
+    //     Route::get('requests', [\App\Http\Controllers\Api\GymScheduleController::class, 'teamRequests']);
+    //     Route::get('available-times', [\App\Http\Controllers\Api\GymScheduleController::class, 'teamAvailableTimes']);
+    //     Route::get('statistics', [\App\Http\Controllers\Api\GymScheduleController::class, 'teamStatistics']);
+    // });
+
     /*
     |--------------------------------------------------------------------------
     | Gym Management Admin Routes
     |--------------------------------------------------------------------------
     */
-    
-    Route::middleware('role:admin,club_admin')->prefix('admin/gym-management')->name('api.admin.gym.')->group(function () {
-        Route::post('process-expired-requests', [\App\Http\Controllers\Api\GymAdminController::class, 'processExpiredRequests']);
-        Route::post('process-past-bookings', [\App\Http\Controllers\Api\GymAdminController::class, 'processPastBookings']);
-        Route::get('system-statistics', [\App\Http\Controllers\Api\GymAdminController::class, 'systemStatistics']);
-        Route::get('hall-utilization-report', [\App\Http\Controllers\Api\GymAdminController::class, 'utilizationReport']);
-    });
+
+    // TODO: Implement GymAdminController
+    // Route::middleware('role:admin,club_admin')->prefix('admin/gym-management')->name('api.admin.gym.')->group(function () {
+    //     Route::post('process-expired-requests', [\App\Http\Controllers\Api\GymAdminController::class, 'processExpiredRequests']);
+    //     Route::post('process-past-bookings', [\App\Http\Controllers\Api\GymAdminController::class, 'processPastBookings']);
+    //     Route::get('system-statistics', [\App\Http\Controllers\Api\GymAdminController::class, 'systemStatistics']);
+    //     Route::get('hall-utilization-report', [\App\Http\Controllers\Api\GymAdminController::class, 'utilizationReport']);
+    // });
 });

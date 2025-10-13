@@ -61,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                         'two_factor_enabled' => class_exists('\Laravel\Fortify\Features')
                             && \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::twoFactorAuthentication())
                             && ! is_null($user->two_factor_secret),
+                        'roles' => $user->getRoleNames()->toArray(),
                     ]);
                 },
             ],

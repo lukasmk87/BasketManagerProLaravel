@@ -16,20 +16,6 @@ use Illuminate\Support\Facades\DB;
 class BookingService
 {
     /**
-     * Register a player for a training session.
-     */
-    public function registerForTraining(int $trainingSessionId, int $playerId, ?string $notes = null): TrainingRegistration
-    {
-        $session = TrainingSession::findOrFail($trainingSessionId);
-
-        $this->validateTrainingRegistration($session, $playerId);
-
-        return DB::transaction(function () use ($session, $playerId, $notes) {
-            return $session->registerPlayer($playerId, $notes);
-        });
-    }
-
-    /**
      * Cancel a training registration.
      */
     public function cancelTrainingRegistration(int $trainingSessionId, int $playerId, ?string $reason = null): bool
@@ -43,18 +29,6 @@ class BookingService
 
         return DB::transaction(function () use ($registration, $reason) {
             return $registration->cancel($reason);
-        });
-    }
-
-    /**
-     * Confirm a training registration (by trainer).
-     */
-    public function confirmTrainingRegistration(int $registrationId, int $confirmedByUserId, ?string $notes = null): bool
-    {
-        $registration = TrainingRegistration::findOrFail($registrationId);
-
-        return DB::transaction(function () use ($registration, $confirmedByUserId, $notes) {
-            return $registration->confirm($confirmedByUserId, $notes);
         });
     }
 
@@ -149,35 +123,6 @@ class BookingService
 
             return true;
         });
-    }
-
-    /**
-     * Bulk register players for training session.
-     */
-    public function bulkRegisterForTraining(int $trainingSessionId, array $playerIds, ?string $notes = null): array
-    {
-        $session = TrainingSession::findOrFail($trainingSessionId);
-        $results = [];
-
-        DB::transaction(function () use ($session, $playerIds, $notes, &$results) {
-            foreach ($playerIds as $playerId) {
-                try {
-                    $this->validateTrainingRegistration($session, $playerId);
-                    $registration = $session->registerPlayer($playerId, $notes);
-                    $results['success'][] = [
-                        'player_id' => $playerId,
-                        'registration' => $registration,
-                    ];
-                } catch (Exception $e) {
-                    $results['errors'][] = [
-                        'player_id' => $playerId,
-                        'error' => $e->getMessage(),
-                    ];
-                }
-            }
-        });
-
-        return $results;
     }
 
     /**
