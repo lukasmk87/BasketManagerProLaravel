@@ -231,8 +231,8 @@ class LimitEnforcementService
         }
 
         $currentCount = $this->tenant->trainingSessions()
-            ->whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
+            ->whereYear('training_sessions.created_at', now()->year)
+            ->whereMonth('training_sessions.created_at', now()->month)
             ->count();
 
         return $currentCount < $limit;
@@ -389,8 +389,8 @@ class LimitEnforcementService
         }
 
         return $this->tenant->trainingSessions()
-            ->whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
+            ->whereYear('training_sessions.created_at', now()->year)
+            ->whereMonth('training_sessions.created_at', now()->month)
             ->count();
     }
 

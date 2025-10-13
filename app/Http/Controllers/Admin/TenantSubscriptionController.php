@@ -23,13 +23,50 @@ class TenantSubscriptionController extends Controller
      */
     public function index(): Response
     {
+        $request = request();
+
         $tenants = Tenant::with(['subscriptionPlan', 'activeCustomization'])
             ->withCount(['users', 'teams', 'players'])
+            ->when($request->search, function ($query, $search) {
+                return $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('domain', 'like', "%{$search}%")
+                      ->orWhere('subdomain', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->plan, function ($query, $planId) {
+                return $query->where('subscription_plan_id', $planId);
+            })
+            ->when($request->status, function ($query, $status) {
+                if ($status === 'active') {
+                    return $query->where('is_active', true);
+                } elseif ($status === 'inactive') {
+                    return $query->where('is_active', false);
+                } elseif ($status === 'suspended') {
+                    return $query->where('is_suspended', true);
+                } elseif ($status === 'trial') {
+                    return $query->whereNotNull('trial_ends_at')
+                                 ->where('trial_ends_at', '>', now());
+                }
+                return $query;
+            })
             ->orderBy('created_at', 'desc')
-            ->paginate(50);
+            ->paginate(50)
+            ->withQueryString();
+
+        // Get all plans for the filter dropdown
+        $plans = SubscriptionPlan::select('id', 'name', 'slug')
+            ->ordered()
+            ->get();
 
         return Inertia::render('Admin/Tenants/Index', [
             'tenants' => TenantSubscriptionResource::collection($tenants),
+            'plans' => $plans,
+            'filters' => [
+                'search' => $request->search,
+                'plan' => $request->plan,
+                'status' => $request->status,
+            ],
         ]);
     }
 

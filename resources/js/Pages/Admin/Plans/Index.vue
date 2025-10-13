@@ -1,14 +1,23 @@
 <script setup>
+import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PlanCard from '@/Components/Admin/PlanCard.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 const props = defineProps({
-    plans: Array,
+    plans: {
+        type: Array,
+        default: () => [],
+    },
 });
 
-const sortedPlans = props.plans.sort((a, b) => a.sort_order - b.sort_order);
+const sortedPlans = computed(() => {
+    if (!props.plans || !Array.isArray(props.plans)) {
+        return [];
+    }
+    return [...props.plans].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+});
 </script>
 
 <template>
@@ -58,7 +67,7 @@ const sortedPlans = props.plans.sort((a, b) => a.sort_order - b.sort_order);
                                             Gesamt Plans
                                         </dt>
                                         <dd class="text-2xl font-semibold text-gray-900">
-                                            {{ plans.length }}
+                                            {{ sortedPlans.length }}
                                         </dd>
                                     </dl>
                                 </div>
@@ -80,7 +89,7 @@ const sortedPlans = props.plans.sort((a, b) => a.sort_order - b.sort_order);
                                             Aktive Plans
                                         </dt>
                                         <dd class="text-2xl font-semibold text-gray-900">
-                                            {{ plans.filter(p => p.is_active).length }}
+                                            {{ sortedPlans.filter(p => p.is_active).length }}
                                         </dd>
                                     </dl>
                                 </div>
@@ -102,7 +111,7 @@ const sortedPlans = props.plans.sort((a, b) => a.sort_order - b.sort_order);
                                             Featured Plans
                                         </dt>
                                         <dd class="text-2xl font-semibold text-gray-900">
-                                            {{ plans.filter(p => p.is_featured).length }}
+                                            {{ sortedPlans.filter(p => p.is_featured).length }}
                                         </dd>
                                     </dl>
                                 </div>

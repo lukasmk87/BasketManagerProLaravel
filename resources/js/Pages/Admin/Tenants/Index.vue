@@ -9,14 +9,20 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 
 const props = defineProps({
     tenants: Object,
-    plans: Array,
-    filters: Object,
+    plans: {
+        type: Array,
+        default: () => [],
+    },
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
 });
 
 // Filter state
-const search = ref(props.filters.search || '');
-const selectedPlan = ref(props.filters.plan || '');
-const selectedStatus = ref(props.filters.status || '');
+const search = ref(props.filters?.search || '');
+const selectedPlan = ref(props.filters?.plan || '');
+const selectedStatus = ref(props.filters?.status || '');
 
 // Watch for changes and update URL
 watch([search, selectedPlan, selectedStatus], ([newSearch, newPlan, newStatus]) => {
