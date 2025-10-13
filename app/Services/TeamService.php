@@ -26,6 +26,10 @@ class TeamService
             'session_exists' => session()->getId() ?? 'no_session',
         ]);
 
+        // Check team limit BEFORE starting transaction
+        $limitEnforcement = App::make(LimitEnforcementService::class);
+        $limitEnforcement->enforceTeamLimit();
+
         DB::beginTransaction();
 
         try {
@@ -84,6 +88,9 @@ class TeamService
             }
 
             DB::commit();
+
+            // Track resource creation for usage statistics
+            $limitEnforcement->trackResourceCreation('team');
 
             Log::info("TeamService::createTeam - Team created successfully", [
                 'team_id' => $team->id,

@@ -42,6 +42,7 @@ class Tenant extends Model
         'locale',
         'currency',
         'subscription_tier',
+        'subscription_plan_id',
         'trial_ends_at',
         'is_active',
         'is_suspended',
@@ -550,6 +551,21 @@ class Tenant extends Model
     public function fibaIntegrations()
     {
         return $this->hasMany(FIBAIntegration::class);
+    }
+
+    public function subscriptionPlan()
+    {
+        return $this->belongsTo(SubscriptionPlan::class);
+    }
+
+    public function planCustomizations()
+    {
+        return $this->hasMany(TenantPlanCustomization::class);
+    }
+
+    public function activeCustomization()
+    {
+        return $this->hasOne(TenantPlanCustomization::class)->active();
     }
 
     /**
