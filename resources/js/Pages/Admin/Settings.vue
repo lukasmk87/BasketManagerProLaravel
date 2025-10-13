@@ -178,12 +178,15 @@ const getIconColor = (tab) => {
                                 <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                                     Verwaltung
                                 </h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <SecondaryButton :href="route('admin.users')" as="Link" class="justify-center">
                                         Benutzer verwalten
                                     </SecondaryButton>
                                     <SecondaryButton :href="route('web.clubs.index')" as="Link" class="justify-center">
                                         Clubs verwalten
+                                    </SecondaryButton>
+                                    <SecondaryButton :href="route('admin.legal-pages.index')" as="Link" class="justify-center">
+                                        Legal Pages verwalten
                                     </SecondaryButton>
                                     <SecondaryButton :href="route('admin.system')" as="Link" class="justify-center">
                                         System-Info

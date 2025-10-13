@@ -34,6 +34,11 @@ Route::get('/roadmap', function () {
     return view('roadmap');
 })->name('roadmap');
 
+// Legal Pages (public)
+Route::get('/{localizedSlug}', [\App\Http\Controllers\LegalPageController::class, 'show'])
+    ->where('localizedSlug', 'datenschutz|agb|impressum|gdpr')
+    ->name('legal.show');
+
 Route::middleware([
     'auth:web',
     config('jetstream.auth_session'),
@@ -211,6 +216,11 @@ Route::middleware([
         Route::put('/users/{user}', [\App\Http\Controllers\AdminPanelController::class, 'updateUser'])->name('users.update');
         Route::delete('/users/{user}', [\App\Http\Controllers\AdminPanelController::class, 'destroyUser'])->name('users.destroy');
         Route::get('/system', [\App\Http\Controllers\AdminPanelController::class, 'system'])->name('system');
+
+        // Legal Pages Management
+        Route::get('/legal-pages', [\App\Http\Controllers\LegalPageController::class, 'index'])->name('legal-pages.index');
+        Route::get('/legal-pages/{page}/edit', [\App\Http\Controllers\LegalPageController::class, 'edit'])->name('legal-pages.edit');
+        Route::put('/legal-pages/{page}', [\App\Http\Controllers\LegalPageController::class, 'update'])->name('legal-pages.update');
     });
     
     // Gym Management Routes

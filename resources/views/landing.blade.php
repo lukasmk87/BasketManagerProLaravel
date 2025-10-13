@@ -607,10 +607,10 @@
                 <div>
                     <h4 class="text-lg font-bold mb-4">Rechtliches</h4>
                     <ul class="space-y-2 text-gray-400">
-                        <li><a href="#" class="hover:text-orange-500">Datenschutz</a></li>
-                        <li><a href="#" class="hover:text-orange-500">AGB</a></li>
-                        <li><a href="#" class="hover:text-orange-500">Impressum</a></li>
-                        <li><a href="#" class="hover:text-orange-500">GDPR</a></li>
+                        <li><a href="{{ route('legal.show', 'datenschutz') }}" class="hover:text-orange-500">Datenschutz</a></li>
+                        <li><a href="{{ route('legal.show', 'agb') }}" class="hover:text-orange-500">AGB</a></li>
+                        <li><a href="{{ route('legal.show', 'impressum') }}" class="hover:text-orange-500">Impressum</a></li>
+                        <li><a href="{{ route('legal.show', 'gdpr') }}" class="hover:text-orange-500">GDPR</a></li>
                     </ul>
                 </div>
             </div>

@@ -140,6 +140,9 @@ class RoleAndPermissionSeeder extends Seeder
             'export user data',
             'manage consent records',
             'handle data deletion requests',
+
+            // Legal Pages Management
+            'manage legal pages',
         ];
 
         foreach ($permissions as $permission) {
@@ -222,6 +225,9 @@ class RoleAndPermissionSeeder extends Seeder
             
             // GDPR
             'export user data', 'manage consent records', 'handle data deletion requests',
+
+            // Legal Pages
+            'manage legal pages',
         ]);
 
         // Club Administrator Role
