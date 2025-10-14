@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Club;
+use App\Models\ClubSubscriptionPlan;
 use App\Services\ClubService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -136,7 +137,8 @@ class ClubController extends Controller
             'teams.players',
             'users' => function ($query) {
                 $query->withPivot('role', 'joined_at');
-            }
+            },
+            'subscriptionPlan'
         ]);
 
         $clubStats = $this->clubService->getClubStatistics($club);
@@ -158,8 +160,24 @@ class ClubController extends Controller
     {
         $this->authorize('update', $club);
 
+        // Load subscription plan if assigned
+        $club->load('subscriptionPlan');
+
+        // Get available club subscription plans for this club's tenant
+        $availablePlans = ClubSubscriptionPlan::query()
+            ->where('tenant_id', $club->tenant_id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'description', 'price', 'currency', 'billing_interval', 'features', 'limits', 'color', 'icon']);
+
         return Inertia::render('Clubs/Edit', [
             'club' => $club,
+            'availablePlans' => $availablePlans,
+            'can' => [
+                'update' => true,
+                'delete' => auth()->user()->can('delete', $club),
+            ],
         ]);
     }
 
@@ -193,6 +211,21 @@ class ClubController extends Controller
             'primary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
             'secondary_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
             'accent_color' => 'nullable|string|regex:/^#[A-Fa-f0-9]{6}$/',
+
+            // Subscription Plan
+            'club_subscription_plan_id' => [
+                'nullable',
+                'exists:club_subscription_plans,id',
+                function ($attribute, $value, $fail) use ($club) {
+                    // Validate that plan belongs to same tenant as club
+                    if ($value) {
+                        $plan = ClubSubscriptionPlan::find($value);
+                        if ($plan && $plan->tenant_id !== $club->tenant_id) {
+                            $fail('Der ausgewählte Plan gehört nicht zum selben Tenant wie der Club.');
+                        }
+                    }
+                },
+            ],
 
             // Status fields
             'is_active' => 'boolean',

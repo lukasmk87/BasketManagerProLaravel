@@ -164,11 +164,91 @@
                             </div>
                         </div>
 
+                        <!-- Subscription Plan -->
+                        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mt-6">
+                            <div class="p-6">
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">Subscription Plan</h3>
+
+                                <div v-if="club.subscription_plan">
+                                    <!-- Plan Badge -->
+                                    <div class="mb-3">
+                                        <span
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                                            :style="{
+                                                backgroundColor: club.subscription_plan.color ? club.subscription_plan.color + '20' : '#EBF5FF',
+                                                color: club.subscription_plan.color || '#1E40AF'
+                                            }"
+                                        >
+                                            <svg v-if="club.subscription_plan.icon" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                            {{ club.subscription_plan.name }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Price -->
+                                    <div class="mb-4 text-center border-b pb-3">
+                                        <div class="text-2xl font-bold text-gray-900">
+                                            {{ club.subscription_plan.price }} {{ club.subscription_plan.currency }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            / {{ club.subscription_plan.billing_interval === 'monthly' ? 'Monat' : 'Jahr' }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Description -->
+                                    <p v-if="club.subscription_plan.description" class="text-sm text-gray-600 mb-4">
+                                        {{ club.subscription_plan.description }}
+                                    </p>
+
+                                    <!-- Features -->
+                                    <div v-if="club.subscription_plan.features && club.subscription_plan.features.length > 0" class="mb-4">
+                                        <div class="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Features</div>
+                                        <div class="space-y-2">
+                                            <div
+                                                v-for="feature in club.subscription_plan.features"
+                                                :key="feature"
+                                                class="flex items-center text-sm text-gray-700"
+                                            >
+                                                <svg class="w-4 h-4 mr-2 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                <span>{{ feature }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Limits -->
+                                    <div v-if="club.subscription_plan.limits && Object.keys(club.subscription_plan.limits).length > 0">
+                                        <div class="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Limits</div>
+                                        <div class="space-y-2">
+                                            <div
+                                                v-for="(value, key) in club.subscription_plan.limits"
+                                                :key="key"
+                                                class="flex justify-between text-sm"
+                                            >
+                                                <span class="text-gray-600">{{ key }}</span>
+                                                <span class="font-medium text-gray-900">{{ value === -1 ? '∞' : value }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div v-else class="text-center py-6">
+                                    <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <p class="text-sm text-gray-500">Kein Plan zugeordnet</p>
+                                    <p class="text-xs text-gray-400 mt-1">Nutzt Tenant-Features</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Club Members -->
                         <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mt-6">
                             <div class="p-6">
                                 <h3 class="text-lg font-medium text-gray-900 mb-4">Mitglieder</h3>
-                                
+
                                 <div v-if="club.users && club.users.length > 0" class="space-y-3">
                                     <div
                                         v-for="user in club.users.slice(0, 5)"
@@ -180,12 +260,12 @@
                                             <div class="text-xs text-gray-500">{{ user.pivot?.role || 'Mitglied' }}</div>
                                         </div>
                                     </div>
-                                    
+
                                     <div v-if="club.users.length > 5" class="text-center text-sm text-gray-500 pt-2 border-t">
                                         und {{ club.users.length - 5 }} weitere...
                                     </div>
                                 </div>
-                                
+
                                 <div v-else class="text-center text-gray-500 py-4">
                                     Keine Mitglieder
                                 </div>

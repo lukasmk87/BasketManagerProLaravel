@@ -23,6 +23,7 @@ class Club extends Model implements HasMedia
      */
     protected $fillable = [
         'uuid',
+        'club_subscription_plan_id',
         'name',
         'short_name',
         'slug',
@@ -245,6 +246,22 @@ class Club extends Model implements HasMedia
     public function activeGymHalls(): HasMany
     {
         return $this->gymHalls()->where('is_active', true);
+    }
+
+    /**
+     * Get the subscription plan for this club.
+     */
+    public function subscriptionPlan()
+    {
+        return $this->belongsTo(ClubSubscriptionPlan::class, 'club_subscription_plan_id');
+    }
+
+    /**
+     * Get the tenant this club belongs to.
+     */
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class, 'tenant_id');
     }
 
     // ============================
@@ -547,6 +564,143 @@ class Club extends Model implements HasMedia
     public function getColorsSecondaryAttribute(): ?string
     {
         return $this->secondary_color;
+    }
+
+    // ============================
+    // SUBSCRIPTION & FEATURE METHODS
+    // ============================
+
+    /**
+     * Check if club has a specific feature (considering tenant hierarchy).
+     */
+    public function hasFeature(string $feature): bool
+    {
+        // Get tenant (try relationship first, fallback to app tenant)
+        $tenant = $this->tenant ?? (app()->bound('tenant') ? app('tenant') : null);
+
+        // 1. Tenant must have the feature
+        if (!$tenant || !$tenant->hasFeature($feature)) {
+            return false;
+        }
+
+        // 2. If club has no subscription plan -> inherit tenant features
+        if (!$this->club_subscription_plan_id || !$this->subscriptionPlan) {
+            return true;
+        }
+
+        // 3. If club has a plan -> check club plan features
+        return $this->subscriptionPlan->hasFeature($feature);
+    }
+
+    /**
+     * Get limit for a specific metric (considering tenant hierarchy).
+     */
+    public function getLimit(string $metric): int
+    {
+        $tenant = $this->tenant ?? (app()->bound('tenant') ? app('tenant') : null);
+
+        if (!$tenant) {
+            return 0;
+        }
+
+        $tenantLimit = $tenant->getTierLimits()[$metric] ?? -1;
+
+        // If tenant has unlimited
+        if ($tenantLimit === -1) {
+            if (!$this->subscriptionPlan) {
+                return -1;
+            }
+            return $this->subscriptionPlan->getLimit($metric);
+        }
+
+        // If club has no plan -> use tenant limit
+        if (!$this->subscriptionPlan) {
+            return $tenantLimit;
+        }
+
+        // Return minimum of tenant and club limits
+        $clubLimit = $this->subscriptionPlan->getLimit($metric);
+        return min($tenantLimit, $clubLimit === -1 ? $tenantLimit : $clubLimit);
+    }
+
+    /**
+     * Check if club can use a resource based on limits.
+     */
+    public function canUse(string $metric, int $amount = 1): bool
+    {
+        $limit = $this->getLimit($metric);
+
+        if ($limit === -1) {
+            return true; // Unlimited
+        }
+
+        $currentUsage = $this->getCurrentUsage($metric);
+        return ($currentUsage + $amount) <= $limit;
+    }
+
+    /**
+     * Get current usage for a metric.
+     */
+    protected function getCurrentUsage(string $metric): int
+    {
+        return match($metric) {
+            'max_teams' => $this->teams()->count(),
+            'max_players' => $this->players()->count(),
+            'max_storage_gb' => $this->calculateStorageUsage(),
+            default => 0,
+        };
+    }
+
+    /**
+     * Calculate storage usage in GB (placeholder - implement based on your needs).
+     */
+    protected function calculateStorageUsage(): float
+    {
+        // TODO: Implement actual storage calculation
+        // This could sum up media file sizes, etc.
+        return 0.0;
+    }
+
+    /**
+     * Get subscription limits for this club.
+     */
+    public function getSubscriptionLimits(): array
+    {
+        $metrics = ['max_teams', 'max_players', 'max_storage_gb', 'max_games_per_month'];
+        $limits = [];
+
+        foreach ($metrics as $metric) {
+            $limit = $this->getLimit($metric);
+            $limits[$metric] = [
+                'limit' => $limit,
+                'current' => $this->getCurrentUsage($metric),
+                'unlimited' => $limit === -1,
+                'percentage' => $limit > 0 ? min(100, ($this->getCurrentUsage($metric) / $limit) * 100) : 0,
+            ];
+        }
+
+        return $limits;
+    }
+
+    /**
+     * Assign a subscription plan to this club.
+     */
+    public function assignPlan(ClubSubscriptionPlan $plan): void
+    {
+        // Validate that plan belongs to same tenant
+        if ($plan->tenant_id !== $this->tenant_id) {
+            throw new \Exception("Plan does not belong to club's tenant");
+        }
+
+        $this->update(['club_subscription_plan_id' => $plan->id]);
+    }
+
+    /**
+     * Remove subscription plan (club will use tenant features).
+     */
+    public function removePlan(): void
+    {
+        $this->update(['club_subscription_plan_id' => null]);
     }
 
     // ============================

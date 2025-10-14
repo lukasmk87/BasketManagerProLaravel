@@ -14,8 +14,8 @@ class TenantScope implements Scope
     public function apply(Builder $builder, Model $model): void
     {
         // Only apply tenant scope if tenant is set and model has tenant_id column
-        $tenant = app('tenant', null);
-        
+        $tenant = app()->bound('tenant') ? app('tenant') : null;
+
         if ($tenant && $this->modelHasTenantColumn($model)) {
             $builder->where($model->getQualifiedTenantColumn(), $tenant->id);
         }

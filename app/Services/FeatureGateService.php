@@ -13,7 +13,8 @@ use Carbon\Carbon;
 class FeatureGateService
 {
     private ?Tenant $tenant = null;
-    
+    private ?\App\Models\Club $club = null;
+
     public function __construct()
     {
         $this->tenant = app('tenant');
@@ -25,6 +26,15 @@ class FeatureGateService
     public function setTenant(?Tenant $tenant): self
     {
         $this->tenant = $tenant;
+        return $this;
+    }
+
+    /**
+     * Set the club for feature checking.
+     */
+    public function setClub(?\App\Models\Club $club): self
+    {
+        $this->club = $club;
         return $this;
     }
 
@@ -321,6 +331,76 @@ class FeatureGateService
         }
 
         return null;
+    }
+
+    // ============================
+    // CLUB-LEVEL FEATURE METHODS
+    // ============================
+
+    /**
+     * Check if club has a specific feature (considering tenant hierarchy).
+     */
+    public function hasClubFeature(string $feature): bool
+    {
+        if (!$this->club) {
+            return false;
+        }
+
+        return $this->club->hasFeature($feature);
+    }
+
+    /**
+     * Ensure club has access to a feature, throw exception if not.
+     */
+    public function requireClubFeature(string $feature): void
+    {
+        if (!$this->hasClubFeature($feature)) {
+            $tier = $this->club->subscriptionPlan
+                ? $this->club->subscriptionPlan->name
+                : ($this->tenant ? $this->tenant->subscription_tier : 'unknown');
+
+            throw new FeatureNotAvailableException(
+                "Feature '{$feature}' is not available for club '{$this->club->name}' (Plan: {$tier})"
+            );
+        }
+    }
+
+    /**
+     * Check if club can use a resource based on limits.
+     */
+    public function canClubUse(string $metric, int $amount = 1): bool
+    {
+        if (!$this->club) {
+            return false;
+        }
+
+        return $this->club->canUse($metric, $amount);
+    }
+
+    /**
+     * Ensure club can use a resource, throw exception if quota exceeded.
+     */
+    public function requireClubUsage(string $metric, int $amount = 1): void
+    {
+        if (!$this->canClubUse($metric, $amount)) {
+            $limit = $this->club->getLimit($metric);
+
+            throw new UsageQuotaExceededException(
+                "Club '{$this->club->name}' usage quota exceeded for '{$metric}'. Limit: {$limit}"
+            );
+        }
+    }
+
+    /**
+     * Get club subscription limits with current usage.
+     */
+    public function getClubLimits(): array
+    {
+        if (!$this->club) {
+            return [];
+        }
+
+        return $this->club->getSubscriptionLimits();
     }
 
     /**

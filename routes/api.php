@@ -178,3 +178,28 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin/rate-limits')->
     Route::post('user/{user}/reset-quota', [App\Http\Controllers\Admin\RateLimitController::class, 'resetQuota']);
     Route::get('analytics', [App\Http\Controllers\Admin\RateLimitController::class, 'analytics']);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Club Subscription Plans Routes
+|--------------------------------------------------------------------------
+|
+| API endpoints for managing club-level subscription plans.
+| Allows tenants to create custom plans for their clubs.
+|
+*/
+Route::middleware(['auth:sanctum'])->group(function () {
+    // Club Subscription Plan Management (Tenant-scoped)
+    Route::prefix('tenants/{tenant}/club-plans')->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\ClubSubscriptionPlanController::class, 'index']);
+        Route::post('/', [App\Http\Controllers\Api\ClubSubscriptionPlanController::class, 'store']);
+        Route::put('/{plan}', [App\Http\Controllers\Api\ClubSubscriptionPlanController::class, 'update']);
+        Route::delete('/{plan}', [App\Http\Controllers\Api\ClubSubscriptionPlanController::class, 'destroy']);
+    });
+
+    // Club Plan Assignment
+    Route::prefix('clubs/{club}')->group(function () {
+        Route::post('/subscription', [App\Http\Controllers\Api\ClubSubscriptionPlanController::class, 'assignToClub']);
+        Route::delete('/subscription', [App\Http\Controllers\Api\ClubSubscriptionPlanController::class, 'removeFromClub']);
+    });
+});

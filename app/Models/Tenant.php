@@ -574,6 +574,30 @@ class Tenant extends Model
     }
 
     /**
+     * Get club subscription plans for this tenant.
+     */
+    public function clubSubscriptionPlans()
+    {
+        return $this->hasMany(ClubSubscriptionPlan::class);
+    }
+
+    /**
+     * Get active club subscription plans.
+     */
+    public function activeClubPlans()
+    {
+        return $this->clubSubscriptionPlans()->active();
+    }
+
+    /**
+     * Get default club subscription plan.
+     */
+    public function defaultClubPlan()
+    {
+        return $this->clubSubscriptionPlans()->default()->first();
+    }
+
+    /**
      * Stripe Integration Methods
      */
     

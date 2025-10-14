@@ -19,7 +19,7 @@ trait BelongsToTenant
         // Automatically set tenant_id when creating new models
         static::creating(function ($model) {
             if (empty($model->tenant_id)) {
-                $tenant = app('tenant', null);
+                $tenant = app()->bound('tenant') ? app('tenant') : null;
                 if ($tenant) {
                     $model->tenant_id = $tenant->id;
                 }
@@ -56,12 +56,12 @@ trait BelongsToTenant
      */
     public function belongsToCurrentTenant(): bool
     {
-        $currentTenant = app('tenant', null);
-        
+        $currentTenant = app()->bound('tenant') ? app('tenant') : null;
+
         if (!$currentTenant) {
             return false;
         }
-        
+
         return $this->tenant_id === $currentTenant->id;
     }
 
@@ -80,12 +80,12 @@ trait BelongsToTenant
      */
     public function scopeExcludeCurrentTenant($query)
     {
-        $currentTenant = app('tenant', null);
-        
+        $currentTenant = app()->bound('tenant') ? app('tenant') : null;
+
         if ($currentTenant) {
             return $query->where('tenant_id', '!=', $currentTenant->id);
         }
-        
+
         return $query;
     }
 
@@ -113,12 +113,12 @@ trait BelongsToTenant
      */
     public static function createForTenant(array $attributes = [])
     {
-        $tenant = app('tenant', null);
-        
+        $tenant = app()->bound('tenant') ? app('tenant') : null;
+
         if ($tenant) {
             $attributes['tenant_id'] = $tenant->id;
         }
-        
+
         return static::create($attributes);
     }
 
@@ -127,12 +127,12 @@ trait BelongsToTenant
      */
     public static function makeForTenant(array $attributes = [])
     {
-        $tenant = app('tenant', null);
-        
+        $tenant = app()->bound('tenant') ? app('tenant') : null;
+
         if ($tenant) {
             $attributes['tenant_id'] = $tenant->id;
         }
-        
+
         return new static($attributes);
     }
 }

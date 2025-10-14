@@ -417,6 +417,80 @@
                             </div>
                         </div>
 
+                        <!-- Subscription Plan Section -->
+                        <div class="mb-8" v-if="availablePlans.length > 0">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Subscription Plan</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <InputLabel for="club_subscription_plan_id" value="Club-Plan auswählen" />
+                                    <select
+                                        id="club_subscription_plan_id"
+                                        v-model="form.club_subscription_plan_id"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                    >
+                                        <option value="">Kein Plan (Tenant-Features werden vererbt)</option>
+                                        <option
+                                            v-for="plan in availablePlans"
+                                            :key="plan.id"
+                                            :value="plan.id"
+                                        >
+                                            {{ plan.name }} - {{ plan.price }} {{ plan.currency }}/{{ plan.billing_interval === 'monthly' ? 'Monat' : 'Jahr' }}
+                                        </option>
+                                    </select>
+                                    <InputError :message="form.errors.club_subscription_plan_id" class="mt-2" />
+                                </div>
+
+                                <!-- Plan Details (if plan is selected) -->
+                                <div
+                                    v-if="form.club_subscription_plan_id"
+                                    class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+                                >
+                                    <template v-for="plan in availablePlans" :key="plan.id">
+                                        <div v-if="plan.id === form.club_subscription_plan_id">
+                                            <h4 class="font-semibold text-gray-900 mb-2">{{ plan.name }}</h4>
+                                            <p v-if="plan.description" class="text-sm text-gray-600 mb-3">{{ plan.description }}</p>
+
+                                            <!-- Features -->
+                                            <div v-if="plan.features && plan.features.length > 0" class="mb-3">
+                                                <div class="text-xs font-medium text-gray-700 mb-2">Features:</div>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <span
+                                                        v-for="feature in plan.features"
+                                                        :key="feature"
+                                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                                    >
+                                                        {{ feature }}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Limits -->
+                                            <div v-if="plan.limits && Object.keys(plan.limits).length > 0">
+                                                <div class="text-xs font-medium text-gray-700 mb-2">Limits:</div>
+                                                <div class="grid grid-cols-2 gap-2 text-sm">
+                                                    <div v-for="(value, key) in plan.limits" :key="key" class="text-gray-600">
+                                                        <span class="font-medium">{{ key }}:</span>
+                                                        <span class="ml-1">{{ value === -1 ? 'Unlimited' : value }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <!-- Info Text -->
+                                <div class="flex items-start space-x-2 text-sm text-gray-500">
+                                    <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <p>
+                                        Wenn kein Plan ausgewählt ist, erbt der Club automatisch alle Features des Tenants.
+                                        Mit einem Club-Plan können Sie die verfügbaren Features und Limits individuell einschränken.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="flex items-center justify-between mt-8 pt-6 border-t">
                             <DangerButton 
                                 type="button"
@@ -492,6 +566,10 @@ import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 const props = defineProps({
     club: Object,
     can: Object,
+    availablePlans: {
+        type: Array,
+        default: () => [],
+    },
 })
 
 const form = useForm({
@@ -517,6 +595,9 @@ const form = useForm({
     primary_color: props.club.primary_color || '#000000',
     secondary_color: props.club.secondary_color || '#FFFFFF',
     accent_color: props.club.accent_color || '#FFD700',
+
+    // Subscription Plan
+    club_subscription_plan_id: props.club.club_subscription_plan_id || '',
 
     // Status fields
     is_active: props.club.is_active ?? true,
