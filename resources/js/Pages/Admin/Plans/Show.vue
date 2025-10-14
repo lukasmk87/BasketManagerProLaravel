@@ -54,7 +54,7 @@ const savePlan = () => {
     form.transform((data) => ({
         ...data,
         price: Math.round(data.price * 100), // Convert euros to cents
-    })).put(route('admin.plans.update', props.plan.id), {
+    })).put(route('admin.plans.update', props.plan.slug), {
         onSuccess: () => {
             isEditing.value = false;
         },
@@ -62,11 +62,11 @@ const savePlan = () => {
 };
 
 const clonePlan = () => {
-    form.post(route('admin.plans.clone', props.plan.id));
+    form.post(route('admin.plans.clone', props.plan.slug));
 };
 
 const deletePlan = () => {
-    form.delete(route('admin.plans.destroy', props.plan.id), {
+    form.delete(route('admin.plans.destroy', props.plan.slug), {
         onSuccess: () => {
             showDeleteModal.value = false;
         },
@@ -74,10 +74,12 @@ const deletePlan = () => {
 };
 
 const formatPrice = (cents) => {
+    // Ensure cents is a valid number, default to 0 if null/undefined
+    const validCents = typeof cents === 'number' && !isNaN(cents) ? cents : 0;
     return new Intl.NumberFormat('de-DE', {
         style: 'currency',
         currency: 'EUR',
-    }).format(cents / 100);
+    }).format(validCents / 100);
 };
 
 const formatNumber = (number) => {
@@ -189,25 +191,25 @@ const formatNumber = (number) => {
                         </div>
                         <div class="px-6 py-5">
                             <dl class="grid grid-cols-2 gap-6">
-                                <div v-if="plan.limits.users !== undefined">
+                                <div v-if="plan.limits && plan.limits.users !== undefined">
                                     <dt class="text-sm font-medium text-gray-500">Max Users</dt>
                                     <dd class="mt-1 text-2xl font-semibold text-gray-900">
                                         {{ plan.limits.users === -1 ? 'Unbegrenzt' : formatNumber(plan.limits.users) }}
                                     </dd>
                                 </div>
-                                <div v-if="plan.limits.teams !== undefined">
+                                <div v-if="plan.limits && plan.limits.teams !== undefined">
                                     <dt class="text-sm font-medium text-gray-500">Max Teams</dt>
                                     <dd class="mt-1 text-2xl font-semibold text-gray-900">
                                         {{ plan.limits.teams === -1 ? 'Unbegrenzt' : formatNumber(plan.limits.teams) }}
                                     </dd>
                                 </div>
-                                <div v-if="plan.limits.players !== undefined">
+                                <div v-if="plan.limits && plan.limits.players !== undefined">
                                     <dt class="text-sm font-medium text-gray-500">Max Players</dt>
                                     <dd class="mt-1 text-2xl font-semibold text-gray-900">
                                         {{ plan.limits.players === -1 ? 'Unbegrenzt' : formatNumber(plan.limits.players) }}
                                     </dd>
                                 </div>
-                                <div v-if="plan.limits.storage_gb !== undefined">
+                                <div v-if="plan.limits && plan.limits.storage_gb !== undefined">
                                     <dt class="text-sm font-medium text-gray-500">Storage</dt>
                                     <dd class="mt-1 text-2xl font-semibold text-gray-900">
                                         {{ plan.limits.storage_gb === -1 ? 'Unbegrenzt' : formatNumber(plan.limits.storage_gb) + ' GB' }}
@@ -228,7 +230,7 @@ const formatNumber = (number) => {
                                     <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                     </svg>
-                                    <span class="text-base text-gray-900">{{ feature }}</span>
+                                    <span class="text-base text-gray-900">{{ typeof feature === 'object' ? (feature.name || feature.slug) : feature }}</span>
                                 </li>
                             </ul>
                         </div>
@@ -292,7 +294,7 @@ const formatNumber = (number) => {
                     </div>
 
                     <!-- Limits -->
-                    <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div v-if="form.limits" class="bg-white shadow rounded-lg overflow-hidden">
                         <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
                             <h3 class="text-lg font-semibold text-gray-900">Limits</h3>
                         </div>

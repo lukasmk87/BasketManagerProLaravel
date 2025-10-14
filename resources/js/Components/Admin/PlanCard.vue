@@ -23,10 +23,12 @@ const billingPeriodLabel = computed(() => {
 });
 
 const formatPrice = computed(() => {
+    // Ensure price is a valid number, default to 0 if null/undefined
+    const validPrice = typeof props.plan.price === 'number' && !isNaN(props.plan.price) ? props.plan.price : 0;
     return new Intl.NumberFormat('de-DE', {
         style: 'currency',
         currency: props.plan.currency || 'EUR',
-    }).format(props.plan.price / 100);
+    }).format(validPrice / 100);
 });
 
 const isUnlimited = (value) => {
@@ -139,7 +141,7 @@ const formatLimit = (value, unit = '') => {
                     <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span class="text-gray-700">{{ feature }}</span>
+                    <span class="text-gray-700">{{ typeof feature === 'object' ? (feature.name || feature.slug) : feature }}</span>
                 </li>
             </ul>
         </div>
@@ -155,10 +157,10 @@ const formatLimit = (value, unit = '') => {
                     <span class="text-gray-500">Aktiv:</span>
                     <span class="ml-2 font-medium text-green-600">{{ plan.active_tenants_count }}</span>
                 </div>
-                <div v-if="plan.monthly_revenue">
+                <div v-if="plan.monthly_revenue !== undefined">
                     <span class="text-gray-500">MRR:</span>
                     <span class="ml-2 font-medium text-indigo-600">
-                        {{ new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(plan.monthly_revenue / 100) }}
+                        {{ new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format((plan.monthly_revenue || 0) / 100) }}
                     </span>
                 </div>
             </div>

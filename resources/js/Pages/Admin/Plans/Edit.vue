@@ -34,7 +34,7 @@ const form = useForm({
     is_featured: props.plan.is_featured,
     sort_order: props.plan.sort_order,
     features: props.plan.raw_features || [],
-    limits: props.plan.raw_limits || {
+    limits: props.plan.limits || {
         users: 100,
         teams: 10,
         players: 200,

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -39,7 +40,7 @@ class SubscriptionPlan extends Model
      * The attributes that should be cast.
      */
     protected $casts = [
-        'price' => 'decimal:2',
+        'price' => 'integer', // Price stored in cents (e.g., 5000 = €50.00)
         'trial_days' => 'integer',
         'is_active' => 'boolean',
         'is_custom' => 'boolean',
@@ -117,6 +118,7 @@ class SubscriptionPlan extends Model
 
     /**
      * Get the formatted price with currency.
+     * Price is stored in cents, so we divide by 100 for display.
      */
     public function getFormattedPriceAttribute(): string
     {
@@ -124,7 +126,8 @@ class SubscriptionPlan extends Model
             return 'Kostenlos';
         }
 
-        return number_format($this->price, 2, ',', '.') . ' ' . $this->currency;
+        $priceInEuros = $this->price / 100;
+        return number_format($priceInEuros, 2, ',', '.') . ' ' . $this->currency;
     }
 
     /**
@@ -138,6 +141,16 @@ class SubscriptionPlan extends Model
             'quarterly' => 'pro Quartal',
             default => $this->billing_period,
         };
+    }
+
+    /**
+     * Get limits - ensures limits is always an array, never null.
+     */
+    protected function limits(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => is_array($value) ? $value : [],
+        );
     }
 
     // ============================
@@ -223,14 +236,15 @@ class SubscriptionPlan extends Model
 
     /**
      * Get total revenue for this plan (monthly).
+     * Returns revenue in cents.
      */
-    public function getMonthlyRevenueAttribute(): float
+    public function getMonthlyRevenueAttribute(): int
     {
         if ($this->billing_period === 'yearly') {
-            return round($this->price / 12 * $this->active_tenant_count, 2);
+            return (int) round($this->price / 12 * $this->active_tenant_count);
         }
 
-        return round($this->price * $this->active_tenant_count, 2);
+        return $this->price * $this->active_tenant_count;
     }
 
     /**
