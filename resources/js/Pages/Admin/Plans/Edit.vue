@@ -5,7 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import LimitEditor from '@/Components/Admin/LimitEditor.vue';
-import FeatureToggle from '@/Components/Admin/FeatureToggle.vue';
+import FeatureSelector from '@/Components/Admin/FeatureSelector.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import { ref } from 'vue';
 
@@ -268,7 +268,7 @@ const deletePlan = () => {
                             <p class="mt-1 text-sm text-gray-500">Wähle die Features für diesen Plan</p>
                         </div>
                         <div class="px-6 py-5 space-y-3">
-                            <FeatureToggle
+                            <FeatureSelector
                                 v-for="(featureName, featureKey) in featuresList"
                                 :key="featureKey"
                                 v-model="form.features"

@@ -35,7 +35,7 @@ class CreatePlanRequest extends FormRequest
             'sort_order' => ['integer', 'min:0'],
 
             // Features array
-            'features' => ['required', 'array'],
+            'features' => ['required', 'array', 'min:1'],
             'features.*' => ['string', 'max:255'],
 
             // Limits array
@@ -84,6 +84,8 @@ class CreatePlanRequest extends FormRequest
             'slug.unique' => 'Ein Plan mit diesem Slug existiert bereits.',
             'currency.size' => 'Währung muss ein 3-stelliger ISO-Code sein (z.B. EUR, USD).',
             'billing_period.in' => 'Abrechnungszeitraum muss monthly, yearly oder quarterly sein.',
+            'features.required' => 'Bitte wählen Sie mindestens ein Feature für diesen Plan aus.',
+            'features.min' => 'Bitte wählen Sie mindestens ein Feature für diesen Plan aus.',
             'limits.*.min' => 'Limit muss -1 (unbegrenzt) oder größer sein.',
         ];
     }
