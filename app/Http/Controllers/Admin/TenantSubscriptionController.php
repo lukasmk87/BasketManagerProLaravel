@@ -64,7 +64,7 @@ class TenantSubscriptionController extends Controller
             ->get();
 
         return Inertia::render('Admin/Tenants/Index', [
-            'tenants' => TenantSubscriptionResource::collection($tenants),
+            'tenants' => TenantSubscriptionResource::collection($tenants)->resolve(),
             'plans' => $plans,
             'filters' => [
                 'search' => $request->search,

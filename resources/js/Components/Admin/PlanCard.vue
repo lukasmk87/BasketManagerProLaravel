@@ -169,20 +169,20 @@ const formatLimit = (value, unit = '') => {
         <!-- Actions -->
         <div v-if="showActions" class="px-6 py-4 bg-white border-t border-gray-200 flex justify-between items-center">
             <Link
-                :href="route('admin.plans.show', plan.id)"
+                :href="route('admin.plans.show', { plan: plan.slug })"
                 class="text-sm font-medium text-indigo-600 hover:text-indigo-900"
             >
                 Details anzeigen →
             </Link>
             <div class="flex space-x-2">
                 <Link
-                    :href="route('admin.plans.show', plan.id)"
+                    :href="route('admin.plans.edit', { plan: plan.slug })"
                     class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                     Bearbeiten
                 </Link>
                 <form
-                    @submit.prevent="$inertia.post(route('admin.plans.clone', plan.id))"
+                    @submit.prevent="$inertia.post(route('admin.plans.clone', { plan: plan.slug }))"
                     class="inline"
                 >
                     <button

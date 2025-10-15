@@ -56,11 +56,11 @@ const savePlan = () => {
     form.transform((data) => ({
         ...data,
         price: Math.round(data.price * 100), // Convert euros to cents
-    })).put(route('admin.plans.update', props.plan.id));
+    })).put(route('admin.plans.update', { plan: props.plan.slug }));
 };
 
 const deletePlan = () => {
-    form.delete(route('admin.plans.destroy', props.plan.id), {
+    form.delete(route('admin.plans.destroy', { plan: props.plan.slug }), {
         onSuccess: () => {
             showDeleteModal.value = false;
         },
@@ -82,7 +82,7 @@ const deletePlan = () => {
                 </div>
                 <div class="flex items-center space-x-3">
                     <Link
-                        :href="route('admin.plans.show', plan.id)"
+                        :href="route('admin.plans.show', { plan: plan.slug })"
                         class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50"
                     >
                         ← Zurück
@@ -290,7 +290,7 @@ const deletePlan = () => {
                         <div class="flex space-x-3">
                             <SecondaryButton
                                 type="button"
-                                @click="$inertia.visit(route('admin.plans.show', plan.id))"
+                                @click="$inertia.visit(route('admin.plans.show', { plan: plan.slug }))"
                             >
                                 Abbrechen
                             </SecondaryButton>

@@ -54,7 +54,7 @@ const savePlan = () => {
     form.transform((data) => ({
         ...data,
         price: Math.round(data.price * 100), // Convert euros to cents
-    })).put(route('admin.plans.update', props.plan.slug), {
+    })).put(route('admin.plans.update', { plan: props.plan.slug }), {
         onSuccess: () => {
             isEditing.value = false;
         },
@@ -62,11 +62,11 @@ const savePlan = () => {
 };
 
 const clonePlan = () => {
-    form.post(route('admin.plans.clone', props.plan.slug));
+    form.post(route('admin.plans.clone', { plan: props.plan.slug }));
 };
 
 const deletePlan = () => {
-    form.delete(route('admin.plans.destroy', props.plan.slug), {
+    form.delete(route('admin.plans.destroy', { plan: props.plan.slug }), {
         onSuccess: () => {
             showDeleteModal.value = false;
         },

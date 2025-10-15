@@ -24,7 +24,7 @@ class SubscriptionPlanController extends Controller
             ->get();
 
         return Inertia::render('Admin/Plans/Index', [
-            'plans' => SubscriptionPlanResource::collection($plans),
+            'plans' => SubscriptionPlanResource::collection($plans)->resolve(),
         ]);
     }
 
