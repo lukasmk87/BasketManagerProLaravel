@@ -149,6 +149,12 @@ class RoleAndPermissionSeeder extends Seeder
             'view tenant subscriptions',
             'edit tenant subscriptions',
             'manage subscription plans',
+
+            // Club Subscription Plans
+            'view club subscription plans',
+            'create club subscription plans',
+            'update club subscription plans',
+            'delete club subscription plans',
         ];
 
         foreach ($permissions as $permission) {
@@ -237,6 +243,9 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Subscription Management
             'manage-subscriptions', 'view tenant subscriptions', 'edit tenant subscriptions', 'manage subscription plans',
+
+            // Club Subscription Plans
+            'view club subscription plans', 'create club subscription plans', 'update club subscription plans', 'delete club subscription plans',
         ]);
 
         // Club Administrator Role
@@ -290,6 +299,9 @@ class RoleAndPermissionSeeder extends Seeder
             
             // Financial
             'view financial data', 'manage budgets', 'generate financial reports',
+
+            // Club Subscription Plans (limited - only for their tenant)
+            'view club subscription plans', 'create club subscription plans',
         ]);
 
         // Head Coach/Trainer Role

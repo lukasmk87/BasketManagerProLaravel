@@ -22,6 +22,8 @@ use App\Models\EmergencyContact;
 use App\Policies\EmergencyContactPolicy;
 use App\Models\TrainingSession;
 use App\Policies\TrainingSessionPolicy;
+use App\Models\ClubSubscriptionPlan;
+use App\Policies\ClubSubscriptionPlanPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -40,6 +42,7 @@ class AuthServiceProvider extends ServiceProvider
         GymHall::class => GymHallPolicy::class,
         EmergencyContact::class => EmergencyContactPolicy::class,
         TrainingSession::class => TrainingSessionPolicy::class,
+        ClubSubscriptionPlan::class => ClubSubscriptionPlanPolicy::class,
     ];
 
     /**

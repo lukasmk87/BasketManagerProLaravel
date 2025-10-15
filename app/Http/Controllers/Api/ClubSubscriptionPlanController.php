@@ -25,6 +25,8 @@ class ClubSubscriptionPlanController extends Controller
      */
     public function index(Tenant $tenant)
     {
+        $this->authorize('viewAny', ClubSubscriptionPlan::class);
+
         $plans = $tenant->clubSubscriptionPlans()
             ->withCount('clubs', 'activeClubs')
             ->orderBy('sort_order')
@@ -41,6 +43,8 @@ class ClubSubscriptionPlanController extends Controller
      */
     public function store(Request $request, Tenant $tenant)
     {
+        $this->authorize('create', ClubSubscriptionPlan::class);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255',
@@ -82,6 +86,8 @@ class ClubSubscriptionPlanController extends Controller
      */
     public function update(Request $request, Tenant $tenant, ClubSubscriptionPlan $plan)
     {
+        $this->authorize('update', $plan);
+
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:255',
             'description' => 'nullable|string',
@@ -119,6 +125,8 @@ class ClubSubscriptionPlanController extends Controller
      */
     public function destroy(Tenant $tenant, ClubSubscriptionPlan $plan)
     {
+        $this->authorize('delete', $plan);
+
         if ($plan->clubs()->exists()) {
             return response()->json([
                 'success' => false,
@@ -139,6 +147,8 @@ class ClubSubscriptionPlanController extends Controller
      */
     public function assignToClub(Request $request, Club $club)
     {
+        $this->authorize('update', $club);
+
         $validator = Validator::make($request->all(), [
             'plan_id' => 'required|exists:club_subscription_plans,id',
         ]);
@@ -173,6 +183,8 @@ class ClubSubscriptionPlanController extends Controller
      */
     public function removeFromClub(Club $club)
     {
+        $this->authorize('update', $club);
+
         $club->removePlan();
 
         return response()->json([
