@@ -434,4 +434,111 @@ class QRCodeService
 
         return $frequency;
     }
+
+    /**
+     * Generate QR code for player registration invitation.
+     *
+     * @param \App\Models\PlayerRegistrationInvitation $invitation
+     * @param array $options
+     * @return array
+     */
+    public function generatePlayerRegistrationQR($invitation, array $options = []): array
+    {
+        $size = $options['size'] ?? $this->config['default_size'];
+        $format = $options['format'] ?? 'png';
+        $includeLogo = $options['include_logo'] ?? false;
+
+        // Build registration URL
+        $registrationUrl = route('public.player.register', ['token' => $invitation->invitation_token]);
+
+        // Generate QR code
+        $qrCode = QrCode::format($format)
+            ->size($size)
+            ->margin($this->config['margin'])
+            ->errorCorrection($this->config['error_correction'])
+            ->generate($registrationUrl);
+
+        // Save QR code
+        $filename = "player_registration_qr_{$invitation->club_id}_{$invitation->id}_" . time() . ".{$format}";
+        $directory = config('player_registration.qr_storage_path', 'public/qr-codes/player-registrations');
+        $filePath = "{$directory}/{$filename}";
+
+        Storage::put($filePath, $qrCode);
+
+        // Optionally add club logo
+        if ($includeLogo && $format === 'png') {
+            $filePath = $this->addClubLogoToQR($filePath, $size, $invitation->club_id);
+        }
+
+        return [
+            'file_path' => $filePath,
+            'public_url' => Storage::url($filePath),
+            'registration_url' => $registrationUrl,
+            'metadata' => [
+                'size' => "{$size}x{$size}",
+                'format' => $format,
+                'error_correction' => $this->config['error_correction'],
+                'generated_at' => now()->toISOString(),
+                'invitation_id' => $invitation->id,
+                'club_id' => $invitation->club_id,
+            ],
+        ];
+    }
+
+    /**
+     * Add club logo to player registration QR code.
+     *
+     * @param string $qrPath
+     * @param int $size
+     * @param int $clubId
+     * @return string
+     */
+    private function addClubLogoToQR(string $qrPath, int $size, int $clubId): string
+    {
+        try {
+            $qrImage = Image::make(storage_path("app/{$qrPath}"));
+
+            // Try to find club logo
+            $logoPath = $this->findClubLogo($clubId);
+            if (!$logoPath) {
+                return $qrPath; // Return original if no logo found
+            }
+
+            $logo = Image::make($logoPath);
+            $logoSize = intval($size * $this->config['logo_size_ratio']);
+
+            $logo->resize($logoSize, $logoSize);
+
+            // Position logo in center
+            $x = intval(($size - $logoSize) / 2);
+            $y = intval(($size - $logoSize) / 2);
+
+            $qrImage->insert($logo, 'top-left', $x, $y);
+            $qrImage->save(storage_path("app/{$qrPath}"));
+
+            return $qrPath;
+        } catch (\Exception $e) {
+            // Return original path if logo addition fails
+            return $qrPath;
+        }
+    }
+
+    /**
+     * Find club logo file.
+     *
+     * @param int $clubId
+     * @return string|null
+     */
+    private function findClubLogo(int $clubId): ?string
+    {
+        // Try to find club logo in storage
+        $logoPath = storage_path("app/public/logos/club_{$clubId}.png");
+        if (file_exists($logoPath)) {
+            return $logoPath;
+        }
+
+        // Fallback to default logo
+        $defaultLogoPath = storage_path('app/public/logos/default_club_logo.png');
+        return file_exists($defaultLogoPath) ? $defaultLogoPath : null;
+    }
 }
