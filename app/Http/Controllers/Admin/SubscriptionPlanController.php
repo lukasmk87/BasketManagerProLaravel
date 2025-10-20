@@ -84,7 +84,7 @@ class SubscriptionPlanController extends Controller
             ->paginate(20);
 
         return Inertia::render('Admin/Plans/Show', [
-            'plan' => new SubscriptionPlanResource($plan),
+            'plan' => (new SubscriptionPlanResource($plan))->resolve(),
             'tenants' => $tenants,
         ]);
     }
@@ -95,7 +95,7 @@ class SubscriptionPlanController extends Controller
     public function edit(SubscriptionPlan $plan): Response
     {
         return Inertia::render('Admin/Plans/Edit', [
-            'plan' => new SubscriptionPlanResource($plan),
+            'plan' => (new SubscriptionPlanResource($plan))->resolve(),
             'featuresList' => config('tenants.features', []),
         ]);
     }
