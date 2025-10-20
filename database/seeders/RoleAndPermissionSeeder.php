@@ -155,6 +155,11 @@ class RoleAndPermissionSeeder extends Seeder
             'create club subscription plans',
             'update club subscription plans',
             'delete club subscription plans',
+
+            // Player Registration Invitations
+            'create player invitations',
+            'manage player invitations',
+            'assign pending players',
         ];
 
         foreach ($permissions as $permission) {
@@ -246,6 +251,9 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Club Subscription Plans
             'view club subscription plans', 'create club subscription plans', 'update club subscription plans', 'delete club subscription plans',
+
+            // Player Registration Invitations
+            'create player invitations', 'manage player invitations', 'assign pending players',
         ]);
 
         // Club Administrator Role
@@ -302,6 +310,9 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Club Subscription Plans (limited - only for their tenant)
             'view club subscription plans', 'create club subscription plans',
+
+            // Player Registration Invitations
+            'create player invitations', 'manage player invitations', 'assign pending players',
         ]);
 
         // Head Coach/Trainer Role
@@ -312,34 +323,37 @@ class RoleAndPermissionSeeder extends Seeder
         $trainer->givePermissionTo([
             // Team Management (assigned teams)
             'view teams', 'edit teams', 'manage team rosters', 'view team statistics',
-            
+
             // Player Management (team players)
             'view players', 'create players', 'edit players',
             'view player statistics', 'edit player statistics',
             'view player medical info', 'edit player medical info',
-            
+
             // Game Management
             'view games', 'create games', 'edit games', 'score games',
             'view live games', 'publish game results',
-            
+
             // Statistics
             'view statistics', 'export statistics', 'generate reports',
-            
+
             // Training
             'view training sessions', 'create training sessions', 'edit training sessions',
             'delete training sessions', 'manage training drills', 'view training statistics',
-            
+
             // Drills
             'view drills', 'create drills', 'edit drills', 'delete drills', 'review drills',
-            
+
             // Emergency
             'view emergency contacts', 'edit emergency contacts',
-            
+
             // Communication
             'send notifications', 'access messaging system',
-            
+
             // Media
             'upload media',
+
+            // Player Registration Invitations (only create, not manage or assign)
+            'create player invitations',
         ]);
 
         // Assistant Coach Role

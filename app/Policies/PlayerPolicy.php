@@ -452,4 +452,54 @@ class PlayerPolicy
 
         return true; // For admins, club_admins, and coaches
     }
+
+    /**
+     * Determine whether the user can view pending players.
+     */
+    public function viewPending(User $user): bool
+    {
+        // Check permission
+        if (!$user->can('assign pending players')) {
+            return false;
+        }
+
+        // Only club admins, admins, and super admins can view pending players
+        return $user->hasRole(['super_admin', 'admin', 'club_admin']);
+    }
+
+    /**
+     * Determine whether the user can assign a pending player to a team.
+     */
+    public function assignToTeam(User $user, Player $player): bool
+    {
+        // Check permission
+        if (!$user->can('assign pending players')) {
+            return false;
+        }
+
+        // Player must be pending assignment
+        if (!$player->pending_team_assignment) {
+            return false;
+        }
+
+        // Super Admin and Admin can assign any player
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        // Club admins can assign players to teams in their clubs
+        if ($user->hasRole('club_admin')) {
+            // Get the club ID from the player's registration invitation
+            $playerClubId = $player->registeredViaInvitation?->club_id;
+
+            if (!$playerClubId) {
+                return false;
+            }
+
+            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            return in_array($playerClubId, $userClubIds);
+        }
+
+        return false;
+    }
 }

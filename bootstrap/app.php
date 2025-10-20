@@ -38,6 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // GDPR compliance routes (mixed web/api middleware)
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/gdpr.php'));
+            // Player registration routes (trainer + public)
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/player_registration.php'));
 
             // Admin routes (web middleware with admin auth)
             \Illuminate\Support\Facades\Route::middleware('web')
