@@ -167,7 +167,7 @@ const formatLimit = (value, unit = '') => {
         </div>
 
         <!-- Actions -->
-        <div v-if="showActions" class="px-6 py-4 bg-white border-t border-gray-200 flex justify-between items-center">
+        <div v-if="showActions && plan?.slug" class="px-6 py-4 bg-white border-t border-gray-200 flex justify-between items-center">
             <Link
                 :href="route('admin.plans.show', { plan: plan.slug })"
                 class="text-sm font-medium text-indigo-600 hover:text-indigo-900"

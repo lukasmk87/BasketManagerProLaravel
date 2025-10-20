@@ -114,10 +114,10 @@ const formatNumber = (number) => {
                     >
                         ← Zurück
                     </Link>
-                    <SecondaryButton v-if="!isEditing" @click="clonePlan">
+                    <SecondaryButton v-if="!isEditing && plan?.slug" @click="clonePlan">
                         Klonen
                     </SecondaryButton>
-                    <PrimaryButton v-if="!isEditing" @click="startEditing">
+                    <PrimaryButton v-if="!isEditing && plan?.slug" @click="startEditing">
                         Bearbeiten
                     </PrimaryButton>
                 </div>

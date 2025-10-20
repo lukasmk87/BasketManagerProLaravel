@@ -82,6 +82,7 @@ const deletePlan = () => {
                 </div>
                 <div class="flex items-center space-x-3">
                     <Link
+                        v-if="plan?.slug"
                         :href="route('admin.plans.show', { plan: plan.slug })"
                         class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50"
                     >
@@ -289,6 +290,7 @@ const deletePlan = () => {
                         </DangerButton>
                         <div class="flex space-x-3">
                             <SecondaryButton
+                                v-if="plan?.slug"
                                 type="button"
                                 @click="$inertia.visit(route('admin.plans.show', { plan: plan.slug }))"
                             >
