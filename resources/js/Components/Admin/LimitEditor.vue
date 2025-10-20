@@ -7,7 +7,7 @@ import TextInput from '@/Components/TextInput.vue';
 const props = defineProps({
     modelValue: {
         type: Number,
-        required: true,
+        default: 0,
     },
     label: {
         type: String,
@@ -50,12 +50,12 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 const isUnlimited = ref(props.modelValue === -1);
-const internalValue = ref(props.modelValue === -1 ? 100 : props.modelValue);
+const internalValue = ref(props.modelValue === -1 ? 100 : (props.modelValue || 0));
 
 // Sync with parent
 watch(() => props.modelValue, (newValue) => {
     isUnlimited.value = newValue === -1;
-    internalValue.value = newValue === -1 ? 100 : newValue;
+    internalValue.value = newValue === -1 ? 100 : (newValue || 0);
 });
 
 // Emit changes
@@ -78,7 +78,7 @@ const sliderValue = computed({
 
 const displayValue = computed(() => {
     if (isUnlimited.value) return 'Unbegrenzt';
-    return `${internalValue.value.toLocaleString('de-DE')}${props.unit ? ' ' + props.unit : ''}`;
+    return `${(internalValue.value || 0).toLocaleString('de-DE')}${props.unit ? ' ' + props.unit : ''}`;
 });
 
 const sliderPercentage = computed(() => {

@@ -31,12 +31,12 @@ const form = useForm({
     is_featured: props.plan.is_featured,
     sort_order: props.plan.sort_order,
     features: props.plan.features || [],
-    limits: props.plan.limits || {
-        users: 100,
-        teams: 10,
-        players: 200,
-        storage_gb: 50,
-        api_calls_per_hour: 1000,
+    limits: {
+        users: props.plan.limits?.users ?? 100,
+        teams: props.plan.limits?.teams ?? 10,
+        players: props.plan.limits?.players ?? 200,
+        storage_gb: props.plan.limits?.storage_gb ?? 50,
+        api_calls_per_hour: props.plan.limits?.api_calls_per_hour ?? 1000,
     },
 });
 
