@@ -12,6 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Get database driver
+        $driver = DB::connection()->getDriverName();
+
+        // Skip views and stored procedures for SQLite as they cause issues with table alterations
+        // Indexes are still created for SQLite as they're beneficial for test performance
+        $createViews = ($driver === 'mysql');
+
         // === GAME ACTIONS TABLE OPTIMIZATIONS ===
         Schema::table('game_actions', function (Blueprint $table) {
             // Shot Chart & Analytics optimizations
@@ -99,11 +106,15 @@ return new class extends Migration
         });
 
         // === CREATE MATERIALIZED VIEWS FOR PERFORMANCE ===
-        
-        // Player Statistics View
+        // Only create views for MySQL (not for SQLite due to table alteration conflicts)
+        if (!$createViews) {
+            return; // Skip views and stored procedures for SQLite
+        }
+
+        // Player Statistics View (MySQL only - CREATE OR REPLACE)
         DB::statement("
             CREATE OR REPLACE VIEW player_game_statistics AS
-            SELECT 
+            SELECT
                 ga.player_id,
                 ga.game_id,
                 g.scheduled_at,
@@ -127,10 +138,10 @@ return new class extends Migration
             GROUP BY ga.player_id, ga.game_id, g.scheduled_at, g.season
         ");
 
-        // Team Performance View
+        // Team Performance View (MySQL only - CREATE OR REPLACE)
         DB::statement("
             CREATE OR REPLACE VIEW team_game_statistics AS
-            SELECT 
+            SELECT
                 ga.team_id,
                 ga.game_id,
                 g.scheduled_at,
@@ -146,11 +157,11 @@ return new class extends Migration
                 SUM(CASE WHEN ga.action_type = 'field_goal_made' THEN 1 ELSE 0 END) as field_goal_made,
                 SUM(CASE WHEN ga.action_type LIKE 'three_point_%' THEN 1 ELSE 0 END) as three_point_attempts,
                 SUM(CASE WHEN ga.action_type = 'three_point_made' THEN 1 ELSE 0 END) as three_point_made,
-                CASE 
-                    WHEN SUM(CASE WHEN ga.action_type LIKE 'field_goal_%' THEN 1 ELSE 0 END) > 0 
-                    THEN ROUND(SUM(CASE WHEN ga.action_type = 'field_goal_made' THEN 1 ELSE 0 END) * 100.0 / 
+                CASE
+                    WHEN SUM(CASE WHEN ga.action_type LIKE 'field_goal_%' THEN 1 ELSE 0 END) > 0
+                    THEN ROUND(SUM(CASE WHEN ga.action_type = 'field_goal_made' THEN 1 ELSE 0 END) * 100.0 /
                               SUM(CASE WHEN ga.action_type LIKE 'field_goal_%' THEN 1 ELSE 0 END), 2)
-                    ELSE 0 
+                    ELSE 0
                 END as field_goal_percentage
             FROM game_actions ga
             JOIN games g ON ga.game_id = g.id
@@ -158,10 +169,10 @@ return new class extends Migration
             GROUP BY ga.team_id, ga.game_id, g.scheduled_at, g.season
         ");
 
-        // Shot Chart Aggregation View
+        // Shot Chart Aggregation View (MySQL only - CREATE OR REPLACE)
         DB::statement("
             CREATE OR REPLACE VIEW shot_chart_summary AS
-            SELECT 
+            SELECT
                 player_id,
                 team_id,
                 shot_zone,
@@ -171,24 +182,25 @@ return new class extends Migration
                 ROUND(AVG(CASE WHEN is_successful = 1 THEN 100.0 ELSE 0.0 END), 2) as percentage,
                 AVG(shot_distance) as avg_distance
             FROM game_actions
-            WHERE action_type LIKE '%_point_%' 
-              AND shot_x IS NOT NULL 
+            WHERE action_type LIKE '%_point_%'
+              AND shot_x IS NOT NULL
               AND shot_y IS NOT NULL
             GROUP BY player_id, team_id, shot_zone, shot_distance
             HAVING COUNT(*) >= 5
         ");
 
         // === CREATE STORED PROCEDURES FOR COMMON QUERIES ===
-        
+        // Note: Stored Procedures are only supported in MySQL (SQLite skipped with early return above)
+
         // Player Season Statistics
         DB::statement("
             DROP PROCEDURE IF EXISTS GetPlayerSeasonStats;
         ");
-        
+
         DB::statement("
             CREATE PROCEDURE GetPlayerSeasonStats(IN playerId INT, IN seasonYear VARCHAR(10))
             BEGIN
-                SELECT 
+                SELECT
                     p.id,
                     p.first_name,
                     p.last_name,
@@ -198,10 +210,10 @@ return new class extends Migration
                     ROUND(AVG(pgs.assists), 2) as avg_assists,
                     SUM(pgs.field_goal_made) as total_fg_made,
                     SUM(pgs.field_goal_attempts) as total_fg_attempts,
-                    CASE 
-                        WHEN SUM(pgs.field_goal_attempts) > 0 
+                    CASE
+                        WHEN SUM(pgs.field_goal_attempts) > 0
                         THEN ROUND(SUM(pgs.field_goal_made) * 100.0 / SUM(pgs.field_goal_attempts), 2)
-                        ELSE 0 
+                        ELSE 0
                     END as field_goal_percentage
                 FROM players p
                 LEFT JOIN player_game_statistics pgs ON p.id = pgs.player_id AND pgs.season = seasonYear
@@ -218,22 +230,22 @@ return new class extends Migration
         DB::statement("
             CREATE PROCEDURE GetTeamHeadToHead(IN team1Id INT, IN team2Id INT)
             BEGIN
-                SELECT 
+                SELECT
                     COUNT(*) as total_games,
-                    SUM(CASE 
+                    SUM(CASE
                         WHEN (g.home_team_id = team1Id AND g.home_team_score > g.away_team_score) OR
                              (g.away_team_id = team1Id AND g.away_team_score > g.home_team_score)
-                        THEN 1 ELSE 0 
+                        THEN 1 ELSE 0
                     END) as team1_wins,
-                    SUM(CASE 
+                    SUM(CASE
                         WHEN (g.home_team_id = team2Id AND g.home_team_score > g.away_team_score) OR
                              (g.away_team_id = team2Id AND g.away_team_score > g.home_team_score)
-                        THEN 1 ELSE 0 
+                        THEN 1 ELSE 0
                     END) as team2_wins,
                     AVG(CASE WHEN g.home_team_id = team1Id THEN g.home_team_score ELSE g.away_team_score END) as team1_avg_score,
                     AVG(CASE WHEN g.home_team_id = team2Id THEN g.home_team_score ELSE g.away_team_score END) as team2_avg_score
                 FROM games g
-                WHERE ((g.home_team_id = team1Id AND g.away_team_id = team2Id) OR 
+                WHERE ((g.home_team_id = team1Id AND g.away_team_id = team2Id) OR
                        (g.home_team_id = team2Id AND g.away_team_id = team1Id))
                   AND g.status = 'finished';
             END
@@ -249,14 +261,26 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop stored procedures
-        DB::statement("DROP PROCEDURE IF EXISTS GetPlayerSeasonStats");
-        DB::statement("DROP PROCEDURE IF EXISTS GetTeamHeadToHead");
+        // Get database driver
+        $driver = DB::connection()->getDriverName();
 
-        // Drop views
-        DB::statement("DROP VIEW IF EXISTS player_game_statistics");
-        DB::statement("DROP VIEW IF EXISTS team_game_statistics");
-        DB::statement("DROP VIEW IF EXISTS shot_chart_summary");
+        // Skip views and stored procedures for SQLite (they were never created)
+        if ($driver !== 'mysql') {
+            // For SQLite, only drop indexes (views/procedures were skipped in up())
+            // Index dropping is handled by Laravel's Blueprint, so we just drop views if they somehow exist
+            DB::statement("DROP VIEW IF EXISTS player_game_statistics");
+            DB::statement("DROP VIEW IF EXISTS team_game_statistics");
+            DB::statement("DROP VIEW IF EXISTS shot_chart_summary");
+        } else {
+            // MySQL: Drop stored procedures
+            DB::statement("DROP PROCEDURE IF EXISTS GetPlayerSeasonStats");
+            DB::statement("DROP PROCEDURE IF EXISTS GetTeamHeadToHead");
+
+            // MySQL: Drop views
+            DB::statement("DROP VIEW IF EXISTS player_game_statistics");
+            DB::statement("DROP VIEW IF EXISTS team_game_statistics");
+            DB::statement("DROP VIEW IF EXISTS shot_chart_summary");
+        }
 
         // Remove partitioning (MySQL 8.0+) - not implemented in up() method
         // DB::statement("ALTER TABLE game_actions REMOVE PARTITIONING");

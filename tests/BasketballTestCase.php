@@ -193,7 +193,6 @@ abstract class BasketballTestCase extends TestCase
             'name' => 'Test Basketball Club',
             'short_name' => 'TBC',
             'slug' => 'test-basketball-club',
-            'founded_year' => 2000,
             'is_active' => true,
             'is_verified' => true,
         ]);

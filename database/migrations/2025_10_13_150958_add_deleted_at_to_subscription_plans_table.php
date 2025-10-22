@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('subscription_plans', function (Blueprint $table) {
-            $table->softDeletes();
-        });
+        // Only add soft deletes if deleted_at column doesn't exist
+        if (!Schema::hasColumn('subscription_plans', 'deleted_at')) {
+            Schema::table('subscription_plans', function (Blueprint $table) {
+                $table->softDeletes();
+            });
+        }
     }
 
     /**
@@ -21,8 +24,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('subscription_plans', function (Blueprint $table) {
-            $table->dropSoftDeletes();
-        });
+        // Only drop soft deletes if deleted_at column exists
+        if (Schema::hasColumn('subscription_plans', 'deleted_at')) {
+            Schema::table('subscription_plans', function (Blueprint $table) {
+                $table->dropSoftDeletes();
+            });
+        }
     }
 };
