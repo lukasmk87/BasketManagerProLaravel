@@ -66,7 +66,15 @@ const logout = () => {
                                 <NavLink :href="route('web.players.index')" :active="route().current('web.players.*')">
                                     Spieler
                                 </NavLink>
-                                
+
+                                <!-- Spieler-Einladungen (für Trainer & Club Admins) -->
+                                <NavLink
+                                    v-if="$page.props.auth.user && ($page.props.auth.user.roles?.includes('club_admin') || $page.props.auth.user.roles?.includes('trainer'))"
+                                    :href="route('trainer.invitations.index')"
+                                    :active="route().current('trainer.invitations.*')">
+                                    Spieler-Einladungen
+                                </NavLink>
+
                                 <!-- Spiele -->
                                 <NavLink :href="route('web.games.index')" :active="route().current('web.games.*')">
                                     Spiele
@@ -398,7 +406,15 @@ const logout = () => {
                         <ResponsiveNavLink :href="route('web.players.index')" :active="route().current('web.players.*')">
                             Spieler
                         </ResponsiveNavLink>
-                        
+
+                        <!-- Spieler-Einladungen (für Trainer & Club Admins) -->
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.user && ($page.props.auth.user.roles?.includes('club_admin') || $page.props.auth.user.roles?.includes('trainer'))"
+                            :href="route('trainer.invitations.index')"
+                            :active="route().current('trainer.invitations.*')">
+                            Spieler-Einladungen
+                        </ResponsiveNavLink>
+
                         <!-- Spiele -->
                         <ResponsiveNavLink :href="route('web.games.index')" :active="route().current('web.games.*')">
                             Spiele

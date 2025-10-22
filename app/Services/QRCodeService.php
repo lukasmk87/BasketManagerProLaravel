@@ -6,7 +6,11 @@ use App\Models\TeamEmergencyAccess;
 use App\Models\EmergencyContact;
 use App\Models\Team;
 use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Intervention\Image\ImageManagerStatic as Image;
 
 class QRCodeService
@@ -35,15 +39,11 @@ class QRCodeService
 
         $qrData = $this->buildEmergencyQRData($access, $includeVenue);
         $filename = $this->generateFilename($access, $format);
-        
-        $qrCode = QrCode::format($format)
-            ->size($size)
-            ->margin($this->config['margin'])
-            ->errorCorrection($this->config['error_correction'])
-            ->generate($qrData['url']);
+
+        $qrCode = $this->generateQRCode($qrData['url'], $size, $format);
 
         $filePath = $this->saveQRCode($qrCode, $filename, $format);
-        
+
         // Add logo if requested
         if ($includeLogo && $format === 'png') {
             $filePath = $this->addLogoToQR($filePath, $size);
@@ -138,11 +138,7 @@ class QRCodeService
             'generated_at' => now()->toISOString(),
         ];
 
-        $qrCode = QrCode::format($format)
-            ->size($size)
-            ->margin($this->config['margin'])
-            ->errorCorrection($this->config['error_correction'])
-            ->generate(json_encode($contactData));
+        $qrCode = $this->generateQRCode(json_encode($contactData), $size, $format);
 
         $filename = "contact_qr_{$contact->id}_" . time() . ".{$format}";
         $filePath = $this->saveQRCode($qrCode, $filename, $format);
@@ -177,11 +173,7 @@ class QRCodeService
             'generated_at' => now()->toISOString(),
         ];
 
-        $qrCode = QrCode::format($format)
-            ->size($size)
-            ->margin($this->config['margin'])
-            ->errorCorrection($this->config['error_correction'])
-            ->generate(json_encode($venueData));
+        $qrCode = $this->generateQRCode(json_encode($venueData), $size, $format);
 
         $filename = "venue_qr_{$team->id}_" . time() . ".{$format}";
         $filePath = $this->saveQRCode($qrCode, $filename, $format);
@@ -287,6 +279,33 @@ class QRCodeService
         }
 
         return $deletedCount;
+    }
+
+    /**
+     * Generate QR code using BaconQrCode 3.x
+     *
+     * @param string $data
+     * @param int $size
+     * @param string $format
+     * @return string
+     */
+    private function generateQRCode(string $data, int $size, string $format): string
+    {
+        if ($format === 'svg') {
+            $renderer = new ImageRenderer(
+                new RendererStyle($size, $this->config['margin']),
+                new SvgImageBackEnd()
+            );
+        } else {
+            // Default to PNG using Imagick
+            $renderer = new ImageRenderer(
+                new RendererStyle($size, $this->config['margin']),
+                new ImagickImageBackEnd()
+            );
+        }
+
+        $writer = new Writer($renderer);
+        return $writer->writeString($data);
     }
 
     private function buildEmergencyQRData(TeamEmergencyAccess $access, bool $includeVenue = true): array
@@ -452,11 +471,7 @@ class QRCodeService
         $registrationUrl = route('public.player.register', ['token' => $invitation->invitation_token]);
 
         // Generate QR code
-        $qrCode = QrCode::format($format)
-            ->size($size)
-            ->margin($this->config['margin'])
-            ->errorCorrection($this->config['error_correction'])
-            ->generate($registrationUrl);
+        $qrCode = $this->generateQRCode($registrationUrl, $size, $format);
 
         // Save QR code
         $filename = "player_registration_qr_{$invitation->club_id}_{$invitation->id}_" . time() . ".{$format}";
