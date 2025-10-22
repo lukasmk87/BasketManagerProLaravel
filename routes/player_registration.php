@@ -56,7 +56,7 @@ Route::prefix('trainer/player-invitations')
 // ============================================
 
 Route::prefix('register/player')
-    ->middleware(['throttle:player-registration,5,1'])
+    ->middleware(['throttle:player-registration'])
     ->name('public.player.')
     ->group(function () {
         // Show registration form
@@ -106,11 +106,12 @@ Route::prefix('club-admin/pending-players')
 |--------------------------------------------------------------------------
 |
 | Custom rate limiters for player registration to prevent abuse.
-| Configured in bootstrap/app.php or AppServiceProvider.
+| Configured in FortifyServiceProvider.
+|
+| Usage: middleware(['throttle:player-registration'])
+| NOT:   middleware(['throttle:player-registration,5,1']) - Laravel 12+ syntax!
+|
+| The rate limiter 'player-registration' is defined in:
+| app/Providers/FortifyServiceProvider.php
 |
 */
-
-// Rate limiter 'player-registration' should be defined as:
-// RateLimiter::for('player-registration', function (Request $request) {
-//     return Limit::perMinute(5)->by($request->ip());
-// });
