@@ -50,9 +50,10 @@ class PlayerRegistrationService
         ]);
 
         // Generate QR Code
+        // Default to SVG format for better compatibility (no Imagick dependency)
         $qrResult = $this->qrCodeService->generatePlayerRegistrationQR($invitation, [
             'size' => $options['qr_size'] ?? 300,
-            'format' => $options['qr_format'] ?? 'png',
+            'format' => $options['qr_format'] ?? 'svg',
         ]);
 
         $invitation->update([

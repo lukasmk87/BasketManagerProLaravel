@@ -37,7 +37,9 @@ const registrationUrl = computed(() => {
 // Compute QR code image URL
 const qrCodeUrl = computed(() => {
     if (props.invitation.qr_code_path) {
-        return `/storage/${props.invitation.qr_code_path}`;
+        // Remove 'public/' prefix from path since symlink already points to storage/app/public
+        const path = props.invitation.qr_code_path.replace(/^public\//, '');
+        return `/storage/${path}`;
     }
     return null;
 });
@@ -68,7 +70,7 @@ const copyUrl = async () => {
 
 // Download QR code in specified format
 const downloadQR = (format = 'png') => {
-    const downloadUrl = route('trainer.invitations.downloadQR', {
+    const downloadUrl = route('trainer.invitations.download-qr', {
         invitation: props.invitation.id,
         format: format,
     });

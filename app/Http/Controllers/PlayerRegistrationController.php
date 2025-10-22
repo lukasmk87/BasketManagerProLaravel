@@ -178,12 +178,12 @@ class PlayerRegistrationController extends Controller
             abort(400, 'Invalid format. Supported formats: png, svg, pdf');
         }
 
-        // Check if QR code exists
-        if (!$invitation->qr_code_path || !Storage::exists($invitation->qr_code_path)) {
+        // Check if QR code exists (use public disk)
+        if (!$invitation->qr_code_path || !Storage::disk('public')->exists($invitation->qr_code_path)) {
             abort(404, 'QR code not found');
         }
 
-        $filePath = storage_path('app/' . $invitation->qr_code_path);
+        $filePath = storage_path('app/public/' . $invitation->qr_code_path);
         $fileName = "player_registration_qr_{$invitation->id}.{$format}";
 
         return response()->download($filePath, $fileName);
