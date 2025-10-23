@@ -76,15 +76,15 @@ class ClubPolicy
      */
     public function update(User $user, Club $club): bool
     {
-        // Check general permission
-        if ($user->can('edit clubs')) {
+        // Super admins and admins can edit any club
+        if ($user->hasRole(['super_admin', 'admin'])) {
             return true;
         }
 
-        // Club admins can edit their own clubs
+        // Club admins can only edit clubs they administer
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
         return false;
@@ -116,18 +116,18 @@ class ClubPolicy
      */
     public function manageSettings(User $user, Club $club): bool
     {
-        // Check general permission
-        if (!$user->can('manage club settings')) {
-            return false;
+        // Super admins and admins can manage any club settings
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can manage settings for their clubs
+        // Club admins can only manage settings for clubs they administer
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 
     /**
@@ -135,18 +135,18 @@ class ClubPolicy
      */
     public function manageMembers(User $user, Club $club): bool
     {
-        // Check general permission
-        if (!$user->can('manage club members')) {
-            return false;
+        // Super admins and admins can manage any club members
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can manage members in their clubs
+        // Club admins can only manage members in clubs they administer
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 
     /**
@@ -186,18 +186,18 @@ class ClubPolicy
      */
     public function assignRoles(User $user, Club $club): bool
     {
-        // Must have role management permission
-        if (!$user->can('manage user roles')) {
-            return false;
+        // Super admins and admins can assign roles in any club
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can assign limited roles in their clubs
-        if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+        // Club admins can only assign roles in clubs they administer
+        if ($user->hasRole('club_admin') && $user->can('manage user roles')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 
     /**
@@ -205,18 +205,18 @@ class ClubPolicy
      */
     public function createTeams(User $user, Club $club): bool
     {
-        // Must have team creation permission
-        if (!$user->can('create teams')) {
-            return false;
+        // Super admins and admins can create teams in any club
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can create teams in their clubs
-        if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+        // Club admins can only create teams in clubs they administer
+        if ($user->hasRole('club_admin') && $user->can('create teams')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 
     /**
@@ -224,18 +224,18 @@ class ClubPolicy
      */
     public function manageFinances(User $user, Club $club): bool
     {
-        // Check general permission
-        if (!$user->can('view financial data')) {
-            return false;
+        // Super admins and admins can manage any club finances
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can manage finances for their clubs
-        if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+        // Club admins can only manage finances for clubs they administer
+        if ($user->hasRole('club_admin') && $user->can('view financial data')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 
     /**
@@ -243,18 +243,18 @@ class ClubPolicy
      */
     public function manageMedia(User $user, Club $club): bool
     {
-        // Must have media management permission
-        if (!$user->can('manage media library')) {
-            return false;
+        // Super admins and admins can manage any club media
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can manage media for their clubs
-        if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+        // Club admins can only manage media for clubs they administer
+        if ($user->hasRole('club_admin') && $user->can('manage media library')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 
     /**
@@ -276,18 +276,18 @@ class ClubPolicy
      */
     public function sendAnnouncements(User $user, Club $club): bool
     {
-        // Must have announcement permission
-        if (!$user->can('manage announcements')) {
-            return false;
+        // Super admins and admins can send announcements for any club
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can send announcements for their clubs
-        if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+        // Club admins can only send announcements for clubs they administer
+        if ($user->hasRole('club_admin') && $user->can('manage announcements')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 
     /**
@@ -295,18 +295,18 @@ class ClubPolicy
      */
     public function manageTournaments(User $user, Club $club): bool
     {
-        // Must have tournament management permission
-        if (!$user->can('create tournaments')) {
-            return false;
+        // Super admins and admins can manage tournaments for any club
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can manage tournaments for their clubs
-        if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+        // Club admins can only manage tournaments for clubs they administer
+        if ($user->hasRole('club_admin') && $user->can('create tournaments')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 
     /**
@@ -385,18 +385,18 @@ class ClubPolicy
      */
     public function manageIntegrations(User $user, Club $club): bool
     {
-        // Must have integration management permission
-        if (!$user->can('manage integrations')) {
-            return false;
+        // Super admins and admins can manage integrations for any club
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can manage integrations for their clubs
-        if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+        // Club admins can only manage integrations for clubs they administer
+        if ($user->hasRole('club_admin') && $user->can('manage integrations')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 
     /**
@@ -404,17 +404,17 @@ class ClubPolicy
      */
     public function viewComplianceData(User $user, Club $club): bool
     {
-        // Must have GDPR/compliance permission
-        if (!$user->can('manage consent records')) {
-            return false;
+        // Super admins and admins can view compliance data for any club
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
-        // Club admins can view compliance data for their clubs
-        if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            return in_array($club->id, $userClubIds);
+        // Club admins can only view compliance data for clubs they administer
+        if ($user->hasRole('club_admin') && $user->can('manage consent records')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
         }
 
-        return true; // For admins and super_admins
+        return false;
     }
 }

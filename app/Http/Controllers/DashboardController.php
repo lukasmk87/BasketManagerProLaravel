@@ -138,14 +138,19 @@ class DashboardController extends Controller
     public function getClubAdminDashboard(User $user): array
     {
         try {
-            // Get clubs where user is admin
-            $adminClubs = $user->clubs()
-                ->wherePivotIn('role', ['admin', 'manager'])
-                ->with(['teams.players', 'users'])
-                ->get();
+            // Get clubs where user is admin (respects role hierarchy)
+            // Also include 'manager' role for club_user pivot
+            if ($user->hasRole(['super_admin', 'admin'])) {
+                $adminClubs = Club::with(['teams.players', 'users'])->get();
+            } else {
+                $adminClubs = $user->clubs()
+                    ->wherePivotIn('role', ['admin', 'owner', 'manager'])
+                    ->with(['teams.players', 'users'])
+                    ->get();
+            }
 
             if ($adminClubs->isEmpty()) {
-                return ['message' => 'Sie sind aktuell kein Administrator eines Clubs.'];
+                return ['message' => 'Sie sind aktuell kein Administrator eines Clubs. Bitte kontaktieren Sie Ihren Administrator, um einem Club zugewiesen zu werden.'];
             }
 
             $primaryClub = $adminClubs->first();

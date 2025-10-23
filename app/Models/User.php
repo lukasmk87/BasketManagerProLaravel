@@ -412,13 +412,53 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Get clubs administered by this user.
-     * Returns clubs where the user has pivot role 'admin' or 'owner'.
+     * Returns clubs based on role hierarchy:
+     * - Super Admin / Admin: All clubs
+     * - Club Admin: Clubs where user has pivot role 'admin' or 'owner'
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @param bool $asQuery If true, returns query builder. If false, returns collection.
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany|\Illuminate\Database\Eloquent\Collection
      */
-    public function getAdministeredClubs()
+    public function getAdministeredClubs(bool $asQuery = true)
     {
-        return $this->clubs()->wherePivotIn('role', ['admin', 'owner']);
+        // Super Admin and Admin have access to all clubs
+        if ($this->hasRole(['super_admin', 'admin'])) {
+            if ($asQuery) {
+                return \App\Models\Club::query();
+            }
+            return \App\Models\Club::all();
+        }
+
+        // Club Admin has access to clubs where they have pivot role 'admin' or 'owner'
+        $query = $this->clubs()->wherePivotIn('role', ['admin', 'owner']);
+
+        if ($asQuery) {
+            return $query;
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get IDs of clubs administered by this user.
+     * Returns club IDs based on role hierarchy:
+     * - Super Admin / Admin: All club IDs
+     * - Club Admin: IDs of clubs where user has pivot role 'admin' or 'owner'
+     *
+     * @return array
+     */
+    public function getAdministeredClubIds(): array
+    {
+        // Super Admin and Admin have access to all clubs
+        if ($this->hasRole(['super_admin', 'admin'])) {
+            return \App\Models\Club::pluck('id')->toArray();
+        }
+
+        // Club Admin has access to clubs where they have pivot role 'admin' or 'owner'
+        return $this->clubs()
+            ->wherePivotIn('role', ['admin', 'owner'])
+            ->pluck('clubs.id')
+            ->toArray();
     }
 
     /**

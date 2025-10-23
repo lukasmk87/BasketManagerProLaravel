@@ -13,8 +13,8 @@ class GymHallPolicy
      */
     public function viewAny(User $user, $clubId = null): bool
     {
-        // Global admins and club admins can view gym halls
-        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        // Super admins and admins can view all gym halls
+        if ($user->hasAnyRole(['admin', 'super_admin'])) {
             return true;
         }
 
@@ -46,8 +46,8 @@ class GymHallPolicy
      */
     public function create(User $user, $clubId = null): bool
     {
-        // Global admins and club admins can create gym halls
-        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        // Super admins and admins can create gym halls for any club
+        if ($user->hasAnyRole(['admin', 'super_admin'])) {
             return true;
         }
 
@@ -55,11 +55,9 @@ class GymHallPolicy
             return false;
         }
 
-        // Only club admins and owners can create gym halls
-        return $user->clubs()
-            ->where('clubs.id', $clubId)
-            ->wherePivotIn('role', ['admin', 'owner'])
-            ->exists();
+        // Club admins can only create gym halls for clubs they administer
+        $administeredClubIds = $user->getAdministeredClubIds();
+        return in_array($clubId, $administeredClubIds);
     }
 
     /**
@@ -67,16 +65,14 @@ class GymHallPolicy
      */
     public function update(User $user, GymHall $gymHall): bool
     {
-        // Global admins and club admins can update gym halls
-        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        // Super admins and admins can update any gym hall
+        if ($user->hasAnyRole(['admin', 'super_admin'])) {
             return true;
         }
 
-        // Only club admins and owners can update gym halls
-        return $user->clubs()
-            ->where('clubs.id', $gymHall->club_id)
-            ->wherePivotIn('role', ['admin', 'owner'])
-            ->exists();
+        // Club admins can only update gym halls for clubs they administer
+        $administeredClubIds = $user->getAdministeredClubIds();
+        return in_array($gymHall->club_id, $administeredClubIds);
     }
 
     /**
@@ -84,16 +80,14 @@ class GymHallPolicy
      */
     public function delete(User $user, GymHall $gymHall): bool
     {
-        // Global admins and club admins can delete gym halls
-        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        // Super admins and admins can delete any gym hall
+        if ($user->hasAnyRole(['admin', 'super_admin'])) {
             return true;
         }
 
-        // Only club admins and owners can delete gym halls
-        return $user->clubs()
-            ->where('clubs.id', $gymHall->club_id)
-            ->wherePivotIn('role', ['admin', 'owner'])
-            ->exists();
+        // Club admins can only delete gym halls for clubs they administer
+        $administeredClubIds = $user->getAdministeredClubIds();
+        return in_array($gymHall->club_id, $administeredClubIds);
     }
 
     /**
@@ -117,16 +111,25 @@ class GymHallPolicy
      */
     public function manageTimeSlots(User $user, GymHall $gymHall): bool
     {
-        // Global admins, club admins, and trainers can manage time slots
-        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin', 'trainer'])) {
+        // Super admins and admins can manage time slots for any gym hall
+        if ($user->hasAnyRole(['admin', 'super_admin'])) {
             return true;
         }
 
-        // Club admins, owners, and trainers can manage time slots
-        return $user->clubs()
-            ->where('clubs.id', $gymHall->club_id)
-            ->wherePivotIn('role', ['admin', 'owner', 'trainer'])
-            ->exists();
+        // Club admins can manage time slots for clubs they administer
+        if ($user->hasRole('club_admin')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($gymHall->club_id, $administeredClubIds);
+        }
+
+        // Trainers can manage time slots for their club
+        if ($user->hasRole('trainer')) {
+            return $user->clubs()
+                ->where('clubs.id', $gymHall->club_id)
+                ->exists();
+        }
+
+        return false;
     }
 
     /**
@@ -143,15 +146,24 @@ class GymHallPolicy
      */
     public function viewStatistics(User $user, GymHall $gymHall): bool
     {
-        // Global admins, club admins, and trainers can view statistics
-        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin', 'trainer'])) {
+        // Super admins and admins can view statistics for any gym hall
+        if ($user->hasAnyRole(['admin', 'super_admin'])) {
             return true;
         }
 
-        // Club admins, owners, and trainers can view statistics
-        return $user->clubs()
-            ->where('clubs.id', $gymHall->club_id)
-            ->wherePivotIn('role', ['admin', 'owner', 'trainer'])
-            ->exists();
+        // Club admins can view statistics for clubs they administer
+        if ($user->hasRole('club_admin')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($gymHall->club_id, $administeredClubIds);
+        }
+
+        // Trainers can view statistics for their club
+        if ($user->hasRole('trainer')) {
+            return $user->clubs()
+                ->where('clubs.id', $gymHall->club_id)
+                ->exists();
+        }
+
+        return false;
     }
 }
