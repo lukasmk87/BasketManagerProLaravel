@@ -443,6 +443,7 @@ class DashboardController extends Controller
                 ['label' => 'Dashboard aktualisieren', 'route' => 'dashboard', 'icon' => 'refresh'],
             ],
             'club_admin' => [
+                ['label' => 'Club Admin Panel', 'route' => 'club-admin.dashboard', 'icon' => 'cog-6-tooth'],
                 ['label' => 'Neues Team', 'route' => 'web.teams.create', 'icon' => 'user-group'],
                 ['label' => 'Neuer Spieler', 'route' => 'web.players.create', 'icon' => 'user'],
                 ['label' => 'Club bearbeiten', 'route' => 'web.clubs.index', 'icon' => 'building'],
