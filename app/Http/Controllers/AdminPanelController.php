@@ -235,7 +235,11 @@ class AdminPanelController extends Controller
             'roles.*' => 'exists:roles,name',
             'clubs' => 'nullable|array',
             'clubs.*' => 'exists:clubs,id',
+            'send_credentials_email' => 'boolean',
         ]);
+
+        // Store the plain password before hashing
+        $plainPassword = $validated['password'];
 
         $userService = app(\App\Services\UserService::class);
         $user = $userService->createUser($validated);
@@ -251,8 +255,17 @@ class AdminPanelController extends Controller
             }
         }
 
+        // Send credentials email if requested
+        if ($request->boolean('send_credentials_email')) {
+            $user->notify(new \App\Notifications\NewUserCreatedNotification(
+                $plainPassword,
+                auth()->user()->name
+            ));
+        }
+
         return redirect()->route('admin.users')
-            ->with('success', 'Benutzer wurde erfolgreich erstellt.');
+            ->with('success', 'Benutzer wurde erfolgreich erstellt.' .
+                ($request->boolean('send_credentials_email') ? ' Eine E-Mail mit den Zugangsdaten wurde versendet.' : ''));
     }
 
     /**
@@ -315,6 +328,27 @@ class AdminPanelController extends Controller
 
         return redirect()->route('admin.users')
             ->with('success', 'Benutzer wurde erfolgreich gelöscht.');
+    }
+
+    /**
+     * Send password reset link to user.
+     */
+    public function sendPasswordResetLink(Request $request, User $user)
+    {
+        $this->authorize('edit users');
+
+        // Use UserService to send password reset
+        $userService = app(\App\Services\UserService::class);
+
+        try {
+            $userService->sendPasswordReset($user);
+
+            return back()->with('success',
+                'Passwort-Reset-Link wurde an ' . $user->email . ' gesendet.');
+        } catch (\Exception $e) {
+            return back()->with('error',
+                'Fehler beim Senden des Passwort-Reset-Links: ' . $e->getMessage());
+        }
     }
 
     /**

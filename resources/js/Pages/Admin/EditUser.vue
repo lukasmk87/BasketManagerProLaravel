@@ -35,6 +35,15 @@ const deleteUser = () => {
     }
 };
 
+const sendPasswordReset = () => {
+    if (confirm('Möchten Sie einen Passwort-Reset-Link an ' + props.user.email + ' senden?')) {
+        router.post(route('admin.users.send-password-reset', props.user.id), {}, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }
+};
+
 const toggleRole = (roleName) => {
     const index = form.roles.indexOf(roleName);
     if (index > -1) {
@@ -158,21 +167,34 @@ const hasRole = (roleName) => {
 
                         <!-- Action Buttons -->
                         <div class="flex items-center justify-between">
-                            <button
-                                type="button"
-                                @click="deleteUser"
-                                class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:bg-red-900 transition ease-in-out duration-150"
-                            >
-                                Benutzer löschen
-                            </button>
+                            <div class="flex items-center space-x-3">
+                                <button
+                                    type="button"
+                                    @click="deleteUser"
+                                    class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:bg-red-900 transition ease-in-out duration-150"
+                                >
+                                    Benutzer löschen
+                                </button>
+
+                                <button
+                                    type="button"
+                                    @click="sendPasswordReset"
+                                    class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:bg-blue-900 transition ease-in-out duration-150"
+                                >
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                    </svg>
+                                    Passwort-Reset senden
+                                </button>
+                            </div>
 
                             <div class="flex items-center space-x-4">
                                 <SecondaryButton :href="route('admin.users')" as="Link">
                                     Abbrechen
                                 </SecondaryButton>
 
-                                <PrimaryButton 
-                                    :class="{ 'opacity-25': form.processing }" 
+                                <PrimaryButton
+                                    :class="{ 'opacity-25': form.processing }"
                                     :disabled="form.processing"
                                 >
                                     Änderungen speichern

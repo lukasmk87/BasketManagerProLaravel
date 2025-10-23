@@ -24,6 +24,7 @@ const form = useForm({
     is_active: true,
     roles: [],
     clubs: [],
+    send_credentials_email: true,
 });
 
 const submit = () => {
@@ -213,6 +214,23 @@ const generateRandomPassword = () => {
                                     <span class="ml-2 text-sm text-gray-600">Benutzer ist aktiv</span>
                                 </label>
                                 <InputError class="mt-2" :message="form.errors.is_active" />
+                            </div>
+
+                            <!-- Send Credentials Email -->
+                            <div class="mt-4">
+                                <label class="flex items-center">
+                                    <Checkbox
+                                        v-model:checked="form.send_credentials_email"
+                                        name="send_credentials_email"
+                                    />
+                                    <span class="ml-2 text-sm text-gray-600">
+                                        E-Mail mit Zugangsdaten an Benutzer senden
+                                    </span>
+                                </label>
+                                <p class="ml-6 mt-1 text-xs text-gray-500">
+                                    Der Benutzer erhält eine E-Mail mit Benutzername und Passwort.
+                                </p>
+                                <InputError class="mt-2" :message="form.errors.send_credentials_email" />
                             </div>
                         </div>
 

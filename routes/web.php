@@ -216,9 +216,23 @@ Route::middleware([
         Route::get('/users', [\App\Http\Controllers\AdminPanelController::class, 'users'])->name('users');
         Route::get('/users/create', [\App\Http\Controllers\AdminPanelController::class, 'createUser'])->name('users.create');
         Route::post('/users', [\App\Http\Controllers\AdminPanelController::class, 'storeUser'])->name('users.store');
+
+        // Bulk Import Routes (MUST come before {user} routes)
+        Route::prefix('users/import')->name('users.import.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\UserImportController::class, 'index'])->name('index');
+            Route::get('/template', [\App\Http\Controllers\UserImportController::class, 'downloadTemplate'])->name('template');
+            Route::post('/upload', [\App\Http\Controllers\UserImportController::class, 'upload'])->name('upload');
+            Route::post('/execute', [\App\Http\Controllers\UserImportController::class, 'import'])->name('execute');
+            Route::post('/cancel', [\App\Http\Controllers\UserImportController::class, 'cancel'])->name('cancel');
+        });
+
         Route::get('/users/{user}/edit', [\App\Http\Controllers\AdminPanelController::class, 'editUser'])->name('users.edit');
         Route::put('/users/{user}', [\App\Http\Controllers\AdminPanelController::class, 'updateUser'])->name('users.update');
         Route::delete('/users/{user}', [\App\Http\Controllers\AdminPanelController::class, 'destroyUser'])->name('users.destroy');
+        Route::post('/users/{user}/send-password-reset', [\App\Http\Controllers\AdminPanelController::class, 'sendPasswordResetLink'])->name('users.send-password-reset');
+
+        // Role Management Routes (Super Admin only)
+        Route::resource('roles', \App\Http\Controllers\RoleController::class);
 
         Route::get('/system', [\App\Http\Controllers\AdminPanelController::class, 'system'])->name('system');
 

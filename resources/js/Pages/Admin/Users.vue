@@ -50,6 +50,15 @@ const getStatusBadge = (isActive) => {
 const getStatusText = (isActive) => {
     return isActive ? 'Aktiv' : 'Inaktiv';
 };
+
+const sendPasswordReset = (user) => {
+    if (confirm('Möchten Sie einen Passwort-Reset-Link an ' + user.email + ' senden?')) {
+        router.post(route('admin.users.send-password-reset', user.id), {}, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }
+};
 </script>
 
 <template>
@@ -68,6 +77,13 @@ const getStatusText = (isActive) => {
                 <div class="flex items-center space-x-3">
                     <SecondaryButton :href="route('admin.settings')" as="Link">
                         Zurück zum Admin Panel
+                    </SecondaryButton>
+
+                    <SecondaryButton :href="route('admin.users.import.index')" as="Link">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        Bulk-Import
                     </SecondaryButton>
 
                     <PrimaryButton :href="route('admin.users.create')" as="Link">
@@ -239,12 +255,23 @@ const getStatusText = (isActive) => {
                                         {{ formatDate(user.created_at) }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <Link 
-                                            :href="route('admin.users.edit', user.id)"
-                                            class="text-indigo-600 hover:text-indigo-900 mr-4"
-                                        >
-                                            Bearbeiten
-                                        </Link>
+                                        <div class="flex items-center justify-end space-x-3">
+                                            <Link
+                                                :href="route('admin.users.edit', user.id)"
+                                                class="text-indigo-600 hover:text-indigo-900"
+                                            >
+                                                Bearbeiten
+                                            </Link>
+                                            <button
+                                                @click="sendPasswordReset(user)"
+                                                class="text-blue-600 hover:text-blue-900"
+                                                title="Passwort-Reset senden"
+                                            >
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>

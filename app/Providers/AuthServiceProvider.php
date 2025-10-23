@@ -24,6 +24,8 @@ use App\Models\TrainingSession;
 use App\Policies\TrainingSessionPolicy;
 use App\Models\ClubSubscriptionPlan;
 use App\Policies\ClubSubscriptionPlanPolicy;
+use Spatie\Permission\Models\Role;
+use App\Policies\RolePolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -43,6 +45,7 @@ class AuthServiceProvider extends ServiceProvider
         EmergencyContact::class => EmergencyContactPolicy::class,
         TrainingSession::class => TrainingSessionPolicy::class,
         ClubSubscriptionPlan::class => ClubSubscriptionPlanPolicy::class,
+        Role::class => RolePolicy::class,
     ];
 
     /**
