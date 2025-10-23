@@ -204,6 +204,58 @@ class AdminPanelController extends Controller
     }
 
     /**
+     * Show the create user form.
+     */
+    public function createUser(Request $request): Response
+    {
+        $this->authorize('create users');
+
+        return Inertia::render('Admin/CreateUser', [
+            'roles' => Role::all(),
+            'clubs' => Club::where('is_active', true)->get(['id', 'name']),
+        ]);
+    }
+
+    /**
+     * Store a newly created user.
+     */
+    public function storeUser(Request $request)
+    {
+        $this->authorize('create users');
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8',
+            'phone' => 'nullable|string|max:20',
+            'date_of_birth' => 'nullable|date|before:today',
+            'gender' => 'nullable|in:male,female,other',
+            'is_active' => 'boolean',
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'exists:roles,name',
+            'clubs' => 'nullable|array',
+            'clubs.*' => 'exists:clubs,id',
+        ]);
+
+        $userService = app(\App\Services\UserService::class);
+        $user = $userService->createUser($validated);
+
+        // Attach user to clubs if provided
+        if (isset($validated['clubs']) && count($validated['clubs']) > 0) {
+            foreach ($validated['clubs'] as $clubId) {
+                $user->clubs()->attach($clubId, [
+                    'role' => 'member',
+                    'joined_at' => now(),
+                    'is_active' => true,
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.users')
+            ->with('success', 'Benutzer wurde erfolgreich erstellt.');
+    }
+
+    /**
      * Show the edit user form.
      */
     public function editUser(Request $request, User $user): Response

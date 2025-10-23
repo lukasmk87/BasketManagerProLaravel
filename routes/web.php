@@ -211,10 +211,15 @@ Route::middleware([
     Route::prefix('admin')->name('admin.')->middleware('role:admin|super_admin')->group(function () {
         Route::get('/settings', [\App\Http\Controllers\AdminPanelController::class, 'settings'])->name('settings');
         Route::put('/settings', [\App\Http\Controllers\AdminPanelController::class, 'updateSettings'])->name('settings.update');
+
+        // User Management Routes (create route MUST come before {user} routes)
         Route::get('/users', [\App\Http\Controllers\AdminPanelController::class, 'users'])->name('users');
+        Route::get('/users/create', [\App\Http\Controllers\AdminPanelController::class, 'createUser'])->name('users.create');
+        Route::post('/users', [\App\Http\Controllers\AdminPanelController::class, 'storeUser'])->name('users.store');
         Route::get('/users/{user}/edit', [\App\Http\Controllers\AdminPanelController::class, 'editUser'])->name('users.edit');
         Route::put('/users/{user}', [\App\Http\Controllers\AdminPanelController::class, 'updateUser'])->name('users.update');
         Route::delete('/users/{user}', [\App\Http\Controllers\AdminPanelController::class, 'destroyUser'])->name('users.destroy');
+
         Route::get('/system', [\App\Http\Controllers\AdminPanelController::class, 'system'])->name('system');
 
         // Legal Pages Management

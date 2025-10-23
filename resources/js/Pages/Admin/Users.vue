@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Pagination from '@/Components/Pagination.vue';
@@ -68,6 +69,13 @@ const getStatusText = (isActive) => {
                     <SecondaryButton :href="route('admin.settings')" as="Link">
                         Zurück zum Admin Panel
                     </SecondaryButton>
+
+                    <PrimaryButton :href="route('admin.users.create')" as="Link">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Neuer Benutzer
+                    </PrimaryButton>
                 </div>
             </div>
         </template>
