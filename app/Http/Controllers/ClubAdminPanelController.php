@@ -34,9 +34,9 @@ class ClubAdminPanelController extends Controller
     {
         $user = Auth::user();
 
-        // Get clubs where user is club admin
+        // Get clubs where user is club admin (pivot role 'admin' or 'owner')
         $adminClubs = $user->clubs()
-            ->wherePivot('role', 'club_admin')
+            ->wherePivotIn('role', ['admin', 'owner'])
             ->with(['teams', 'users'])
             ->get();
 
@@ -173,7 +173,7 @@ class ClubAdminPanelController extends Controller
     public function settings(): Response
     {
         $user = Auth::user();
-        $adminClubs = $user->clubs()->wherePivot('role', 'club_admin')->get();
+        $adminClubs = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->get();
 
         if ($adminClubs->isEmpty()) {
             abort(403, 'Sie sind kein Administrator eines Clubs.');
@@ -210,7 +210,7 @@ class ClubAdminPanelController extends Controller
     public function updateSettings(Request $request): RedirectResponse
     {
         $user = Auth::user();
-        $adminClubs = $user->clubs()->wherePivot('role', 'club_admin')->get();
+        $adminClubs = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->get();
 
         if ($adminClubs->isEmpty()) {
             abort(403, 'Sie sind kein Administrator eines Clubs.');
@@ -258,7 +258,7 @@ class ClubAdminPanelController extends Controller
     public function members(): Response
     {
         $user = Auth::user();
-        $adminClubs = $user->clubs()->wherePivot('role', 'club_admin')->get();
+        $adminClubs = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->get();
 
         if ($adminClubs->isEmpty()) {
             abort(403, 'Sie sind kein Administrator eines Clubs.');
@@ -300,7 +300,7 @@ class ClubAdminPanelController extends Controller
     public function teams(): Response
     {
         $user = Auth::user();
-        $adminClubs = $user->clubs()->wherePivot('role', 'club_admin')->get();
+        $adminClubs = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->get();
 
         if ($adminClubs->isEmpty()) {
             abort(403, 'Sie sind kein Administrator eines Clubs.');
@@ -348,7 +348,7 @@ class ClubAdminPanelController extends Controller
     public function players(): Response
     {
         $user = Auth::user();
-        $adminClubs = $user->clubs()->wherePivot('role', 'club_admin')->get();
+        $adminClubs = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->get();
 
         if ($adminClubs->isEmpty()) {
             abort(403, 'Sie sind kein Administrator eines Clubs.');
@@ -404,7 +404,7 @@ class ClubAdminPanelController extends Controller
     public function financial(): Response
     {
         $user = Auth::user();
-        $adminClubs = $user->clubs()->wherePivot('role', 'club_admin')->get();
+        $adminClubs = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->get();
 
         if ($adminClubs->isEmpty()) {
             abort(403, 'Sie sind kein Administrator eines Clubs.');
@@ -435,7 +435,7 @@ class ClubAdminPanelController extends Controller
     public function reports(): Response
     {
         $user = Auth::user();
-        $adminClubs = $user->clubs()->wherePivot('role', 'club_admin')->get();
+        $adminClubs = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->get();
 
         if ($adminClubs->isEmpty()) {
             abort(403, 'Sie sind kein Administrator eines Clubs.');
@@ -476,7 +476,7 @@ class ClubAdminPanelController extends Controller
     public function subscriptions(): Response
     {
         $user = Auth::user();
-        $adminClubs = $user->clubs()->wherePivot('role', 'club_admin')->get();
+        $adminClubs = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->get();
 
         if ($adminClubs->isEmpty()) {
             abort(403, 'Sie sind kein Administrator eines Clubs.');

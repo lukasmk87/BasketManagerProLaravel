@@ -411,6 +411,17 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get clubs administered by this user.
+     * Returns clubs where the user has pivot role 'admin' or 'owner'.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function getAdministeredClubs()
+    {
+        return $this->clubs()->wherePivotIn('role', ['admin', 'owner']);
+    }
+
+    /**
      * Check if the user is a parent.
      */
     public function isParent(): bool

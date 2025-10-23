@@ -29,8 +29,8 @@ class PendingPlayersController extends Controller
     {
         $user = Auth::user();
 
-        // Get clubs the user is admin of
-        $userClubIds = $user->clubs()->wherePivot('role', 'club_admin')->pluck('clubs.id')->toArray();
+        // Get clubs the user is admin of (pivot role 'admin' or 'owner')
+        $userClubIds = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->pluck('clubs.id')->toArray();
 
         if (empty($userClubIds)) {
             return Inertia::render('ClubAdmin/PendingPlayers/Index', [
@@ -130,7 +130,7 @@ class PendingPlayersController extends Controller
         ]);
 
         $user = Auth::user();
-        $userClubIds = $user->clubs()->wherePivot('role', 'club_admin')->pluck('clubs.id')->toArray();
+        $userClubIds = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->pluck('clubs.id')->toArray();
 
         $successCount = 0;
         $errorCount = 0;
@@ -197,7 +197,7 @@ class PendingPlayersController extends Controller
 
         // Verify player belongs to admin's club
         $user = Auth::user();
-        $userClubIds = $user->clubs()->wherePivot('role', 'club_admin')->pluck('clubs.id')->toArray();
+        $userClubIds = $user->clubs()->wherePivotIn('role', ['admin', 'owner'])->pluck('clubs.id')->toArray();
 
         $playerClubId = $player->registeredViaInvitation?->club_id;
 
