@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Route;
 // ============================================
 
 Route::prefix('trainer/player-invitations')
-    ->middleware(['auth', 'verified', 'role:trainer|club_admin'])
+    ->middleware(['auth', 'verified', 'role:super_admin|admin|club_admin|trainer'])
     ->name('trainer.invitations.')
     ->group(function () {
         // List all invitations
@@ -80,7 +80,7 @@ Route::prefix('register/player')
 // ============================================
 
 Route::prefix('club-admin/pending-players')
-    ->middleware(['auth', 'verified', 'role:club_admin'])
+    ->middleware(['auth', 'verified', 'role:super_admin|admin|club_admin'])
     ->name('club-admin.pending.')
     ->group(function () {
         // List all pending players

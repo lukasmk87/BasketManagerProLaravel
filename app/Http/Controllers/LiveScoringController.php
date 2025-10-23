@@ -2,25 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\UpdateGameScoreRequest;
-use App\Http\Requests\AddGameActionRequest;
-use App\Models\Game;
-use App\Models\GameAction;
-use App\Models\LiveGame;
-use App\Services\LiveScoringService;
-use App\Services\StatisticsService;
-use App\Events\GameScoreUpdated;
 use App\Events\GameActionAdded;
-use App\Events\GameStarted;
-use App\Events\GameClockUpdated;
-use App\Events\GameTimeoutStarted;
-use App\Events\GameTimeoutEnded;
 use App\Events\GameActionCorrected;
 use App\Events\GameActionDeleted;
+use App\Events\GameClockUpdated;
 use App\Events\GameFinished;
-use App\Jobs\UpdateGameStatistics;
+use App\Events\GameScoreUpdated;
+use App\Events\GameStarted;
+use App\Events\GameTimeoutEnded;
+use App\Events\GameTimeoutStarted;
+use App\Http\Requests\AddGameActionRequest;
+use App\Http\Requests\UpdateGameScoreRequest;
 use App\Jobs\GenerateFinalGameStatistics;
+use App\Jobs\UpdateGameStatistics;
+use App\Models\Game;
+use App\Models\GameAction;
+use App\Services\LiveScoringService;
+use App\Services\StatisticsService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -36,6 +36,32 @@ class LiveScoringController extends Controller
     }
 
     /**
+     * Helper method to return appropriate response based on request type.
+     * For Inertia requests (web), returns redirect with flash message.
+     * For API requests, returns JSON response.
+     */
+    private function respondWithLiveGame(
+        string $message,
+        array $data = [],
+        bool $success = true,
+        int $statusCode = 200
+    ): RedirectResponse|JsonResponse {
+        // For Inertia requests (web), redirect back with flash message
+        if (request()->header('X-Inertia')) {
+            return back()->with('flash', [
+                'success' => $success,
+                'message' => $message,
+            ]);
+        }
+
+        // For API requests, return JSON
+        return response()->json(array_merge([
+            'success' => $success,
+            'message' => $message,
+        ], $data), $statusCode);
+    }
+
+    /**
      * Show the live scoring interface.
      */
     public function show(Game $game): Response
@@ -48,9 +74,9 @@ class LiveScoringController extends Controller
             'liveGame',
             'gameActions' => function ($query) {
                 $query->with(['player', 'assistedByPlayer'])
-                      ->latest()
-                      ->limit(20);
-            }
+                    ->latest()
+                    ->limit(20);
+            },
         ]);
 
         return Inertia::render('Games/LiveScoring', [
@@ -69,32 +95,32 @@ class LiveScoringController extends Controller
     /**
      * Start a game.
      */
-    public function startGame(Game $game): JsonResponse
+    public function startGame(Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('controlGame', $game);
 
         try {
             $liveGame = $this->liveScoringService->startGame($game);
-            
+
             broadcast(new GameStarted($game, $liveGame));
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Spiel gestartet.',
-                'liveGame' => $liveGame
+
+            return $this->respondWithLiveGame('Spiel gestartet.', [
+                'liveGame' => $liveGame,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Spiel konnte nicht gestartet werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Spiel konnte nicht gestartet werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * Add a game action.
      */
-    public function addAction(AddGameActionRequest $request, Game $game): JsonResponse
+    public function addAction(AddGameActionRequest $request, Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('score', $game);
 
@@ -102,68 +128,68 @@ class LiveScoringController extends Controller
             DB::beginTransaction();
 
             $action = $this->liveScoringService->addGameAction($game, $request->validated());
-            
+
             // Update live game state
             $liveGame = $this->liveScoringService->updateLiveGameState($game, $action);
-            
+
             // Broadcast the action
             broadcast(new GameActionAdded($game, $action, $liveGame));
-            
+
             // Update statistics asynchronously
             UpdateGameStatistics::dispatch($game)->onQueue('high');
-            
+
             DB::commit();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Aktion hinzugefügt.',
+
+            return $this->respondWithLiveGame('Aktion hinzugefügt.', [
                 'action' => $action->load(['player', 'assistedByPlayer']),
-                'liveGame' => $liveGame
+                'liveGame' => $liveGame,
             ]);
         } catch (\Exception $e) {
             DB::rollback();
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Aktion konnte nicht hinzugefügt werden: ' . $e->getMessage()
-            ], 400);
+
+            return $this->respondWithLiveGame(
+                'Aktion konnte nicht hinzugefügt werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * Update game score.
      */
-    public function updateScore(UpdateGameScoreRequest $request, Game $game): JsonResponse
+    public function updateScore(UpdateGameScoreRequest $request, Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('score', $game);
 
         try {
             $liveGame = $this->liveScoringService->updateScore(
-                $game, 
+                $game,
                 $request->team,
                 $request->points,
                 $request->player_id
             );
-            
+
             broadcast(new GameScoreUpdated($game, $liveGame));
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Spielstand aktualisiert.',
-                'liveGame' => $liveGame
+
+            return $this->respondWithLiveGame('Spielstand aktualisiert.', [
+                'liveGame' => $liveGame,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Spielstand konnte nicht aktualisiert werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Spielstand konnte nicht aktualisiert werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * Control game clock.
      */
-    public function controlClock(Request $request, Game $game): JsonResponse
+    public function controlClock(Request $request, Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('controlGame', $game);
 
@@ -178,26 +204,26 @@ class LiveScoringController extends Controller
                 'resume' => $this->liveScoringService->resumePeriod($game),
                 'end_period' => $this->liveScoringService->endPeriod($game),
             };
-            
+
             broadcast(new GameClockUpdated($game, $liveGame, $request->action));
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Spielzeit aktualisiert.',
-                'liveGame' => $liveGame
+
+            return $this->respondWithLiveGame('Spielzeit aktualisiert.', [
+                'liveGame' => $liveGame,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Spielzeit konnte nicht aktualisiert werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Spielzeit konnte nicht aktualisiert werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * Start a timeout.
      */
-    public function timeout(Request $request, Game $game): JsonResponse
+    public function timeout(Request $request, Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('controlGame', $game);
 
@@ -212,51 +238,51 @@ class LiveScoringController extends Controller
                 $request->team,
                 $request->duration ?? 60
             );
-            
+
             broadcast(new GameTimeoutStarted($game, $liveGame, $request->team));
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Timeout gestartet.',
-                'liveGame' => $liveGame
+
+            return $this->respondWithLiveGame('Timeout gestartet.', [
+                'liveGame' => $liveGame,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Timeout konnte nicht gestartet werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Timeout konnte nicht gestartet werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * End a timeout.
      */
-    public function endTimeout(Game $game): JsonResponse
+    public function endTimeout(Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('controlGame', $game);
 
         try {
             $liveGame = $this->liveScoringService->endTimeout($game);
-            
+
             broadcast(new GameTimeoutEnded($game, $liveGame));
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Timeout beendet.',
-                'liveGame' => $liveGame
+
+            return $this->respondWithLiveGame('Timeout beendet.', [
+                'liveGame' => $liveGame,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Timeout konnte nicht beendet werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Timeout konnte nicht beendet werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * Handle player substitution.
      */
-    public function substitution(Request $request, Game $game): JsonResponse
+    public function substitution(Request $request, Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('score', $game);
 
@@ -275,23 +301,22 @@ class LiveScoringController extends Controller
                 $request->player_out_id,
                 $request->reason
             );
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Auswechslung durchgeführt.'
-            ]);
+
+            return $this->respondWithLiveGame('Auswechslung durchgeführt.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Auswechslung konnte nicht durchgeführt werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Auswechslung konnte nicht durchgeführt werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * Correct a game action.
      */
-    public function correctAction(Request $request, GameAction $action): JsonResponse
+    public function correctAction(Request $request, GameAction $action): RedirectResponse|JsonResponse
     {
         $this->authorize('correctAction', $action);
 
@@ -306,73 +331,72 @@ class LiveScoringController extends Controller
                 $request->corrected_data ?? [],
                 $request->correction_reason
             );
-            
+
             broadcast(new GameActionCorrected($action->game, $correctedAction));
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Aktion korrigiert.',
-                'action' => $correctedAction
+
+            return $this->respondWithLiveGame('Aktion korrigiert.', [
+                'action' => $correctedAction,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Aktion konnte nicht korrigiert werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Aktion konnte nicht korrigiert werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * Delete a game action.
      */
-    public function deleteAction(GameAction $action): JsonResponse
+    public function deleteAction(GameAction $action): RedirectResponse|JsonResponse
     {
         $this->authorize('deleteAction', $action);
 
         try {
             $game = $action->game;
-            
+
             $this->liveScoringService->deleteAction($action);
-            
+
             broadcast(new GameActionDeleted($game, $action->id));
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Aktion gelöscht.'
-            ]);
+
+            return $this->respondWithLiveGame('Aktion gelöscht.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Aktion konnte nicht gelöscht werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Aktion konnte nicht gelöscht werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * Finish a game.
      */
-    public function finishGame(Game $game): JsonResponse
+    public function finishGame(Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('controlGame', $game);
 
         try {
             $finishedGame = $this->liveScoringService->finishGame($game);
-            
+
             broadcast(new GameFinished($finishedGame));
-            
+
             // Generate final statistics
             GenerateFinalGameStatistics::dispatch($finishedGame);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Spiel beendet.',
-                'game' => $finishedGame
+
+            return $this->respondWithLiveGame('Spiel beendet.', [
+                'game' => $finishedGame,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Spiel konnte nicht beendet werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Spiel konnte nicht beendet werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
@@ -382,11 +406,11 @@ class LiveScoringController extends Controller
     public function getLiveData(Game $game): JsonResponse
     {
         $liveGame = $game->liveGame;
-        
-        if (!$liveGame) {
+
+        if (! $liveGame) {
             return response()->json([
                 'success' => false,
-                'message' => 'Spiel ist nicht live.'
+                'message' => 'Spiel ist nicht live.',
             ], 404);
         }
 
@@ -400,7 +424,7 @@ class LiveScoringController extends Controller
                     ->limit(10)
                     ->get(),
                 'currentStats' => $this->statisticsService->getCurrentGameStats($game),
-            ]
+            ],
         ]);
     }
 
@@ -428,12 +452,12 @@ class LiveScoringController extends Controller
                         'away' => $awayStats,
                     ],
                     'hasExternalTeams' => $game->hasExternalTeams(),
-                ]
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Statistiken konnten nicht geladen werden: ' . $e->getMessage()
+                'message' => 'Statistiken konnten nicht geladen werden: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -441,7 +465,7 @@ class LiveScoringController extends Controller
     /**
      * Reset shot clock.
      */
-    public function resetShotClock(Request $request, Game $game): JsonResponse
+    public function resetShotClock(Request $request, Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('controlGame', $game);
 
@@ -451,31 +475,31 @@ class LiveScoringController extends Controller
 
         try {
             $liveGame = $game->liveGame;
-            if (!$liveGame) {
+            if (! $liveGame) {
                 throw new \Exception('Spiel ist nicht live.');
             }
 
             $liveGame->resetShotClock($request->seconds);
-            
+
             broadcast(new GameClockUpdated($game, $liveGame, 'shot_clock_reset'));
-            
-            return response()->json([
-                'success' => true,
-                'message' => '24-Sekunden-Uhr zurückgesetzt.',
-                'liveGame' => $liveGame
+
+            return $this->respondWithLiveGame('24-Sekunden-Uhr zurückgesetzt.', [
+                'liveGame' => $liveGame,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => '24-Sekunden-Uhr konnte nicht zurückgesetzt werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                '24-Sekunden-Uhr konnte nicht zurückgesetzt werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 
     /**
      * Update players on court.
      */
-    public function updatePlayersOnCourt(Request $request, Game $game): JsonResponse
+    public function updatePlayersOnCourt(Request $request, Game $game): RedirectResponse|JsonResponse
     {
         $this->authorize('score', $game);
 
@@ -487,22 +511,22 @@ class LiveScoringController extends Controller
 
         try {
             $liveGame = $game->liveGame;
-            if (!$liveGame) {
+            if (! $liveGame) {
                 throw new \Exception('Spiel ist nicht live.');
             }
 
             $liveGame->updatePlayersOnCourt($request->team, $request->player_ids);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Aufstellung aktualisiert.',
-                'liveGame' => $liveGame
+
+            return $this->respondWithLiveGame('Aufstellung aktualisiert.', [
+                'liveGame' => $liveGame,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Aufstellung konnte nicht aktualisiert werden: ' . $e->getMessage()
-            ], 400);
+            return $this->respondWithLiveGame(
+                'Aufstellung konnte nicht aktualisiert werden: '.$e->getMessage(),
+                [],
+                false,
+                400
+            );
         }
     }
 }

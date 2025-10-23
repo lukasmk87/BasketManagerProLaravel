@@ -139,7 +139,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                     <!-- Home Team Scoring -->
                     <ScoringPanel
-                        :team="game.home_team"
+                        :team="homeTeamData"
                         :players="homeRoster"
                         :side="'home'"
                         @add-action="addAction"
@@ -148,7 +148,7 @@
 
                     <!-- Away Team Scoring -->
                     <ScoringPanel
-                        :team="game.away_team"
+                        :team="awayTeamData"
                         :players="awayRoster"
                         :side="'away'"
                         @add-action="addAction"
@@ -240,12 +240,37 @@ const isGameStarted = computed(() => {
 
 const currentPeriodDisplay = computed(() => {
     if (!localLiveGame.value) return 'Nicht gestartet'
-    
+
     const period = localLiveGame.value.current_period
     if (period <= props.game.total_periods) {
         return `${period}. Viertel`
     } else {
         return `Verlängerung ${period - props.game.total_periods}`
+    }
+})
+
+// Create team data with fallback for external teams
+const homeTeamData = computed(() => {
+    if (props.game.home_team) {
+        return props.game.home_team
+    }
+    // Create temporary team object for external team
+    return {
+        id: null,
+        name: props.game.home_team_name || 'TBD',
+        is_external: true
+    }
+})
+
+const awayTeamData = computed(() => {
+    if (props.game.away_team) {
+        return props.game.away_team
+    }
+    // Create temporary team object for external team
+    return {
+        id: null,
+        name: props.game.away_team_name || 'TBD',
+        is_external: true
     }
 })
 

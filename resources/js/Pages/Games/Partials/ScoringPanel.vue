@@ -3,7 +3,7 @@
         <div class="p-6 lg:p-8">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {{ team.name }}
+                    {{ team?.name || 'Team' }}
                 </h3>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
                     {{ side === 'home' ? 'Heim' : 'Gast' }}
@@ -355,14 +355,14 @@ const addAction = (actionType, additionalData = {}) => {
     if (!selectedPlayerId.value && !['timeout_team', 'timeout_official'].includes(actionType)) {
         return
     }
-    
+
     const actionData = {
         player_id: selectedPlayerId.value,
-        team_id: props.team.id,
+        team_id: props.team?.id || null,
         action_type: actionType,
         ...additionalData
     }
-    
+
     emit('add-action', actionData)
 }
 
