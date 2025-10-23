@@ -64,19 +64,37 @@ window.axios.defaults.withCredentials = true;
 window.axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
 window.axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
 
-// Add response interceptor to handle 419 CSRF errors
+// Add response interceptor to handle 419 CSRF errors with retry limit
 let isRefreshingToken = false;
 let refreshTokenPromise = null;
 let failedRequestsQueue = [];
+let axiosCsrfRetryCount = 0;
+const MAX_AXIOS_CSRF_RETRIES = 1;
 
 window.axios.interceptors.response.use(
-    response => response,
+    response => {
+        // Reset retry count on successful response
+        axiosCsrfRetryCount = 0;
+        return response;
+    },
     async error => {
         const originalRequest = error.config;
-        
+
         if (error.response && error.response.status === 419) {
             CSRFDebugger.logTokenMismatch();
-            
+
+            // Check if we've exceeded max retries
+            if (originalRequest._retryCount && originalRequest._retryCount >= MAX_AXIOS_CSRF_RETRIES) {
+                console.error('Max CSRF retry attempts reached for axios request');
+                axiosCsrfRetryCount = 0;
+                isRefreshingToken = false;
+
+                // Show user-friendly error message
+                alert('Ihre Sitzung ist abgelaufen. Die Seite wird neu geladen.');
+                window.location.reload();
+                return Promise.reject(error);
+            }
+
             // Prevent multiple simultaneous token refresh attempts
             if (isRefreshingToken) {
                 CSRFDebugger.log('Token refresh already in progress, queuing request');
@@ -84,10 +102,11 @@ window.axios.interceptors.response.use(
                     failedRequestsQueue.push({ resolve, reject, config: originalRequest });
                 });
             }
-            
+
             // Mark that we're refreshing the token
             isRefreshingToken = true;
             originalRequest._retry = true;
+            originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
             
             try {
                 refreshTokenPromise = refreshCsrfToken();

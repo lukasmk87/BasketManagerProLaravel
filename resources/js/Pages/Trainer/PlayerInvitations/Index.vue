@@ -64,7 +64,7 @@ const handleFilterChange = () => {
     });
 };
 
-// Handle deactivate
+// Handle deactivate with improved error handling
 const handleDeactivate = (invitation) => {
     if (!confirm(`Möchten Sie die Einladung "${invitation.invitation_token}" wirklich deaktivieren?`)) {
         return;
@@ -72,6 +72,23 @@ const handleDeactivate = (invitation) => {
 
     router.delete(route('trainer.invitations.destroy', invitation.id), {
         preserveScroll: true,
+        onError: (errors) => {
+            // Check if it's a CSRF token error (419)
+            if (errors.response?.status === 419) {
+                alert('Ihre Sitzung ist abgelaufen. Bitte versuchen Sie es erneut.');
+                // The global error handler will refresh the token
+                return;
+            }
+
+            // Handle other errors
+            const errorMessage = errors.message || 'Fehler beim Deaktivieren der Einladung.';
+            alert(errorMessage);
+            console.error('Deactivation error:', errors);
+        },
+        onSuccess: () => {
+            // Optional: Show success message
+            console.log('Einladung erfolgreich deaktiviert');
+        },
     });
 };
 

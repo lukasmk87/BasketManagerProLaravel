@@ -39,7 +39,10 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
-            return Limit::perMinute(5)->by($throttleKey);
+            // More lenient rate limiting for development/staging environments
+            $maxAttempts = app()->environment(['local', 'staging']) ? 10 : 5;
+
+            return Limit::perMinute($maxAttempts)->by($throttleKey);
         });
 
         RateLimiter::for('two-factor', function (Request $request) {
