@@ -42,8 +42,14 @@ class ClubAdminPanelController extends Controller
 
         if ($adminClubs->isEmpty()) {
             return Inertia::render('ClubAdmin/Dashboard', [
+                'club' => null,
                 'error' => 'Sie sind kein Administrator eines Clubs.',
                 'clubs' => [],
+                'statistics' => [],
+                'teams' => [],
+                'upcoming_games' => [],
+                'recent_members' => [],
+                'all_clubs' => [],
             ]);
         }
 

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api\V2;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V2\Users\IndexUsersRequest;
 use App\Http\Requests\Api\V2\Users\StoreUserRequest;
 use App\Http\Requests\Api\V2\Users\UpdateUserRequest;
-use App\Http\Requests\Api\V2\Users\IndexUsersRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -28,7 +28,7 @@ class UserController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             })
             ->when($request->filled('role'), function ($query) use ($request) {
@@ -48,7 +48,7 @@ class UserController extends Controller
             ->when($request->filled('sort'), function ($query) use ($request) {
                 $sortField = $request->sort;
                 $sortDirection = $request->filled('direction') && $request->direction === 'desc' ? 'desc' : 'asc';
-                
+
                 $allowedSortFields = ['name', 'email', 'created_at', 'last_login_at'];
                 if (in_array($sortField, $allowedSortFields)) {
                     $query->orderBy($sortField, $sortDirection);
@@ -69,9 +69,9 @@ class UserController extends Controller
         $this->authorize('create', User::class);
 
         $userData = $request->validated();
-        
+
         // Generate password if not provided
-        if (!isset($userData['password'])) {
+        if (! isset($userData['password'])) {
             $userData['password'] = Hash::make(Str::random(12));
         } else {
             $userData['password'] = Hash::make($userData['password']);
@@ -117,7 +117,7 @@ class UserController extends Controller
         $this->authorize('update', $user);
 
         $userData = $request->validated();
-        
+
         // Handle password update
         if (isset($userData['password'])) {
             $userData['password'] = Hash::make($userData['password']);
@@ -145,12 +145,21 @@ class UserController extends Controller
     {
         $this->authorize('delete', $user);
 
-        // Soft delete the user
-        $user->delete();
+        // Use UserService for intelligent soft/hard delete
+        $userService = app(\App\Services\UserService::class);
 
-        return response()->json([
-            'message' => 'Benutzer erfolgreich gelöscht.',
-        ]);
+        try {
+            $userService->deleteUser($user);
+
+            return response()->json([
+                'message' => 'Benutzer erfolgreich gelöscht.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Fehler beim Löschen des Benutzers.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

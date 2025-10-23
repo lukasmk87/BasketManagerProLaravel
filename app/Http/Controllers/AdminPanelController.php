@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Club;
-use App\Models\Team;
-use App\Models\Player;
 use App\Models\Game;
+use App\Models\Player;
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class AdminPanelController extends Controller
 {
@@ -36,8 +36,8 @@ class AdminPanelController extends Controller
             'active_players' => Player::where('status', 'active')->count(),
             'total_games' => Game::count(),
             'games_this_month' => Game::whereMonth('scheduled_at', now()->month)
-                                    ->whereYear('scheduled_at', now()->year)
-                                    ->count(),
+                ->whereYear('scheduled_at', now()->year)
+                ->count(),
         ];
 
         // Get recent activities
@@ -111,7 +111,7 @@ class AdminPanelController extends Controller
             ->when($request->search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             })
             ->when($request->role, function ($query, $role) {
@@ -168,8 +168,8 @@ class AdminPanelController extends Controller
         // Database information
         $databaseInfo = [
             'connection' => config('database.default'),
-            'database_name' => config('database.connections.' . config('database.default') . '.database'),
-            'tables_count' => DB::select("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ?", [config('database.connections.' . config('database.default') . '.database')])[0]->count ?? 0,
+            'database_name' => config('database.connections.'.config('database.default').'.database'),
+            'tables_count' => DB::select('SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ?', [config('database.connections.'.config('database.default').'.database')])[0]->count ?? 0,
         ];
 
         // Cache information
@@ -181,7 +181,7 @@ class AdminPanelController extends Controller
         // Queue information
         $queueInfo = [
             'driver' => config('queue.default'),
-            'connection' => config('queue.connections.' . config('queue.default') . '.connection') ?? config('queue.default'),
+            'connection' => config('queue.connections.'.config('queue.default').'.connection') ?? config('queue.default'),
         ];
 
         // Storage information
@@ -246,9 +246,12 @@ class AdminPanelController extends Controller
 
         // Attach user to clubs if provided
         if (isset($validated['clubs']) && count($validated['clubs']) > 0) {
+            // Determine pivot role based on Spatie roles
+            $pivotRole = in_array('club_admin', $validated['roles']) ? 'club_admin' : 'member';
+
             foreach ($validated['clubs'] as $clubId) {
                 $user->clubs()->attach($clubId, [
-                    'role' => 'member',
+                    'role' => $pivotRole,
                     'joined_at' => now(),
                     'is_active' => true,
                 ]);
@@ -264,7 +267,7 @@ class AdminPanelController extends Controller
         }
 
         return redirect()->route('admin.users')
-            ->with('success', 'Benutzer wurde erfolgreich erstellt.' .
+            ->with('success', 'Benutzer wurde erfolgreich erstellt.'.
                 ($request->boolean('send_credentials_email') ? ' Eine E-Mail mit den Zugangsdaten wurde versendet.' : ''));
     }
 
@@ -290,7 +293,7 @@ class AdminPanelController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|email|max:255|unique:users,email,'.$user->id,
             'is_active' => 'boolean',
             'roles' => 'array',
             'roles.*' => 'exists:roles,name',
@@ -324,10 +327,18 @@ class AdminPanelController extends Controller
                 ->with('error', 'Sie können Ihr eigenes Benutzerkonto nicht löschen.');
         }
 
-        $user->delete();
+        // Use UserService for intelligent soft/hard delete
+        $userService = app(\App\Services\UserService::class);
 
-        return redirect()->route('admin.users')
-            ->with('success', 'Benutzer wurde erfolgreich gelöscht.');
+        try {
+            $userService->deleteUser($user);
+
+            return redirect()->route('admin.users')
+                ->with('success', 'Benutzer wurde erfolgreich gelöscht.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.users')
+                ->with('error', 'Fehler beim Löschen des Benutzers: '.$e->getMessage());
+        }
     }
 
     /**
@@ -344,10 +355,10 @@ class AdminPanelController extends Controller
             $userService->sendPasswordReset($user);
 
             return back()->with('success',
-                'Passwort-Reset-Link wurde an ' . $user->email . ' gesendet.');
+                'Passwort-Reset-Link wurde an '.$user->email.' gesendet.');
         } catch (\Exception $e) {
             return back()->with('error',
-                'Fehler beim Senden des Passwort-Reset-Links: ' . $e->getMessage());
+                'Fehler beim Senden des Passwort-Reset-Links: '.$e->getMessage());
         }
     }
 
@@ -357,11 +368,11 @@ class AdminPanelController extends Controller
     private function formatBytes(int $bytes, int $precision = 2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
+
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
             $bytes /= 1024;
         }
 
-        return round($bytes, $precision) . ' ' . $units[$i];
+        return round($bytes, $precision).' '.$units[$i];
     }
 }
