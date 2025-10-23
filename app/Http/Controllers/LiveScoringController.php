@@ -57,8 +57,11 @@ class LiveScoringController extends Controller
             'game' => $game,
             'liveGame' => $game->liveGame,
             'recentActions' => $game->gameActions,
-            'homeRoster' => $game->homeTeam->activePlayers,
-            'awayRoster' => $game->awayTeam->activePlayers,
+            'homeRoster' => $game->homeTeam?->activePlayers ?? collect(),
+            'awayRoster' => $game->awayTeam?->activePlayers ?? collect(),
+            'hasExternalTeams' => $game->hasExternalTeams(),
+            'isHomeTeamExternal' => $game->isHomeTeamExternal(),
+            'isAwayTeamExternal' => $game->isAwayTeamExternal(),
             'canControl' => auth()->user()->can('controlGame', $game),
         ]);
     }
@@ -409,8 +412,12 @@ class LiveScoringController extends Controller
         $this->authorize('view', $game);
 
         try {
-            $homeStats = $this->statisticsService->getTeamGameStats($game->homeTeam, $game);
-            $awayStats = $this->statisticsService->getTeamGameStats($game->awayTeam, $game);
+            $homeStats = $game->homeTeam
+                ? $this->statisticsService->getTeamGameStats($game->homeTeam, $game)
+                : null;
+            $awayStats = $game->awayTeam
+                ? $this->statisticsService->getTeamGameStats($game->awayTeam, $game)
+                : null;
 
             return response()->json([
                 'success' => true,
@@ -419,7 +426,8 @@ class LiveScoringController extends Controller
                     'statistics' => [
                         'home' => $homeStats,
                         'away' => $awayStats,
-                    ]
+                    ],
+                    'hasExternalTeams' => $game->hasExternalTeams(),
                 ]
             ]);
         } catch (\Exception $e) {

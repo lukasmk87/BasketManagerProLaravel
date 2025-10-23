@@ -615,9 +615,14 @@ class Game extends Model implements HasMedia
             'clock_running' => false,
         ]);
 
-        // Update team statistics
-        $this->homeTeam->updateStatistics($this);
-        $this->awayTeam->updateStatistics($this);
+        // Update team statistics (only for teams that exist in the database)
+        if ($this->homeTeam) {
+            $this->homeTeam->updateStatistics($this);
+        }
+
+        if ($this->awayTeam) {
+            $this->awayTeam->updateStatistics($this);
+        }
     }
 
     /**
@@ -661,14 +666,16 @@ class Game extends Model implements HasMedia
             'id' => $this->id,
             'uuid' => $this->uuid,
             'home_team' => [
-                'id' => $this->homeTeam->id,
-                'name' => $this->homeTeam->name,
+                'id' => $this->homeTeam?->id,
+                'name' => $this->getHomeTeamDisplayName(),
                 'score' => $this->home_team_score,
+                'is_external' => $this->isHomeTeamExternal(),
             ],
             'away_team' => [
-                'id' => $this->awayTeam->id,
-                'name' => $this->awayTeam->name,
+                'id' => $this->awayTeam?->id,
+                'name' => $this->getAwayTeamDisplayName(),
                 'score' => $this->away_team_score,
+                'is_external' => $this->isAwayTeamExternal(),
             ],
             'status' => $this->status,
             'scheduled_at' => $this->scheduled_at,
@@ -680,6 +687,7 @@ class Game extends Model implements HasMedia
             'point_differential' => $this->point_differential,
             'went_to_overtime' => $this->went_to_overtime,
             'attendance' => $this->attendance,
+            'has_external_teams' => $this->hasExternalTeams(),
         ];
     }
 

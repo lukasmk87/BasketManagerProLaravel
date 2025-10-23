@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import StatisticsWidget from '@/Components/Basketball/StatisticsWidget.vue';
 import PlayerCard from '@/Components/Basketball/PlayerCard.vue';
 import GameSchedule from '@/Components/Basketball/GameSchedule.vue';
@@ -163,12 +164,12 @@ const teamRoleTranslation = computed(() => {
                             </div>
                             
                             <div class="flex space-x-2">
-                                <button class="flex-1 bg-blue-600 text-white text-sm px-3 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                <Link :href="route('games.live-scoring', nextGame.id)" class="flex-1 bg-blue-600 text-white text-sm px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-center">
                                     Aufstellung planen
-                                </button>
-                                <button class="flex-1 bg-gray-600 text-white text-sm px-3 py-2 rounded-md hover:bg-gray-700 transition-colors">
+                                </Link>
+                                <Link :href="route('web.games.show', nextGame.id)" class="flex-1 bg-gray-600 text-white text-sm px-3 py-2 rounded-md hover:bg-gray-700 transition-colors text-center">
                                     Spieldetails
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -214,12 +215,12 @@ const teamRoleTranslation = computed(() => {
                             </div>
                             
                             <div class="flex space-x-2">
-                                <button class="flex-1 bg-blue-600 text-white text-sm px-3 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                <Link :href="route('games.statistics', lastGame.id)" class="flex-1 bg-blue-600 text-white text-sm px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-center">
                                     Statistiken
-                                </button>
-                                <button class="flex-1 bg-gray-600 text-white text-sm px-3 py-2 rounded-md hover:bg-gray-700 transition-colors">
+                                </Link>
+                                <Link :href="route('web.games.show', lastGame.id)" class="flex-1 bg-gray-600 text-white text-sm px-3 py-2 rounded-md hover:bg-gray-700 transition-colors text-center">
                                     Analyse
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -234,13 +235,13 @@ const teamRoleTranslation = computed(() => {
                             Kader ({{ rosterOverview.length }} Spieler)
                         </h3>
                         <div class="flex space-x-2">
-                            <button class="text-sm font-medium text-orange-600 hover:text-orange-500">
+                            <Link :href="route('trainer.invitations.create')" class="text-sm font-medium text-orange-600 hover:text-orange-500">
                                 Spieler hinzufügen
-                            </button>
+                            </Link>
                             <span class="text-gray-300">•</span>
-                            <button class="text-sm font-medium text-orange-600 hover:text-orange-500">
+                            <Link :href="route('web.teams.players.index', primaryTeam.id)" class="text-sm font-medium text-orange-600 hover:text-orange-500">
                                 Aufstellung verwalten
-                            </button>
+                            </Link>
                         </div>
                     </div>
                     
@@ -266,9 +267,9 @@ const teamRoleTranslation = computed(() => {
                             <h3 class="text-lg leading-6 font-medium text-gray-900">
                                 Trainingsplan
                             </h3>
-                            <button class="text-sm font-medium text-orange-600 hover:text-orange-500">
+                            <Link :href="route('training.sessions')" class="text-sm font-medium text-orange-600 hover:text-orange-500">
                                 Bearbeiten
-                            </button>
+                            </Link>
                         </div>
                         
                         <div v-if="!trainingSchedule || trainingSchedule.length === 0" class="text-center py-8 text-gray-500">
