@@ -52,8 +52,8 @@ class PlayerPolicyExtensionTest extends BasketballTestCase
         $this->otherClub = Club::factory()->create();
 
         // Attach users to club
-        $this->clubAdmin->clubs()->attach($this->club->id, ['role' => 'club_admin']);
-        $this->trainer->clubs()->attach($this->club->id, ['role' => 'trainer']);
+        $this->clubAdmin->clubs()->attach($this->club->id, ['role' => 'admin']);
+        $this->trainer->clubs()->attach($this->club->id, ['role' => 'coach']);
 
         // Create invitation and pending player
         $this->invitation = PlayerRegistrationInvitation::factory()->create([
@@ -178,7 +178,7 @@ class PlayerPolicyExtensionTest extends BasketballTestCase
     {
         $secondClubAdmin = User::factory()->create();
         $secondClubAdmin->assignRole('club_admin');
-        $secondClubAdmin->clubs()->attach($this->club->id, ['role' => 'club_admin']);
+        $secondClubAdmin->clubs()->attach($this->club->id, ['role' => 'admin']);
 
         $this->assertTrue($this->policy->assignToTeam($this->clubAdmin, $this->pendingPlayer));
         $this->assertTrue($this->policy->assignToTeam($secondClubAdmin, $this->pendingPlayer));

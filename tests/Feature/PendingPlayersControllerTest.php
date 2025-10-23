@@ -371,7 +371,7 @@ class PendingPlayersControllerTest extends BasketballTestCase
         $otherClub = Club::factory()->create();
         $otherClubAdmin = User::factory()->create();
         $otherClubAdmin->assignRole('club_admin');
-        $otherClubAdmin->clubs()->attach($otherClub->id, ['role' => 'club_admin']);
+        $otherClubAdmin->clubs()->attach($otherClub->id, ['role' => 'admin']);
 
         $player = $this->createPendingPlayer($this->invitation);
 

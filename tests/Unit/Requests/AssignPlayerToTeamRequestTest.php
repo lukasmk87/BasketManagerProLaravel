@@ -41,7 +41,7 @@ class AssignPlayerToTeamRequestTest extends BasketballTestCase
             'max_players' => 20,
         ]);
 
-        $this->clubAdmin->clubs()->attach($this->club->id, ['role' => 'club_admin']);
+        $this->clubAdmin->clubs()->attach($this->club->id, ['role' => 'admin']);
 
         $this->invitation = PlayerRegistrationInvitation::factory()->create([
             'club_id' => $this->club->id,

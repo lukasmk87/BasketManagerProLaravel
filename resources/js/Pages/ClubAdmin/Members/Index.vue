@@ -28,8 +28,8 @@ const formatDate = (date) => {
 
 const getRoleBadgeColor = (role) => {
     const colors = {
-        'club_admin': 'bg-red-100 text-red-800',
-        'trainer': 'bg-blue-100 text-blue-800',
+        'admin': 'bg-red-100 text-red-800',
+        'coach': 'bg-blue-100 text-blue-800',
         'team_manager': 'bg-green-100 text-green-800',
         'player': 'bg-purple-100 text-purple-800',
         'scorer': 'bg-yellow-100 text-yellow-800',

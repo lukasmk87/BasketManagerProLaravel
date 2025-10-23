@@ -56,8 +56,8 @@ class PlayerRegistrationInvitationPolicyTest extends BasketballTestCase
         ]);
 
         // Attach clubAdmin and trainer to club
-        $this->clubAdmin->clubs()->attach($this->club->id, ['role' => 'club_admin']);
-        $this->trainer->clubs()->attach($this->club->id, ['role' => 'trainer']);
+        $this->clubAdmin->clubs()->attach($this->club->id, ['role' => 'admin']);
+        $this->trainer->clubs()->attach($this->club->id, ['role' => 'coach']);
 
         // Create sample invitation
         $this->invitation = PlayerRegistrationInvitation::factory()->create([
@@ -214,7 +214,7 @@ class PlayerRegistrationInvitationPolicyTest extends BasketballTestCase
     {
         $otherTrainer = User::factory()->create();
         $otherTrainer->assignRole('trainer');
-        $otherTrainer->clubs()->attach($this->club->id, ['role' => 'trainer']);
+        $otherTrainer->clubs()->attach($this->club->id, ['role' => 'coach']);
 
         $this->assertFalse($this->policy->update($otherTrainer, $this->invitation));
     }
@@ -242,7 +242,7 @@ class PlayerRegistrationInvitationPolicyTest extends BasketballTestCase
     {
         $otherTrainer = User::factory()->create();
         $otherTrainer->assignRole('trainer');
-        $otherTrainer->clubs()->attach($this->club->id, ['role' => 'trainer']);
+        $otherTrainer->clubs()->attach($this->club->id, ['role' => 'coach']);
 
         $this->assertFalse($this->policy->delete($otherTrainer, $this->invitation));
     }

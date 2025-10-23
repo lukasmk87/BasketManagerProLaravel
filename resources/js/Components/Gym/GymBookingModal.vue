@@ -452,9 +452,9 @@ const canApproveRequests = computed(() => {
     const userTeams = page.props.user?.teams || []
     const originalTeamId = props.booking.original_team_id || props.booking.team_id
     
-    return userTeams.some(team => 
-        team.id === originalTeamId && 
-        ['trainer', 'assistant_trainer'].includes(team.pivot?.role)
+    return userTeams.some(team =>
+        team.id === originalTeamId &&
+        ['coach', 'assistant_coach'].includes(team.pivot?.role)
     )
 })
 
@@ -471,9 +471,9 @@ const availableActions = computed(() => {
     const userTeams = page.props.user?.teams || []
     const bookingTeamId = props.booking.team_id
     
-    const isTeamTrainer = userTeams.some(team => 
-        team.id === bookingTeamId && 
-        ['trainer', 'assistant_trainer'].includes(team.pivot?.role)
+    const isTeamTrainer = userTeams.some(team =>
+        team.id === bookingTeamId &&
+        ['coach', 'assistant_coach'].includes(team.pivot?.role)
     )
     
     if (!isTeamTrainer) return []

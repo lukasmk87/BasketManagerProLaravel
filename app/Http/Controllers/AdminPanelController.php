@@ -247,7 +247,7 @@ class AdminPanelController extends Controller
         // Attach user to clubs if provided
         if (isset($validated['clubs']) && count($validated['clubs']) > 0) {
             // Determine pivot role based on Spatie roles
-            $pivotRole = in_array('club_admin', $validated['roles']) ? 'club_admin' : 'member';
+            $pivotRole = in_array('club_admin', $validated['roles']) ? 'admin' : 'member';
 
             foreach ($validated['clubs'] as $clubId) {
                 $user->clubs()->attach($clubId, [

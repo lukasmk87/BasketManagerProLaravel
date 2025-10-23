@@ -42,8 +42,8 @@ class StorePlayerRegistrationInvitationRequestTest extends BasketballTestCase
             'club_id' => $this->club->id,
         ]);
 
-        $this->clubAdmin->clubs()->attach($this->club->id, ['role' => 'club_admin']);
-        $this->trainer->clubs()->attach($this->club->id, ['role' => 'trainer']);
+        $this->clubAdmin->clubs()->attach($this->club->id, ['role' => 'admin']);
+        $this->trainer->clubs()->attach($this->club->id, ['role' => 'coach']);
     }
 
     /** @test */
