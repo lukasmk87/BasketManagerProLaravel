@@ -98,17 +98,30 @@ class UserPolicy
             return false;
         }
 
-        // Only users with delete permission can delete others
-        if (!$user->can('delete users')) {
-            return false;
+        // Super admins and admins with delete permission can delete
+        if ($user->hasAnyRole(['super_admin', 'admin']) && $user->can('delete users')) {
+            // Super admins cannot be deleted by regular admins
+            if ($model->hasRole('super_admin') && !$user->hasRole('super_admin')) {
+                return false;
+            }
+            return true;
         }
 
-        // Super admins cannot be deleted by regular admins
-        if ($model->hasRole('super_admin') && !$user->hasRole('super_admin')) {
-            return false;
+        // Club admins can delete users in their clubs
+        if ($user->hasRole('club_admin')) {
+            // Club admins cannot delete admins or super admins
+            if ($model->hasAnyRole(['super_admin', 'admin', 'club_admin'])) {
+                return false;
+            }
+
+            // Check if both users share at least one club
+            $userClubIds = $user->getAdministeredClubIds();
+            $modelClubIds = $model->clubs()->pluck('clubs.id')->toArray();
+
+            return !empty(array_intersect($userClubIds, $modelClubIds));
         }
 
-        return true;
+        return false;
     }
 
     /**

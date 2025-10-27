@@ -319,13 +319,8 @@ class AdminPanelController extends Controller
      */
     public function destroyUser(Request $request, User $user)
     {
-        $this->authorize('delete users');
-
-        // Prevent deletion of own account
-        if ($user->id === auth()->id()) {
-            return redirect()->route('admin.users')
-                ->with('error', 'Sie können Ihr eigenes Benutzerkonto nicht löschen.');
-        }
+        // Use Policy-based authorization (checks permissions AND business rules)
+        $this->authorize('delete', $user);
 
         // Use UserService for intelligent soft/hard delete
         $userService = app(\App\Services\UserService::class);

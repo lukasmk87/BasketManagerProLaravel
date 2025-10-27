@@ -59,6 +59,21 @@ const sendPasswordReset = (user) => {
         });
     }
 };
+
+const deleteUser = (user) => {
+    if (confirm(`Möchten Sie den Benutzer "${user.name}" wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden.`)) {
+        router.delete(route('admin.users.destroy', user.id), {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                // Success message wird von Backend über Session Flash gesendet
+            },
+            onError: (errors) => {
+                alert('Fehler beim Löschen des Benutzers: ' + (errors.message || 'Unbekannter Fehler'));
+            },
+        });
+    }
+};
 </script>
 
 <template>
@@ -269,6 +284,16 @@ const sendPasswordReset = (user) => {
                                             >
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                                </svg>
+                                            </button>
+                                            <button
+                                                v-if="user.id !== $page.props.auth.user.id"
+                                                @click="deleteUser(user)"
+                                                class="text-red-600 hover:text-red-900"
+                                                title="Benutzer löschen"
+                                            >
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                                 </svg>
                                             </button>
                                         </div>
