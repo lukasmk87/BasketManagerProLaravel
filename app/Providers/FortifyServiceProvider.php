@@ -60,5 +60,10 @@ class FortifyServiceProvider extends ServiceProvider
                 ? Limit::perMinute(10)->by($request->user()->id)
                 : Limit::perMinute(2)->by($request->ip());
         });
+
+        // Club registration rate limiting (IP-based to prevent abuse)
+        RateLimiter::for('club-registration', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
     }
 }

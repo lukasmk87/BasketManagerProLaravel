@@ -42,6 +42,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/player_registration.php'));
 
+            // Club invitation routes (club admin + public)
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/club_invitation.php'));
+
             // Admin routes (web middleware with admin auth)
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/admin.php'));

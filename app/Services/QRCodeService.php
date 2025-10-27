@@ -604,4 +604,78 @@ class QRCodeService
         $defaultLogoPath = storage_path('app/public/logos/default_club_logo.png');
         return file_exists($defaultLogoPath) ? $defaultLogoPath : null;
     }
+
+    /**
+     * Generate QR code for club invitation.
+     *
+     * @param \App\Models\ClubInvitation $invitation
+     * @param array $options
+     * @return array
+     */
+    public function generateClubInvitationQR($invitation, array $options = []): array
+    {
+        $size = $options['size'] ?? $this->config['default_size'];
+        $format = $options['format'] ?? 'png';
+        $includeLogo = $options['include_logo'] ?? false;
+
+        // Build registration URL
+        $registrationUrl = route('public.club.register', ['token' => $invitation->invitation_token]);
+
+        // Check if Imagick is available for PNG, otherwise use SVG
+        $actualFormat = $format;
+        if ($format === 'png' && !extension_loaded('imagick')) {
+            $actualFormat = 'svg';
+            \Log::info('Imagick not available, generating SVG instead of PNG for club invitation QR code');
+        }
+
+        // Generate QR code
+        $qrCode = $this->generateQRCode($registrationUrl, $size, $actualFormat);
+
+        // Save QR code
+        $filename = "club_invitation_qr_{$invitation->club_id}_{$invitation->id}_" . time() . ".{$actualFormat}";
+        $directory = 'qr-codes/club-invitations';
+        $filePath = "{$directory}/{$filename}";
+
+        // Use 'public' disk explicitly to ensure files are accessible via web
+        Storage::disk('public')->put($filePath, $qrCode);
+
+        // Verify file was saved successfully
+        if (!Storage::disk('public')->exists($filePath)) {
+            \Log::error('Failed to save QR code file', [
+                'path' => $filePath,
+                'format' => $actualFormat,
+                'invitation_id' => $invitation->id,
+                'club_id' => $invitation->club_id,
+                'directory_exists' => Storage::disk('public')->exists($directory),
+                'qr_code_size' => strlen($qrCode),
+            ]);
+            throw new \RuntimeException("QR code file could not be saved to: {$filePath}. Please check storage permissions.");
+        }
+
+        \Log::info('Club invitation QR code saved successfully', [
+            'path' => $filePath,
+            'format' => $actualFormat,
+            'file_size' => Storage::disk('public')->size($filePath),
+        ]);
+
+        // Optionally add club logo (only for PNG with Imagick)
+        if ($includeLogo && $actualFormat === 'png' && extension_loaded('imagick')) {
+            $filePath = $this->addClubLogoToQR($filePath, $size, $invitation->club_id);
+        }
+
+        return [
+            'file_path' => $filePath,
+            'public_url' => Storage::disk('public')->url($filePath),
+            'registration_url' => $registrationUrl,
+            'metadata' => [
+                'size' => "{$size}x{$size}",
+                'format' => $actualFormat,
+                'requested_format' => $format,
+                'error_correction' => $this->config['error_correction'],
+                'generated_at' => now()->toISOString(),
+                'invitation_id' => $invitation->id,
+                'club_id' => $invitation->club_id,
+            ],
+        ];
+    }
 }
