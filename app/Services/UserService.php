@@ -186,9 +186,21 @@ class UserService
                 $user->delete();
             } else {
                 // Hard delete if no critical dependencies
-                $user->socialAccounts()->delete();
+                // Safely delete social accounts if they exist
+                if (method_exists($user, 'socialAccounts') && $user->socialAccounts()->exists()) {
+                    try {
+                        $user->socialAccounts()->delete();
+                    } catch (\Exception $e) {
+                        Log::warning('Could not delete social accounts', [
+                            'user_id' => $user->id,
+                            'error' => $e->getMessage()
+                        ]);
+                        // Continue with user deletion even if social accounts fail
+                    }
+                }
+
                 $user->forceDelete();
-                
+
                 Log::info("User hard deleted (no active dependencies)", [
                     'user_id' => $user->id
                 ]);

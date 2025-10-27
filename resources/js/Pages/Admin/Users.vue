@@ -73,17 +73,19 @@ const canDeleteUser = (user) => {
     }
 
     // Super admins can delete anyone (except themselves)
-    if (currentUser.roles?.some(r => r.name === 'super_admin')) {
+    // Note: currentUser.roles is a string array ['super_admin', 'admin']
+    if (currentUser.roles?.includes('super_admin')) {
         return true;
     }
 
     // Regular admins can't delete super admins
-    if (currentUser.roles?.some(r => r.name === 'admin')) {
+    // Note: user.roles is an object array [{name: 'super_admin'}]
+    if (currentUser.roles?.includes('admin')) {
         return !user.roles?.some(role => role.name === 'super_admin');
     }
 
     // Club admins can't delete admins or super admins
-    if (currentUser.roles?.some(r => r.name === 'club_admin')) {
+    if (currentUser.roles?.includes('club_admin')) {
         return !user.roles?.some(role => ['super_admin', 'admin', 'club_admin'].includes(role.name));
     }
 
@@ -130,14 +132,18 @@ const deleteUser = (user) => {
     const message = getDeleteWarningMessage(user);
 
     if (confirm(message)) {
+        console.log('🗑️ Deleting user:', user.id, 'Route:', route('admin.users.destroy', user.id));
+
         router.delete(route('admin.users.destroy', user.id), {
             preserveState: true,
             preserveScroll: true,
             onSuccess: (page) => {
+                console.log('✅ User deleted successfully');
                 // Success message wird von Backend über Session Flash gesendet
                 // Banner wird automatisch angezeigt
             },
             onError: (errors) => {
+                console.error('❌ Delete failed:', errors);
                 // Show detailed error message
                 let errorMessage = 'Fehler beim Löschen des Benutzers:\n\n';
 
