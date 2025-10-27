@@ -1,7 +1,7 @@
 <template>
     <Head title="Zahlungsmethoden" />
 
-    <AuthenticatedLayout>
+    <AppLayout>
         <template #header>
             <div class="flex items-center justify-between">
                 <div>
@@ -194,13 +194,13 @@
                 </div>
             </div>
         </teleport>
-    </AuthenticatedLayout>
+    </AppLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AppLayout from '@/Layouts/AppLayout.vue';
 import PaymentMethodList from '@/Components/Club/Billing/PaymentMethodList.vue';
 import AddPaymentMethodModal from '@/Components/Club/Billing/AddPaymentMethodModal.vue';
 import UpdateBillingDetailsModal from '@/Components/Club/Billing/UpdateBillingDetailsModal.vue';
