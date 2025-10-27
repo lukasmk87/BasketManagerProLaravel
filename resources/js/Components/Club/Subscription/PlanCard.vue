@@ -25,6 +25,14 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    currentPlan: {
+        type: Object,
+        default: null,
+    },
+    hasActiveSubscription: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(['subscribe', 'manage']);
@@ -68,6 +76,46 @@ const badgeColor = computed(() => {
         'gray': 'bg-gray-100 text-gray-800',
     };
     return colors[props.plan.color] || colors.gray;
+});
+
+const isUpgrade = computed(() => {
+    if (!props.currentPlan || props.isCurrentPlan || !props.hasActiveSubscription) return false;
+    return props.plan.price > props.currentPlan.price;
+});
+
+const isDowngrade = computed(() => {
+    if (!props.currentPlan || props.isCurrentPlan || !props.hasActiveSubscription) return false;
+    return props.plan.price < props.currentPlan.price && props.plan.price > 0;
+});
+
+const isSwitchToFree = computed(() => {
+    if (!props.currentPlan || props.isCurrentPlan || !props.hasActiveSubscription) return false;
+    return props.plan.price === 0;
+});
+
+const buttonText = computed(() => {
+    if (props.isCurrentPlan) {
+        return 'Aktueller Plan';
+    }
+
+    if (!props.hasActiveSubscription) {
+        return props.plan.price === 0 ? 'Plan auswählen' : 'Jetzt abonnieren';
+    }
+
+    // User has active subscription and wants to change
+    if (isUpgrade.value) {
+        return `↑ Auf ${props.plan.name} upgraden`;
+    }
+
+    if (isDowngrade.value) {
+        return `↓ Zu ${props.plan.name} wechseln`;
+    }
+
+    if (isSwitchToFree.value) {
+        return 'Zu kostenlosem Plan wechseln';
+    }
+
+    return 'Plan wechseln';
 });
 
 const handleAction = () => {
@@ -188,7 +236,11 @@ const handleAction = () => {
                     @click="handleAction"
                     :disabled="loading"
                     class="w-full justify-center"
-                    :class="{ 'opacity-50 cursor-not-allowed': loading }"
+                    :class="[
+                        { 'opacity-50 cursor-not-allowed': loading },
+                        isUpgrade ? 'bg-green-600 hover:bg-green-700' : '',
+                        isDowngrade ? 'bg-blue-600 hover:bg-blue-700' : ''
+                    ]"
                 >
                     <span v-if="loading">
                         <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -198,7 +250,7 @@ const handleAction = () => {
                         Wird geladen...
                     </span>
                     <span v-else>
-                        {{ plan.price === 0 ? 'Plan auswählen' : 'Jetzt abonnieren' }}
+                        {{ buttonText }}
                     </span>
                 </PrimaryButton>
                 <SecondaryButton

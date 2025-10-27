@@ -68,10 +68,16 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::post('/payment-methods/{paymentMethod}/default', [ClubBillingController::class, 'setDefaultPaymentMethod'])
             ->name('payment-methods.default');
 
-        // Proration Preview
+        // Proration Preview & Plan Swap
         Route::post('/preview-plan-swap', [ClubBillingController::class, 'previewPlanSwap'])
             ->name('preview-plan-swap');
+        Route::post('/swap-plan', [ClubBillingController::class, 'swapPlan'])
+            ->name('swap-plan');
     });
+
+    // Legacy club.subscription.swap route for backward compatibility
+    Route::post('/club/{club}/subscription/swap', [ClubBillingController::class, 'swapPlan'])
+        ->name('club.subscription.swap');
 });
 
 // Webhook routes (no authentication required)

@@ -426,4 +426,58 @@ class ClubBillingController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Execute plan swap (upgrade/downgrade).
+     */
+    public function swapPlan(Request $request, Club $club): JsonResponse
+    {
+        try {
+            // Authorize
+            $this->authorize('manageBilling', $club);
+
+            // Validate request
+            $validated = $request->validate([
+                'new_plan_id' => 'required|exists:club_subscription_plans,id',
+                'billing_interval' => 'sometimes|in:monthly,yearly',
+                'proration_behavior' => 'sometimes|in:create_prorations,none,always_invoice',
+            ]);
+
+            $newPlan = ClubSubscriptionPlan::findOrFail($validated['new_plan_id']);
+
+            // Validate plan belongs to same tenant
+            if ($newPlan->tenant_id !== $club->tenant_id) {
+                return response()->json([
+                    'error' => 'Plan does not belong to club\'s tenant',
+                ], 403);
+            }
+
+            // Execute the swap
+            $this->subscriptionService->swapPlan($club, $newPlan, [
+                'billing_interval' => $validated['billing_interval'] ?? 'monthly',
+                'proration_behavior' => $validated['proration_behavior'] ?? 'create_prorations',
+            ]);
+
+            // Reload club to get updated subscription
+            $club->refresh();
+
+            return response()->json([
+                'message' => 'Plan swapped successfully',
+                'club_id' => $club->id,
+                'new_plan_id' => $newPlan->id,
+                'new_plan_name' => $newPlan->name,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to swap plan', [
+                'club_id' => $club->id,
+                'new_plan_id' => $request->input('new_plan_id'),
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to swap plan: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }

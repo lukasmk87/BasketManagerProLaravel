@@ -6,6 +6,7 @@ import SubscriptionOverview from '@/Components/Club/Subscription/SubscriptionOve
 import PlanCard from '@/Components/Club/Subscription/PlanCard.vue';
 import BillingIntervalToggle from '@/Components/Club/Subscription/BillingIntervalToggle.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
+import PlanSwapModal from '@/Components/Club/Subscription/PlanSwapModal.vue';
 import { useStripe } from '@/composables/useStripe.js';
 
 const props = defineProps({
@@ -51,6 +52,9 @@ const loadingCheckout = ref(false);
 const selectedPlanId = ref(null);
 const showCancelModal = ref(false);
 const cancelImmediately = ref(false);
+const showSwapModal = ref(false);
+const selectedNewPlan = ref(null);
+const currentBillingInterval = ref('monthly'); // Track current subscription's billing interval
 
 // Computed
 const sortedPlans = computed(() => {
@@ -63,6 +67,18 @@ const sortedPlans = computed(() => {
 });
 
 // Methods
+const handlePlanSelection = (plan) => {
+    // Check if user has active subscription
+    if (props.has_active_subscription && props.current_plan) {
+        // Open swap modal for proration preview
+        selectedNewPlan.value = plan;
+        showSwapModal.value = true;
+    } else {
+        // Normal checkout flow for new subscriptions
+        initiateCheckout(plan);
+    }
+};
+
 const initiateCheckout = async (plan) => {
     if (loadingCheckout.value) return;
 
@@ -91,6 +107,19 @@ const initiateCheckout = async (plan) => {
         loadingCheckout.value = false;
         selectedPlanId.value = null;
     }
+};
+
+const handlePlanSwapConfirmed = (data) => {
+    showSwapModal.value = false;
+    selectedNewPlan.value = null;
+
+    // Reload the page to show updated subscription
+    router.reload({
+        onSuccess: () => {
+            // Show success notification
+            alert(`Plan erfolgreich gewechselt zu ${data.plan.name}!`);
+        },
+    });
 };
 
 const openBillingPortal = async () => {
@@ -233,8 +262,10 @@ const getLimitColor = (percentage) => {
                             :billing-interval="billingInterval"
                             :is-current-plan="isCurrentPlan(plan)"
                             :is-recommended="isRecommendedPlan(plan)"
+                            :current-plan="current_plan"
+                            :has-active-subscription="has_active_subscription"
                             :loading="loadingCheckout && selectedPlanId === plan.id"
-                            @subscribe="initiateCheckout"
+                            @subscribe="handlePlanSelection"
                             @manage="openBillingPortal"
                         />
                     </div>
@@ -320,5 +351,18 @@ const getLimitColor = (percentage) => {
                 </DangerButton>
             </template>
         </ConfirmationModal>
+
+        <!-- Plan Swap Modal -->
+        <PlanSwapModal
+            v-if="selectedNewPlan"
+            :show="showSwapModal"
+            :club-id="club.id"
+            :current-plan="current_plan"
+            :new-plan="selectedNewPlan"
+            :billing-interval="billingInterval"
+            :current-billing-interval="currentBillingInterval"
+            @close="showSwapModal = false"
+            @confirmed="handlePlanSwapConfirmed"
+        />
     </AppLayout>
 </template>
