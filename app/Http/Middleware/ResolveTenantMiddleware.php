@@ -27,30 +27,36 @@ class ResolveTenantMiddleware
         try {
             // Resolve tenant from request
             $tenant = $this->resolveTenant($request);
-            
-            if (!$tenant) {
+
+            if (! $tenant) {
                 // For staging environment, create a mock tenant
                 if (app()->environment('staging') && $request->getHost() === 'staging.basketmanager-pro.de') {
                     $tenant = $this->createMockStagingTenant();
+                }
+                // Allow Super-Admins to access without tenant (for localhost development & cross-tenant management)
+                elseif ($this->isSuperAdmin($request)) {
+                    // Super-Admins can proceed without tenant binding
+                    // This allows them to see all clubs across all tenants
+                    return $next($request);
                 } else {
                     return $this->handleTenantNotFound($request);
                 }
             }
-            
+
             // Set tenant context throughout the application
             $this->setTenantContext($tenant);
-            
+
             // Configure tenant-specific services
             $this->configureTenantServices($tenant);
-            
+
             // Setup Row Level Security for database queries
             $this->setupRowLevelSecurity($tenant);
-            
+
             // Log tenant access for analytics
             $this->logTenantAccess($request, $tenant);
-            
+
             return $next($request);
-            
+
         } catch (\Exception $e) {
             return $this->handleTenantException($e, $request);
         }
@@ -62,9 +68,9 @@ class ResolveTenantMiddleware
     private function resolveTenant(Request $request): ?Tenant
     {
         $resolutionMethods = config('tenants.resolution.methods', ['domain', 'subdomain', 'header']);
-        
+
         foreach ($resolutionMethods as $method) {
-            $tenant = match($method) {
+            $tenant = match ($method) {
                 'domain' => $this->resolveFromDomain($request),
                 'subdomain' => $this->resolveFromSubdomain($request),
                 'header' => $this->resolveFromHeader($request),
@@ -72,12 +78,12 @@ class ResolveTenantMiddleware
                 'api_key' => $this->resolveFromApiKey($request),
                 default => null
             };
-            
+
             if ($tenant) {
                 return $tenant;
             }
         }
-        
+
         return null;
     }
 
@@ -87,6 +93,7 @@ class ResolveTenantMiddleware
     private function resolveFromDomain(Request $request): ?Tenant
     {
         $domain = $request->getHost();
+
         return Tenant::resolveFromDomain($domain);
     }
 
@@ -97,13 +104,14 @@ class ResolveTenantMiddleware
     {
         $domain = $request->getHost();
         $parts = explode('.', $domain);
-        
+
         // Check if it's a subdomain (more than 2 parts)
         if (count($parts) > 2) {
             $subdomain = $parts[0];
+
             return Tenant::resolveFromSubdomain($subdomain);
         }
-        
+
         return null;
     }
 
@@ -114,15 +122,15 @@ class ResolveTenantMiddleware
     {
         $headerName = config('tenants.resolution.header_name', 'X-Tenant-ID');
         $tenantId = $request->header($headerName);
-        
+
         if ($tenantId) {
             return Cache::remember(
                 "tenant:id:{$tenantId}",
                 3600,
-                fn() => Tenant::where('id', $tenantId)->where('is_active', true)->first()
+                fn () => Tenant::where('id', $tenantId)->where('is_active', true)->first()
             );
         }
-        
+
         return null;
     }
 
@@ -132,21 +140,21 @@ class ResolveTenantMiddleware
     private function resolveFromSession(Request $request): ?Tenant
     {
         // Skip session resolution for API requests without session support
-        if (!$request->hasSession()) {
+        if (! $request->hasSession()) {
             return null;
         }
-        
+
         $sessionKey = config('tenants.resolution.session_key', 'tenant_id');
         $tenantId = $request->session()->get($sessionKey);
-        
+
         if ($tenantId) {
             return Cache::remember(
                 "tenant:id:{$tenantId}",
                 3600,
-                fn() => Tenant::where('id', $tenantId)->where('is_active', true)->first()
+                fn () => Tenant::where('id', $tenantId)->where('is_active', true)->first()
             );
         }
-        
+
         return null;
     }
 
@@ -156,15 +164,15 @@ class ResolveTenantMiddleware
     private function resolveFromApiKey(Request $request): ?Tenant
     {
         $apiKey = $request->bearerToken() ?? $request->header('X-API-Key');
-        
+
         if ($apiKey && str_starts_with($apiKey, 'tk_')) {
             return Cache::remember(
                 "tenant:api_key:{$apiKey}",
                 1800, // 30 minutes cache for API keys
-                fn() => Tenant::where('api_key', $apiKey)->where('is_active', true)->first()
+                fn () => Tenant::where('api_key', $apiKey)->where('is_active', true)->first()
             );
         }
-        
+
         return null;
     }
 
@@ -176,20 +184,20 @@ class ResolveTenantMiddleware
         // Set tenant instance in service container
         app()->instance('tenant', $tenant);
         app()->instance('tenant.id', $tenant->id);
-        
+
         // Set tenant context for Eloquent queries via global scope
         $this->setEloquentTenantScope($tenant);
-        
+
         // Share tenant data with all views
         View::share('tenant', $tenant);
-        
+
         // Set tenant-specific configuration
         config([
             'app.name' => $tenant->name,
             'app.timezone' => $tenant->timezone,
             'app.locale' => $tenant->locale,
         ]);
-        
+
         // Update application locale
         app()->setLocale($tenant->locale);
     }
@@ -211,13 +219,13 @@ class ResolveTenantMiddleware
     {
         // Configure tenant-specific caching
         $this->configureTenantCache($tenant);
-        
+
         // Configure tenant-specific mail settings
         $this->configureTenantMail($tenant);
-        
+
         // Configure tenant-specific filesystem
         $this->configureTenantFilesystem($tenant);
-        
+
         // Apply tenant customizations
         $this->applyTenantCustomizations($tenant);
     }
@@ -229,7 +237,7 @@ class ResolveTenantMiddleware
     {
         if (config('tenants.isolation.cache_prefix')) {
             $originalPrefix = config('cache.prefix');
-            config(['cache.prefix' => $originalPrefix . ":tenant:{$tenant->id}"]);
+            config(['cache.prefix' => $originalPrefix.":tenant:{$tenant->id}"]);
         }
     }
 
@@ -239,8 +247,8 @@ class ResolveTenantMiddleware
     private function configureTenantMail(Tenant $tenant): void
     {
         $mailSettings = $tenant->getSetting('mail', []);
-        
-        if (!empty($mailSettings)) {
+
+        if (! empty($mailSettings)) {
             config([
                 'mail.from.address' => $mailSettings['from_address'] ?? config('mail.from.address'),
                 'mail.from.name' => $mailSettings['from_name'] ?? $tenant->name,
@@ -260,7 +268,7 @@ class ResolveTenantMiddleware
                 'root' => storage_path("app/tenants/{$tenant->id}"),
                 'url' => env('APP_URL')."/storage/tenants/{$tenant->id}",
                 'visibility' => 'private',
-            ]
+            ],
         ]);
     }
 
@@ -270,12 +278,12 @@ class ResolveTenantMiddleware
     private function applyTenantCustomizations(Tenant $tenant): void
     {
         $branding = $tenant->branding ?? [];
-        
+
         // Share branding with views
         View::share('branding', $branding);
-        
+
         // Apply custom CSS variables
-        if (!empty($branding)) {
+        if (! empty($branding)) {
             $customCss = $this->generateCustomCss($branding);
             View::share('customCss', $customCss);
         }
@@ -287,17 +295,17 @@ class ResolveTenantMiddleware
     private function generateCustomCss(array $branding): string
     {
         $css = ':root {';
-        
+
         if (isset($branding['primary_color'])) {
             $css .= "--primary-color: {$branding['primary_color']};";
         }
-        
+
         if (isset($branding['secondary_color'])) {
             $css .= "--secondary-color: {$branding['secondary_color']};";
         }
-        
+
         $css .= '}';
-        
+
         return $css;
     }
 
@@ -310,7 +318,7 @@ class ResolveTenantMiddleware
             DB::statement('SET row_security = on');
             DB::statement('SET basketmanager.current_tenant_id = ?', [$tenant->id]);
         }
-        
+
         // For MySQL, we can use a session variable
         if (config('database.default') === 'mysql') {
             DB::statement('SET @current_tenant_id = ?', [$tenant->id]);
@@ -326,12 +334,12 @@ class ResolveTenantMiddleware
         if ($tenant->id === 'staging-tenant') {
             return;
         }
-        
+
         // Only log once per session to avoid spam (skip for API requests without session)
         if ($request->hasSession()) {
             $sessionKey = "tenant_access_logged_{$tenant->id}";
-            
-            if (!$request->session()->has($sessionKey)) {
+
+            if (! $request->session()->has($sessionKey)) {
                 $this->tenantService->logAccess($tenant, $request);
                 $request->session()->put($sessionKey, true);
             }
@@ -339,7 +347,7 @@ class ResolveTenantMiddleware
             // For API requests without session, log every time (but rate limit this in service)
             $this->tenantService->logAccess($tenant, $request);
         }
-        
+
         // Update tenant's last activity timestamp (only for real tenants)
         if ($tenant->exists) {
             $tenant->touch('last_activity_at');
@@ -351,7 +359,7 @@ class ResolveTenantMiddleware
      */
     private function createMockStagingTenant(): Tenant
     {
-        $mockTenant = new Tenant();
+        $mockTenant = new Tenant;
         $mockTenant->id = 'staging-tenant';
         $mockTenant->name = 'BasketManager Pro Staging';
         $mockTenant->slug = 'staging';
@@ -363,7 +371,7 @@ class ResolveTenantMiddleware
         $mockTenant->currency = 'EUR';
         $mockTenant->country_code = 'DE';
         $mockTenant->exists = true; // Mark as existing to avoid save attempts
-        
+
         return $mockTenant;
     }
 
@@ -378,7 +386,7 @@ class ResolveTenantMiddleware
                 'message' => 'Tenant could not be resolved from request',
             ], 404);
         }
-        
+
         // Redirect to tenant selection or main landing page
         if ($request->is('api/*')) {
             return response()->json([
@@ -386,7 +394,7 @@ class ResolveTenantMiddleware
                 'message' => 'Please specify a valid tenant in your request',
             ], 400);
         }
-        
+
         return response()->view('errors.tenant-not-found', [], 404);
     }
 
@@ -401,16 +409,30 @@ class ResolveTenantMiddleware
             'host' => $request->getHost(),
             'path' => $request->path(),
         ]);
-        
+
         if ($request->expectsJson()) {
             return response()->json([
                 'error' => 'tenant_error',
                 'message' => $e->getMessage(),
             ], 500);
         }
-        
+
         return response()->view('errors.tenant-error', [
-            'message' => $e->getMessage()
+            'message' => $e->getMessage(),
         ], 500);
+    }
+
+    /**
+     * Check if the authenticated user is a Super-Admin.
+     */
+    private function isSuperAdmin(Request $request): bool
+    {
+        // Check if user is authenticated
+        if (! $request->user()) {
+            return false;
+        }
+
+        // Check if user has the super_admin role
+        return $request->user()->hasRole('super_admin');
     }
 }

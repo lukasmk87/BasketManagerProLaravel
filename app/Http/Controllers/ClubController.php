@@ -21,13 +21,20 @@ class ClubController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        
-        // Get clubs based on user permissions
-        $clubs = Club::query()
+
+        // Start with base query
+        // Super-Admins: See ALL clubs from ALL tenants (bypass TenantScope)
+        // Admins: See all clubs from their tenant
+        // Club-Admins: See only clubs they're members of
+        $query = $user->hasRole('super_admin')
+            ? Club::allTenants()  // Remove TenantScope for Super-Admins
+            : Club::query();      // Normal query with TenantScope
+
+        $clubs = $query
             ->with(['teams', 'users'])
             ->withCount(['teams', 'users'])
             ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
-                // Super-Admin and Admin users see all clubs
+                // Super-Admin and Admin users see all clubs (within scope)
                 return $query;
             }, function ($query) use ($user) {
                 // Club-Admin and other users see only their clubs
@@ -66,7 +73,7 @@ class ClubController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'short_name' => 'nullable|string|max:10',
-            'founded_year' => 'nullable|integer|min:1850|max:' . date('Y'),
+            'founded_year' => 'nullable|integer|min:1850|max:'.date('Y'),
             'description' => 'nullable|string|max:1000',
             'website' => 'nullable|url|max:255',
             'email' => 'nullable|email|max:255',
@@ -138,7 +145,7 @@ class ClubController extends Controller
             'users' => function ($query) {
                 $query->withPivot('role', 'joined_at');
             },
-            'subscriptionPlan'
+            'subscriptionPlan',
         ]);
 
         $clubStats = $this->clubService->getClubStatistics($club);
@@ -191,7 +198,7 @@ class ClubController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'short_name' => 'nullable|string|max:10',
-            'founded_year' => 'nullable|integer|min:1850|max:' . date('Y'),
+            'founded_year' => 'nullable|integer|min:1850|max:'.date('Y'),
             'description' => 'nullable|string|max:1000',
             'website' => 'nullable|url|max:255',
             'email' => 'nullable|email|max:255',
@@ -291,11 +298,11 @@ class ClubController extends Controller
             \Log::error('Logo upload failed', [
                 'club_id' => $club->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->back()
-                ->withErrors(['logo' => 'Fehler beim Hochladen: ' . $e->getMessage()]);
+                ->withErrors(['logo' => 'Fehler beim Hochladen: '.$e->getMessage()]);
         }
     }
 
