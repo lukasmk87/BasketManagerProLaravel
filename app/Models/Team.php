@@ -236,7 +236,7 @@ class Team extends JetstreamTeam implements HasMedia
      */
     public function players(): BelongsToMany
     {
-        return $this->belongsToMany(Player::class)
+        return $this->belongsToMany(Player::class, 'player_team')
             ->withPivot([
                 'jersey_number', 'primary_position', 'secondary_positions',
                 'is_active', 'is_starter', 'is_captain', 'status',
