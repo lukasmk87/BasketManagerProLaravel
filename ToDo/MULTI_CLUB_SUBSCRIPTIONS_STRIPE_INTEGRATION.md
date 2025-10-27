@@ -2,11 +2,11 @@
 
 **Projekt:** BasketManager Pro - Mehrere Clubs pro Tenant mit individuellen Stripe-Subscriptions
 **Erstellt:** 2025-10-27
-**Zuletzt aktualisiert:** 2025-10-27 23:45
-**Status:** ✅ Phase 1 & 2 ABGESCHLOSSEN - 🚧 Phase 3 IN ARBEIT (75%)
+**Zuletzt aktualisiert:** 2025-10-28 00:15
+**Status:** ✅ Phase 1 & 2 ABGESCHLOSSEN - 🚧 Phase 3 IN ARBEIT (83%)
 **Priorität:** ⭐⭐⭐ Hoch
-**Geschätzte verbleibende Zeit:** ~2-3 Arbeitstage
-**Aktueller Fortschritt:** Phase 1: 100% (6/6) | Phase 2: 100% (8/8) | Phase 3: 75% (9/12) | Gesamt: ~70%
+**Geschätzte verbleibende Zeit:** ~1-2 Arbeitstage
+**Aktueller Fortschritt:** Phase 1: 100% (6/6) | Phase 2: 100% (8/8) | Phase 3: 83% (10/12) | Gesamt: ~75%
 ..
 ---
 
@@ -83,7 +83,7 @@ Ermöglichung von **mehreren Clubs pro Tenant**, wobei jeder Club seine eigene S
 
 #### ❌ **Was noch FEHLT:**
 
-3. **Frontend UI** (75% Complete - 9/12 Steps)
+3. **Frontend UI** (83% Complete - 10/12 Steps)
    - ✅ **Stripe.js Integration & Setup** (Dependencies, useStripe composable)
    - ✅ **Subscription Dashboard** (Club/Subscription/Index.vue mit Plan-Auswahl)
    - ✅ **Subscription Components** (SubscriptionOverview, PlanCard, BillingIntervalToggle)
@@ -92,7 +92,7 @@ Ermöglichung von **mehreren Clubs pro Tenant**, wobei jeder Club seine eigene S
    - ✅ **Payment Method Management UI** (PaymentMethodCard, PaymentMethodList, Modals, PaymentMethods.vue)
    - ✅ **Stripe Elements Integration** (Card, SEPA, Payment Element + 60+ Error Messages)
    - ✅ **Enhanced Stripe Components** (PaymentMethodIcon, TestCardSelector, ThreeDSecureModal)
-   - ❌ **Plan Swap Modal** (Proration Preview)
+   - ✅ **Plan Swap Modal** (Proration Preview mit PlanSwapModal Component)
    - ❌ **Navigation Updates** (Billing-Menü)
    - ❌ **Deutsche Lokalisierung** (Translation files)
    - ❌ **Testing & Polish** (Responsive, Loading states, Error handling)
@@ -2592,15 +2592,513 @@ const paymentElementOptions = computed(() => {
 
 ---
 
-#### ⏳ **Was noch FEHLT (3/12 Steps):**
+#### 3.7 Plan Swap Modal mit Proration Preview ✅ **ABGESCHLOSSEN**
 
-**3.7 Plan Swap Modal mit Proration Preview** (Ausstehend)
-- ❌ PlanSwapModal Component
-- ❌ Current vs New Plan Comparison
-- ❌ Proration Preview Display (Credits/Debits)
-- ❌ Line-Item Breakdown
-- ❌ Confirmation Flow
-- ❌ Integration mit `previewPlanSwap()` API
+**Implementiert am:** 2025-10-28 00:15
+
+**Dateien:**
+- `resources/js/Components/Club/Subscription/PlanSwapModal.vue` (460+ Zeilen) - Erstellt
+- `resources/js/Pages/Club/Subscription/Index.vue` (40 Zeilen geändert) - Aktualisiert
+- `resources/js/Components/Club/Subscription/PlanCard.vue` (50 Zeilen geändert) - Aktualisiert
+- `app/Http/Controllers/Stripe/ClubBillingController.php` (55 Zeilen hinzugefügt) - Aktualisiert
+- `routes/club_checkout.php` (6 Zeilen hinzugefügt) - Aktualisiert
+
+**3.7.1 PlanSwapModal Component**
+
+Interaktiver Modal für Plan-Wechsel mit detaillierter Proration-Vorschau:
+
+**Features:**
+- **Three-State UI:**
+  - Loading State: Proration-Daten werden geladen
+  - Error State: Fehlerbehandlung mit stripeErrors.js
+  - Success State: Plan erfolgreich gewechselt
+- **Plan Comparison:**
+  - Side-by-side Vergleich: Aktueller Plan ↔ Neuer Plan
+  - Feature-Differenzen hervorgehoben
+  - Preis-Vergleich mit Billing-Interval
+- **Proration Summary:**
+  - Upgrade/Downgrade Badge mit Farb-Codierung
+  - Credit-Berechnung für ungenutzten Zeitraum
+  - Debit-Berechnung für neuen Plan
+  - Netto-Betrag (Charge/Refund)
+  - Next Billing Date mit vollständigem Betrag
+- **Line-Item Breakdown:**
+  - Collapsible Details-Tabelle
+  - Alle Stripe Line Items formatiert
+  - Einzelpreise und Gesamtbeträge
+  - Deutsche Währungsformatierung
+- **Confirmation Flow:**
+  - "Vorschau anzeigen" → "Plan wechseln" Button
+  - Loading Spinner während API-Call
+  - Success Event mit Plan-Daten
+  - Cancel Button mit Event
+
+**Props:**
+```javascript
+{
+    show: Boolean,              // Modal Visibility
+    clubId: [String, Number],   // Club ID für API-Calls
+    currentPlan: Object,        // Aktueller ClubSubscriptionPlan
+    newPlan: Object,            // Neuer ClubSubscriptionPlan
+    billingInterval: String,    // 'monthly' | 'yearly'
+    currentBillingInterval: String // Aktuelles Interval (für Wechsel)
+}
+```
+
+**Events:**
+```javascript
+emit('close')                   // Modal schließen
+emit('confirmed', { plan, billingInterval }) // Plan gewechselt
+```
+
+**API Integration:**
+```javascript
+// Preview API Call
+const fetchPreview = async () => {
+    const response = await axios.post(
+        route('club.billing.preview-plan-swap', { club: props.clubId }),
+        {
+            new_plan_id: props.newPlan.id,
+            billing_interval: props.billingInterval,
+            proration_behavior: 'create_prorations',
+        }
+    );
+    previewData.value = response.data.preview;
+};
+
+// Swap API Call
+const handleSwap = async () => {
+    await axios.post(
+        route('club.subscription.swap', { club: props.clubId }),
+        {
+            new_plan_id: props.newPlan.id,
+            billing_interval: props.billingInterval,
+            proration_behavior: 'create_prorations',
+        }
+    );
+    emit('confirmed', { plan: props.newPlan, billingInterval: props.billingInterval });
+};
+```
+
+**Proration Data Structure:**
+```javascript
+{
+    is_upgrade: true,
+    is_downgrade: false,
+    current_plan: {
+        name: 'Standard Club',
+        price: 4900,
+        currency: 'EUR',
+        features: [...],
+        limits: { max_teams: 10, max_players: 150 }
+    },
+    new_plan: {
+        name: 'Premium Club',
+        price: 14900,
+        currency: 'EUR',
+        features: [...],
+        limits: { max_teams: 50, max_players: 500 }
+    },
+    proration: {
+        credit: 2450,        // Credit für ungenutzten Zeitraum (49€ / 2)
+        debit: 7450,         // Debit für neuen Plan (149€ / 2)
+        amount: 5000,        // Netto-Charge (7450 - 2450 = 50€)
+        currency: 'EUR'
+    },
+    line_items: [
+        {
+            description: 'Remaining time on Standard Club after 15 Oct 2025',
+            amount: -2450,
+            currency: 'EUR',
+            quantity: 1,
+            proration: true
+        },
+        {
+            description: 'Premium Club (prorated)',
+            amount: 7450,
+            currency: 'EUR',
+            quantity: 1,
+            proration: true
+        }
+    ],
+    next_billing: {
+        date: '2025-11-15T00:00:00Z',
+        amount: 14900,
+        currency: 'EUR',
+        description: 'Ab 15 Nov 2025 zahlen Sie monatlich 149,00 €'
+    }
+}
+```
+
+**UI Layout:**
+```vue
+<Modal :show="show" @close="$emit('close')" max-width="4xl">
+    <!-- Header -->
+    <template #title>
+        <div>Plan wechseln</div>
+        <div v-if="previewData?.is_upgrade" class="badge badge-green">↑ Upgrade</div>
+        <div v-if="previewData?.is_downgrade" class="badge badge-blue">↓ Downgrade</div>
+    </template>
+
+    <!-- Plan Comparison -->
+    <div class="grid grid-cols-2 gap-6">
+        <!-- Current Plan Card -->
+        <div class="plan-card current">
+            <h4>Aktueller Plan</h4>
+            <h3>{{ currentPlan.name }}</h3>
+            <p class="price">{{ formatPrice(currentPlan.price) }} / Monat</p>
+            <ul class="features">...</ul>
+        </div>
+
+        <!-- Arrow -->
+        <div class="arrow">→</div>
+
+        <!-- New Plan Card -->
+        <div class="plan-card new">
+            <h4>Neuer Plan</h4>
+            <h3>{{ newPlan.name }}</h3>
+            <p class="price">{{ formatPrice(newPlan.price) }} / Monat</p>
+            <ul class="features">...</ul>
+        </div>
+    </div>
+
+    <!-- Proration Summary -->
+    <div class="proration-summary">
+        <h4>Kostenübersicht</h4>
+        <div class="row">
+            <span>Gutschrift (ungenutzter Zeitraum)</span>
+            <span>-{{ formatCurrency(proration.credit) }}</span>
+        </div>
+        <div class="row">
+            <span>Belastung (neuer Plan, anteilig)</span>
+            <span>+{{ formatCurrency(proration.debit) }}</span>
+        </div>
+        <div class="row total">
+            <span>Heute zu zahlen</span>
+            <span>{{ formatCurrency(proration.amount) }}</span>
+        </div>
+    </div>
+
+    <!-- Line Items (Collapsible) -->
+    <details class="line-items">
+        <summary>Details anzeigen</summary>
+        <table>
+            <tr v-for="item in lineItems" :key="item.id">
+                <td>{{ item.description }}</td>
+                <td>{{ formatCurrency(item.amount) }}</td>
+            </tr>
+        </table>
+    </details>
+
+    <!-- Next Billing -->
+    <div class="next-billing">
+        <p>Ab {{ formatDate(nextBilling.date) }} zahlen Sie {{ formatCurrency(nextBilling.amount) }} / Monat</p>
+    </div>
+
+    <!-- Important Notes -->
+    <div class="important-notes">
+        <ul>
+            <li>Die Änderung wird sofort wirksam</li>
+            <li>Anteilige Rückerstattung/Belastung erfolgt automatisch</li>
+            <li>Ihre Zahlungsmethode wird belastet</li>
+            <li>Nächste reguläre Abrechnung: {{ formatDate(nextBilling.date) }}</li>
+        </ul>
+    </div>
+
+    <!-- Footer Buttons -->
+    <template #footer>
+        <SecondaryButton @click="$emit('close')">Abbrechen</SecondaryButton>
+        <PrimaryButton @click="handleSwap" :disabled="swapping || !previewData">
+            <Spinner v-if="swapping" />
+            <span v-else>Plan wechseln ({{ formatCurrency(proration.amount) }})</span>
+        </PrimaryButton>
+    </template>
+</Modal>
+```
+
+**3.7.2 Subscription/Index.vue Integration**
+
+**Changes Made:**
+```javascript
+// 1. Import PlanSwapModal
+import PlanSwapModal from '@/Components/Club/Subscription/PlanSwapModal.vue';
+
+// 2. Add State Variables
+const showSwapModal = ref(false);
+const selectedNewPlan = ref(null);
+const currentBillingInterval = ref('monthly');
+
+// 3. Update handlePlanSelection Logic
+const handlePlanSelection = (plan) => {
+    // Check if user has active subscription
+    if (props.has_active_subscription && props.current_plan) {
+        // Open swap modal for proration preview
+        selectedNewPlan.value = plan;
+        showSwapModal.value = true;
+    } else {
+        // Normal checkout flow for new subscriptions
+        initiateCheckout(plan);
+    }
+};
+
+// 4. Handle Plan Swap Confirmation
+const handlePlanSwapConfirmed = (data) => {
+    showSwapModal.value = false;
+    selectedNewPlan.value = null;
+
+    // Reload the page to show updated subscription
+    router.reload({
+        onSuccess: () => {
+            alert(`Plan erfolgreich gewechselt zu ${data.plan.name}!`);
+        },
+    });
+};
+
+// 5. Update PlanCard Event Handler
+<PlanCard @subscribe="handlePlanSelection" />
+
+// 6. Add Modal to Template
+<PlanSwapModal
+    v-if="selectedNewPlan"
+    :show="showSwapModal"
+    :club-id="club.id"
+    :current-plan="current_plan"
+    :new-plan="selectedNewPlan"
+    :billing-interval="billingInterval"
+    :current-billing-interval="currentBillingInterval"
+    @close="showSwapModal = false"
+    @confirmed="handlePlanSwapConfirmed"
+/>
+```
+
+**Flow:**
+```
+User clicks Plan Card Button
+         ↓
+handlePlanSelection(plan)
+         ↓
+    Has Active Subscription?
+    ├─ No → initiateCheckout(plan)
+    │        ↓
+    │   Stripe Checkout
+    │
+    └─ Yes → Open PlanSwapModal
+              ↓
+         Fetch Proration Preview
+              ↓
+         Show Cost Breakdown
+              ↓
+         User Confirms
+              ↓
+         Execute swapPlan()
+              ↓
+         Reload Page with Success Message
+```
+
+**3.7.3 PlanCard.vue Button Text Updates**
+
+**New Props:**
+```javascript
+{
+    currentPlan: Object,           // Current ClubSubscriptionPlan
+    hasActiveSubscription: Boolean // User has active subscription
+}
+```
+
+**Computed Properties:**
+```javascript
+// Is this an upgrade? (Higher price)
+const isUpgrade = computed(() => {
+    if (!props.currentPlan || props.isCurrentPlan || !props.hasActiveSubscription) return false;
+    return props.plan.price > props.currentPlan.price;
+});
+
+// Is this a downgrade? (Lower price, but not free)
+const isDowngrade = computed(() => {
+    if (!props.currentPlan || props.isCurrentPlan || !props.hasActiveSubscription) return false;
+    return props.plan.price < props.currentPlan.price && props.plan.price > 0;
+});
+
+// Switching to free plan?
+const isSwitchToFree = computed(() => {
+    if (!props.currentPlan || props.isCurrentPlan || !props.hasActiveSubscription) return false;
+    return props.plan.price === 0;
+});
+
+// Dynamic Button Text
+const buttonText = computed(() => {
+    if (props.isCurrentPlan) {
+        return 'Aktueller Plan';
+    }
+
+    if (!props.hasActiveSubscription) {
+        return props.plan.price === 0 ? 'Plan auswählen' : 'Jetzt abonnieren';
+    }
+
+    // User has active subscription and wants to change
+    if (isUpgrade.value) {
+        return `↑ Auf ${props.plan.name} upgraden`;
+    }
+
+    if (isDowngrade.value) {
+        return `↓ Zu ${props.plan.name} wechseln`;
+    }
+
+    if (isSwitchToFree.value) {
+        return 'Zu kostenlosem Plan wechseln';
+    }
+
+    return 'Plan wechseln';
+});
+```
+
+**Button Styling:**
+```vue
+<PrimaryButton
+    @click="handleAction"
+    :class="[
+        { 'opacity-50 cursor-not-allowed': loading },
+        isUpgrade ? 'bg-green-600 hover:bg-green-700' : '',
+        isDowngrade ? 'bg-blue-600 hover:bg-blue-700' : ''
+    ]"
+>
+    {{ buttonText }}
+</PrimaryButton>
+```
+
+**Examples:**
+- **No Subscription:** "Jetzt abonnieren" / "Plan auswählen"
+- **Current Plan:** "Aktueller Plan" (Disabled)
+- **Upgrade:** "↑ Auf Premium upgraden" (Green)
+- **Downgrade:** "↓ Zu Standard wechseln" (Blue)
+- **Switch to Free:** "Zu kostenlosem Plan wechseln"
+
+**3.7.4 Backend Endpoint: swapPlan()**
+
+**Route:**
+```php
+// In club_checkout.php
+Route::post('/club/{club}/billing/swap-plan', [ClubBillingController::class, 'swapPlan'])
+    ->name('club.billing.swap-plan');
+
+// Legacy route for backward compatibility
+Route::post('/club/{club}/subscription/swap', [ClubBillingController::class, 'swapPlan'])
+    ->name('club.subscription.swap');
+```
+
+**Controller Method:**
+```php
+/**
+ * Execute plan swap (upgrade/downgrade).
+ */
+public function swapPlan(Request $request, Club $club): JsonResponse
+{
+    try {
+        // Authorize
+        $this->authorize('manageBilling', $club);
+
+        // Validate request
+        $validated = $request->validate([
+            'new_plan_id' => 'required|exists:club_subscription_plans,id',
+            'billing_interval' => 'sometimes|in:monthly,yearly',
+            'proration_behavior' => 'sometimes|in:create_prorations,none,always_invoice',
+        ]);
+
+        $newPlan = ClubSubscriptionPlan::findOrFail($validated['new_plan_id']);
+
+        // Validate plan belongs to same tenant
+        if ($newPlan->tenant_id !== $club->tenant_id) {
+            return response()->json([
+                'error' => 'Plan does not belong to club\'s tenant',
+            ], 403);
+        }
+
+        // Execute the swap
+        $this->subscriptionService->swapPlan($club, $newPlan, [
+            'billing_interval' => $validated['billing_interval'] ?? 'monthly',
+            'proration_behavior' => $validated['proration_behavior'] ?? 'create_prorations',
+        ]);
+
+        // Reload club to get updated subscription
+        $club->refresh();
+
+        return response()->json([
+            'message' => 'Plan swapped successfully',
+            'club_id' => $club->id,
+            'new_plan_id' => $newPlan->id,
+            'new_plan_name' => $newPlan->name,
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Failed to swap plan', [
+            'club_id' => $club->id,
+            'new_plan_id' => $request->input('new_plan_id'),
+            'error' => $e->getMessage(),
+            'user_id' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'error' => 'Failed to swap plan: '.$e->getMessage(),
+        ], 500);
+    }
+}
+```
+
+**Authorization:**
+- Uses `ClubPolicy::manageBilling()` via `$this->authorize()`
+- Requires user to be Club Admin or Super Admin
+
+**Validation:**
+- `new_plan_id`: Must exist in `club_subscription_plans` table
+- `billing_interval`: Optional, defaults to 'monthly'
+- `proration_behavior`: Optional, defaults to 'create_prorations'
+- Plan must belong to same tenant as club
+
+**Service Integration:**
+```php
+// ClubSubscriptionService::swapPlan() is called
+// Already implemented in Phase 2
+$this->subscriptionService->swapPlan($club, $newPlan, [
+    'billing_interval' => 'monthly',
+    'proration_behavior' => 'create_prorations',
+]);
+```
+
+**Response:**
+```json
+{
+    "message": "Plan swapped successfully",
+    "club_id": 123,
+    "new_plan_id": 456,
+    "new_plan_name": "Premium Club"
+}
+```
+
+**Error Handling:**
+- Returns 403 if plan belongs to different tenant
+- Returns 500 if Stripe API fails
+- Logs all errors with context (club_id, user_id, error message)
+
+**Ergebnisse:**
+- ✅ PlanSwapModal.vue Component (~460 Zeilen)
+- ✅ Proration Preview Display (Credits/Debits/Line Items)
+- ✅ Side-by-Side Plan Comparison
+- ✅ Upgrade/Downgrade Badge mit Farb-Codierung
+- ✅ Collapsible Line-Item Breakdown
+- ✅ Next Billing Date Display
+- ✅ Important Notes Section
+- ✅ Three-State UI (Loading/Error/Success)
+- ✅ Integration mit Subscription/Index.vue
+- ✅ Dynamic Button Text in PlanCard.vue
+- ✅ Backend swapPlan() Endpoint
+- ✅ Route Configuration (2 Routes)
+- ✅ Authorization & Validation
+- ✅ Error Handling mit stripeErrors.js
+- ✅ German Localization
+- ✅ Full Stripe Proration API Integration
+
+---
+
+#### ⏳ **Was noch FEHLT (3/12 Steps):**
 
 **3.8 Navigation Updates** (Ausstehend)
 - ❌ Add "Billing" Menu Item zu Club Navigation
@@ -2766,14 +3264,14 @@ test('webhook ignores invalid events')
 | └─ 2.6 Webhook-Handler Extended | ✅ Abgeschlossen | 0.25 Tage | 0.0625 Tage | 100% |
 | └─ 2.7 ClubPolicy Extended | ✅ Abgeschlossen | 0.1 Tage | 0.05 Tage | 100% |
 | └─ 2.8 Stripe Config Extended | ✅ Abgeschlossen | 0.1 Tage | 0.05 Tage | 100% |
-| **Phase 3: Frontend UI** | 🚧 In Arbeit | 3-4 Tage | 0.5 Tage | **50%** (6/12 Steps) |
+| **Phase 3: Frontend UI** | 🚧 In Arbeit | 3-4 Tage | 0.5625 Tage | **83%** (10/12 Steps) |
 | └─ 3.1 Stripe.js Integration & Setup | ✅ Abgeschlossen | 0.5 Tage | 0.125 Tage | 100% |
 | └─ 3.2 Subscription Dashboard & Components | ✅ Abgeschlossen | 1 Tag | 0.25 Tage | 100% |
 | └─ 3.3 Checkout Success & Cancel Pages | ✅ Abgeschlossen | 0.25 Tage | 0.0625 Tage | 100% |
 | └─ 3.4 Invoice Management UI | ✅ Abgeschlossen | 0.5 Tage | 0.125 Tage | 100% |
-| └─ 3.5 Payment Method Management UI | ⏳ Ausstehend | 0.5 Tage | - | 0% |
-| └─ 3.6 Stripe Elements Integration | ⏳ Ausstehend | 0.5 Tage | - | 0% |
-| └─ 3.7 Plan Swap Modal | ⏳ Ausstehend | 0.25 Tage | - | 0% |
+| └─ 3.5 Payment Method Management UI | ✅ Abgeschlossen | 0.5 Tage | 0.125 Tage | 100% |
+| └─ 3.6 Stripe Elements Integration | ✅ Abgeschlossen | 0.5 Tage | 0.125 Tage | 100% |
+| └─ 3.7 Plan Swap Modal | ✅ Abgeschlossen | 0.25 Tage | 0.0625 Tage | 100% |
 | └─ 3.8 Navigation Updates | ⏳ Ausstehend | 0.1 Tage | - | 0% |
 | └─ 3.9 Deutsche Lokalisierung | ⏳ Ausstehend | 0.25 Tage | - | 0% |
 | └─ 3.10 Testing & Polish | ⏳ Ausstehend | 0.5 Tage | - | 0% |
@@ -2861,10 +3359,7 @@ test('webhook ignores invalid events')
   9. `resources/js/Pages/Club/Checkout/Cancel.vue`
   10. `resources/js/Pages/Club/Billing/Invoices.vue`
 
-- ⏭️ **Nächste Schritte (6 Steps verbleibend):**
-  - 3.5 Payment Method Management UI (PaymentMethods.vue + Components)
-  - 3.6 Stripe Elements Integration (Card & SEPA Elements)
-  - 3.7 Plan Swap Modal mit Proration Preview
+- ⏭️ **Nächste Schritte (3 Steps verbleibend):**
   - 3.8 Navigation Updates (Billing-Menü)
   - 3.9 Deutsche Lokalisierung (Translation files)
   - 3.10 Testing & Polish (Responsive, Error Handling, a11y)
