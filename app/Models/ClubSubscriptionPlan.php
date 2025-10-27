@@ -33,6 +33,13 @@ class ClubSubscriptionPlan extends Model
         'sort_order',
         'color',
         'icon',
+        // Stripe integration fields
+        'stripe_product_id',
+        'stripe_price_id_monthly',
+        'stripe_price_id_yearly',
+        'is_stripe_synced',
+        'last_stripe_sync_at',
+        'trial_period_days',
     ];
 
     /**
@@ -45,6 +52,10 @@ class ClubSubscriptionPlan extends Model
         'is_active' => 'boolean',
         'is_default' => 'boolean',
         'sort_order' => 'integer',
+        // Stripe integration casts
+        'is_stripe_synced' => 'boolean',
+        'last_stripe_sync_at' => 'datetime',
+        'trial_period_days' => 'integer',
     ];
 
     /**
@@ -264,5 +275,81 @@ class ClubSubscriptionPlan extends Model
     public function getLimitsList(): array
     {
         return $this->limits ?? [];
+    }
+
+    // =============================
+    // STRIPE INTEGRATION METHODS
+    // =============================
+
+    /**
+     * Check if plan is synced with Stripe.
+     */
+    public function isSyncedWithStripe(): bool
+    {
+        return $this->is_stripe_synced
+            && $this->stripe_product_id
+            && ($this->stripe_price_id_monthly || $this->stripe_price_id_yearly);
+    }
+
+    /**
+     * Check if plan needs Stripe sync.
+     */
+    public function needsStripeSync(): bool
+    {
+        // If never synced, needs sync
+        if (!$this->is_stripe_synced) {
+            return true;
+        }
+
+        // If synced but missing critical Stripe IDs, needs sync
+        if (!$this->stripe_product_id || (!$this->stripe_price_id_monthly && !$this->stripe_price_id_yearly)) {
+            return true;
+        }
+
+        // If plan was updated after last sync, needs sync
+        if ($this->last_stripe_sync_at && $this->updated_at > $this->last_stripe_sync_at) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Mark plan as synced with Stripe.
+     */
+    public function markAsSynced(): void
+    {
+        $this->update([
+            'is_stripe_synced' => true,
+            'last_stripe_sync_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark plan as needing sync.
+     */
+    public function markAsNeedingSync(): void
+    {
+        $this->update([
+            'is_stripe_synced' => false,
+        ]);
+    }
+
+    /**
+     * Get Stripe Price ID for billing interval.
+     */
+    public function getStripePriceId(string $interval = 'monthly'): ?string
+    {
+        return $interval === 'yearly'
+            ? $this->stripe_price_id_yearly
+            : $this->stripe_price_id_monthly;
+    }
+
+    /**
+     * Check if plan has trial period.
+     */
+    public function hasTrialPeriod(): bool
+    {
+        return $this->trial_period_days > 0;
     }
 }

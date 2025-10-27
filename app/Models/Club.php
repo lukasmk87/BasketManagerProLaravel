@@ -85,6 +85,18 @@ class Club extends Model implements HasMedia
         'social_media_twitter',
         'privacy_policy_url',
         'terms_of_service_url',
+        // Stripe subscription fields
+        'stripe_customer_id',
+        'stripe_subscription_id',
+        'subscription_status',
+        'subscription_started_at',
+        'subscription_trial_ends_at',
+        'subscription_ends_at',
+        'subscription_current_period_start',
+        'subscription_current_period_end',
+        'billing_email',
+        'billing_address',
+        'payment_method_id',
     ];
 
     /**
@@ -116,6 +128,13 @@ class Club extends Model implements HasMedia
         'requires_approval' => 'boolean',
         'membership_fee_annual' => 'decimal:2',
         'membership_fee_monthly' => 'decimal:2',
+        // Stripe subscription casts
+        'subscription_started_at' => 'datetime',
+        'subscription_trial_ends_at' => 'datetime',
+        'subscription_ends_at' => 'datetime',
+        'subscription_current_period_start' => 'datetime',
+        'subscription_current_period_end' => 'datetime',
+        'billing_address' => 'array',
     ];
 
     /**
@@ -703,6 +722,77 @@ class Club extends Model implements HasMedia
     public function removePlan(): void
     {
         $this->update(['club_subscription_plan_id' => null]);
+    }
+
+    // ============================
+    // STRIPE SUBSCRIPTION HELPER METHODS
+    // ============================
+
+    /**
+     * Check if club has an active Stripe subscription.
+     */
+    public function hasActiveSubscription(): bool
+    {
+        return $this->stripe_subscription_id
+            && in_array($this->subscription_status, ['active', 'trialing']);
+    }
+
+    /**
+     * Check if club is currently in trial period.
+     */
+    public function isOnTrial(): bool
+    {
+        return $this->subscription_status === 'trialing'
+            || ($this->subscription_status === 'trial' && $this->subscription_trial_ends_at && $this->subscription_trial_ends_at->isFuture());
+    }
+
+    /**
+     * Check if subscription is active (alias for hasActiveSubscription).
+     */
+    public function subscriptionIsActive(): bool
+    {
+        return $this->hasActiveSubscription();
+    }
+
+    /**
+     * Check if subscription is canceled or will be canceled at period end.
+     */
+    public function subscriptionIsCanceled(): bool
+    {
+        return $this->subscription_status === 'canceled'
+            || ($this->subscription_ends_at && $this->subscription_ends_at->isFuture());
+    }
+
+    /**
+     * Check if subscription is past due (payment failed).
+     */
+    public function subscriptionIsPastDue(): bool
+    {
+        return $this->subscription_status === 'past_due';
+    }
+
+    /**
+     * Get days remaining in trial period.
+     */
+    public function trialDaysRemaining(): int
+    {
+        if (!$this->isOnTrial() || !$this->subscription_trial_ends_at) {
+            return 0;
+        }
+
+        return max(0, now()->diffInDays($this->subscription_trial_ends_at, false));
+    }
+
+    /**
+     * Get days remaining in current billing period.
+     */
+    public function billingDaysRemaining(): int
+    {
+        if (!$this->subscription_current_period_end) {
+            return 0;
+        }
+
+        return max(0, now()->diffInDays($this->subscription_current_period_end, false));
     }
 
     // ============================
