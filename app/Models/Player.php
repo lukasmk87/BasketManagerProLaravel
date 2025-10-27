@@ -43,7 +43,7 @@ class Player extends Model implements HasMedia
         // jersey_number, primary_position, secondary_positions, is_starter, is_captain
         // contract_start, contract_end, registration_number, is_registered, registered_at
         // games_played, games_started, minutes_played, points_scored
-        
+
         'height_cm',
         'weight_kg',
         'dominant_hand',
@@ -103,6 +103,9 @@ class Player extends Model implements HasMedia
         'social_media',
         'allow_photos',
         'allow_media_interviews',
+        'pending_team_assignment',
+        'registered_via_invitation_id',
+        'registration_completed_at',
     ];
 
     /**
@@ -156,6 +159,8 @@ class Player extends Model implements HasMedia
         'social_media' => 'array',
         'allow_photos' => 'boolean',
         'allow_media_interviews' => 'boolean',
+        'pending_team_assignment' => 'boolean',
+        'registration_completed_at' => 'datetime',
     ];
 
     /**
@@ -250,6 +255,14 @@ class Player extends Model implements HasMedia
     public function gameActions(): HasMany
     {
         return $this->hasMany(GameAction::class);
+    }
+
+    /**
+     * Get the invitation used for registration (if registered via invitation).
+     */
+    public function registeredViaInvitation(): BelongsTo
+    {
+        return $this->belongsTo(PlayerRegistrationInvitation::class, 'registered_via_invitation_id');
     }
 
     // ============================
