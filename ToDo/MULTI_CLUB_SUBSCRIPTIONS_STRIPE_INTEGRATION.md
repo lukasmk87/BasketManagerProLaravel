@@ -2,12 +2,12 @@
 
 **Projekt:** BasketManager Pro - Mehrere Clubs pro Tenant mit individuellen Stripe-Subscriptions
 **Erstellt:** 2025-10-27
-**Zuletzt aktualisiert:** 2025-10-27 17:30
-**Status:** 🔄 In Bearbeitung - Phase 1.2 abgeschlossen
+**Zuletzt aktualisiert:** 2025-10-27 21:15
+**Status:** ✅ Phase 1 ABGESCHLOSSEN - Phase 2 bereit
 **Priorität:** ⭐⭐⭐ Hoch
-**Geschätzte verbleibende Zeit:** ~13-19 Arbeitstage
-**Aktueller Fortschritt:** Phase 1: 30% (2 von 6 Steps)
-
+**Geschätzte verbleibende Zeit:** ~11-15 Arbeitstage
+**Aktueller Fortschritt:** Phase 1: 100% (6 von 6 Steps) | Gesamt: ~12%
+..
 ---
 
 ## 📋 Executive Summary
@@ -38,14 +38,20 @@ Ermöglichung von **mehreren Clubs pro Tenant**, wobei jeder Club seine eigene S
    - ✅ Feature-Hierarchie: Tenant → Club → Team
    - ✅ Limit-Hierarchie: `min(tenant_limit, club_limit)`
 
-#### ❌ **Was FEHLT (Hauptziel dieser Dokumentation):**
+#### ✅ **Was JETZT implementiert ist (Phase 1 - 100% Complete):**
 
-1. **Stripe Integration auf Club-Ebene** (30% Complete)
+1. **Stripe Integration auf Club-Ebene** (100% Complete)
    - ✅ **Stripe-Felder in Datenbank** (`clubs` und `club_subscription_plans` Tabellen erweitert)
    - ✅ **Model-Erweiterungen** (Club & ClubSubscriptionPlan mit Helper-Methoden)
    - ✅ **ClubStripeCustomerService** (Stripe Customer Management für Clubs)
-   - ❌ Kein Checkout-Flow für Club-Subscriptions
-   - ❌ Keine Webhook-Handler für Club-Events
+   - ✅ **ClubSubscriptionCheckoutService** (Checkout-Flow für Club-Subscriptions)
+   - ✅ **ClubSubscriptionService** (Plan-Verwaltung, Cancellation, Swapping, Stripe-Sync)
+   - ✅ **ClubSubscriptionWebhookController** (6 Webhook-Handler für Stripe-Events)
+   - ✅ **ClubCheckoutController** (HTTP-Layer für Checkout & Billing-Portal)
+   - ✅ **Routes** (Checkout, Success, Cancel, Billing-Portal, Webhooks)
+   - ✅ **Feature-Tests** (ClubCheckoutFlowTest, ClubSubscriptionLifecycleTest)
+
+#### ❌ **Was noch FEHLT:**
 
 2. **Billing & Payment** (0% Complete)
    - ❌ Keine Invoice-Management für Clubs
@@ -61,10 +67,15 @@ Ermöglichung von **mehreren Clubs pro Tenant**, wobei jeder Club seine eigene S
    - ❌ Kein Usage-Tracking auf Club-Ebene
    - ❌ Keine Metriken/Analytics
 
-5. **Tests** (20% Complete)
-   - ✅ Basis-Model-Tests vorhanden
-   - ❌ Keine Stripe-Webhook-Tests
-   - ❌ Keine E2E-Tests für Checkout-Flow
+5. **Tests** (60% Complete)
+   - ✅ Unit Tests für ClubStripeCustomerService (11 Tests)
+   - ✅ Unit Tests für ClubSubscriptionCheckoutService (8 Tests)
+   - ✅ Unit Tests für ClubSubscriptionService (9 Tests)
+   - ✅ Feature Tests für ClubCheckoutFlow (11 Tests)
+   - ✅ Feature Tests für ClubSubscriptionLifecycle (9 Tests)
+   - ✅ Feature Tests für ClubStripeCustomer (7 Tests)
+   - ❌ Keine Integration-Tests für Stripe-Webhooks
+   - ❌ Keine E2E-Tests für kompletten Checkout-Flow mit echtem Stripe
 
 ---
 
@@ -146,7 +157,7 @@ Tenant "Bayerischer Basketball Verband"
 Die Implementierung ist in **8 Phasen** unterteilt, mit klaren Prioritäten:
 
 ### **Phase 1: Stripe Integration für Clubs** (Priorität: 🔴 KRITISCH)
-**Dauer:** 3-4 Tage | **Status:** 🔄 In Bearbeitung (30% Complete)
+**Dauer:** 3-4 Tage | **Status:** ✅ ABGESCHLOSSEN (100% Complete)
 
 #### 1.1 Database Schema erweitern ✅ **ABGESCHLOSSEN**
 
@@ -474,7 +485,9 @@ class ClubStripeCustomerService
 
 ---
 
-#### 1.3 Service: `ClubSubscriptionCheckoutService` ⏳ **AUSSTEHEND**
+#### 1.3 Service: `ClubSubscriptionCheckoutService` ✅ **ABGESCHLOSSEN**
+
+**Implementiert am:** 2025-10-27 21:15
 
 **Datei:** `app/Services/Stripe/ClubSubscriptionCheckoutService.php`
 
@@ -617,7 +630,9 @@ class ClubSubscriptionCheckoutService
 
 ---
 
-#### 1.4 Service: `ClubSubscriptionService` ⏳ **AUSSTEHEND**
+#### 1.4 Service: `ClubSubscriptionService` ✅ **ABGESCHLOSSEN**
+
+**Implementiert am:** 2025-10-27 21:15
 
 **Datei:** `app/Services/Stripe/ClubSubscriptionService.php`
 
@@ -909,7 +924,9 @@ class ClubSubscriptionService
 
 ---
 
-#### 1.5 Webhook-Handler: `ClubSubscriptionWebhookController` ⏳ **AUSSTEHEND**
+#### 1.5 Webhook-Handler: `ClubSubscriptionWebhookController` ✅ **ABGESCHLOSSEN**
+
+**Implementiert am:** 2025-10-27 21:15
 
 **Datei:** `app/Http/Controllers/Webhooks/ClubSubscriptionWebhookController.php`
 
@@ -1138,9 +1155,13 @@ class ClubSubscriptionWebhookController extends Controller
 
 ---
 
-#### 1.6 Routes für Stripe-Integration ⏳ **AUSSTEHEND**
+#### 1.6 Routes + Controller für Stripe-Integration ✅ **ABGESCHLOSSEN**
 
-**Datei:** `routes/club_checkout.php`
+**Implementiert am:** 2025-10-27 21:15
+
+**Dateien:**
+- `routes/club_checkout.php`
+- `app/Http/Controllers/Stripe/ClubCheckoutController.php`
 
 ```php
 <?php
@@ -1301,13 +1322,13 @@ test('webhook ignores invalid events')
 
 | Phase | Status | Geschätzte Dauer | Tatsächliche Dauer | Fortschritt |
 |-------|--------|------------------|-----------------------|-------------|
-| **Phase 1: Stripe Integration** | 🔄 In Bearbeitung | 3-4 Tage | 1 Tag | **30%** (2/6 Steps) |
+| **Phase 1: Stripe Integration** | ✅ Abgeschlossen | 3-4 Tage | 1.5 Tage | **100%** (6/6 Steps) |
 | └─ 1.1 Database Schema | ✅ Abgeschlossen | 0.5 Tage | 0.5 Tage | 100% |
 | └─ 1.2 ClubStripeCustomerService | ✅ Abgeschlossen | 0.5 Tage | 0.5 Tage | 100% |
-| └─ 1.3 ClubSubscriptionCheckoutService | ⏳ Ausstehend | 0.5 Tage | - | 0% |
-| └─ 1.4 ClubSubscriptionService | ⏳ Ausstehend | 1 Tag | - | 0% |
-| └─ 1.5 Webhook-Handler | ⏳ Ausstehend | 0.5 Tage | - | 0% |
-| └─ 1.6 Routes | ⏳ Ausstehend | 0.25 Tage | - | 0% |
+| └─ 1.3 ClubSubscriptionCheckoutService | ✅ Abgeschlossen | 0.5 Tage | 0.5 Tage | 100% |
+| └─ 1.4 ClubSubscriptionService | ✅ Abgeschlossen | 1 Tag | 0.5 Tage | 100% |
+| └─ 1.5 Webhook-Handler | ✅ Abgeschlossen | 0.5 Tage | 0.25 Tage | 100% |
+| └─ 1.6 Routes + Controller | ✅ Abgeschlossen | 0.25 Tage | 0.25 Tage | 100% |
 | **Phase 2: Billing & Payment** | ⏳ Ausstehend | 2-3 Tage | - | 0% |
 | **Phase 3: Frontend UI** | ⏳ Ausstehend | 3-4 Tage | - | 0% |
 | **Phase 4: Usage Tracking** | ⏳ Ausstehend | 2 Tage | - | 0% |
@@ -1315,7 +1336,7 @@ test('webhook ignores invalid events')
 | **Phase 6: Testing** | ⏳ Ausstehend | 2-3 Tage | - | 0% |
 | **Phase 7: Dokumentation** | ⏳ Ausstehend | 1 Tag | - | 0% |
 | **Phase 8: Migration & Rollout** | ⏳ Ausstehend | 1-2 Tage | - | 0% |
-| **GESAMT** | **~4%** | **15-21 Tage** | **1 Tag** | 🟩⬜⬜⬜⬜⬜⬜⬜⬜⬜ |
+| **GESAMT** | **~12%** | **15-21 Tage** | **1.5 Tage** | 🟩🟩⬜⬜⬜⬜⬜⬜⬜⬜ |
 
 ---
 
@@ -1338,6 +1359,48 @@ test('webhook ignores invalid events')
 ---
 
 ## 📝 Changelog
+
+### 2025-10-27 21:15 - Phase 1 VOLLSTÄNDIG Abgeschlossen (Steps 1.3-1.6)
+- ✅ **ClubSubscriptionCheckoutService** implementiert
+  - `createCheckoutSession()` mit Trial, Tax, Payment Methods, Locale
+  - `createPortalSession()` für Stripe Billing Portal
+  - Unit Tests erstellt (`ClubSubscriptionCheckoutServiceTest.php`)
+
+- ✅ **ClubSubscriptionService** implementiert
+  - `assignPlanToClub()` - Plan zuweisen
+  - `cancelSubscription()` - Sofort oder am Perioden-Ende
+  - `resumeSubscription()` - Stornierte Subscription fortsetzen
+  - `swapPlan()` - Plan-Wechsel mit Proration
+  - `syncPlanWithStripe()` - Stripe Product & Prices erstellen
+  - Unit Tests erstellt (`ClubSubscriptionServiceTest.php`)
+  - Feature Tests erstellt (`ClubSubscriptionLifecycleTest.php` - 9 Tests)
+
+- ✅ **ClubSubscriptionWebhookController** erstellt
+  - 6 Webhook-Handler für Stripe-Events:
+    - `checkout.session.completed` - Subscription aktivieren
+    - `customer.subscription.created/updated/deleted` - Subscription-Status verwalten
+    - `invoice.payment_succeeded/failed` - Payment-Status verarbeiten
+  - Signature-Verifikation & umfassendes Error-Logging
+
+- ✅ **ClubCheckoutController** erstellt
+  - `checkout()` - Checkout-Session initiieren
+  - `success()` / `cancel()` - Success/Cancel-Seiten
+  - `billingPortal()` - Billing-Portal öffnen
+  - `index()` - Subscription-Übersicht
+  - Authorization Policies integriert
+
+- ✅ **Routes** definiert (`routes/club_checkout.php`)
+  - 5 authentifizierte Routes (checkout, success, cancel, billing-portal, subscription.index)
+  - 1 Webhook-Route (ohne Auth)
+  - In `bootstrap/app.php` registriert
+
+- ✅ **Feature-Tests** erstellt (`ClubCheckoutFlowTest.php` - 11 Tests)
+  - Checkout-Flow (Auth, Validation, Tenant-Isolation)
+  - Billing-Portal (Customer-Validierung)
+  - Yearly/Monthly-Billing
+
+- 🎯 **Phase 1 Status:** 100% abgeschlossen (alle 6 Steps)
+- ⏭️ **Nächster Schritt:** Phase 2 - Billing & Payment Features
 
 ### 2025-10-27 17:30 - Phase 1.2 Abgeschlossen
 - ✅ Service `ClubStripeCustomerService` erstellt und implementiert
@@ -1366,6 +1429,6 @@ test('webhook ignores invalid events')
 
 **Erstellt von:** Claude Code
 **Datum:** 2025-10-27
-**Version:** 1.0.2
-**Status:** 🔄 Phase 1.2 abgeschlossen, Phase 1.3-1.6 ausstehend
-**Nächster Schritt:** Phase 1.3 - ClubSubscriptionCheckoutService implementieren
+**Version:** 1.1.0
+**Status:** ✅ Phase 1 VOLLSTÄNDIG abgeschlossen - Ready for Phase 2
+**Nächster Schritt:** Phase 2 - Billing & Payment Features implementieren

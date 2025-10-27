@@ -8,7 +8,7 @@ BasketManager Pro is a production-ready Laravel-based basketball club management
 
 ## Architecture
 
-- **Framework**: Laravel 12.x
+- **Framework**: Laravel 12.x (^12.0)
 - **PHP Version**: 8.2+
 - **Frontend**: Vue.js 3.x + Inertia.js 2.0 + Tailwind CSS 3.4
 - **Database**: MySQL 8.0+ / PostgreSQL 14+ with Row Level Security
@@ -127,8 +127,11 @@ Core services in `app/Services/` with domain-based subdirectory organization:
 - `TwoFactorAuthService` - 2FA implementation
 
 **Integration Services (Subdirectories):**
-- `Stripe/` - Stripe payment integration (7 services):
-  - `StripeCheckoutService`, `CheckoutService` - Payment processing
+- `Stripe/` - Stripe payment integration (10 services):
+  - `CheckoutService` - General payment processing
+  - `ClubSubscriptionCheckoutService` - Club-specific checkout sessions
+  - `ClubSubscriptionService` - Club plan management (assign, cancel, swap, sync)
+  - `ClubStripeCustomerService` - Club Stripe customer management
   - `StripeSubscriptionService` - Subscription management
   - `StripePaymentService` - Payment handling
   - `PaymentMethodService` - Payment method management
@@ -164,17 +167,21 @@ Routes are modular and feature-based for better maintainability:
 
 **Core Routes:**
 - `routes/web.php` - Main web routes with locale prefixes (`/{locale}/...`)
-- `routes/api.php` - Main API v2 endpoints
+- `routes/api/v2.php` - Main API v2 endpoints (primary)
+- `routes/api/v1.php` - Legacy API v1 endpoints
+- `routes/api/v4.php` - API v4 endpoints
+- `routes/api/v4_teams_only.php` - API v4 teams-only endpoints
 - `routes/console.php` - Artisan console commands
 
-**Feature-Specific API Routes:**
+**Feature-Specific Routes:**
 - `routes/api_training.php` - Training and drill management API
 - `routes/api_tournament.php` - Tournament management API
-- `routes/api_game_registrations.php` - Game registration API
+- `routes/player_registration.php` - Player registration flows
+- `routes/club_invitation.php` - Club invitation system
+- `routes/admin.php` - Admin panel routes
 
 **Integration Routes:**
-- `routes/subscription.php` - Stripe subscription management
-- `routes/checkout.php` - Stripe checkout flows
+- `routes/subscription.php` - Stripe subscription management (includes checkout)
 - `routes/webhooks.php` - Stripe webhook handlers
 - `routes/federation.php` - DBB/FIBA federation API routes
 
@@ -316,9 +323,22 @@ $this->assertStatisticsCorrect($stats, $expected)
 
 **Running Tests:**
 ```bash
-composer test                    # Runs config:clear + phpunit
-php artisan test --filter=GameTest  # Run single test file
+composer test                              # Runs config:clear + phpunit (recommended)
+php artisan test                           # Run all tests
+php artisan test --filter=GameTest         # Run single test file
+php artisan test --filter=testCanCreateGame  # Run single test method
+php artisan test --testsuite=Feature      # Run only Feature tests
+php artisan test --testsuite=Unit         # Run only Unit tests
+php artisan test --coverage               # Run with coverage report
+php artisan test --parallel               # Run tests in parallel
 ```
+
+**Key Test Files:**
+- `tests/BasketballTestCase.php` - Base test case with basketball-specific helpers
+- `tests/Feature/ClubSubscriptionCheckoutTest.php` - Club subscription checkout tests
+- `tests/Feature/ClubSubscriptionLifecycleTest.php` - Full subscription lifecycle tests
+- `tests/Unit/ClubSubscriptionCheckoutServiceTest.php` - Checkout service unit tests
+- `tests/Unit/ClubSubscriptionServiceTest.php` - Subscription service unit tests
 
 Test users available for all 11 roles (see `TEST_USERS.md`).
 
