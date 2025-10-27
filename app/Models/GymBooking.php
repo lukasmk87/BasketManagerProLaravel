@@ -428,7 +428,7 @@ class GymBooking extends Model
         // Check user permissions for this booking
         $userTeam = $user->teams()->where('team_id', $this->team_id)->first();
         $isTeamMember = !is_null($userTeam);
-        $isTrainerOrAssistant = $isTeamMember && in_array($userTeam->pivot->role ?? '', ['trainer', 'assistant_trainer']);
+        $isTrainerOrAssistant = $isTeamMember && in_array($userTeam->pivot->role ?? '', ['trainer', 'assistant_coach']);
 
         if ($this->can_be_released && $isTrainerOrAssistant) {
             $actions[] = 'release';
@@ -461,7 +461,7 @@ class GymBooking extends Model
         foreach ($availableTeams as $team) {
             // Send notification to team coaches
             $coaches = $team->users()
-                ->wherePivotIn('role', ['trainer', 'assistant_trainer'])
+                ->wherePivotIn('role', ['trainer', 'assistant_coach'])
                 ->get();
 
             foreach ($coaches as $coach) {

@@ -280,8 +280,9 @@ class AdminPanelController extends Controller
         $this->authorize('edit users');
 
         return Inertia::render('Admin/EditUser', [
-            'user' => $user->load('roles'),
+            'user' => $user->load(['roles', 'clubs']),
             'roles' => Role::all(),
+            'clubs' => Club::where('is_active', true)->get(['id', 'name']),
         ]);
     }
 
@@ -298,6 +299,8 @@ class AdminPanelController extends Controller
             'is_active' => 'boolean',
             'roles' => 'array',
             'roles.*' => 'exists:roles,name',
+            'clubs' => 'nullable|array',
+            'clubs.*' => 'exists:clubs,id',
         ]);
 
         $user->update([
@@ -309,6 +312,25 @@ class AdminPanelController extends Controller
         // Update roles if provided
         if (isset($validated['roles'])) {
             $user->syncRoles($validated['roles']);
+        }
+
+        // Update club assignments if provided (only for Super Admins)
+        if (isset($validated['clubs']) && auth()->user()->hasRole('super_admin')) {
+            // Determine pivot role based on Spatie roles
+            $pivotRole = in_array('club_admin', $validated['roles'] ?? []) ? 'admin' : 'member';
+
+            // Sync clubs with appropriate pivot role
+            $clubData = [];
+            foreach ($validated['clubs'] as $clubId) {
+                $clubData[$clubId] = [
+                    'role' => $pivotRole,
+                    'joined_at' => $user->clubs()->where('club_id', $clubId)->exists()
+                        ? $user->clubs()->where('club_id', $clubId)->first()->pivot->joined_at
+                        : now(),
+                    'is_active' => true,
+                ];
+            }
+            $user->clubs()->sync($clubData);
         }
 
         return redirect()->route('admin.users')

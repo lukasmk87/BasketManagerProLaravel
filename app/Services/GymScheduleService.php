@@ -294,9 +294,9 @@ class GymScheduleService
             return false;
         }
 
-        // Check if user is trainer or assistant trainer of the team
+        // Check if user is trainer or assistant coach of the team
         return $booking->team->users()
-            ->wherePivotIn('role', ['trainer', 'assistant_trainer'])
+            ->wherePivotIn('role', ['trainer', 'assistant_coach'])
             ->where('user_id', $user->id)
             ->exists();
     }
@@ -312,7 +312,7 @@ class GymScheduleService
 
         // User can cancel if they are trainer/assistant of the team or if they booked it
         $isTeamTrainer = $booking->team->users()
-            ->wherePivotIn('role', ['trainer', 'assistant_trainer'])
+            ->wherePivotIn('role', ['trainer', 'assistant_coach'])
             ->where('user_id', $user->id)
             ->exists();
 

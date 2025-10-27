@@ -328,11 +328,11 @@ class GymBookingRequest extends Model
             return false;
         }
 
-        // Check if user is trainer or assistant trainer of the original team
+        // Check if user is trainer or assistant coach of the original team
         $originalTeam = $this->gymBooking->originalTeam ?? $this->gymBooking->team;
-        
+
         return $originalTeam->users()
-            ->wherePivotIn('role', ['trainer', 'assistant_trainer'])
+            ->wherePivotIn('role', ['trainer', 'assistant_coach'])
             ->where('user_id', $user->id)
             ->exists();
     }
@@ -340,9 +340,9 @@ class GymBookingRequest extends Model
     public function getRequiredApprovers(): array
     {
         $originalTeam = $this->gymBooking->originalTeam ?? $this->gymBooking->team;
-        
+
         return $originalTeam->users()
-            ->wherePivotIn('role', ['trainer', 'assistant_trainer'])
+            ->wherePivotIn('role', ['trainer', 'assistant_coach'])
             ->pluck('users.id', 'users.name')
             ->toArray();
     }
@@ -350,7 +350,7 @@ class GymBookingRequest extends Model
     public function notifyRequestingTeam(string $decision): void
     {
         $teamMembers = $this->requestingTeam->users()
-            ->wherePivotIn('role', ['trainer', 'assistant_trainer'])
+            ->wherePivotIn('role', ['trainer', 'assistant_coach'])
             ->get();
 
         foreach ($teamMembers as $member) {
@@ -373,7 +373,7 @@ class GymBookingRequest extends Model
     {
         $originalTeam = $this->gymBooking->originalTeam ?? $this->gymBooking->team;
         $teamMembers = $originalTeam->users()
-            ->wherePivotIn('role', ['trainer', 'assistant_trainer'])
+            ->wherePivotIn('role', ['trainer', 'assistant_coach'])
             ->get();
 
         foreach ($teamMembers as $member) {

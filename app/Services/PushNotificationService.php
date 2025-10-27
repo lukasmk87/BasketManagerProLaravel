@@ -503,7 +503,7 @@ class PushNotificationService
 
         return User::whereHas('teams', function ($query) use ($teamId) {
             $query->where('team_id', $teamId)
-                  ->wherePivotIn('role', ['trainer', 'assistant_trainer']);
+                  ->wherePivotIn('role', ['trainer', 'assistant_coach']);
         })->get();
     }
 

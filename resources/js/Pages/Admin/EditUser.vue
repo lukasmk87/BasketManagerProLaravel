@@ -12,6 +12,7 @@ import Checkbox from '@/Components/Checkbox.vue';
 const props = defineProps({
     user: Object,
     roles: Array,
+    clubs: Array,
 });
 
 const page = usePage();
@@ -21,6 +22,7 @@ const form = useForm({
     email: props.user.email,
     is_active: props.user.is_active,
     roles: props.user.roles.map(role => role.name),
+    clubs: props.user.clubs?.map(club => club.id) || [],
 });
 
 const submit = () => {
@@ -151,6 +153,24 @@ const toggleRole = (roleName) => {
 const hasRole = (roleName) => {
     return form.roles.includes(roleName);
 };
+
+const toggleClub = (clubId) => {
+    const index = form.clubs.indexOf(clubId);
+    if (index > -1) {
+        form.clubs.splice(index, 1);
+    } else {
+        form.clubs.push(clubId);
+    }
+};
+
+const hasClub = (clubId) => {
+    return form.clubs.includes(clubId);
+};
+
+const isSuperAdmin = () => {
+    const currentUser = page.props.auth?.user;
+    return currentUser?.roles?.includes('super_admin');
+};
 </script>
 
 <template>
@@ -231,11 +251,11 @@ const hasRole = (roleName) => {
                             <h3 class="text-lg font-medium text-gray-900 mb-4">
                                 Rollen
                             </h3>
-                            
+
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div v-for="role in roles" :key="role.id" class="flex items-center">
                                     <label class="flex items-center cursor-pointer">
-                                        <Checkbox 
+                                        <Checkbox
                                             :checked="hasRole(role.name)"
                                             @change="toggleRole(role.name)"
                                         />
@@ -246,6 +266,39 @@ const hasRole = (roleName) => {
                                 </div>
                             </div>
                             <InputError class="mt-2" :message="form.errors.roles" />
+                        </div>
+
+                        <!-- Clubs (nur für Super Admins) -->
+                        <div v-if="isSuperAdmin()" class="mb-8">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">
+                                Club-Zuweisungen
+                            </h3>
+                            <p class="text-sm text-gray-600 mb-4">
+                                Wählen Sie die Clubs aus, denen dieser Benutzer zugewiesen werden soll.
+                            </p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div v-for="club in clubs" :key="club.id" class="flex items-center">
+                                    <label class="flex items-center cursor-pointer">
+                                        <Checkbox
+                                            :checked="hasClub(club.id)"
+                                            @change="toggleClub(club.id)"
+                                        />
+                                        <span class="ml-2 text-sm text-gray-600">
+                                            {{ club.name }}
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <InputError class="mt-2" :message="form.errors.clubs" />
+
+                            <div v-if="form.clubs.length > 0" class="mt-4 p-4 bg-blue-50 rounded-lg">
+                                <p class="text-sm text-blue-800">
+                                    <strong>Hinweis:</strong> Die Pivot-Rolle wird automatisch basierend auf den Spatie-Rollen gesetzt:
+                                    <span v-if="hasRole('club_admin')" class="font-semibold">Admin</span>
+                                    <span v-else class="font-semibold">Member</span>
+                                </p>
+                            </div>
                         </div>
 
                         <!-- User Information -->
