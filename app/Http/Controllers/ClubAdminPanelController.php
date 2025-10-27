@@ -267,7 +267,7 @@ class ClubAdminPanelController extends Controller
         $primaryClub = $adminClubs->first();
 
         $members = $primaryClub->users()
-            ->withPivot('role', 'joined_at', 'status')
+            ->withPivot('role', 'joined_at', 'is_active')
             ->with('roles')
             ->orderBy('pivot_joined_at', 'desc')
             ->get()
@@ -277,7 +277,7 @@ class ClubAdminPanelController extends Controller
                     'name' => $member->name,
                     'email' => $member->email,
                     'club_role' => $member->pivot->role,
-                    'status' => $member->pivot->status,
+                    'membership_is_active' => $member->pivot->is_active,
                     'joined_at' => $member->pivot->joined_at,
                     'roles' => $member->roles->pluck('name')->toArray(),
                     'is_active' => $member->is_active,
@@ -502,5 +502,116 @@ class ClubAdminPanelController extends Controller
             ],
             'message' => 'Abo-Verwaltung wird in einer zukünftigen Version verfügbar sein.',
         ]);
+    }
+
+    /**
+     * Show the create member form.
+     */
+    public function createMember(): Response
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Available club roles (not system roles)
+        $availableRoles = [
+            ['value' => 'member', 'label' => 'Mitglied'],
+            ['value' => 'player', 'label' => 'Spieler'],
+            ['value' => 'coach', 'label' => 'Trainer'],
+            ['value' => 'assistant_coach', 'label' => 'Co-Trainer'],
+            ['value' => 'team_manager', 'label' => 'Team Manager'],
+            ['value' => 'scorer', 'label' => 'Anschreiber'],
+            ['value' => 'volunteer', 'label' => 'Freiwilliger'],
+        ];
+
+        return Inertia::render('ClubAdmin/Members/Create', [
+            'club' => [
+                'id' => $primaryClub->id,
+                'name' => $primaryClub->name,
+            ],
+            'available_roles' => $availableRoles,
+        ]);
+    }
+
+    /**
+     * Store a newly created member.
+     */
+    public function storeMember(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'nullable|string|max:20',
+            'club_role' => 'required|in:member,player,coach,assistant_coach,team_manager,scorer,volunteer',
+            'is_active' => 'boolean',
+            'send_credentials_email' => 'boolean',
+        ]);
+
+        try {
+            // Create the user
+            $newUser = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => bcrypt($validated['password']),
+                'phone' => $validated['phone'] ?? null,
+                'is_active' => $validated['is_active'] ?? true,
+            ]);
+
+            // Attach user to club with specified role
+            $primaryClub->users()->attach($newUser->id, [
+                'role' => $validated['club_role'],
+                'joined_at' => now(),
+                'is_active' => true,
+            ]);
+
+            // Assign appropriate Spatie role based on club role
+            $spatieRole = match($validated['club_role']) {
+                'coach', 'assistant_coach' => 'trainer',
+                'player' => 'player',
+                default => 'guest', // member, team_manager, scorer, volunteer
+            };
+            $newUser->assignRole($spatieRole);
+
+            Log::info('Club admin created new member', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'new_user_id' => $newUser->id,
+                'club_role' => $validated['club_role'],
+            ]);
+
+            // Send credentials email if requested
+            if ($request->boolean('send_credentials_email')) {
+                // TODO: Send email notification
+                // $newUser->notify(new NewMemberCreatedNotification($validated['password'], $primaryClub->name));
+            }
+
+            return redirect()->route('club-admin.members')
+                ->with('success', 'Mitglied wurde erfolgreich hinzugefügt.');
+        } catch (\Exception $e) {
+            Log::error('Failed to create club member', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->with('error', 'Fehler beim Hinzufügen des Mitglieds: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 }

@@ -32,6 +32,10 @@ Route::prefix('club-admin')
         // Members Management
         Route::get('/members', [ClubAdminPanelController::class, 'members'])
             ->name('members');
+        Route::get('/members/create', [ClubAdminPanelController::class, 'createMember'])
+            ->name('members.create');
+        Route::post('/members', [ClubAdminPanelController::class, 'storeMember'])
+            ->name('members.store');
 
         // Teams Management
         Route::get('/teams', [ClubAdminPanelController::class, 'teams'])
