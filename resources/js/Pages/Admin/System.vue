@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 
 const props = defineProps({
@@ -38,7 +38,7 @@ const getStorageUsageColor = (percentage) => {
 </script>
 
 <template>
-    <AppLayout title="System-Information">
+    <AdminLayout title="System-Information">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -262,5 +262,5 @@ const getStorageUsageColor = (percentage) => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

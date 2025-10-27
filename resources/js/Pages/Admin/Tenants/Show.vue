@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import UsageLimitProgress from '@/Components/Admin/UsageLimitProgress.vue';
 import SubscriptionEditor from '@/Components/Admin/SubscriptionEditor.vue';
 import CustomizationForm from '@/Components/Admin/CustomizationForm.vue';
@@ -64,7 +64,7 @@ const onCustomizationCreated = () => {
 </script>
 
 <template>
-    <AppLayout :title="tenant.name">
+    <AdminLayout :title="tenant.name">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -315,5 +315,5 @@ const onCustomizationCreated = () => {
             @close="showCustomizationModal = false"
             @created="onCustomizationCreated"
         />
-    </AppLayout>
+    </AdminLayout>
 </template>

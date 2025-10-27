@@ -25,8 +25,21 @@ class ClubService
                 $data['slug'] = $this->generateUniqueSlug($data['name']);
             }
 
+            // Set tenant_id from current tenant context if not provided
+            if (empty($data['tenant_id'])) {
+                // Try to get tenant from app container
+                $tenant = app()->bound('tenant') ? app('tenant') : null;
+
+                if ($tenant) {
+                    $data['tenant_id'] = $tenant->id;
+                } else {
+                    throw new \InvalidArgumentException('Tenant ID is required. Either provide tenant_id or ensure tenant context is set.');
+                }
+            }
+
             // Create club record
             $club = Club::create([
+                'tenant_id' => $data['tenant_id'],
                 'name' => $data['name'],
                 'short_name' => $data['short_name'] ?? null,
                 'slug' => $data['slug'],

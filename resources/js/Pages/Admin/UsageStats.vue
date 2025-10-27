@@ -1,7 +1,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import UsageLimitProgress from '@/Components/Admin/UsageLimitProgress.vue';
 
 const props = defineProps({
@@ -62,7 +62,7 @@ const exportData = () => {
 </script>
 
 <template>
-    <AppLayout title="Usage Statistics">
+    <AdminLayout title="Usage Statistics">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -328,5 +328,5 @@ const exportData = () => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

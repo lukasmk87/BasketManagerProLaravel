@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -51,7 +51,7 @@ const getSlugUrl = (slug) => {
 </script>
 
 <template>
-    <AppLayout :title="`${getSlugDisplayName(page.slug)} bearbeiten`">
+    <AdminLayout :title="`${getSlugDisplayName(page.slug)} bearbeiten`">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -208,5 +208,5 @@ const getSlugUrl = (slug) => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

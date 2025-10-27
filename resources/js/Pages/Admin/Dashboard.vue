@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import TenantCard from '@/Components/Admin/TenantCard.vue';
 import Pagination from '@/Components/Pagination.vue';
 
@@ -49,7 +49,7 @@ const getPlanColor = (index) => {
 </script>
 
 <template>
-    <AppLayout title="Admin Dashboard">
+    <AdminLayout title="Admin Dashboard">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -266,5 +266,5 @@ const getPlanColor = (index) => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

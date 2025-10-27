@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { router, Link, usePage } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -167,7 +167,7 @@ const deleteUser = (user) => {
 </script>
 
 <template>
-    <AppLayout title="Benutzer-Verwaltung">
+    <AdminLayout title="Benutzer-Verwaltung">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -418,5 +418,5 @@ const deleteUser = (user) => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

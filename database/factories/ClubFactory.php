@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Club;
+use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -25,6 +26,7 @@ class ClubFactory extends Factory
 
         return [
             'uuid' => $this->faker->uuid(),
+            'tenant_id' => Tenant::factory(),
             'name' => $name,
             'short_name' => $shortName,
             'slug' => Str::slug($name),
@@ -181,6 +183,16 @@ class ClubFactory extends Factory
             'division' => $this->faker->randomElement(['A', 'B']),
             'is_verified' => true,
             'verified_at' => $this->faker->dateTimeBetween('-2 years', '-6 months'),
+        ]);
+    }
+
+    /**
+     * Set a specific tenant for the club.
+     */
+    public function forTenant(Tenant $tenant): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'tenant_id' => $tenant->id,
         ]);
     }
 }

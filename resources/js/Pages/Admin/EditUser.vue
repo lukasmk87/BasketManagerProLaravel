@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { router, useForm, usePage } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -174,7 +174,7 @@ const isSuperAdmin = () => {
 </script>
 
 <template>
-    <AppLayout title="Benutzer bearbeiten">
+    <AdminLayout title="Benutzer bearbeiten">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -364,5 +364,5 @@ const isSuperAdmin = () => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

@@ -1,6 +1,6 @@
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import TenantForm from '@/Components/Admin/TenantForm.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -88,7 +88,7 @@ const deleteTenant = () => {
 </script>
 
 <template>
-    <AppLayout :title="`Tenant bearbeiten: ${tenant.name}`">
+    <AdminLayout :title="`Tenant bearbeiten: ${tenant.name}`">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -171,5 +171,5 @@ const deleteTenant = () => {
                 </form>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

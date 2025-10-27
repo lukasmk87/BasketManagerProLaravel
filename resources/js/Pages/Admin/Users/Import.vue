@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
@@ -57,7 +57,7 @@ const downloadTemplate = () => {
 </script>
 
 <template>
-    <AppLayout title="Benutzer importieren">
+    <AdminLayout title="Benutzer importieren">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -269,5 +269,5 @@ const downloadTemplate = () => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

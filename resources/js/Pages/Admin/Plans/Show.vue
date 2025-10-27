@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
@@ -88,7 +88,7 @@ const formatNumber = (number) => {
 </script>
 
 <template>
-    <AppLayout :title="plan.name">
+    <AdminLayout :title="plan.name">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -373,5 +373,5 @@ const formatNumber = (number) => {
                 </DangerButton>
             </template>
         </ConfirmationModal>
-    </AppLayout>
+    </AdminLayout>
 </template>

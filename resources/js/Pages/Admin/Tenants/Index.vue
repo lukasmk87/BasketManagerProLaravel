@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import TenantCard from '@/Components/Admin/TenantCard.vue';
 import Pagination from '@/Components/Pagination.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -44,7 +44,7 @@ const clearFilters = () => {
 </script>
 
 <template>
-    <AppLayout title="Tenant Management">
+    <AdminLayout title="Tenant Management">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -267,5 +267,5 @@ const clearFilters = () => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

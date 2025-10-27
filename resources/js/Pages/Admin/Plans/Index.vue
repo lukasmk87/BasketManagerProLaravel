@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PlanCard from '@/Components/Admin/PlanCard.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
@@ -21,7 +21,7 @@ const sortedPlans = computed(() => {
 </script>
 
 <template>
-    <AppLayout title="Subscription Plans">
+    <AdminLayout title="Subscription Plans">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -152,5 +152,5 @@ const sortedPlans = computed(() => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

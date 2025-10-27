@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 
@@ -35,7 +35,7 @@ const formatDate = (dateString) => {
 </script>
 
 <template>
-    <AppLayout title="Rechtliche Seiten verwalten">
+    <AdminLayout title="Rechtliche Seiten verwalten">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -154,5 +154,5 @@ const formatDate = (dateString) => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

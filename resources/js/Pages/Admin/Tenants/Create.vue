@@ -1,6 +1,6 @@
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import TenantForm from '@/Components/Admin/TenantForm.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -69,7 +69,7 @@ const submit = () => {
 </script>
 
 <template>
-    <AppLayout title="Neuen Tenant erstellen">
+    <AdminLayout title="Neuen Tenant erstellen">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -134,5 +134,5 @@ const submit = () => {
                 </form>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

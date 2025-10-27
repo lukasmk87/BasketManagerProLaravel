@@ -1,5 +1,5 @@
 <template>
-  <AppLayout title="Federation Management">
+  <AdminLayout title="Federation Management">
     <template #header>
       <h2 class="font-semibold text-xl text-gray-800 leading-tight">
         Federation Management
@@ -272,13 +272,13 @@
       @close="showFederationConfigModal = false"
       @configUpdated="handleConfigUpdated"
     />
-  </AppLayout>
+  </AdminLayout>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
-import AppLayout from '@/Layouts/AppLayout.vue'
+import AdminLayout from '@/Layouts/AdminLayout.vue'
 import PlayerSearchModal from './Modals/PlayerSearchModal.vue'
 import LeagueManagementModal from './Modals/LeagueManagementModal.vue'
 import TeamRegistrationModal from './Modals/TeamRegistrationModal.vue'

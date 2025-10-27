@@ -1,6 +1,6 @@
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import LimitEditor from '@/Components/Admin/LimitEditor.vue';
@@ -56,7 +56,7 @@ const savePlan = () => {
 </script>
 
 <template>
-    <AppLayout title="Neuer Subscription Plan">
+    <AdminLayout title="Neuer Subscription Plan">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -287,5 +287,5 @@ const savePlan = () => {
                 </form>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

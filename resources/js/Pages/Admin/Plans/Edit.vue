@@ -1,6 +1,6 @@
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
@@ -69,7 +69,7 @@ const deletePlan = () => {
 </script>
 
 <template>
-    <AppLayout :title="`${plan.name} bearbeiten`">
+    <AdminLayout :title="`${plan.name} bearbeiten`">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
@@ -334,5 +334,5 @@ const deletePlan = () => {
                 </DangerButton>
             </template>
         </ConfirmationModal>
-    </AppLayout>
+    </AdminLayout>
 </template>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -16,13 +17,14 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Club extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes, LogsActivity, InteractsWithMedia;
+    use HasFactory, SoftDeletes, LogsActivity, InteractsWithMedia, BelongsToTenant;
 
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
         'uuid',
+        'tenant_id',
         'club_subscription_plan_id',
         'name',
         'short_name',

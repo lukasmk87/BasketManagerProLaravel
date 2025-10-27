@@ -1,6 +1,6 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -53,7 +53,7 @@ const selectAllInCategory = (category) => {
 </script>
 
 <template>
-    <AppLayout title="Neue Rolle">
+    <AdminLayout title="Neue Rolle">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Neue Rolle erstellen
@@ -133,5 +133,5 @@ const selectAllInCategory = (category) => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>
