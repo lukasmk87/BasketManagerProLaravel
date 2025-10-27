@@ -3,22 +3,22 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant;
-use App\Models\SubscriptionPlan;
-use App\Models\TenantPlanCustomization;
-use App\Http\Requests\Admin\UpdateTenantSubscriptionRequest;
-use App\Http\Requests\Admin\UpdateTenantLimitsRequest;
 use App\Http\Requests\Admin\CreateCustomizationRequest;
 use App\Http\Requests\Admin\StoreTenantRequest;
+use App\Http\Requests\Admin\UpdateTenantLimitsRequest;
 use App\Http\Requests\Admin\UpdateTenantRequest;
+use App\Http\Requests\Admin\UpdateTenantSubscriptionRequest;
 use App\Http\Resources\TenantSubscriptionResource;
+use App\Models\SubscriptionPlan;
+use App\Models\Tenant;
+use App\Models\TenantPlanCustomization;
 use App\Services\LimitEnforcementService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TenantSubscriptionController extends Controller
 {
@@ -34,8 +34,8 @@ class TenantSubscriptionController extends Controller
             ->when($request->search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('domain', 'like', "%{$search}%")
-                      ->orWhere('subdomain', 'like', "%{$search}%");
+                        ->orWhere('domain', 'like', "%{$search}%")
+                        ->orWhere('subdomain', 'like', "%{$search}%");
                 });
             })
             ->when($request->plan, function ($query, $planId) {
@@ -50,8 +50,9 @@ class TenantSubscriptionController extends Controller
                     return $query->where('is_suspended', true);
                 } elseif ($status === 'trial') {
                     return $query->whereNotNull('trial_ends_at')
-                                 ->where('trial_ends_at', '>', now());
+                        ->where('trial_ends_at', '>', now());
                 }
+
                 return $query;
             })
             ->orderBy('created_at', 'desc')
@@ -64,7 +65,7 @@ class TenantSubscriptionController extends Controller
             ->get();
 
         return Inertia::render('Admin/Tenants/Index', [
-            'tenants' => TenantSubscriptionResource::collection($tenants)->resolve(),
+            'tenants' => TenantSubscriptionResource::collection($tenants),
             'plans' => $plans,
             'filters' => [
                 'search' => $request->search,
@@ -166,7 +167,7 @@ class TenantSubscriptionController extends Controller
             $tenant = Tenant::create($validated);
 
             // If subscription plan is provided, update limits from plan
-            if (!empty($validated['subscription_plan_id'])) {
+            if (! empty($validated['subscription_plan_id'])) {
                 $plan = SubscriptionPlan::find($validated['subscription_plan_id']);
                 if ($plan) {
                     $tenant->update([
@@ -200,7 +201,7 @@ class TenantSubscriptionController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'Fehler beim Erstellen des Tenants: ' . $e->getMessage());
+                ->with('error', 'Fehler beim Erstellen des Tenants: '.$e->getMessage());
         }
     }
 
@@ -300,14 +301,14 @@ class TenantSubscriptionController extends Controller
 
             // Store old values for logging
             $oldValues = $tenant->only([
-                'name', 'slug', 'domain', 'subdomain', 'is_active', 'is_suspended'
+                'name', 'slug', 'domain', 'subdomain', 'is_active', 'is_suspended',
             ]);
 
             // Update tenant
             $tenant->update($validated);
 
             // If subscription plan changed, update limits from plan
-            if (!empty($validated['subscription_plan_id']) && $validated['subscription_plan_id'] !== $tenant->subscription_plan_id) {
+            if (! empty($validated['subscription_plan_id']) && $validated['subscription_plan_id'] !== $tenant->subscription_plan_id) {
                 $plan = SubscriptionPlan::find($validated['subscription_plan_id']);
                 if ($plan) {
                     $tenant->update([
@@ -343,7 +344,7 @@ class TenantSubscriptionController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'Fehler beim Aktualisieren des Tenants: ' . $e->getMessage());
+                ->with('error', 'Fehler beim Aktualisieren des Tenants: '.$e->getMessage());
         }
     }
 
@@ -404,7 +405,7 @@ class TenantSubscriptionController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return back()->with('error', 'Fehler beim Löschen des Tenants: ' . $e->getMessage());
+            return back()->with('error', 'Fehler beim Löschen des Tenants: '.$e->getMessage());
         }
     }
 
@@ -450,7 +451,7 @@ class TenantSubscriptionController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Fehler beim Aktualisieren der Subscription: ' . $e->getMessage());
+            return back()->with('error', 'Fehler beim Aktualisieren der Subscription: '.$e->getMessage());
         }
     }
 
@@ -486,7 +487,7 @@ class TenantSubscriptionController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Fehler beim Aktualisieren der Limits: ' . $e->getMessage());
+            return back()->with('error', 'Fehler beim Aktualisieren der Limits: '.$e->getMessage());
         }
     }
 
@@ -530,7 +531,7 @@ class TenantSubscriptionController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Fehler beim Erstellen der Customization: ' . $e->getMessage());
+            return back()->with('error', 'Fehler beim Erstellen der Customization: '.$e->getMessage());
         }
     }
 }
