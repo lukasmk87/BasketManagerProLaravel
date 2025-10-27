@@ -262,8 +262,8 @@ class RoleAndPermissionSeeder extends Seeder
             'guard_name' => 'web'
         ]);
         $clubAdmin->givePermissionTo([
-            // User Management (limited)
-            'view users', 'create users', 'edit users',
+            // User Management (limited - can delete users in their clubs, but not admins)
+            'view users', 'create users', 'edit users', 'delete users',
             
             // Club Management (own club only)
             'view clubs', 'edit clubs', 'manage club settings', 'manage club members',

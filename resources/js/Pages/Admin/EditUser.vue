@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { router, useForm } from '@inertiajs/vue3';
+import { router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -13,6 +13,8 @@ const props = defineProps({
     user: Object,
     roles: Array,
 });
+
+const page = usePage();
 
 const form = useForm({
     name: props.user.name,
@@ -29,9 +31,96 @@ const submit = () => {
     });
 };
 
+const canDeleteUser = () => {
+    // Get current authenticated user
+    const currentUser = page.props.auth?.user;
+    if (!currentUser) return false;
+
+    // User can't delete themselves
+    if (props.user.id === currentUser.id) {
+        return false;
+    }
+
+    // Super admins can delete anyone (except themselves)
+    if (currentUser.roles?.some(r => r.name === 'super_admin')) {
+        return true;
+    }
+
+    // Regular admins can't delete super admins
+    if (currentUser.roles?.some(r => r.name === 'admin')) {
+        return !props.user.roles?.some(role => role.name === 'super_admin');
+    }
+
+    // Club admins can't delete admins or super admins
+    if (currentUser.roles?.some(r => r.name === 'club_admin')) {
+        return !props.user.roles?.some(role => ['super_admin', 'admin', 'club_admin'].includes(role.name));
+    }
+
+    return false;
+};
+
+const getDeleteWarningMessage = () => {
+    let message = `Sind Sie sicher, dass Sie den Benutzer "${props.user.name}" löschen möchten?\n\n`;
+
+    // Add role information
+    if (props.user.roles && props.user.roles.length > 0) {
+        message += `Rollen: ${props.user.roles.map(r => r.name).join(', ')}\n`;
+    }
+
+    message += '\n';
+
+    // Explain what happens
+    message += 'WICHTIG:\n';
+    message += '• Wenn der Benutzer aktive Zuordnungen hat (Teams, Clubs), wird er deaktiviert (Soft Delete)\n';
+    message += '• Ansonsten wird der Benutzer permanent gelöscht (Hard Delete)\n';
+    message += '• Alle zugehörigen Daten werden entsprechend behandelt\n';
+    message += '\nDiese Aktion kann nicht rückgängig gemacht werden!\n\n';
+    message += 'Möchten Sie fortfahren?';
+
+    return message;
+};
+
 const deleteUser = () => {
-    if (confirm('Sind Sie sicher, dass Sie diesen Benutzer löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
-        router.delete(route('admin.users.destroy', props.user.id));
+    // Check permission first
+    if (!canDeleteUser()) {
+        alert('Sie haben keine Berechtigung, diesen Benutzer zu löschen.\n\n' +
+              'Mögliche Gründe:\n' +
+              '• Sie können sich nicht selbst löschen\n' +
+              '• Sie können keine Super Admins löschen\n' +
+              '• Als Club Admin können Sie keine Admins löschen\n\n' +
+              'Bitte kontaktieren Sie einen Administrator für weitere Unterstützung.');
+        return;
+    }
+
+    const message = getDeleteWarningMessage();
+
+    if (confirm(message)) {
+        router.delete(route('admin.users.destroy', props.user.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Success message wird von Backend über Session Flash gesendet
+                // User wird zur Users-Liste weitergeleitet
+            },
+            onError: (errors) => {
+                // Show detailed error message
+                let errorMessage = 'Fehler beim Löschen des Benutzers:\n\n';
+
+                if (errors.message) {
+                    errorMessage += errors.message;
+                } else if (typeof errors === 'string') {
+                    errorMessage += errors;
+                } else {
+                    errorMessage += 'Ein unbekannter Fehler ist aufgetreten.\n\n';
+                    errorMessage += 'Mögliche Ursachen:\n';
+                    errorMessage += '• Fehlende Berechtigungen\n';
+                    errorMessage += '• Der Benutzer existiert nicht mehr\n';
+                    errorMessage += '• Datenbankfehler oder Abhängigkeiten\n\n';
+                    errorMessage += 'Weitere Details finden Sie in den Server-Logs.';
+                }
+
+                alert(errorMessage);
+            }
+        });
     }
 };
 
@@ -169,11 +258,22 @@ const hasRole = (roleName) => {
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
                                 <button
+                                    v-if="canDeleteUser()"
                                     type="button"
                                     @click="deleteUser"
                                     class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:bg-red-900 transition ease-in-out duration-150"
                                 >
                                     Benutzer löschen
+                                </button>
+
+                                <button
+                                    v-else
+                                    type="button"
+                                    disabled
+                                    class="inline-flex items-center px-4 py-2 bg-gray-400 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest cursor-not-allowed opacity-50"
+                                    title="Sie haben keine Berechtigung, diesen Benutzer zu löschen"
+                                >
+                                    Benutzer löschen (Nicht berechtigt)
                                 </button>
 
                                 <button

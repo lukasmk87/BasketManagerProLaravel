@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Permission;
@@ -319,20 +320,63 @@ class AdminPanelController extends Controller
      */
     public function destroyUser(Request $request, User $user)
     {
+        // Log the deletion attempt
+        Log::info('User deletion attempt', [
+            'target_user_id' => $user->id,
+            'target_user_email' => $user->email,
+            'target_user_name' => $user->name,
+            'target_user_roles' => $user->roles->pluck('name')->toArray(),
+            'requesting_user_id' => auth()->id(),
+            'requesting_user_email' => auth()->user()->email,
+            'requesting_user_roles' => auth()->user()->roles->pluck('name')->toArray(),
+        ]);
+
         // Use Policy-based authorization (checks permissions AND business rules)
-        $this->authorize('delete', $user);
+        try {
+            $this->authorize('delete', $user);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('User deletion denied by policy', [
+                'target_user_id' => $user->id,
+                'requesting_user_id' => auth()->id(),
+                'policy_message' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('admin.users')
+                ->with('error', 'Sie haben keine Berechtigung, diesen Benutzer zu löschen. ' .
+                    'Mögliche Gründe: Sie können sich nicht selbst löschen, oder Sie haben nicht die erforderlichen Berechtigungen.');
+        }
 
         // Use UserService for intelligent soft/hard delete
         $userService = app(\App\Services\UserService::class);
 
         try {
+            // Store user info before deletion
+            $userName = $user->name;
+            $userEmail = $user->email;
+            $userId = $user->id;
+
             $userService->deleteUser($user);
 
+            Log::info('User deleted successfully', [
+                'user_id' => $userId,
+                'user_email' => $userEmail,
+                'user_name' => $userName,
+                'deleted_by_user_id' => auth()->id(),
+            ]);
+
             return redirect()->route('admin.users')
-                ->with('success', 'Benutzer wurde erfolgreich gelöscht.');
+                ->with('success', "Benutzer \"{$userName}\" wurde erfolgreich gelöscht.");
         } catch (\Exception $e) {
+            Log::error('Failed to delete user', [
+                'target_user_id' => $user->id,
+                'requesting_user_id' => auth()->id(),
+                'error_message' => $e->getMessage(),
+                'error_trace' => $e->getTraceAsString(),
+            ]);
+
             return redirect()->route('admin.users')
-                ->with('error', 'Fehler beim Löschen des Benutzers: '.$e->getMessage());
+                ->with('error', 'Fehler beim Löschen des Benutzers: ' . $e->getMessage() .
+                    ' Bitte überprüfen Sie die Server-Logs für weitere Details.');
         }
     }
 

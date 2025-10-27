@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { router, Link } from '@inertiajs/vue3';
+import { router, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -13,6 +13,8 @@ const props = defineProps({
     role_stats: Object,
     filters: Object,
 });
+
+const page = usePage();
 
 // Search and filter state
 const search = ref(props.filters.search || '');
@@ -60,16 +62,98 @@ const sendPasswordReset = (user) => {
     }
 };
 
+const canDeleteUser = (user) => {
+    // Get current authenticated user
+    const currentUser = page.props.auth?.user;
+    if (!currentUser) return false;
+
+    // User can't delete themselves
+    if (user.id === currentUser.id) {
+        return false;
+    }
+
+    // Super admins can delete anyone (except themselves)
+    if (currentUser.roles?.some(r => r.name === 'super_admin')) {
+        return true;
+    }
+
+    // Regular admins can't delete super admins
+    if (currentUser.roles?.some(r => r.name === 'admin')) {
+        return !user.roles?.some(role => role.name === 'super_admin');
+    }
+
+    // Club admins can't delete admins or super admins
+    if (currentUser.roles?.some(r => r.name === 'club_admin')) {
+        return !user.roles?.some(role => ['super_admin', 'admin', 'club_admin'].includes(role.name));
+    }
+
+    return false;
+};
+
+const getDeleteWarningMessage = (user) => {
+    let message = `Möchten Sie den Benutzer "${user.name}" wirklich löschen?\n\n`;
+
+    // Add information about what will happen
+    if (user.clubs_count > 0) {
+        message += `⚠️ Dieser Benutzer ist Mitglied in ${user.clubs_count} Club(s).\n`;
+    }
+
+    if (user.coached_teams_count > 0) {
+        message += `⚠️ Dieser Benutzer trainiert ${user.coached_teams_count} Team(s).\n`;
+    }
+
+    message += '\n';
+
+    // Explain soft vs hard delete
+    if (user.clubs_count > 0 || user.coached_teams_count > 0) {
+        message += 'Der Benutzer wird deaktiviert (Soft Delete), da er noch aktive Zuordnungen hat.\n';
+    } else {
+        message += 'Der Benutzer wird permanent gelöscht (Hard Delete).\n';
+    }
+
+    message += '\nMöchten Sie fortfahren?';
+
+    return message;
+};
+
 const deleteUser = (user) => {
-    if (confirm(`Möchten Sie den Benutzer "${user.name}" wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden.`)) {
+    // Check permission first
+    if (!canDeleteUser(user)) {
+        alert('Sie haben keine Berechtigung, diesen Benutzer zu löschen.\n\n' +
+              'Mögliche Gründe:\n' +
+              '• Sie können sich nicht selbst löschen\n' +
+              '• Sie können keine Super Admins löschen\n' +
+              '• Als Club Admin können Sie keine Admins löschen');
+        return;
+    }
+
+    const message = getDeleteWarningMessage(user);
+
+    if (confirm(message)) {
         router.delete(route('admin.users.destroy', user.id), {
             preserveState: true,
             preserveScroll: true,
-            onSuccess: () => {
+            onSuccess: (page) => {
                 // Success message wird von Backend über Session Flash gesendet
+                // Banner wird automatisch angezeigt
             },
             onError: (errors) => {
-                alert('Fehler beim Löschen des Benutzers: ' + (errors.message || 'Unbekannter Fehler'));
+                // Show detailed error message
+                let errorMessage = 'Fehler beim Löschen des Benutzers:\n\n';
+
+                if (errors.message) {
+                    errorMessage += errors.message;
+                } else if (typeof errors === 'string') {
+                    errorMessage += errors;
+                } else {
+                    errorMessage += 'Ein unbekannter Fehler ist aufgetreten. Bitte überprüfen Sie:\n\n';
+                    errorMessage += '• Haben Sie die erforderlichen Berechtigungen?\n';
+                    errorMessage += '• Ist der Benutzer noch im System vorhanden?\n';
+                    errorMessage += '• Gibt es Abhängigkeiten, die eine Löschung verhindern?\n\n';
+                    errorMessage += 'Weitere Details finden Sie in den Server-Logs.';
+                }
+
+                alert(errorMessage);
             },
         });
     }
@@ -287,15 +371,24 @@ const deleteUser = (user) => {
                                                 </svg>
                                             </button>
                                             <button
-                                                v-if="user.id !== $page.props.auth.user.id"
+                                                v-if="canDeleteUser(user)"
                                                 @click="deleteUser(user)"
-                                                class="text-red-600 hover:text-red-900"
+                                                class="text-red-600 hover:text-red-900 transition-colors"
                                                 title="Benutzer löschen"
                                             >
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                                 </svg>
                                             </button>
+                                            <span
+                                                v-else
+                                                class="text-gray-400 cursor-not-allowed"
+                                                title="Sie haben keine Berechtigung, diesen Benutzer zu löschen"
+                                            >
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                                </svg>
+                                            </span>
                                         </div>
                                     </td>
                                 </tr>
