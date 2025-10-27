@@ -46,7 +46,7 @@ const navigationItems = [
     },
     {
         name: 'Ausstehende Spieler',
-        route: 'club-admin.pending.index',
+        route: 'club-admin.pending-players.index',
         icon: 'M12 4v16m8-8H4',
         badge: true,
     },

@@ -81,7 +81,7 @@ Route::prefix('register/player')
 
 Route::prefix('club-admin/pending-players')
     ->middleware(['auth', 'verified', 'role:super_admin|admin|club_admin'])
-    ->name('club-admin.pending.')
+    ->name('club-admin.pending-players.')
     ->group(function () {
         // List all pending players
         Route::get('/', [PendingPlayersController::class, 'index'])

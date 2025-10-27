@@ -137,33 +137,42 @@ class BasketballTeam extends Model implements HasMedia
     /**
      * Get the players on this team.
      */
-    public function players(): HasMany
+    public function players(): BelongsToMany
     {
-        return $this->hasMany(Player::class, 'team_id');
+        return $this->belongsToMany(Player::class)
+            ->withPivot([
+                'jersey_number', 'primary_position', 'secondary_positions',
+                'is_active', 'is_starter', 'is_captain', 'status',
+                'joined_at', 'left_at', 'contract_start', 'contract_end',
+                'registration_number', 'is_registered', 'registered_at',
+                'games_played', 'games_started', 'minutes_played', 'points_scored',
+                'notes', 'metadata'
+            ])
+            ->withTimestamps();
     }
 
     /**
      * Get the active players on this team.
      */
-    public function activePlayers(): HasMany
+    public function activePlayers(): BelongsToMany
     {
-        return $this->players()->where('status', 'active');
+        return $this->players()->wherePivot('is_active', true);
     }
 
     /**
      * Get the starting players on this team.
      */
-    public function starters(): HasMany
+    public function starters(): BelongsToMany
     {
-        return $this->players()->where('is_starter', true);
+        return $this->players()->wherePivot('is_starter', true)->wherePivot('is_active', true);
     }
 
     /**
      * Get the team captains.
      */
-    public function captains(): HasMany
+    public function captains(): BelongsToMany
     {
-        return $this->players()->where('is_captain', true);
+        return $this->players()->wherePivot('is_captain', true)->wherePivot('is_active', true);
     }
 
     /**
@@ -307,14 +316,20 @@ class BasketballTeam extends Model implements HasMedia
     /**
      * Add a player to this team.
      */
-    public function addPlayer(User $user, array $playerData = []): Player
+    public function addPlayer(Player $player, array $pivotData = []): void
     {
-        $player = Player::create(array_merge([
-            'user_id' => $user->id,
-            'team_id' => $this->id,
-        ], $playerData));
+        // Set default pivot values
+        $defaultPivotData = [
+            'is_active' => true,
+            'joined_at' => now(),
+            'status' => 'active',
+        ];
 
-        return $player;
+        // Merge with provided data
+        $pivotData = array_merge($defaultPivotData, $pivotData);
+
+        // Attach player to team with pivot data
+        $this->players()->attach($player->id, $pivotData);
     }
 
     /**
@@ -322,7 +337,12 @@ class BasketballTeam extends Model implements HasMedia
      */
     public function removePlayer(Player $player): void
     {
-        $player->update(['team_id' => null, 'status' => 'inactive']);
+        // Update pivot to mark as inactive and set left_at date
+        $this->players()->updateExistingPivot($player->id, [
+            'is_active' => false,
+            'left_at' => now(),
+            'status' => 'inactive',
+        ]);
     }
 
     // ============================
