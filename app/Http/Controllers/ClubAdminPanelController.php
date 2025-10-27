@@ -2,20 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Club;
 use App\Models\BasketballTeam;
-use App\Models\Player;
+use App\Models\Club;
 use App\Models\Game;
+use App\Models\Player;
 use App\Models\User;
 use App\Services\ClubService;
 use App\Services\StatisticsService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
 
 class ClubAdminPanelController extends Controller
 {
@@ -87,16 +86,16 @@ class ClubAdminPanelController extends Controller
                 $query->whereHas('homeTeam', function ($q) use ($primaryClub) {
                     $q->where('club_id', $primaryClub->id);
                 })
-                ->orWhereHas('awayTeam', function ($q) use ($primaryClub) {
-                    $q->where('club_id', $primaryClub->id);
-                });
+                    ->orWhereHas('awayTeam', function ($q) use ($primaryClub) {
+                        $q->where('club_id', $primaryClub->id);
+                    });
             })
-            ->with(['homeTeam:id,name', 'awayTeam:id,name'])
-            ->where('scheduled_at', '>', now())
-            ->where('status', 'scheduled')
-            ->orderBy('scheduled_at')
-            ->limit(10)
-            ->get();
+                ->with(['homeTeam:id,name', 'awayTeam:id,name'])
+                ->where('scheduled_at', '>', now())
+                ->where('status', 'scheduled')
+                ->orderBy('scheduled_at')
+                ->limit(10)
+                ->get();
 
             // Get recent activities
             $recentMembers = $primaryClub->users()
@@ -142,7 +141,7 @@ class ClubAdminPanelController extends Controller
                 'teams' => $teams,
                 'upcoming_games' => $upcomingGames,
                 'recent_members' => $recentMembers,
-                'all_clubs' => $adminClubs->map(fn($club) => [
+                'all_clubs' => $adminClubs->map(fn ($club) => [
                     'id' => $club->id,
                     'name' => $club->name,
                     'logo_url' => $club->logo_url,
@@ -360,26 +359,26 @@ class ClubAdminPanelController extends Controller
         $players = Player::whereHas('teams', function ($query) use ($primaryClub) {
             $query->where('club_id', $primaryClub->id);
         })
-        ->with(['user:id,name,email', 'teams' => function ($query) use ($primaryClub) {
-            $query->where('club_id', $primaryClub->id);
-        }])
-        ->get()
-        ->map(function ($player) {
-            return [
-                'id' => $player->id,
-                'name' => $player->user?->name ?? $player->full_name,
-                'email' => $player->user?->email,
-                'status' => $player->status,
-                'birth_date' => $player->user?->birth_date,
-                'teams' => $player->teams->map(fn($team) => [
-                    'id' => $team->id,
-                    'name' => $team->name,
-                    'jersey_number' => $team->pivot->jersey_number,
-                    'position' => $team->pivot->primary_position,
-                ]),
-                'created_at' => $player->created_at,
-            ];
-        });
+            ->with(['user:id,name,email', 'teams' => function ($query) use ($primaryClub) {
+                $query->where('club_id', $primaryClub->id);
+            }])
+            ->get()
+            ->map(function ($player) {
+                return [
+                    'id' => $player->id,
+                    'name' => $player->user?->name ?? $player->full_name,
+                    'email' => $player->user?->email,
+                    'status' => $player->status,
+                    'birth_date' => $player->user?->birth_date,
+                    'teams' => $player->teams->map(fn ($team) => [
+                        'id' => $team->id,
+                        'name' => $team->name,
+                        'jersey_number' => $team->pivot->jersey_number,
+                        'position' => $team->pivot->primary_position,
+                    ]),
+                    'created_at' => $player->created_at,
+                ];
+            });
 
         // Get pending players count
         $pendingPlayersCount = Player::where('pending_team_assignment', true)
@@ -483,25 +482,108 @@ class ClubAdminPanelController extends Controller
         }
 
         $primaryClub = $adminClubs->first();
+        $primaryClub->load('subscriptionPlan');
 
-        // TODO: Implement subscription management with Stripe integration
+        // Get available subscription plans for this tenant
+        $availablePlans = \App\Models\ClubSubscriptionPlan::query()
+            ->where('tenant_id', $primaryClub->tenant_id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'description', 'price', 'currency', 'billing_interval', 'features', 'limits', 'color', 'icon']);
+
+        // Get current subscription plan details
+        $currentPlan = $primaryClub->subscriptionPlan;
+
+        // Get subscription limits and usage
+        $subscriptionLimits = $primaryClub->getSubscriptionLimits();
+
         return Inertia::render('ClubAdmin/Subscriptions/Index', [
             'club' => [
                 'id' => $primaryClub->id,
                 'name' => $primaryClub->name,
+                'club_subscription_plan_id' => $primaryClub->club_subscription_plan_id,
             ],
-            'subscription' => [
-                'plan' => 'Free',
-                'status' => 'active',
-                'features' => [
-                    'Max Teams' => 2,
-                    'Max Players' => 50,
-                    'Live Scoring' => false,
-                    'Statistics' => true,
-                ],
-            ],
-            'message' => 'Abo-Verwaltung wird in einer zukünftigen Version verfügbar sein.',
+            'current_plan' => $currentPlan ? [
+                'id' => $currentPlan->id,
+                'name' => $currentPlan->name,
+                'slug' => $currentPlan->slug,
+                'description' => $currentPlan->description,
+                'price' => $currentPlan->price,
+                'currency' => $currentPlan->currency,
+                'billing_interval' => $currentPlan->billing_interval,
+                'features' => $currentPlan->features,
+                'limits' => $currentPlan->limits,
+                'color' => $currentPlan->color,
+                'icon' => $currentPlan->icon,
+            ] : null,
+            'available_plans' => $availablePlans,
+            'subscription_limits' => $subscriptionLimits,
+            'can_change_plan' => $user->hasAnyRole(['super_admin', 'admin']),
         ]);
+    }
+
+    /**
+     * Update club subscription plan.
+     */
+    public function updateSubscription(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+
+        // Only super_admin and admin can change subscription plans
+        if (! $user->hasAnyRole(['super_admin', 'admin'])) {
+            abort(403, 'Sie haben keine Berechtigung, den Subscription Plan zu ändern.');
+        }
+
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        $validated = $request->validate([
+            'club_subscription_plan_id' => [
+                'nullable',
+                'exists:club_subscription_plans,id',
+                function ($attribute, $value, $fail) use ($primaryClub) {
+                    // Validate that plan belongs to same tenant as club
+                    if ($value) {
+                        $plan = \App\Models\ClubSubscriptionPlan::find($value);
+                        if ($plan && $plan->tenant_id !== $primaryClub->tenant_id) {
+                            $fail('Der ausgewählte Plan gehört nicht zum selben Tenant wie der Club.');
+                        }
+                    }
+                },
+            ],
+        ]);
+
+        try {
+            $primaryClub->update([
+                'club_subscription_plan_id' => $validated['club_subscription_plan_id'],
+            ]);
+
+            Log::info('Club subscription plan updated', [
+                'user_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'old_plan_id' => $primaryClub->getOriginal('club_subscription_plan_id'),
+                'new_plan_id' => $validated['club_subscription_plan_id'],
+            ]);
+
+            return redirect()->route('club-admin.subscriptions')
+                ->with('success', 'Subscription Plan wurde erfolgreich aktualisiert.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update club subscription plan', [
+                'user_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->with('error', 'Fehler beim Aktualisieren des Subscription Plans.')
+                ->withInput();
+        }
     }
 
     /**
@@ -580,7 +662,7 @@ class ClubAdminPanelController extends Controller
             ]);
 
             // Assign appropriate Spatie role based on club role
-            $spatieRole = match($validated['club_role']) {
+            $spatieRole = match ($validated['club_role']) {
                 'coach', 'assistant_coach' => 'trainer',
                 'player' => 'player',
                 default => 'guest', // member, team_manager, scorer, volunteer
@@ -610,7 +692,7 @@ class ClubAdminPanelController extends Controller
             ]);
 
             return back()
-                ->with('error', 'Fehler beim Hinzufügen des Mitglieds: ' . $e->getMessage())
+                ->with('error', 'Fehler beim Hinzufügen des Mitglieds: '.$e->getMessage())
                 ->withInput();
         }
     }

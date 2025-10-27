@@ -211,9 +211,14 @@ class AdminPanelController extends Controller
     {
         $this->authorize('create users');
 
+        // Super-Admins see all clubs from all tenants, regular admins see only their tenant's clubs
+        $clubs = auth()->user()->hasRole('super_admin')
+            ? Club::allTenants()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'tenant_id'])
+            : Club::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+
         return Inertia::render('Admin/CreateUser', [
             'roles' => Role::all(),
-            'clubs' => Club::where('is_active', true)->get(['id', 'name']),
+            'clubs' => $clubs,
         ]);
     }
 
@@ -279,10 +284,15 @@ class AdminPanelController extends Controller
     {
         $this->authorize('edit users');
 
+        // Super-Admins see all clubs from all tenants, regular admins see only their tenant's clubs
+        $clubs = auth()->user()->hasRole('super_admin')
+            ? Club::allTenants()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'tenant_id'])
+            : Club::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+
         return Inertia::render('Admin/EditUser', [
             'user' => $user->load(['roles', 'clubs']),
             'roles' => Role::all(),
-            'clubs' => Club::where('is_active', true)->get(['id', 'name']),
+            'clubs' => $clubs,
         ]);
     }
 
@@ -364,7 +374,7 @@ class AdminPanelController extends Controller
             ]);
 
             return redirect()->route('admin.users')
-                ->with('error', 'Sie haben keine Berechtigung, diesen Benutzer zu löschen. ' .
+                ->with('error', 'Sie haben keine Berechtigung, diesen Benutzer zu löschen. '.
                     'Mögliche Gründe: Sie können sich nicht selbst löschen, oder Sie haben nicht die erforderlichen Berechtigungen.');
         }
 
@@ -397,7 +407,7 @@ class AdminPanelController extends Controller
             ]);
 
             return redirect()->route('admin.users')
-                ->with('error', 'Fehler beim Löschen des Benutzers: ' . $e->getMessage() .
+                ->with('error', 'Fehler beim Löschen des Benutzers: '.$e->getMessage().
                     ' Bitte überprüfen Sie die Server-Logs für weitere Details.');
         }
     }

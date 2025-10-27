@@ -56,6 +56,8 @@ Route::prefix('club-admin')
         // Subscriptions
         Route::get('/subscriptions', [ClubAdminPanelController::class, 'subscriptions'])
             ->name('subscriptions');
+        Route::put('/subscriptions', [ClubAdminPanelController::class, 'updateSubscription'])
+            ->name('subscriptions.update');
 
         // Note: Pending Players routes are already defined in routes/player_registration.php
         // They are accessible via 'club-admin.pending-players.*' route names
