@@ -2,11 +2,11 @@
 
 **Projekt:** BasketManager Pro - Mehrere Clubs pro Tenant mit individuellen Stripe-Subscriptions
 **Erstellt:** 2025-10-27
-**Zuletzt aktualisiert:** 2025-10-27 22:30
-**Status:** ✅ Phase 1 & 2 ABGESCHLOSSEN - 🚧 Phase 3 IN ARBEIT (50%)
+**Zuletzt aktualisiert:** 2025-10-27 23:45
+**Status:** ✅ Phase 1 & 2 ABGESCHLOSSEN - 🚧 Phase 3 IN ARBEIT (75%)
 **Priorität:** ⭐⭐⭐ Hoch
-**Geschätzte verbleibende Zeit:** ~6-9 Arbeitstage
-**Aktueller Fortschritt:** Phase 1: 100% (6/6) | Phase 2: 100% (8/8) | Phase 3: 50% (6/12) | Gesamt: ~45%
+**Geschätzte verbleibende Zeit:** ~2-3 Arbeitstage
+**Aktueller Fortschritt:** Phase 1: 100% (6/6) | Phase 2: 100% (8/8) | Phase 3: 75% (9/12) | Gesamt: ~70%
 ..
 ---
 
@@ -83,14 +83,15 @@ Ermöglichung von **mehreren Clubs pro Tenant**, wobei jeder Club seine eigene S
 
 #### ❌ **Was noch FEHLT:**
 
-3. **Frontend UI** (50% Complete - 6/12 Steps)
+3. **Frontend UI** (75% Complete - 9/12 Steps)
    - ✅ **Stripe.js Integration & Setup** (Dependencies, useStripe composable)
    - ✅ **Subscription Dashboard** (Club/Subscription/Index.vue mit Plan-Auswahl)
    - ✅ **Subscription Components** (SubscriptionOverview, PlanCard, BillingIntervalToggle)
    - ✅ **Checkout-Seiten** (Success.vue, Cancel.vue)
    - ✅ **Invoice Management UI** (InvoiceCard, UpcomingInvoicePreview, Invoices.vue)
-   - ⏳ **Payment Method Management UI** (In Arbeit)
-   - ❌ **Stripe Elements Integration** (Card, SEPA Elements)
+   - ✅ **Payment Method Management UI** (PaymentMethodCard, PaymentMethodList, Modals, PaymentMethods.vue)
+   - ✅ **Stripe Elements Integration** (Card, SEPA, Payment Element + 60+ Error Messages)
+   - ✅ **Enhanced Stripe Components** (PaymentMethodIcon, TestCardSelector, ThreeDSecureModal)
    - ❌ **Plan Swap Modal** (Proration Preview)
    - ❌ **Navigation Updates** (Billing-Menü)
    - ❌ **Deutsche Lokalisierung** (Translation files)
@@ -1627,7 +1628,7 @@ STRIPE_WEBHOOK_SECRET_CLUB=whsec_...  # Optional: Separate webhook for club subs
 ---
 
 ### **Phase 3: Frontend UI** (Priorität: 🔴 HOCH)
-**Dauer:** 3-4 Tage | **Status:** 🚧 IN ARBEIT (50% Complete - 6/12 Steps)
+**Dauer:** 3-4 Tage | **Status:** 🚧 IN ARBEIT (75% Complete - 9/12 Steps)
 
 #### 3.1 Stripe.js Integration & Setup ✅ **ABGESCHLOSSEN**
 
@@ -1877,21 +1878,721 @@ Next Billing Invoice Preview mit:
 
 ---
 
-#### ⏳ **Was noch FEHLT (6/12 Steps):**
+#### 3.5 Payment Method Management UI ✅ **ABGESCHLOSSEN**
 
-**3.5 Payment Method Management UI** (Ausstehend)
-- ❌ PaymentMethodCard Component
-- ❌ PaymentMethodList Component
-- ❌ AddPaymentMethodModal Component mit Stripe Elements
-- ❌ UpdateBillingDetailsModal Component
-- ❌ Club/Billing/PaymentMethods.vue Page
+**Implementiert am:** 2025-10-27 23:00
 
-**3.6 Stripe Elements Integration** (Ausstehend)
-- ❌ CardElement Implementation für Credit/Debit Cards
-- ❌ SepaDebitElement Implementation für SEPA Lastschrift
-- ❌ SetupIntent Flow für sichere Payment Method Collection
-- ❌ Client-Side Validation & Error Handling
-- ❌ 3D Secure / SCA Support
+**Dateien:**
+- `resources/js/Pages/Club/Billing/PaymentMethods.vue` (400+ Zeilen)
+- `resources/js/Components/Club/Billing/PaymentMethodCard.vue` (250+ Zeilen)
+- `resources/js/Components/Club/Billing/PaymentMethodList.vue` (320+ Zeilen)
+- `resources/js/Components/Club/Billing/AddPaymentMethodModal.vue` (500+ Zeilen)
+- `resources/js/Components/Club/Billing/UpdateBillingDetailsModal.vue` (280+ Zeilen)
+
+**3.5.1 PaymentMethods.vue Page**
+
+Haupt-Payment-Method-Management-Seite mit:
+- Active Subscription Info Box (Plan, Status, Next Billing)
+- PaymentMethodList Component Integration
+- AddPaymentMethodModal für neue Zahlungsmethoden
+- UpdateBillingDetailsModal für Billing-Informationen
+- API Integration mit 6 Endpoints:
+  - `GET /club/{club}/billing/payment-methods` - Liste aller Payment Methods
+  - `POST /club/{club}/billing/payment-methods/setup` - Setup Intent erstellen
+  - `POST /club/{club}/billing/payment-methods/attach` - Payment Method anhängen
+  - `DELETE /club/{club}/billing/payment-methods/{pm}` - Payment Method entfernen
+  - `PUT /club/{club}/billing/payment-methods/{pm}` - Billing Details aktualisieren
+  - `POST /club/{club}/billing/payment-methods/{pm}/default` - Standard Payment Method setzen
+- Toast Notifications für User Feedback
+- Quick Action Links zu Invoices & Subscription
+
+**Key Features:**
+```vue
+const handleAddPaymentMethod = async (setupIntent) => {
+    try {
+        // SetupIntent bereits von Modal bestätigt
+        await axios.post(
+            route('club.billing.payment-methods.attach', { club: props.club.id }),
+            {
+                payment_method_id: setupIntent.payment_method,
+                set_as_default: true
+            }
+        );
+
+        showAddModal.value = false;
+        await fetchPaymentMethods();
+        showToast('Zahlungsmethode wurde erfolgreich hinzugefügt', 'success');
+    } catch (error) {
+        showToast('Fehler beim Hinzufügen der Zahlungsmethode', 'error');
+    }
+};
+```
+
+**3.5.2 PaymentMethodCard Component**
+
+Individual Payment Method Display mit:
+- Payment Method Icon & Brand Display (Visa, Mastercard, SEPA, etc.)
+- Card/SEPA Details (Last4, Expiry, Bank Name)
+- Default Badge für Standard-Zahlungsmethode
+- Expiration Warnings (Karten ablaufen in <2 Monaten)
+- Billing Details Display (Name, Email, Address)
+- Action Buttons:
+  - "Als Standard festlegen" (für nicht-default Payment Methods)
+  - "Bearbeiten" (Update Billing Details)
+  - "Löschen" (mit Bestätigungsdialog)
+- Delete Confirmation Modal mit Warning
+
+**Payment Method Details Function:**
+```javascript
+const getPaymentMethodDetails = (pm) => {
+    if (pm.card) {
+        return `${pm.card.brand?.toUpperCase() || 'Karte'} •••• ${pm.card.last4}`;
+    }
+    if (pm.sepa_debit) {
+        return `SEPA •••• ${pm.sepa_debit.last4}`;
+    }
+    if (pm.sofort) {
+        return 'SOFORT Überweisung';
+    }
+    if (pm.giropay) {
+        return 'Giropay';
+    }
+    return pm.type || 'Zahlungsmethode';
+};
+```
+
+**3.5.3 PaymentMethodList Component**
+
+Payment Method Liste mit:
+- Type Filter Dropdown (Alle, Karte, SEPA, SOFORT, Giropay)
+- Grid Layout (Responsive: 1 col mobile, 2 cols desktop)
+- Loading State mit Skeleton Loaders
+- Empty State mit "Neue Zahlungsmethode hinzufügen" CTA
+- Error State mit Retry Button
+- Info Box mit wichtigen Hinweisen:
+  - Standard-Zahlungsmethode wird automatisch belastet
+  - Mindestens eine Zahlungsmethode erforderlich
+  - Daten sind PCI-compliant verschlüsselt
+
+**Events:**
+- `@add` - Emit wenn "Hinzufügen" geklickt
+- `@set-default` - Emit mit Payment Method ID
+- `@update` - Emit mit Payment Method für Billing Details Update
+- `@delete` - Emit mit Payment Method ID für Deletion
+
+**3.5.4 AddPaymentMethodModal Component**
+
+Modal für neue Payment Methods mit:
+- Tab Navigation (Kreditkarte / SEPA Lastschrift)
+- Stripe CardElement Integration (via StripeCardElement component)
+- Stripe SepaDebitElement Integration (via StripeSepaElement component)
+- Billing Details Form:
+  - Name (required)
+  - Email (required)
+  - Telefon (optional)
+  - Adresse (Straße, PLZ, Stadt, Land)
+- Country Dropdown (DE, AT, CH, FR, IT, NL, BE, ES, etc.)
+- "Als Standard festlegen" Checkbox
+- 3-Step Flow:
+  1. Setup Intent erstellen (Backend API)
+  2. Payment Method mit Stripe.js bestätigen (confirmCardSetup/confirmSepaDebitSetup)
+  3. Payment Method an Customer anhängen (Backend API)
+- Error Handling mit stripeErrors.js Integration
+- Security Info Box mit PCI Compliance Hinweis
+- SEPA Mandate Disclaimer (German legal text)
+
+**SetupIntent Flow:**
+```javascript
+// Step 1: Create Setup Intent
+const setupResponse = await axios.post(
+    route('club.billing.payment-methods.setup', { club: props.clubId }),
+    { payment_method_types: [selectedType.value] }
+);
+
+const { client_secret: clientSecret } = setupResponse.data;
+
+// Step 2: Confirm Setup Intent with Stripe
+let result;
+if (selectedType.value === 'card') {
+    result = await stripe.confirmCardSetup(clientSecret, {
+        payment_method: {
+            card: cardElement,
+            billing_details: {
+                name: billingDetails.name,
+                email: billingDetails.email,
+                phone: billingDetails.phone || null,
+                address: {
+                    line1: billingDetails.address || null,
+                    postal_code: billingDetails.postal_code || null,
+                    city: billingDetails.city || null,
+                    country: billingDetails.country || 'DE',
+                },
+            },
+        },
+    });
+} else if (selectedType.value === 'sepa_debit') {
+    result = await stripe.confirmSepaDebitSetup(clientSecret, {
+        payment_method: {
+            sepa_debit: ibanElement,
+            billing_details: { ... },
+        },
+    });
+}
+
+// Step 3: Emit success
+if (result.error) {
+    errorMessage.value = formatStripeError(result.error);
+} else {
+    emit('success', result.setupIntent);
+}
+```
+
+**3.5.5 UpdateBillingDetailsModal Component**
+
+Modal für Billing Details Update mit:
+- Pre-filled Form mit aktuellen Billing Details
+- Same Fields wie AddPaymentMethodModal (Name, Email, Phone, Address)
+- Payment Method Info Display (Type, Last4)
+- Success Message mit Auto-Close (2s)
+- Error Handling
+
+**API Call:**
+```javascript
+const saveBillingDetails = async () => {
+    try {
+        await axios.put(
+            route('club.billing.payment-methods.update', {
+                club: props.clubId,
+                paymentMethod: props.paymentMethod.id
+            }),
+            {
+                billing_details: {
+                    name: billingDetails.name,
+                    email: billingDetails.email,
+                    phone: billingDetails.phone || null,
+                    address: {
+                        line1: billingDetails.address || null,
+                        postal_code: billingDetails.postal_code || null,
+                        city: billingDetails.city || null,
+                        country: billingDetails.country || 'DE',
+                    },
+                },
+            }
+        );
+
+        showSuccessMessage.value = true;
+        setTimeout(() => emit('close'), 2000);
+    } catch (error) {
+        errorMessage.value = 'Fehler beim Aktualisieren der Zahlungsinformationen';
+    }
+};
+```
+
+**Ergebnisse:**
+- ✅ PaymentMethods.vue Page - 400+ Zeilen
+- ✅ PaymentMethodCard Component - 250+ Zeilen
+- ✅ PaymentMethodList Component - 320+ Zeilen
+- ✅ AddPaymentMethodModal Component - 500+ Zeilen
+- ✅ UpdateBillingDetailsModal Component - 280+ Zeilen
+- ✅ Complete Payment Method CRUD Workflow
+- ✅ PCI-compliant Payment Method Collection (Setup Intent Flow)
+- ✅ 6 API Endpoints Integration
+- ✅ Multi-Payment-Method Support (Card, SEPA, SOFORT, Giropay)
+- ✅ German Localization & Legal Compliance (SEPA Mandate)
+- ✅ Comprehensive Error Handling
+
+---
+
+#### 3.6 Enhanced Stripe Elements Integration ✅ **ABGESCHLOSSEN**
+
+**Implementiert am:** 2025-10-27 23:30
+
+**Dateien:**
+- `resources/js/utils/stripeErrors.js` (150+ Zeilen)
+- `resources/js/Components/Stripe/StripeCardElement.vue` (200+ Zeilen)
+- `resources/js/Components/Stripe/StripeSepaElement.vue` (180+ Zeilen)
+- `resources/js/Components/Stripe/PaymentMethodIcon.vue` (200+ Zeilen)
+- `resources/js/Components/Stripe/TestCardSelector.vue` (120+ Zeilen)
+- `resources/js/Components/Stripe/ThreeDSecureModal.vue` (180+ Zeilen)
+- `resources/js/Components/Stripe/StripePaymentElement.vue` (250+ Zeilen)
+
+**3.6.1 stripeErrors.js Utility**
+
+German Error Message Mapping für 60+ Stripe Error Codes:
+
+**Error Categories:**
+- **Card Errors:** card_declined, insufficient_funds, lost_card, stolen_card, expired_card, incorrect_cvc, processing_error, incorrect_number, invalid_expiry_year
+- **SEPA Errors:** iban_invalid, bank_account_unusable, debit_not_authorized
+- **Payment Intent Errors:** payment_intent_authentication_failure, payment_method_unactivated
+- **Setup Intent Errors:** setup_intent_authentication_failure
+- **General Errors:** api_error, rate_limit, authentication_required
+
+**Helper Functions:**
+```javascript
+// 1. Format error message in German
+export function formatStripeError(error) {
+    if (!error) return 'Ein unbekannter Fehler ist aufgetreten.';
+
+    if (error.code) {
+        return getGermanErrorMessage(error.code, error.message);
+    }
+
+    if (error.decline_code) {
+        return getGermanErrorMessage(error.decline_code, error.message);
+    }
+
+    return error.message || 'Ein Fehler ist aufgetreten.';
+}
+
+// 2. Check if error is retriable
+export function isRetriableError(error) {
+    const retriableCodes = [
+        'processing_error',
+        'issuer_not_available',
+        'try_again_later',
+        'api_error',
+        'rate_limit',
+    ];
+    return error?.code && retriableCodes.includes(error.code);
+}
+
+// 3. Get suggested action for error
+export function getErrorAction(error) {
+    const actionMap = {
+        insufficient_funds: 'add_funds',
+        card_declined: 'contact_bank',
+        expired_card: 'update_card',
+        incorrect_cvc: 'check_cvc',
+        lost_card: 'contact_bank',
+        stolen_card: 'contact_bank',
+        authentication_failure: 'retry_authentication',
+        processing_error: 'retry',
+    };
+    return actionMap[error?.code] || 'contact_support';
+}
+
+// 4. Check if error requires support contact
+export function requiresSupportContact(error) {
+    const supportCodes = [
+        'api_error',
+        'processing_error',
+        'rate_limit',
+        'payment_method_unactivated',
+    ];
+    return error?.code && supportCodes.includes(error.code);
+}
+```
+
+**Error Messages Examples:**
+```javascript
+const STRIPE_ERROR_MESSAGES = {
+    // Card Errors
+    card_declined: 'Ihre Karte wurde abgelehnt. Bitte verwenden Sie eine andere Zahlungsmethode.',
+    insufficient_funds: 'Unzureichende Deckung. Bitte verwenden Sie eine andere Karte.',
+    lost_card: 'Diese Karte wurde als verloren gemeldet. Bitte verwenden Sie eine andere Karte.',
+    expired_card: 'Ihre Karte ist abgelaufen. Bitte verwenden Sie eine gültige Karte.',
+    incorrect_cvc: 'Die eingegebene Kartenprüfnummer (CVC) ist ungültig.',
+
+    // SEPA Errors
+    iban_invalid: 'Die eingegebene IBAN ist ungültig. Bitte überprüfen Sie die Eingabe.',
+    bank_account_unusable: 'Dieses Bankkonto kann nicht verwendet werden.',
+
+    // ... 60+ weitere Fehler
+};
+```
+
+**3.6.2 StripeCardElement Component**
+
+Reusable Card Element Component mit:
+- Stripe CardElement Integration
+- Props:
+  - `disabled` (Boolean) - Element deaktivieren
+  - `autofocus` (Boolean) - Auto-focus on mount
+  - `hidePostalCode` (Boolean) - PLZ-Feld ausblenden
+  - `hideIcon` (Boolean) - Card-Icon ausblenden
+  - `customStyle` (Object) - Custom Styling Override
+  - `showErrorMessage` (Boolean) - Fehler anzeigen
+  - `helperText` (String) - Hilfstext
+- Events:
+  - `@ready` - Element geladen
+  - `@change` - Element Status geändert (empty, complete, error)
+  - `@focus` - Element fokussiert
+  - `@blur` - Element verloren Fokus
+  - `@error` - Fehler aufgetreten
+  - `@complete` - Eingabe vollständig & valide
+- Exposed Methods:
+  - `focus()` - Element fokussieren
+  - `blur()` - Fokus entfernen
+  - `clear()` - Element leeren
+  - `update(options)` - Element Options aktualisieren
+  - `getElement()` - Stripe Element Instanz abrufen
+- Auto-Styling:
+  - Focus State (Blue border & ring)
+  - Error State (Red border & background)
+  - Complete State (Green border)
+  - Disabled State (Gray background, not-allowed cursor)
+
+**Element Configuration:**
+```javascript
+const elementOptions = computed(() => ({
+    style: {
+        base: {
+            fontSize: '16px',
+            color: '#1f2937',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            '::placeholder': { color: '#9ca3af' },
+        },
+        invalid: {
+            color: '#dc2626',
+            iconColor: '#dc2626',
+        },
+        complete: {
+            color: '#059669',
+        },
+    },
+    hidePostalCode: props.hidePostalCode,
+    hideIcon: props.hideIcon,
+    disabled: props.disabled,
+}));
+```
+
+**3.6.3 StripeSepaElement Component**
+
+Reusable SEPA/IBAN Element Component mit:
+- Stripe IbanElement Integration
+- SEPA Mandate Text Display (German legal text)
+- Bank Name Detection (automatisch von Stripe)
+- Country Detection (DE, AT, etc.)
+- Props:
+  - Same as CardElement +
+  - `supportedCountries` (Array) - z.B. ['SEPA']
+  - `placeholderCountry` (String) - z.B. 'DE'
+  - `showMandate` (Boolean) - SEPA Mandat anzeigen
+  - `mandateText` (String) - Custom Mandate Text
+  - `merchantName` (String) - z.B. 'BasketManager Pro'
+- Exposed Properties:
+  - `bankName` (Ref) - Erkannte Bank
+  - `country` (Ref) - Erkanntes Land
+
+**SEPA Mandate Text:**
+```javascript
+const getDefaultMandateText = () => {
+    return `Durch Angabe Ihrer IBAN und Bestätigung dieser Zahlung ermächtigen Sie ${props.merchantName} und Stripe, unserem Zahlungsdienstleister, eine Anweisung an Ihre Bank zu senden, Ihr Konto zu belasten, sowie Ihre Bank, Ihr Konto entsprechend dieser Anweisung zu belasten. Sie haben Anspruch auf Erstattung von Ihrer Bank gemäß den Bedingungen Ihres Vertrages mit Ihrer Bank. Eine Erstattung muss innerhalb von 8 Wochen ab dem Datum der Belastung Ihres Kontos beantragt werden.`;
+};
+```
+
+**3.6.4 PaymentMethodIcon Component**
+
+SVG Icon Component für alle Payment Methods:
+
+**Supported Payment Methods (15+):**
+- 💳 Credit/Debit Cards:
+  - Visa
+  - Mastercard
+  - American Express (Amex)
+  - Discover
+  - JCB
+  - Diners Club
+  - UnionPay
+- 🏦 SEPA/Bank:
+  - SEPA Lastschrift
+  - Giropay
+  - SOFORT Überweisung
+  - iDEAL (Netherlands)
+  - Bancontact (Belgium)
+  - EPS (Austria)
+- 📱 Wallets:
+  - Generic Card Icon (Fallback)
+
+**Props:**
+- `type` (String, required) - Payment method type (visa, mastercard, sepa, etc.)
+- `size` (String) - xs, sm, md, lg, xl (default: md)
+- `colorMode` (String) - default, grayscale
+- `showTitle` (Boolean) - Tooltip anzeigen
+
+**Size Classes:**
+```javascript
+const sizeClass = computed(() => {
+    const sizes = {
+        xs: 'icon-xs',  // 24x16px
+        sm: 'icon-sm',  // 32x21px
+        md: 'icon-md',  // 48x32px
+        lg: 'icon-lg',  // 64x42px
+        xl: 'icon-xl',  // 96x64px
+    };
+    return sizes[props.size] || sizes.md;
+});
+```
+
+**Usage Example:**
+```vue
+<PaymentMethodIcon type="visa" size="md" />
+<PaymentMethodIcon type="mastercard" size="lg" color-mode="grayscale" />
+<PaymentMethodIcon type="sepa_debit" size="sm" :show-title="false" />
+```
+
+**3.6.5 TestCardSelector Component**
+
+Development Helper für Stripe Test Cards:
+
+**Visibility:**
+- Nur in Development Mode sichtbar (`import.meta.env.DEV`)
+- Nicht in Production Build enthalten
+
+**Test Card Categories (30+ Cards):**
+
+**1. ✅ Erfolgreiche Zahlungen:**
+- Visa - 4242 4242 4242 4242
+- Visa Debit - 4000 0566 5566 5556
+- Mastercard - 5555 5555 5555 4444
+- Mastercard 2-Series - 2223 0031 2200 3222
+- Mastercard Debit - 5200 8282 8282 8210
+- American Express - 3782 822463 10005
+- Discover - 6011 1111 1111 1117
+- Diners Club - 3056 9309 0259 04
+- JCB - 3566 0020 2036 0505
+- UnionPay - 6200 0000 0000 0005
+
+**2. 🔐 3D Secure / SCA:**
+- 3DS Required (Success) - 4000 0027 6000 3184
+- 3DS Required (Fail) - 4000 0000 0000 3055
+- 3DS Optional - 4000 0025 0000 0003
+
+**3. ❌ Fehlgeschlagene Zahlungen:**
+- Generic Decline - 4000 0000 0000 0002
+- Insufficient Funds - 4000 0000 0000 9995
+- Lost Card - 4000 0000 0000 9987
+- Stolen Card - 4000 0000 0000 9979
+- Expired Card - 4000 0000 0000 0069
+- Incorrect CVC - 4000 0000 0000 0127
+- Processing Error - 4000 0000 0000 0119
+- Incorrect Number - 4242 4242 4242 4241 (Luhn check fail)
+
+**4. ⚠️ Spezielle Szenarien:**
+- Dispute - Fraudulent - 4000 0000 0000 0259
+- Dispute - Product Not Received - 4000 0000 0000 2685
+- Live Mode Test (Declined) - 4000 0000 0000 0101
+
+**Features:**
+- Dropdown Selection mit Optgroups
+- Card Details Display (Number, Expiry, CVC, ZIP)
+- Copy-to-Clipboard Button für Card Number
+- Scenario Descriptions (German)
+- Event Emission (`@card-selected`) für Auto-Fill
+
+**Card Data Structure:**
+```javascript
+const testCards = {
+    success_visa: {
+        number: '4242 4242 4242 4242',
+        expiry: '12/34',
+        cvc: '123',
+        zip: '12345',
+        description: 'Standard Visa-Testkarte - Zahlung wird immer erfolgreich sein',
+    },
+    '3ds_required': {
+        number: '4000 0027 6000 3184',
+        expiry: '12/34',
+        cvc: '123',
+        zip: '12345',
+        description: '3D Secure wird verlangt und erfolgreich sein (Authentifizierung erforderlich)',
+    },
+    // ... 30+ weitere
+};
+```
+
+**3.6.6 ThreeDSecureModal Component**
+
+Enhanced UX für 3D Secure Authentication:
+
+**Features:**
+- 3 Status States:
+  - `processing` - Authentication läuft
+  - `success` - Authentication erfolgreich
+  - `error` - Authentication fehlgeschlagen
+- Progress Bar mit Timeout Warning
+- User Instructions (Popup-Fenster-Hinweise)
+- Animated Spinner & Status Icons
+- Cancel Button (emits `@cancel`)
+- Timeout Event (emits `@timeout`)
+- Props:
+  - `show` (Boolean) - Modal anzeigen
+  - `status` (String) - processing, success, error
+  - `title` (String) - Modal-Titel
+  - `subtitle` (String) - Untertitel
+  - `processingMessage` (String) - Processing-Nachricht
+  - `errorMessage` (String) - Fehlermeldung
+  - `instructions` (String) - Anweisungen
+  - `showProgressBar` (Boolean) - Progress Bar anzeigen
+  - `timeout` (Number, ms) - Timeout (default: 60000 = 60s)
+
+**Processing State:**
+```vue
+<div v-if="status === 'processing'" class="text-center">
+    <!-- Animated Spinner -->
+    <div class="flex justify-center mb-4">
+        <div class="relative">
+            <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <svg class="absolute inset-0 m-auto w-8 h-8 text-blue-600">
+                <path d="M12 15v2m-6 4h12..."/>
+            </svg>
+        </div>
+    </div>
+
+    <h4>{{ processingMessage }}</h4>
+    <p>{{ processingDescription }}</p>
+
+    <!-- Progress Bar (75% zeigt Timeout Warning) -->
+    <div v-if="showProgressBar" class="w-full bg-gray-200 rounded-full h-2 mb-4">
+        <div class="bg-blue-600 h-2 rounded-full" :style="{ width: `${progress}%` }"></div>
+    </div>
+
+    <!-- Timeout Warning (bei 75% Progress) -->
+    <div v-if="showTimeoutWarning" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p>Die Authentifizierung dauert länger als erwartet. Bitte haben Sie noch einen Moment Geduld.</p>
+    </div>
+</div>
+```
+
+**Timeout Logic:**
+```javascript
+const startProgressBar = () => {
+    progress.value = 0;
+    elapsedTime.value = 0;
+
+    progressInterval = setInterval(() => {
+        elapsedTime.value += 100;
+        progress.value = Math.min((elapsedTime.value / props.timeout) * 100, 100);
+
+        // Show warning at 75% of timeout
+        if (progress.value >= 75 && !showTimeoutWarning.value) {
+            showTimeoutWarning.value = true;
+        }
+    }, 100);
+};
+
+const startTimeoutTimer = () => {
+    timeoutTimer = setTimeout(() => {
+        emit('timeout');
+        showTimeoutWarning.value = false;
+    }, props.timeout);
+};
+```
+
+**3.6.7 StripePaymentElement Component**
+
+Stripe's Unified Payment Element (neueste Stripe.js API):
+
+**Features:**
+- Alle Payment Methods in einem Element
+- Dynamic Payment Method Display
+- Apple Pay / Google Pay Integration
+- Appearance API (Theming)
+- Layout Options (tabs, accordion, auto)
+- Props:
+  - `clientSecret` (String, required) - PaymentIntent oder SetupIntent Client Secret
+  - `appearance` (Object) - Theme & Styling
+  - `layout` (String) - tabs, accordion, auto
+  - `paymentMethodTypes` (Array) - ['card', 'sepa_debit', 'giropay', ...]
+  - `wallets` (Object) - Apple Pay / Google Pay Config
+  - `terms` (Object) - Terms Display Options
+  - `fields` (Object) - Billing Details Fields
+  - `business` (Object) - Business Info
+
+**Appearance Configuration:**
+```javascript
+const elementsOptions = computed(() => ({
+    clientSecret: props.clientSecret,
+    appearance: {
+        theme: props.appearance.theme || 'stripe', // 'stripe', 'night', 'flat'
+        variables: {
+            colorPrimary: '#3b82f6',
+            colorBackground: '#ffffff',
+            colorText: '#1f2937',
+            colorDanger: '#dc2626',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            spacingUnit: '4px',
+            borderRadius: '6px',
+            ...props.appearance.variables,
+        },
+        rules: {
+            '.Input': {
+                border: '1px solid #d1d5db',
+                boxShadow: 'none',
+            },
+            '.Input:focus': {
+                border: '1px solid #3b82f6',
+                boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
+            },
+            ...props.appearance.rules,
+        },
+    },
+    locale: 'de',
+}));
+```
+
+**Payment Element Options:**
+```javascript
+const paymentElementOptions = computed(() => {
+    const options = {
+        layout: props.layout, // 'tabs' | 'accordion' | 'auto'
+    };
+
+    // Payment Method Order
+    if (props.paymentMethodTypes?.length > 0) {
+        options.paymentMethodOrder = props.paymentMethodTypes;
+    }
+
+    // Wallets (Apple Pay / Google Pay)
+    if (props.wallets) {
+        options.wallets = props.wallets; // { applePay: 'auto', googlePay: 'auto' }
+    }
+
+    // Terms (SEPA Mandate, etc.)
+    if (props.terms) {
+        options.terms = props.terms; // { card: 'auto', sepaDebit: 'auto' }
+    }
+
+    // Fields (Billing Details)
+    if (props.fields) {
+        options.fields = props.fields; // { billingDetails: 'auto' }
+    }
+
+    return options;
+});
+```
+
+**Usage Example:**
+```vue
+<StripePaymentElement
+    :client-secret="clientSecret"
+    :appearance="{ theme: 'stripe', variables: { colorPrimary: '#3b82f6' } }"
+    layout="tabs"
+    :payment-method-types="['card', 'sepa_debit', 'giropay']"
+    :wallets="{ applePay: 'auto', googlePay: 'auto' }"
+    @ready="handleReady"
+    @complete="handleComplete"
+/>
+```
+
+**Ergebnisse:**
+- ✅ stripeErrors.js - 60+ German Error Messages
+- ✅ StripeCardElement - Reusable Card Component
+- ✅ StripeSepaElement - Reusable SEPA/IBAN Component
+- ✅ PaymentMethodIcon - 15+ SVG Icons
+- ✅ TestCardSelector - 30+ Test Cards für Development
+- ✅ ThreeDSecureModal - Enhanced 3DS UX
+- ✅ StripePaymentElement - Unified Payment Element
+- ✅ Complete Stripe.js Integration
+- ✅ PCI-compliant Tokenization
+- ✅ 3D Secure / SCA Support
+- ✅ German Localization
+- ✅ Comprehensive Error Handling
+- ✅ Developer-Friendly Testing Tools
+
+---
+
+#### ⏳ **Was noch FEHLT (3/12 Steps):**
 
 **3.7 Plan Swap Modal mit Proration Preview** (Ausstehend)
 - ❌ PlanSwapModal Component
