@@ -19,11 +19,11 @@ class ClubSubscriptionWebhookController extends Controller
     {
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
-        $webhookSecret = config('stripe.webhook_secret_club');
+        $webhookSecret = config('stripe.webhooks.signing_secret_club');
 
         // Fallback to main webhook secret if club-specific secret not configured
         if (! $webhookSecret) {
-            $webhookSecret = config('stripe.webhook_secret');
+            $webhookSecret = config('stripe.webhooks.signing_secret');
         }
 
         try {
@@ -57,6 +57,13 @@ class ClubSubscriptionWebhookController extends Controller
                 'customer.subscription.deleted' => $this->handleSubscriptionDeleted($event->data->object),
                 'invoice.payment_succeeded' => $this->handlePaymentSucceeded($event->data->object),
                 'invoice.payment_failed' => $this->handlePaymentFailed($event->data->object),
+                // Phase 2: Additional invoice events
+                'invoice.created' => $this->handleInvoiceCreated($event->data->object),
+                'invoice.finalized' => $this->handleInvoiceFinalized($event->data->object),
+                'invoice.payment_action_required' => $this->handlePaymentActionRequired($event->data->object),
+                // Phase 2: Payment method events
+                'payment_method.attached' => $this->handlePaymentMethodAttached($event->data->object),
+                'payment_method.detached' => $this->handlePaymentMethodDetached($event->data->object),
                 default => Log::info('Unhandled club webhook event', ['type' => $event->type]),
             };
         } catch (\Exception $e) {
@@ -319,5 +326,142 @@ class ClubSubscriptionWebhookController extends Controller
         ]);
 
         // TODO: Send payment failure notification to club admin
+    }
+
+    /**
+     * Handle invoice.created event (Phase 2).
+     */
+    protected function handleInvoiceCreated($invoice): void
+    {
+        $club = Club::where('stripe_customer_id', $invoice->customer)->first();
+        if (! $club) {
+            Log::debug('Club not found for invoice created event', [
+                'customer_id' => $invoice->customer,
+                'invoice_id' => $invoice->id,
+            ]);
+
+            return;
+        }
+
+        Log::info('Club invoice created', [
+            'club_id' => $club->id,
+            'club_name' => $club->name,
+            'invoice_id' => $invoice->id,
+            'amount_due' => $invoice->amount_due / 100,
+            'currency' => $invoice->currency,
+            'tenant_id' => $club->tenant_id,
+        ]);
+
+        // TODO: Send notification about new invoice
+    }
+
+    /**
+     * Handle invoice.finalized event (Phase 2).
+     */
+    protected function handleInvoiceFinalized($invoice): void
+    {
+        $club = Club::where('stripe_customer_id', $invoice->customer)->first();
+        if (! $club) {
+            Log::debug('Club not found for invoice finalized event', [
+                'customer_id' => $invoice->customer,
+                'invoice_id' => $invoice->id,
+            ]);
+
+            return;
+        }
+
+        Log::info('Club invoice finalized', [
+            'club_id' => $club->id,
+            'club_name' => $club->name,
+            'invoice_id' => $invoice->id,
+            'amount_due' => $invoice->amount_due / 100,
+            'currency' => $invoice->currency,
+            'status' => $invoice->status,
+            'tenant_id' => $club->tenant_id,
+        ]);
+
+        // TODO: Send invoice notification to club admin
+    }
+
+    /**
+     * Handle invoice.payment_action_required event (Phase 2).
+     *
+     * This occurs when 3D Secure authentication is required.
+     */
+    protected function handlePaymentActionRequired($invoice): void
+    {
+        $club = Club::where('stripe_customer_id', $invoice->customer)->first();
+        if (! $club) {
+            Log::debug('Club not found for payment action required event', [
+                'customer_id' => $invoice->customer,
+                'invoice_id' => $invoice->id,
+            ]);
+
+            return;
+        }
+
+        Log::warning('Club payment action required (3D Secure)', [
+            'club_id' => $club->id,
+            'club_name' => $club->name,
+            'invoice_id' => $invoice->id,
+            'payment_intent' => $invoice->payment_intent,
+            'tenant_id' => $club->tenant_id,
+        ]);
+
+        // TODO: Send 3D Secure authentication request to club admin
+    }
+
+    /**
+     * Handle payment_method.attached event (Phase 2).
+     */
+    protected function handlePaymentMethodAttached($paymentMethod): void
+    {
+        $club = Club::where('stripe_customer_id', $paymentMethod->customer)->first();
+        if (! $club) {
+            Log::debug('Club not found for payment method attached event', [
+                'customer_id' => $paymentMethod->customer,
+                'payment_method_id' => $paymentMethod->id,
+            ]);
+
+            return;
+        }
+
+        Log::info('Payment method attached to club', [
+            'club_id' => $club->id,
+            'club_name' => $club->name,
+            'payment_method_id' => $paymentMethod->id,
+            'payment_method_type' => $paymentMethod->type,
+            'tenant_id' => $club->tenant_id,
+        ]);
+
+        // TODO: Send confirmation notification
+    }
+
+    /**
+     * Handle payment_method.detached event (Phase 2).
+     */
+    protected function handlePaymentMethodDetached($paymentMethod): void
+    {
+        // Note: When detached, payment method no longer has customer reference
+        Log::info('Payment method detached', [
+            'payment_method_id' => $paymentMethod->id,
+            'payment_method_type' => $paymentMethod->type,
+        ]);
+
+        // Find club by payment_method_id (if stored)
+        $club = Club::where('payment_method_id', $paymentMethod->id)->first();
+        if ($club) {
+            // Clear default payment method if this was it
+            $club->update(['payment_method_id' => null]);
+
+            Log::info('Default payment method cleared for club', [
+                'club_id' => $club->id,
+                'club_name' => $club->name,
+                'payment_method_id' => $paymentMethod->id,
+                'tenant_id' => $club->tenant_id,
+            ]);
+        }
+
+        // TODO: Send notification about payment method removal
     }
 }

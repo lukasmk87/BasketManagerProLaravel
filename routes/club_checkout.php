@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Stripe\ClubCheckoutController;
+use App\Http\Controllers\Stripe\ClubBillingController;
 use App\Http\Controllers\Webhooks\ClubSubscriptionWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,41 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // Billing portal for subscription management
     Route::post('/club/{club}/billing-portal', [ClubCheckoutController::class, 'billingPortal'])
         ->name('club.billing-portal');
+
+    // ============================
+    // BILLING MANAGEMENT (Phase 2)
+    // ============================
+
+    // Billing routes group
+    Route::prefix('club/{club}/billing')->name('club.billing.')->group(function () {
+        // Invoice endpoints
+        Route::get('/invoices', [ClubBillingController::class, 'indexInvoices'])
+            ->name('invoices.index');
+        Route::get('/invoices/upcoming', [ClubBillingController::class, 'upcomingInvoice'])
+            ->name('invoices.upcoming');
+        Route::get('/invoices/{invoice}', [ClubBillingController::class, 'showInvoice'])
+            ->name('invoices.show');
+        Route::get('/invoices/{invoice}/pdf', [ClubBillingController::class, 'downloadInvoicePdf'])
+            ->name('invoices.pdf');
+
+        // Payment Method endpoints
+        Route::get('/payment-methods', [ClubBillingController::class, 'indexPaymentMethods'])
+            ->name('payment-methods.index');
+        Route::post('/payment-methods/setup', [ClubBillingController::class, 'createSetupIntent'])
+            ->name('payment-methods.setup');
+        Route::post('/payment-methods/attach', [ClubBillingController::class, 'attachPaymentMethod'])
+            ->name('payment-methods.attach');
+        Route::delete('/payment-methods/{paymentMethod}', [ClubBillingController::class, 'detachPaymentMethod'])
+            ->name('payment-methods.detach');
+        Route::put('/payment-methods/{paymentMethod}', [ClubBillingController::class, 'updatePaymentMethod'])
+            ->name('payment-methods.update');
+        Route::post('/payment-methods/{paymentMethod}/default', [ClubBillingController::class, 'setDefaultPaymentMethod'])
+            ->name('payment-methods.default');
+
+        // Proration Preview
+        Route::post('/preview-plan-swap', [ClubBillingController::class, 'previewPlanSwap'])
+            ->name('preview-plan-swap');
+    });
 });
 
 // Webhook routes (no authentication required)

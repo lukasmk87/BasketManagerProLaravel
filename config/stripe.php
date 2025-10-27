@@ -47,30 +47,35 @@ return [
     'webhooks' => [
         'tolerance' => 300, // 5 minutes
         'signing_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'signing_secret_club' => env('STRIPE_WEBHOOK_SECRET_CLUB', env('STRIPE_WEBHOOK_SECRET')),
         'events' => [
             // Subscription events
             'customer.subscription.created',
-            'customer.subscription.updated', 
+            'customer.subscription.updated',
             'customer.subscription.deleted',
             'customer.subscription.trial_will_end',
-            
+
             // Payment events
             'payment_intent.succeeded',
             'payment_intent.payment_failed',
             'payment_method.attached',
             'payment_method.detached',
-            
+
             // Invoice events
             'invoice.created',
             'invoice.finalized',
             'invoice.paid',
             'invoice.payment_failed',
             'invoice.payment_action_required',
-            
+            'invoice.payment_succeeded',
+
             // Customer events
             'customer.created',
             'customer.updated',
             'customer.deleted',
+
+            // Club Subscription events (Phase 2)
+            'checkout.session.completed',
         ],
     ],
 

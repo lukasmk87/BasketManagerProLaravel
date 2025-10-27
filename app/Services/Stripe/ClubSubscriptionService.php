@@ -205,6 +205,159 @@ class ClubSubscriptionService
     }
 
     /**
+     * Preview plan swap with proration details.
+     *
+     * Shows what the upcoming invoice will look like if the club switches plans.
+     * Useful for showing users the cost before they confirm the plan change.
+     *
+     * @param  Club  $club
+     * @param  ClubSubscriptionPlan  $newPlan
+     * @param  array  $options  Optional: billing_interval, proration_date
+     * @return array Proration preview details
+     *
+     * @throws \Exception
+     */
+    public function previewPlanSwap(
+        Club $club,
+        ClubSubscriptionPlan $newPlan,
+        array $options = []
+    ): array {
+        if (! $club->stripe_subscription_id) {
+            throw new \Exception('Club must have active subscription to preview plan swap');
+        }
+
+        // Validate new plan
+        if ($newPlan->tenant_id !== $club->tenant_id) {
+            throw new \Exception("New plan does not belong to club's tenant");
+        }
+
+        if (! $newPlan->is_stripe_synced) {
+            throw new \Exception('New plan is not synced with Stripe');
+        }
+
+        $billingInterval = $options['billing_interval'] ?? 'monthly';
+        $newPriceId = $billingInterval === 'yearly'
+            ? $newPlan->stripe_price_id_yearly
+            : $newPlan->stripe_price_id_monthly;
+
+        if (! $newPriceId) {
+            throw new \Exception("New plan has no Stripe Price ID for {$billingInterval}");
+        }
+
+        $client = $this->clientManager->getCurrentTenantClient();
+
+        try {
+            // Get current subscription
+            $subscription = $client->subscriptions->retrieve($club->stripe_subscription_id);
+            $currentItem = $subscription->items->data[0];
+
+            // Prepare proration date (default: now)
+            $prorationDate = $options['proration_date'] ?? time();
+
+            // Get upcoming invoice with proration preview
+            $upcomingInvoice = $client->invoices->upcoming([
+                'customer' => $club->stripe_customer_id,
+                'subscription' => $club->stripe_subscription_id,
+                'subscription_items' => [
+                    [
+                        'id' => $currentItem->id,
+                        'price' => $newPriceId,
+                    ],
+                ],
+                'subscription_proration_date' => $prorationDate,
+                'subscription_proration_behavior' => $options['proration_behavior'] ?? 'create_prorations',
+            ]);
+
+            // Calculate proration details
+            $prorationAmount = 0;
+            $creditAmount = 0;
+            $debitAmount = 0;
+            $lineItems = [];
+
+            foreach ($upcomingInvoice->lines->data as $line) {
+                $lineItem = [
+                    'description' => $line->description,
+                    'amount' => $line->amount / 100,
+                    'currency' => strtoupper($line->currency),
+                    'proration' => $line->proration,
+                    'period' => [
+                        'start' => $line->period->start,
+                        'end' => $line->period->end,
+                    ],
+                ];
+
+                $lineItems[] = $lineItem;
+
+                if ($line->proration) {
+                    $prorationAmount += $line->amount;
+                    if ($line->amount < 0) {
+                        $creditAmount += abs($line->amount);
+                    } else {
+                        $debitAmount += $line->amount;
+                    }
+                }
+            }
+
+            $currentPlan = $club->subscriptionPlan;
+
+            Log::info('Club plan swap preview generated', [
+                'club_id' => $club->id,
+                'current_plan_id' => $currentPlan?->id,
+                'new_plan_id' => $newPlan->id,
+                'proration_amount' => $prorationAmount / 100,
+                'total_amount_due' => $upcomingInvoice->amount_due / 100,
+                'tenant_id' => $club->tenant_id,
+            ]);
+
+            return [
+                'current_plan' => [
+                    'id' => $currentPlan?->id,
+                    'name' => $currentPlan?->name,
+                    'price' => $currentPlan?->price,
+                    'currency' => $currentPlan?->currency,
+                ],
+                'new_plan' => [
+                    'id' => $newPlan->id,
+                    'name' => $newPlan->name,
+                    'price' => $newPlan->price,
+                    'currency' => $newPlan->currency,
+                ],
+                'billing_interval' => $billingInterval,
+                'proration' => [
+                    'amount' => $prorationAmount / 100,
+                    'credit' => $creditAmount / 100,
+                    'debit' => $debitAmount / 100,
+                    'currency' => strtoupper($upcomingInvoice->currency),
+                ],
+                'upcoming_invoice' => [
+                    'amount_due' => $upcomingInvoice->amount_due / 100,
+                    'amount_remaining' => $upcomingInvoice->amount_remaining / 100,
+                    'subtotal' => $upcomingInvoice->subtotal / 100,
+                    'total' => $upcomingInvoice->total / 100,
+                    'currency' => strtoupper($upcomingInvoice->currency),
+                    'period_start' => $upcomingInvoice->period_start,
+                    'period_end' => $upcomingInvoice->period_end,
+                ],
+                'line_items' => $lineItems,
+                'effective_date' => $prorationDate,
+                'next_billing_date' => $subscription->current_period_end,
+                'is_upgrade' => $newPlan->price > ($currentPlan?->price ?? 0),
+                'is_downgrade' => $newPlan->price < ($currentPlan?->price ?? 0),
+            ];
+        } catch (StripeException $e) {
+            Log::error('Failed to preview club plan swap', [
+                'club_id' => $club->id,
+                'current_plan_id' => $club->club_subscription_plan_id,
+                'new_plan_id' => $newPlan->id,
+                'tenant_id' => $club->tenant_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
      * Sync plan with Stripe (create Product & Prices).
      *
      * @return array{product: \Stripe\Product, price_monthly: \Stripe\Price|null, price_yearly: \Stripe\Price|null}

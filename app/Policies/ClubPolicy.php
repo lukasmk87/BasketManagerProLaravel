@@ -239,6 +239,25 @@ class ClubPolicy
     }
 
     /**
+     * Determine whether the user can manage club billing (Stripe subscriptions).
+     */
+    public function manageBilling(User $user, Club $club): bool
+    {
+        // Super admins and admins can manage billing for any club
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        // Club admins can only manage billing for clubs they administer
+        if ($user->hasRole('club_admin') && $user->can('view financial data')) {
+            $administeredClubIds = $user->getAdministeredClubIds();
+            return in_array($club->id, $administeredClubIds);
+        }
+
+        return false;
+    }
+
+    /**
      * Determine whether the user can manage club media library.
      */
     public function manageMedia(User $user, Club $club): bool
