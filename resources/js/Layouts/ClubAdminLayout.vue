@@ -1,19 +1,23 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import { useTranslations } from '@/composables/useTranslations';
 
 defineProps({
     title: String,
 });
 
+const page = usePage();
+const { trans } = useTranslations();
 const showingNavigationDropdown = ref(false);
 const sidebarOpen = ref(true);
+const billingMenuExpanded = ref(false);
 
 const switchToTeam = (team) => {
     router.put(route('current-team.update'), {
@@ -25,6 +29,23 @@ const switchToTeam = (team) => {
 
 const logout = () => {
     router.post(route('logout'));
+};
+
+const switchLanguage = (locale) => {
+    const currentLocale = page.props.locale || 'de';
+    if (locale === currentLocale) {
+        return;
+    }
+
+    router.post(route('user.locale.update'), {
+        locale: locale,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            window.location.href = `/${locale}${window.location.pathname.substring(3)}`;
+        },
+    });
 };
 
 // Navigation items for Club Admin
@@ -66,9 +87,25 @@ const navigationItems = [
         icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
     },
     {
-        name: 'Abonnement',
-        route: 'club-admin.subscriptions',
+        name: trans('billing.title'),
         icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
+        submenu: [
+            {
+                name: trans('subscription.title'),
+                route: 'club.subscription.index',
+                icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z',
+            },
+            {
+                name: trans('billing.invoices.title'),
+                route: 'club.billing.invoices.index',
+                icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+            },
+            {
+                name: trans('billing.payment_methods.title'),
+                route: 'club.billing.payment-methods.index',
+                icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z',
+            },
+        ],
     },
     {
         name: 'Einstellungen',
@@ -80,6 +117,14 @@ const navigationItems = [
 const isCurrentRoute = (routeName) => {
     return route().current(routeName);
 };
+
+const isSubmenuActive = (item) => {
+    if (!item.submenu) return false;
+    return item.submenu.some(child => route().current(child.route));
+};
+
+// Get current club ID from shared props
+const currentClubId = computed(() => page.props.currentClub?.id);
 </script>
 
 <template>
@@ -145,6 +190,41 @@ const isCurrentRoute = (routeName) => {
                                         <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">
                                             API Tokens
                                         </DropdownLink>
+
+                                        <div class="border-t border-gray-200" />
+
+                                        <!-- Language Selection -->
+                                        <div class="block px-4 py-2 text-xs text-gray-400">
+                                            Sprache / Language
+                                        </div>
+
+                                        <button
+                                            @click="switchLanguage('de')"
+                                            type="button"
+                                            class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out"
+                                            :class="{ 'bg-indigo-50 text-indigo-600 font-semibold': $page.props.locale === 'de' }"
+                                        >
+                                            <span class="flex items-center justify-between">
+                                                <span>Deutsch</span>
+                                                <svg v-if="$page.props.locale === 'de'" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                </svg>
+                                            </span>
+                                        </button>
+
+                                        <button
+                                            @click="switchLanguage('en')"
+                                            type="button"
+                                            class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out"
+                                            :class="{ 'bg-indigo-50 text-indigo-600 font-semibold': $page.props.locale === 'en' }"
+                                        >
+                                            <span class="flex items-center justify-between">
+                                                <span>English</span>
+                                                <svg v-if="$page.props.locale === 'en'" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                </svg>
+                                            </span>
+                                        </button>
 
                                         <div class="border-t border-gray-200" />
 
@@ -241,39 +321,110 @@ const isCurrentRoute = (routeName) => {
 
                     <!-- Navigation Items -->
                     <nav class="mt-8 px-3 space-y-1">
-                        <Link
-                            v-for="item in navigationItems"
-                            :key="item.route"
-                            :href="route(item.route)"
-                            :class="[
-                                'flex items-center px-3 py-2.5 rounded-lg transition-all duration-200',
-                                isCurrentRoute(item.route)
-                                    ? 'bg-blue-50 text-blue-700 font-semibold'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                            ]"
-                        >
-                            <svg
-                                class="flex-shrink-0 w-6 h-6"
-                                :class="isCurrentRoute(item.route) ? 'text-blue-600' : 'text-gray-400'"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                        <template v-for="item in navigationItems" :key="item.name">
+                            <!-- Regular menu item (no submenu) -->
+                            <Link
+                                v-if="!item.submenu"
+                                :href="route(item.route)"
+                                :class="[
+                                    'flex items-center px-3 py-2.5 rounded-lg transition-all duration-200',
+                                    isCurrentRoute(item.route)
+                                        ? 'bg-blue-50 text-blue-700 font-semibold'
+                                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                ]"
                             >
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
-                            </svg>
-                            <span
-                                v-if="sidebarOpen"
-                                class="ml-3 text-sm"
-                            >
-                                {{ item.name }}
-                            </span>
-                            <span
-                                v-if="sidebarOpen && item.badge"
-                                class="ml-auto inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800"
-                            >
-                                Neu
-                            </span>
-                        </Link>
+                                <svg
+                                    class="flex-shrink-0 w-6 h-6"
+                                    :class="isCurrentRoute(item.route) ? 'text-blue-600' : 'text-gray-400'"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
+                                </svg>
+                                <span
+                                    v-if="sidebarOpen"
+                                    class="ml-3 text-sm"
+                                >
+                                    {{ item.name }}
+                                </span>
+                                <span
+                                    v-if="sidebarOpen && item.badge"
+                                    class="ml-auto inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800"
+                                >
+                                    Neu
+                                </span>
+                            </Link>
+
+                            <!-- Parent menu item with submenu -->
+                            <div v-else class="space-y-1">
+                                <button
+                                    @click="billingMenuExpanded = !billingMenuExpanded"
+                                    :class="[
+                                        'w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200',
+                                        isSubmenuActive(item)
+                                            ? 'bg-blue-50 text-blue-700 font-semibold'
+                                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                    ]"
+                                >
+                                    <svg
+                                        class="flex-shrink-0 w-6 h-6"
+                                        :class="isSubmenuActive(item) ? 'text-blue-600' : 'text-gray-400'"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
+                                    </svg>
+                                    <span
+                                        v-if="sidebarOpen"
+                                        class="ml-3 text-sm flex-1 text-left"
+                                    >
+                                        {{ item.name }}
+                                    </span>
+                                    <svg
+                                        v-if="sidebarOpen"
+                                        class="w-4 h-4 transition-transform duration-200"
+                                        :class="{ 'rotate-180': billingMenuExpanded }"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <!-- Submenu items (collapsible) -->
+                                <Transition name="submenu">
+                                    <div v-show="billingMenuExpanded && sidebarOpen" class="ml-4 space-y-1">
+                                        <Link
+                                            v-for="child in item.submenu"
+                                            :key="child.route"
+                                            :href="currentClubId ? route(child.route, { club: currentClubId }) : '#'"
+                                            :class="[
+                                                'flex items-center px-3 py-2 rounded-lg transition-all duration-200 text-sm',
+                                                route().current(child.route)
+                                                    ? 'bg-blue-100 text-blue-700 font-medium'
+                                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                            ]"
+                                        >
+                                            <svg
+                                                class="flex-shrink-0 w-5 h-5"
+                                                :class="route().current(child.route) ? 'text-blue-600' : 'text-gray-400'"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="child.icon" />
+                                            </svg>
+                                            <span class="ml-2">
+                                                {{ child.name }}
+                                            </span>
+                                        </Link>
+                                    </div>
+                                </Transition>
+                            </div>
+                        </template>
                     </nav>
 
                     <!-- Footer -->
@@ -302,3 +453,25 @@ const isCurrentRoute = (routeName) => {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Submenu transition animations */
+.submenu-enter-active,
+.submenu-leave-active {
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.submenu-enter-from,
+.submenu-leave-to {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+}
+
+.submenu-enter-to,
+.submenu-leave-from {
+    opacity: 1;
+    max-height: 500px;
+}
+</style>

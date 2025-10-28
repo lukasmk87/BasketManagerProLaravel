@@ -1,5 +1,8 @@
 <script setup>
 import { computed } from 'vue';
+import { useTranslations } from '@/composables/useTranslations';
+
+const { trans } = useTranslations();
 
 const props = defineProps({
     modelValue: {
@@ -46,7 +49,7 @@ const toggleInterval = () => {
             ]"
             role="switch"
             :aria-checked="isYearly"
-            aria-label="Abrechnungsintervall umschalten"
+            :aria-label="trans('subscription.billing.toggle_interval')"
         >
             <span
                 class="inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out"
@@ -66,7 +69,7 @@ const toggleInterval = () => {
                     disabled && 'cursor-not-allowed opacity-50'
                 ]"
             >
-                Monatlich
+                {{ trans('subscription.billing.monthly') }}
             </button>
 
             <button
@@ -79,7 +82,7 @@ const toggleInterval = () => {
                     disabled && 'cursor-not-allowed opacity-50'
                 ]"
             >
-                <span>Jährlich</span>
+                <span>{{ trans('subscription.billing.yearly') }}</span>
                 <span
                     v-if="showSavings"
                     class="ml-2 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800"

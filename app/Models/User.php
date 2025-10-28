@@ -65,6 +65,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'notification_settings',
         'privacy_settings',
         'language',
+        'locale',
         'timezone',
         'date_format',
         'time_format',

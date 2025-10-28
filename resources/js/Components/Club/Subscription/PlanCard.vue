@@ -2,6 +2,9 @@
 import { computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import { useTranslations } from '@/composables/useTranslations';
+
+const { trans } = useTranslations();
 
 const props = defineProps({
     plan: {
@@ -38,7 +41,7 @@ const props = defineProps({
 const emit = defineEmits(['subscribe', 'manage']);
 
 const price = computed(() => {
-    if (props.plan.price === 0) return 'Kostenlos';
+    if (props.plan.price === 0) return trans('subscription.plans.free');
 
     const amount = props.billingInterval === 'yearly'
         ? props.plan.price * 12 * 0.9  // 10% discount for yearly
@@ -51,7 +54,9 @@ const price = computed(() => {
 });
 
 const billingPeriod = computed(() => {
-    return props.billingInterval === 'yearly' ? 'Jahr' : 'Monat';
+    return props.billingInterval === 'yearly'
+        ? trans('subscription.billing.per_year').replace('/ ', '')
+        : trans('subscription.billing.per_month').replace('/ ', '');
 });
 
 const planColor = computed(() => {
@@ -95,27 +100,27 @@ const isSwitchToFree = computed(() => {
 
 const buttonText = computed(() => {
     if (props.isCurrentPlan) {
-        return 'Aktueller Plan';
+        return trans('subscription.plans.current');
     }
 
     if (!props.hasActiveSubscription) {
-        return props.plan.price === 0 ? 'Plan auswählen' : 'Jetzt abonnieren';
+        return props.plan.price === 0 ? trans('subscription.plans.select') : trans('subscription.plans.subscribe');
     }
 
     // User has active subscription and wants to change
     if (isUpgrade.value) {
-        return `↑ Auf ${props.plan.name} upgraden`;
+        return trans('subscription.plans.upgrade', { plan: props.plan.name });
     }
 
     if (isDowngrade.value) {
-        return `↓ Zu ${props.plan.name} wechseln`;
+        return trans('subscription.plans.downgrade', { plan: props.plan.name });
     }
 
     if (isSwitchToFree.value) {
-        return 'Zu kostenlosem Plan wechseln';
+        return trans('subscription.plans.switch_to_free');
     }
 
-    return 'Plan wechseln';
+    return trans('subscription.plans.switch');
 });
 
 const handleAction = () => {
@@ -143,7 +148,7 @@ const handleAction = () => {
             class="absolute -top-4 left-1/2 -translate-x-1/2"
         >
             <span class="inline-flex items-center rounded-full bg-yellow-100 px-4 py-1 text-xs font-semibold text-yellow-800 shadow">
-                ⭐ Empfohlen
+                ⭐ {{ trans('subscription.plans.recommended') }}
             </span>
         </div>
 
@@ -153,7 +158,7 @@ const handleAction = () => {
             class="absolute -top-4 left-1/2 -translate-x-1/2"
         >
             <span class="inline-flex items-center rounded-full bg-blue-100 px-4 py-1 text-xs font-semibold text-blue-800 shadow">
-                ✓ Aktueller Plan
+                ✓ {{ trans('subscription.plans.current') }}
             </span>
         </div>
 
@@ -186,14 +191,14 @@ const handleAction = () => {
                     </span>
                 </div>
                 <p v-if="plan.trial_period_days > 0" class="mt-2 text-sm text-green-600 font-medium">
-                    {{ plan.trial_period_days }} Tage kostenlos testen
+                    {{ trans('subscription.trial.test_free', { days: plan.trial_period_days }) }}
                 </p>
             </div>
 
             <!-- Features -->
             <div v-if="plan.features && plan.features.length > 0" class="mb-6 flex-1">
                 <h4 class="mb-3 text-sm font-semibold text-gray-700">
-                    Features:
+                    {{ trans('subscription.plans.features') }}:
                 </h4>
                 <ul class="space-y-2">
                     <li
@@ -212,7 +217,7 @@ const handleAction = () => {
             <!-- Limits -->
             <div v-if="plan.limits && Object.keys(plan.limits).length > 0" class="mb-6">
                 <h4 class="mb-3 text-sm font-semibold text-gray-700">
-                    Limits:
+                    {{ trans('subscription.plans.limits') }}:
                 </h4>
                 <div class="grid grid-cols-2 gap-2 text-sm">
                     <div
@@ -222,7 +227,7 @@ const handleAction = () => {
                     >
                         <span class="text-xs text-gray-600">{{ key }}</span>
                         <span class="font-semibold text-gray-900">
-                            {{ value === -1 ? 'Unlimited' : value }}
+                            {{ value === -1 ? trans('subscription.common.unlimited') : value }}
                         </span>
                     </div>
                 </div>
@@ -247,7 +252,7 @@ const handleAction = () => {
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Wird geladen...
+                        {{ trans('subscription.common.loading') }}
                     </span>
                     <span v-else>
                         {{ buttonText }}
@@ -260,7 +265,7 @@ const handleAction = () => {
                     :disabled="loading"
                     class="w-full justify-center"
                 >
-                    Abonnement verwalten
+                    {{ trans('subscription.manage') }}
                 </SecondaryButton>
             </div>
         </div>

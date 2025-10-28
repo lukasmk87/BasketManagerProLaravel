@@ -1,0 +1,43 @@
+<?php
+
+return [
+    'success' => [
+        'title' => 'Checkout Erfolgreich',
+        'congratulations' => 'Herzlichen Glückwunsch!',
+        'default_message' => 'Ihr Abonnement wurde erfolgreich aktiviert!',
+        'subscription_details' => 'Abonnement Details',
+        'club' => 'Club',
+        'plan' => 'Plan',
+        'status' => 'Status',
+        'session_id' => 'Session ID',
+        'next_steps' => '📋 Nächste Schritte',
+        'step_email' => 'Sie erhalten in Kürze eine Bestätigungs-E-Mail von Stripe',
+        'step_features' => 'Alle Features Ihres Plans sind ab sofort verfügbar',
+        'step_manage' => 'Verwalten Sie Ihr Abonnement jederzeit über das Billing-Portal',
+        'step_invoices' => 'Rechnungen werden automatisch per E-Mail versandt',
+        'manage_subscription' => 'Abonnement verwalten',
+        'to_dashboard' => 'Zum Dashboard',
+        'support_question' => 'Fragen oder Probleme?',
+        'contact_support' => 'Kontaktieren Sie unseren Support',
+    ],
+
+    'cancel' => [
+        'title' => 'Checkout Abgebrochen',
+        'default_message' => 'Der Checkout wurde abgebrochen. Sie können es jederzeit erneut versuchen.',
+        'what_happened' => 'Was ist passiert?',
+        'explanation' => 'Der Checkout-Vorgang für <strong>:club</strong> wurde abgebrochen. Es wurden keine Änderungen an Ihrem Abonnement vorgenommen und es wurde keine Zahlung durchgeführt.',
+        'reasons_title' => '💡 Mögliche Gründe',
+        'reason_closed' => 'Sie haben den Browser geschlossen oder zurück navigiert',
+        'reason_cancelled' => 'Sie haben auf "Abbrechen" geklickt',
+        'reason_timeout' => 'Der Checkout-Vorgang hat zu lange gedauert',
+        'reason_different_plan' => 'Sie möchten einen anderen Plan wählen',
+        'actions_title' => '🚀 Was können Sie tun?',
+        'action_return' => 'Kehren Sie zur Abonnement-Seite zurück und wählen Sie einen Plan',
+        'action_review' => 'Überprüfen Sie die Plan-Details bevor Sie abonnieren',
+        'action_support' => 'Bei Fragen kontaktieren Sie unseren Support',
+        'try_again' => 'Erneut versuchen',
+        'to_dashboard' => 'Zum Dashboard',
+        'need_help' => 'Benötigen Sie Hilfe bei der Auswahl des richtigen Plans?',
+        'contact_support' => 'Kontaktieren Sie unseren Support',
+    ],
+];

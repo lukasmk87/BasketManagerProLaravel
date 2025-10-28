@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -12,6 +12,7 @@ defineProps({
     title: String,
 });
 
+const page = usePage();
 const showingNavigationDropdown = ref(false);
 
 const switchToTeam = (team) => {
@@ -24,6 +25,23 @@ const switchToTeam = (team) => {
 
 const logout = () => {
     router.post(route('logout'));
+};
+
+const switchLanguage = (locale) => {
+    const currentLocale = page.props.locale || 'de';
+    if (locale === currentLocale) {
+        return;
+    }
+
+    router.post(route('user.locale.update'), {
+        locale: locale,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            window.location.href = `/${locale}${window.location.pathname.substring(3)}`;
+        },
+    });
 };
 </script>
 
@@ -342,6 +360,41 @@ const logout = () => {
                                         <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">
                                             API Tokens
                                         </DropdownLink>
+
+                                        <div class="border-t border-gray-200" />
+
+                                        <!-- Language Selection -->
+                                        <div class="block px-4 py-2 text-xs text-gray-400">
+                                            Sprache / Language
+                                        </div>
+
+                                        <button
+                                            @click="switchLanguage('de')"
+                                            type="button"
+                                            class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out"
+                                            :class="{ 'bg-indigo-50 text-indigo-600 font-semibold': $page.props.locale === 'de' }"
+                                        >
+                                            <span class="flex items-center justify-between">
+                                                <span>Deutsch</span>
+                                                <svg v-if="$page.props.locale === 'de'" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                </svg>
+                                            </span>
+                                        </button>
+
+                                        <button
+                                            @click="switchLanguage('en')"
+                                            type="button"
+                                            class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out"
+                                            :class="{ 'bg-indigo-50 text-indigo-600 font-semibold': $page.props.locale === 'en' }"
+                                        >
+                                            <span class="flex items-center justify-between">
+                                                <span>English</span>
+                                                <svg v-if="$page.props.locale === 'en'" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                </svg>
+                                            </span>
+                                        </button>
 
                                         <div class="border-t border-gray-200" />
 

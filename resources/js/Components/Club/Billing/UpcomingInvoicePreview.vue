@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useStripe } from '@/composables/useStripe.js';
+import { useTranslations } from '@/composables/useTranslations';
 
 const props = defineProps({
     invoice: {
@@ -14,6 +15,7 @@ const props = defineProps({
 });
 
 const { formatAmount } = useStripe();
+const { trans } = useTranslations();
 
 const nextBillingDate = computed(() => {
     if (!props.invoice.period_end) return null;
@@ -51,10 +53,10 @@ const formattedSubtotal = computed(() => {
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold text-gray-900">
-                        Nächste Rechnung
+                        {{ trans('billing.invoices.upcoming') }}
                     </h3>
                     <p class="text-sm text-gray-600">
-                        Vorschau der kommenden Abrechnung
+                        {{ trans('billing.invoices.upcoming_preview') }}
                     </p>
                 </div>
             </div>
@@ -78,15 +80,15 @@ const formattedSubtotal = computed(() => {
         <div v-else class="space-y-4">
             <!-- Days Until Billing -->
             <div class="flex items-center justify-between py-2 border-b border-blue-200">
-                <span class="text-sm text-gray-700">Tage bis zur Abrechnung:</span>
+                <span class="text-sm text-gray-700">{{ trans('billing.invoices.days_until') }}:</span>
                 <span class="text-lg font-bold text-blue-600">
-                    {{ daysUntilBilling }} {{ daysUntilBilling === 1 ? 'Tag' : 'Tage' }}
+                    {{ daysUntilBilling }} {{ daysUntilBilling === 1 ? trans('subscription.common.day') : trans('subscription.common.days') }}
                 </span>
             </div>
 
             <!-- Line Items -->
             <div v-if="invoice.lines && invoice.lines.length > 0" class="space-y-2">
-                <div class="text-sm font-medium text-gray-700 mb-2">Positionen:</div>
+                <div class="text-sm font-medium text-gray-700 mb-2">{{ trans('billing.invoices.positions') }}:</div>
                 <div
                     v-for="(line, index) in invoice.lines"
                     :key="index"
@@ -108,22 +110,22 @@ const formattedSubtotal = computed(() => {
             <!-- Totals -->
             <div class="pt-4 border-t-2 border-blue-300 space-y-2">
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-700">Zwischensumme:</span>
+                    <span class="text-gray-700">{{ trans('billing.labels.subtotal') }}:</span>
                     <span class="font-medium text-gray-900">{{ formattedSubtotal }}</span>
                 </div>
 
                 <div v-if="invoice.tax" class="flex justify-between text-sm">
-                    <span class="text-gray-700">MwSt ({{ invoice.tax_percent }}%):</span>
+                    <span class="text-gray-700">{{ trans('billing.labels.tax', { percent: invoice.tax_percent }) }}:</span>
                     <span class="font-medium text-gray-900">{{ formatAmount(invoice.tax, invoice.currency) }}</span>
                 </div>
 
                 <div v-if="invoice.discount" class="flex justify-between text-sm text-green-600">
-                    <span>Rabatt:</span>
+                    <span>{{ trans('billing.labels.discount') }}:</span>
                     <span class="font-medium">-{{ formatAmount(invoice.discount, invoice.currency) }}</span>
                 </div>
 
                 <div class="flex justify-between pt-2 border-t border-blue-200">
-                    <span class="text-lg font-semibold text-gray-900">Gesamt:</span>
+                    <span class="text-lg font-semibold text-gray-900">{{ trans('billing.labels.total') }}:</span>
                     <span class="text-2xl font-bold text-blue-600">{{ formattedTotal }}</span>
                 </div>
             </div>
@@ -134,8 +136,7 @@ const formattedSubtotal = computed(() => {
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                 </svg>
                 <p class="text-xs text-gray-700">
-                    Diese Rechnung wird automatisch an Ihre hinterlegte Zahlungsmethode gesendet.
-                    Nach erfolgreicher Zahlung erhalten Sie eine Bestätigung per E-Mail.
+                    {{ trans('billing.info.auto_charge') }}
                 </p>
             </div>
         </div>

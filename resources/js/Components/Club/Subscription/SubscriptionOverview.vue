@@ -2,6 +2,9 @@
 import { computed } from 'vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import { useTranslations } from '@/composables/useTranslations';
+
+const { trans } = useTranslations();
 
 const props = defineProps({
     club: {
@@ -38,27 +41,27 @@ const subscriptionStatus = computed(() => {
     const status = props.club.subscription_status;
     const statusConfig = {
         'active': {
-            label: 'Aktiv',
+            label: trans('subscription.status.active'),
             color: 'bg-green-100 text-green-800 border-green-500',
             icon: '✓',
         },
         'trial': {
-            label: 'Testphase',
+            label: trans('subscription.status.trial'),
             color: 'bg-blue-100 text-blue-800 border-blue-500',
             icon: '⏱️',
         },
         'past_due': {
-            label: 'Zahlung fällig',
+            label: trans('subscription.status.past_due'),
             color: 'bg-red-100 text-red-800 border-red-500',
             icon: '⚠️',
         },
         'canceled': {
-            label: 'Gekündigt',
+            label: trans('subscription.status.canceled'),
             color: 'bg-gray-100 text-gray-800 border-gray-500',
             icon: '✕',
         },
         'incomplete': {
-            label: 'Unvollständig',
+            label: trans('subscription.status.incomplete'),
             color: 'bg-yellow-100 text-yellow-800 border-yellow-500',
             icon: '⌛',
         },
@@ -98,7 +101,7 @@ const trialEndDate = computed(() => {
 });
 
 const formatPrice = computed(() => {
-    if (!props.currentPlan || props.currentPlan.price === 0) return 'Kostenlos';
+    if (!props.currentPlan || props.currentPlan.price === 0) return trans('subscription.plans.free');
 
     return new Intl.NumberFormat('de-DE', {
         style: 'currency',
@@ -120,7 +123,7 @@ const formatPrice = computed(() => {
                         {{ currentPlan.name }} Plan
                     </p>
                     <p v-else class="text-blue-100">
-                        Kein aktives Abonnement
+                        {{ trans('subscription.status.no_subscription') }}
                     </p>
                 </div>
 
@@ -150,11 +153,11 @@ const formatPrice = computed(() => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div class="ml-3">
-                            <h3 class="text-sm font-semibold text-blue-800">Testphase läuft</h3>
+                            <h3 class="text-sm font-semibold text-blue-800">{{ trans('subscription.trial.running') }}</h3>
                             <p class="mt-1 text-sm text-blue-700">
-                                Ihre Testphase endet am {{ trialEndDate }}
+                                {{ trans('subscription.trial.ends', { date: trialEndDate }) }}
                                 <span v-if="trialDaysRemaining > 0" class="font-medium">
-                                    (noch {{ trialDaysRemaining }} {{ trialDaysRemaining === 1 ? 'Tag' : 'Tage' }})
+                                    ({{ trans('subscription.trial.days_remaining', { days: trialDaysRemaining, unit: trialDaysRemaining === 1 ? trans('subscription.common.day') : trans('subscription.common.days') }) }})
                                 </span>
                             </p>
                         </div>
@@ -165,33 +168,33 @@ const formatPrice = computed(() => {
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Price -->
                     <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 mb-1">Preis</div>
+                        <div class="text-sm text-gray-600 mb-1">{{ trans('subscription.billing.price') }}</div>
                         <div class="text-2xl font-bold text-gray-900">
                             {{ formatPrice }}
                             <span v-if="currentPlan.price > 0" class="text-sm font-normal text-gray-600">
-                                / Monat
+                                {{ trans('subscription.billing.per_month') }}
                             </span>
                         </div>
                     </div>
 
                     <!-- Start Date -->
                     <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 mb-1">Startdatum</div>
+                        <div class="text-sm text-gray-600 mb-1">{{ trans('subscription.billing.start_date') }}</div>
                         <div class="text-lg font-semibold text-gray-900">
-                            {{ subscriptionStartDate || 'Nicht verfügbar' }}
+                            {{ subscriptionStartDate || trans('subscription.common.not_available') }}
                         </div>
                     </div>
 
                     <!-- Next Billing -->
                     <div class="bg-gray-50 rounded-lg p-4">
                         <div class="text-sm text-gray-600 mb-1">
-                            {{ club.subscription_ends_at ? 'Endet am' : 'Nächste Abrechnung' }}
+                            {{ club.subscription_ends_at ? trans('subscription.billing.ends_at') : trans('subscription.billing.next_billing') }}
                         </div>
                         <div class="text-lg font-semibold text-gray-900">
-                            {{ nextBillingDate || 'Nicht verfügbar' }}
+                            {{ nextBillingDate || trans('subscription.common.not_available') }}
                         </div>
                         <div v-if="billingDaysRemaining > 0 && !club.subscription_ends_at" class="text-xs text-gray-600 mt-1">
-                            in {{ billingDaysRemaining }} {{ billingDaysRemaining === 1 ? 'Tag' : 'Tagen' }}
+                            {{ trans('subscription.trial.days_remaining', { days: billingDaysRemaining, unit: billingDaysRemaining === 1 ? trans('subscription.common.day') : trans('subscription.common.days_dative') }) }}
                         </div>
                     </div>
                 </div>
@@ -211,7 +214,7 @@ const formatPrice = computed(() => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        Billing-Portal öffnen
+                        {{ trans('subscription.portal.open') }}
                     </SecondaryButton>
 
                     <DangerButton
@@ -222,7 +225,7 @@ const formatPrice = computed(() => {
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                        Abonnement kündigen
+                        {{ trans('subscription.cancel') }}
                     </DangerButton>
                 </div>
             </div>
@@ -233,10 +236,10 @@ const formatPrice = computed(() => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                    Kein aktives Abonnement
+                    {{ trans('subscription.status.no_subscription') }}
                 </h3>
                 <p class="text-gray-600 max-w-md mx-auto">
-                    Wählen Sie einen der untenstehenden Pläne aus, um die vollen Features zu nutzen.
+                    {{ trans('subscription.messages.no_plans') }}
                 </p>
             </div>
         </div>

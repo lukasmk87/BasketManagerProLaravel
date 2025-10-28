@@ -5,6 +5,9 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import InvoiceCard from '@/Components/Club/Billing/InvoiceCard.vue';
 import UpcomingInvoicePreview from '@/Components/Club/Billing/UpcomingInvoicePreview.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import { useTranslations } from '@/composables/useTranslations';
+
+const { trans } = useTranslations();
 
 const props = defineProps({
     club: {
@@ -29,14 +32,14 @@ const filteredInvoices = computed(() => {
     return invoices.value.filter(invoice => invoice.status === statusFilter.value);
 });
 
-const statusOptions = [
-    { value: 'all', label: 'Alle' },
-    { value: 'paid', label: 'Bezahlt' },
-    { value: 'open', label: 'Offen' },
-    { value: 'draft', label: 'Entwurf' },
-    { value: 'uncollectible', label: 'Uneinbringlich' },
-    { value: 'void', label: 'Storniert' },
-];
+const statusOptions = computed(() => [
+    { value: 'all', label: trans('billing.status.all') },
+    { value: 'paid', label: trans('billing.status.paid') },
+    { value: 'open', label: trans('billing.status.open') },
+    { value: 'draft', label: trans('billing.status.draft') },
+    { value: 'uncollectible', label: trans('billing.status.uncollectible') },
+    { value: 'void', label: trans('billing.status.void') },
+]);
 
 // Methods
 const fetchInvoices = async (append = false) => {
@@ -75,7 +78,7 @@ const fetchInvoices = async (append = false) => {
         }
     } catch (err) {
         console.error('Failed to fetch invoices:', err);
-        error.value = err.response?.data?.error || 'Fehler beim Laden der Rechnungen';
+        error.value = err.response?.data?.error || trans('billing.messages.invoices_error');
     } finally {
         loading.value = false;
     }
@@ -143,10 +146,10 @@ onMounted(() => {
 </script>
 
 <template>
-    <AppLayout title="Rechnungen">
+    <AppLayout :title="trans('billing.invoices.title')">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Rechnungen
+                {{ trans('billing.invoices.title') }}
             </h2>
         </template>
 
@@ -166,17 +169,17 @@ onMounted(() => {
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900">
-                                    Rechnungshistorie
+                                    {{ trans('billing.invoices.history') }}
                                 </h3>
                                 <p class="text-sm text-gray-600 mt-1">
-                                    Alle Rechnungen für {{ club.name }}
+                                    {{ trans('billing.invoices.all_for_club', { club: club.name }) }}
                                 </p>
                             </div>
 
                             <!-- Filter -->
                             <div class="flex items-center space-x-2">
                                 <label for="status-filter" class="text-sm text-gray-700 font-medium">
-                                    Status:
+                                    {{ trans('billing.labels.status') }}:
                                 </label>
                                 <select
                                     id="status-filter"
@@ -212,13 +215,13 @@ onMounted(() => {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                                Fehler beim Laden
+                                {{ trans('billing.messages.load_error') }}
                             </h3>
                             <p class="text-gray-600 mb-4">
                                 {{ error }}
                             </p>
                             <SecondaryButton @click="fetchInvoices(false)">
-                                Erneut versuchen
+                                {{ trans('billing.actions.retry') }}
                             </SecondaryButton>
                         </div>
 
@@ -228,12 +231,12 @@ onMounted(() => {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                                Keine Rechnungen vorhanden
+                                {{ trans('billing.invoices.no_invoices') }}
                             </h3>
                             <p class="text-gray-600">
                                 {{ statusFilter === 'all'
-                                    ? 'Es wurden noch keine Rechnungen erstellt.'
-                                    : `Keine Rechnungen mit Status "${statusOptions.find(o => o.value === statusFilter)?.label}" gefunden.`
+                                    ? trans('billing.invoices.no_invoices_created')
+                                    : trans('billing.invoices.no_invoices_status', { status: statusOptions.value.find(o => o.value === statusFilter)?.label })
                                 }}
                             </p>
                         </div>
@@ -265,7 +268,7 @@ onMounted(() => {
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Weitere Rechnungen laden
+                                    {{ trans('billing.actions.load_more') }}
                                 </SecondaryButton>
                             </div>
                         </div>
@@ -280,13 +283,13 @@ onMounted(() => {
                         </svg>
                         <div class="ml-3">
                             <h4 class="text-sm font-semibold text-blue-900">
-                                Wichtige Informationen
+                                {{ trans('billing.info.important') }}
                             </h4>
                             <ul class="mt-2 text-sm text-blue-800 space-y-1 list-disc list-inside">
-                                <li>Rechnungen werden automatisch per E-Mail versandt</li>
-                                <li>PDF-Rechnungen können jederzeit heruntergeladen werden</li>
-                                <li>Bei Fragen zu einer Rechnung kontaktieren Sie unseren Support</li>
-                                <li>Zahlungen werden automatisch von Ihrer hinterlegten Zahlungsmethode abgebucht</li>
+                                <li>{{ trans('billing.info.auto_email') }}</li>
+                                <li>{{ trans('billing.info.pdf_download') }}</li>
+                                <li>{{ trans('billing.info.support') }}</li>
+                                <li>{{ trans('billing.info.auto_charge') }}</li>
                             </ul>
                         </div>
                     </div>

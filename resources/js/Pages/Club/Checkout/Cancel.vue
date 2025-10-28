@@ -3,6 +3,9 @@ import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import { useTranslations } from '@/composables/useTranslations';
+
+const { trans } = useTranslations();
 
 const props = defineProps({
     club: {
@@ -11,16 +14,16 @@ const props = defineProps({
     },
     message: {
         type: String,
-        default: 'Der Checkout wurde abgebrochen. Sie können es jederzeit erneut versuchen.',
+        default: null,
     },
 });
 </script>
 
 <template>
-    <AppLayout title="Checkout Abgebrochen">
+    <AppLayout :title="trans('checkout.cancel.title')">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Checkout Abgebrochen
+                {{ trans('checkout.cancel.title') }}
             </h2>
         </template>
 
@@ -35,10 +38,10 @@ const props = defineProps({
                             </svg>
                         </div>
                         <h1 class="text-3xl font-bold mb-2">
-                            Checkout Abgebrochen
+                            {{ trans('checkout.cancel.title') }}
                         </h1>
                         <p class="text-xl text-gray-100">
-                            {{ message }}
+                            {{ message || trans('checkout.cancel.default_message') }}
                         </p>
                     </div>
 
@@ -48,43 +51,40 @@ const props = defineProps({
                             <!-- Club Info -->
                             <div class="rounded-lg bg-gray-50 p-6">
                                 <h3 class="text-lg font-semibold text-gray-900 mb-3">
-                                    Was ist passiert?
+                                    {{ trans('checkout.cancel.what_happened') }}
                                 </h3>
-                                <p class="text-gray-600">
-                                    Der Checkout-Vorgang für <strong>{{ club.name }}</strong> wurde abgebrochen.
-                                    Es wurden keine Änderungen an Ihrem Abonnement vorgenommen und es wurde keine Zahlung durchgeführt.
-                                </p>
+                                <p class="text-gray-600" v-html="trans('checkout.cancel.explanation', { club: club.name })"></p>
                             </div>
 
                             <!-- Why This Might Have Happened -->
                             <div class="rounded-lg border-2 border-yellow-200 bg-yellow-50 p-6">
                                 <h3 class="text-lg font-semibold text-yellow-900 mb-3">
-                                    💡 Mögliche Gründe
+                                    {{ trans('checkout.cancel.reasons_title') }}
                                 </h3>
                                 <ul class="space-y-2 text-sm text-yellow-800">
                                     <li class="flex items-start">
                                         <svg class="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                                         </svg>
-                                        <span>Sie haben den Browser geschlossen oder zurück navigiert</span>
+                                        <span>{{ trans('checkout.cancel.reason_closed') }}</span>
                                     </li>
                                     <li class="flex items-start">
                                         <svg class="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                                         </svg>
-                                        <span>Sie haben auf "Abbrechen" geklickt</span>
+                                        <span>{{ trans('checkout.cancel.reason_cancelled') }}</span>
                                     </li>
                                     <li class="flex items-start">
                                         <svg class="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                                         </svg>
-                                        <span>Der Checkout-Vorgang hat zu lange gedauert</span>
+                                        <span>{{ trans('checkout.cancel.reason_timeout') }}</span>
                                     </li>
                                     <li class="flex items-start">
                                         <svg class="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                                         </svg>
-                                        <span>Sie möchten einen anderen Plan wählen</span>
+                                        <span>{{ trans('checkout.cancel.reason_different_plan') }}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -92,26 +92,26 @@ const props = defineProps({
                             <!-- What You Can Do -->
                             <div class="rounded-lg border-2 border-blue-200 bg-blue-50 p-6">
                                 <h3 class="text-lg font-semibold text-blue-900 mb-3">
-                                    🚀 Was können Sie tun?
+                                    {{ trans('checkout.cancel.actions_title') }}
                                 </h3>
                                 <ul class="space-y-2 text-sm text-blue-800">
                                     <li class="flex items-start">
                                         <svg class="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                         </svg>
-                                        <span>Kehren Sie zur Abonnement-Seite zurück und wählen Sie einen Plan</span>
+                                        <span>{{ trans('checkout.cancel.action_return') }}</span>
                                     </li>
                                     <li class="flex items-start">
                                         <svg class="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                         </svg>
-                                        <span>Überprüfen Sie die Plan-Details bevor Sie abonnieren</span>
+                                        <span>{{ trans('checkout.cancel.action_review') }}</span>
                                     </li>
                                     <li class="flex items-start">
                                         <svg class="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                         </svg>
-                                        <span>Bei Fragen kontaktieren Sie unseren Support</span>
+                                        <span>{{ trans('checkout.cancel.action_support') }}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -126,7 +126,7 @@ const props = defineProps({
                                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                         </svg>
-                                        Erneut versuchen
+                                        {{ trans('checkout.cancel.try_again') }}
                                     </PrimaryButton>
                                 </Link>
 
@@ -138,7 +138,7 @@ const props = defineProps({
                                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                         </svg>
-                                        Zum Dashboard
+                                        {{ trans('checkout.cancel.to_dashboard') }}
                                     </SecondaryButton>
                                 </Link>
                             </div>
@@ -149,9 +149,9 @@ const props = defineProps({
                 <!-- Support Info -->
                 <div class="mt-6 text-center text-sm text-gray-600">
                     <p>
-                        Benötigen Sie Hilfe bei der Auswahl des richtigen Plans?
+                        {{ trans('checkout.cancel.need_help') }}
                         <a href="mailto:support@basketmanager-pro.de" class="text-blue-600 hover:text-blue-800 font-medium">
-                            Kontaktieren Sie unseren Support
+                            {{ trans('checkout.cancel.contact_support') }}
                         </a>
                     </p>
                 </div>

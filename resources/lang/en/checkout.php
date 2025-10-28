@@ -1,0 +1,43 @@
+<?php
+
+return [
+    'success' => [
+        'title' => 'Checkout Successful',
+        'congratulations' => 'Congratulations!',
+        'default_message' => 'Your subscription has been successfully activated!',
+        'subscription_details' => 'Subscription Details',
+        'club' => 'Club',
+        'plan' => 'Plan',
+        'status' => 'Status',
+        'session_id' => 'Session ID',
+        'next_steps' => '📋 Next Steps',
+        'step_email' => 'You will shortly receive a confirmation email from Stripe',
+        'step_features' => 'All features of your plan are now available',
+        'step_manage' => 'Manage your subscription anytime through the billing portal',
+        'step_invoices' => 'Invoices will be automatically sent via email',
+        'manage_subscription' => 'Manage Subscription',
+        'to_dashboard' => 'Go to Dashboard',
+        'support_question' => 'Questions or Problems?',
+        'contact_support' => 'Contact Our Support',
+    ],
+
+    'cancel' => [
+        'title' => 'Checkout Canceled',
+        'default_message' => 'The checkout was canceled. You can try again anytime.',
+        'what_happened' => 'What Happened?',
+        'explanation' => 'The checkout process for <strong>:club</strong> was canceled. No changes were made to your subscription and no payment was processed.',
+        'reasons_title' => '💡 Possible Reasons',
+        'reason_closed' => 'You closed the browser or navigated back',
+        'reason_cancelled' => 'You clicked "Cancel"',
+        'reason_timeout' => 'The checkout process took too long',
+        'reason_different_plan' => 'You want to choose a different plan',
+        'actions_title' => '🚀 What Can You Do?',
+        'action_return' => 'Return to the subscription page and select a plan',
+        'action_review' => 'Review the plan details before subscribing',
+        'action_support' => 'Contact our support if you have questions',
+        'try_again' => 'Try Again',
+        'to_dashboard' => 'Go to Dashboard',
+        'need_help' => 'Need help choosing the right plan?',
+        'contact_support' => 'Contact Our Support',
+    ],
+];

@@ -8,6 +8,9 @@ import BillingIntervalToggle from '@/Components/Club/Subscription/BillingInterva
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import PlanSwapModal from '@/Components/Club/Subscription/PlanSwapModal.vue';
 import { useStripe } from '@/composables/useStripe.js';
+import { useTranslations } from '@/composables/useTranslations';
+
+const { trans } = useTranslations();
 
 const props = defineProps({
     club: {
@@ -135,7 +138,7 @@ const openBillingPortal = async () => {
         }
     } catch (error) {
         console.error('Billing portal error:', error);
-        alert(`Fehler beim Öffnen des Billing-Portals: ${error.response?.data?.error || error.message}`);
+        alert(trans('billing.messages.portal_error', { error: error.response?.data?.error || error.message }));
     }
 };
 
@@ -147,12 +150,12 @@ const cancelSubscription = async () => {
     try {
         // This would be implemented via the billing portal for now
         // In the future, we can add a cancel endpoint
-        alert('Bitte verwenden Sie das Billing-Portal, um Ihr Abonnement zu kündigen.');
+        alert(trans('subscription.messages.use_portal_to_cancel'));
         showCancelModal.value = false;
         await openBillingPortal();
     } catch (error) {
         console.error('Cancel subscription error:', error);
-        alert(`Fehler beim Kündigen: ${error.message}`);
+        alert(trans('subscription.messages.cancel_error', { error: error.message }));
     }
 };
 
@@ -179,10 +182,10 @@ const getLimitColor = (percentage) => {
 </script>
 
 <template>
-    <AppLayout title="Club Abonnement">
+    <AppLayout :title="trans('subscription.title')">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Club Abonnement
+                {{ trans('subscription.title') }}
             </h2>
         </template>
 
@@ -204,10 +207,10 @@ const getLimitColor = (percentage) => {
                 <div v-if="subscription_limits && Object.keys(subscription_limits).length > 0" class="bg-white rounded-lg shadow-lg p-6">
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                            Nutzungsstatistik
+                            {{ trans('subscription.usage.title') }}
                         </h3>
                         <p class="text-sm text-gray-600">
-                            Ihre aktuelle Nutzung im Vergleich zu den Plan-Limits
+                            {{ trans('subscription.usage.description') }}
                         </p>
                     </div>
 
@@ -227,7 +230,7 @@ const getLimitColor = (percentage) => {
                                 />
                             </div>
                             <p v-if="getLimitPercentage(limit) >= 90" class="text-xs text-red-600">
-                                ⚠️ Limit fast erreicht
+                                {{ trans('subscription.usage.limit_warning') }}
                             </p>
                         </div>
                     </div>
@@ -237,10 +240,10 @@ const getLimitColor = (percentage) => {
                 <div class="bg-white rounded-lg shadow-lg p-6">
                     <div class="mb-8 text-center">
                         <h3 class="text-2xl font-bold text-gray-900 mb-2">
-                            Verfügbare Pläne
+                            {{ trans('subscription.plans.available') }}
                         </h3>
                         <p class="text-gray-600 mb-6">
-                            Wählen Sie den Plan, der am besten zu Ihren Anforderungen passt
+                            {{ trans('subscription.plans.choose') }}
                         </p>
 
                         <!-- Billing Interval Toggle -->
@@ -278,14 +281,14 @@ const getLimitColor = (percentage) => {
                             </svg>
                             <div class="ml-3">
                                 <h4 class="text-sm font-semibold text-blue-900">
-                                    Wichtige Hinweise
+                                    {{ trans('subscription.info.important_notes') }}
                                 </h4>
                                 <ul class="mt-2 text-sm text-blue-800 space-y-1 list-disc list-inside">
-                                    <li>Jährliche Abonnements bieten 10% Rabatt</li>
-                                    <li>Alle Preise verstehen sich inklusive MwSt.</li>
-                                    <li>Sie können jederzeit upgraden oder downgraden</li>
-                                    <li>Anteilige Rückerstattung bei Plan-Wechsel</li>
-                                    <li>Sichere Zahlung über Stripe</li>
+                                    <li>{{ trans('subscription.info.yearly_discount') }}</li>
+                                    <li>{{ trans('subscription.info.prices_include_vat') }}</li>
+                                    <li>{{ trans('subscription.info.can_change_anytime') }}</li>
+                                    <li>{{ trans('subscription.info.prorated_refund') }}</li>
+                                    <li>{{ trans('subscription.info.secure_payment') }}</li>
                                 </ul>
                             </div>
                         </div>
@@ -297,12 +300,12 @@ const getLimitColor = (percentage) => {
         <!-- Cancel Subscription Modal -->
         <ConfirmationModal :show="showCancelModal" @close="showCancelModal = false">
             <template #title>
-                Abonnement kündigen
+                {{ trans('subscription.cancel_modal.title') }}
             </template>
 
             <template #content>
                 <p class="text-sm text-gray-600 mb-4">
-                    Möchten Sie Ihr Abonnement wirklich kündigen?
+                    {{ trans('subscription.cancel_modal.confirm') }}
                 </p>
 
                 <div class="space-y-3">
@@ -314,9 +317,9 @@ const getLimitColor = (percentage) => {
                             class="mt-1"
                         />
                         <div>
-                            <div class="font-medium text-gray-900">Am Perioden-Ende kündigen</div>
+                            <div class="font-medium text-gray-900">{{ trans('subscription.cancel_modal.at_period_end') }}</div>
                             <div class="text-sm text-gray-600">
-                                Ihr Zugang bleibt bis zum Ende der aktuellen Abrechnungsperiode aktiv
+                                {{ trans('subscription.cancel_modal.at_period_end_desc') }}
                             </div>
                         </div>
                     </label>
@@ -329,9 +332,9 @@ const getLimitColor = (percentage) => {
                             class="mt-1"
                         />
                         <div>
-                            <div class="font-medium text-gray-900">Sofort kündigen</div>
+                            <div class="font-medium text-gray-900">{{ trans('subscription.cancel_modal.immediately') }}</div>
                             <div class="text-sm text-gray-600">
-                                Ihr Zugang wird sofort beendet
+                                {{ trans('subscription.cancel_modal.immediately_desc') }}
                             </div>
                         </div>
                     </label>
@@ -340,14 +343,14 @@ const getLimitColor = (percentage) => {
 
             <template #footer>
                 <SecondaryButton @click="showCancelModal = false">
-                    Abbrechen
+                    {{ trans('subscription.common.cancel') }}
                 </SecondaryButton>
 
                 <DangerButton
                     class="ml-3"
                     @click="cancelSubscription"
                 >
-                    Abonnement kündigen
+                    {{ trans('subscription.cancel') }}
                 </DangerButton>
             </template>
         </ConfirmationModal>

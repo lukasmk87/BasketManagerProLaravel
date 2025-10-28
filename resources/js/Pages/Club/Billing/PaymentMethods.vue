@@ -1,15 +1,15 @@
 <template>
-    <Head title="Zahlungsmethoden" />
+    <Head :title="trans('billing.payment_methods.title')" />
 
     <AppLayout>
         <template #header>
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                        Zahlungsmethoden
+                        {{ trans('billing.payment_methods.title') }}
                     </h2>
                     <p class="mt-1 text-sm text-gray-600">
-                        Verwalten Sie Ihre Zahlungsmethoden für {{ club.name }}
+                        {{ trans('billing.payment_methods.manage', { club: club.name }) }}
                     </p>
                 </div>
 
@@ -18,7 +18,7 @@
                     <ol class="flex items-center space-x-2 text-sm">
                         <li>
                             <Link :href="route('dashboard')" class="text-gray-500 hover:text-gray-700">
-                                Dashboard
+                                {{ trans('billing.breadcrumbs.dashboard') }}
                             </Link>
                         </li>
                         <li class="flex items-center">
@@ -33,7 +33,7 @@
                             <svg class="flex-shrink-0 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="ml-2 text-gray-700 font-medium">Zahlungsmethoden</span>
+                            <span class="ml-2 text-gray-700 font-medium">{{ trans('billing.payment_methods.title') }}</span>
                         </li>
                     </ol>
                 </nav>
@@ -55,13 +55,13 @@
                                 </svg>
                             </div>
                             <div class="ml-4">
-                                <h3 class="text-lg font-semibold text-gray-900">Aktives Abonnement</h3>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ trans('billing.payment_methods.active_subscription') }}</h3>
                                 <p class="mt-1 text-sm text-gray-700">
                                     {{ club.subscription_plan.name }} •
-                                    {{ formatCurrency(club.subscription_plan.price) }}/Monat
+                                    {{ formatCurrency(club.subscription_plan.price) }}{{ trans('subscription.billing.per_month') }}
                                 </p>
                                 <p v-if="club.subscription_current_period_end" class="mt-1 text-xs text-gray-600">
-                                    Nächste Zahlung am {{ formatDate(club.subscription_current_period_end) }}
+                                    {{ trans('billing.payment_methods.next_payment', { date: formatDate(club.subscription_current_period_end) }) }}
                                 </p>
                             </div>
                         </div>
@@ -69,7 +69,7 @@
                             :href="route('club.subscription.index', club.id)"
                             class="text-sm font-medium text-blue-600 hover:text-blue-700"
                         >
-                            Abonnement verwalten →
+                            {{ trans('billing.navigation.manage_subscription') }}
                         </Link>
                     </div>
                 </div>
@@ -103,9 +103,9 @@
                                 </svg>
                             </div>
                             <div class="ml-4">
-                                <h3 class="text-lg font-semibold text-gray-900">Rechnungen</h3>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ trans('billing.cards.invoices_title') }}</h3>
                                 <p class="mt-1 text-sm text-gray-600">
-                                    Sehen Sie alle Ihre Rechnungen und laden Sie PDFs herunter
+                                    {{ trans('billing.cards.invoices_desc') }}
                                 </p>
                             </div>
                         </div>
@@ -123,9 +123,9 @@
                                 </svg>
                             </div>
                             <div class="ml-4">
-                                <h3 class="text-lg font-semibold text-gray-900">Abonnement</h3>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ trans('billing.cards.subscription_title') }}</h3>
                                 <p class="mt-1 text-sm text-gray-600">
-                                    Verwalten Sie Ihren Abonnement-Plan und Features
+                                    {{ trans('billing.cards.subscription_desc_alt') }}
                                 </p>
                             </div>
                         </div>
@@ -204,6 +204,9 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import PaymentMethodList from '@/Components/Club/Billing/PaymentMethodList.vue';
 import AddPaymentMethodModal from '@/Components/Club/Billing/AddPaymentMethodModal.vue';
 import UpdateBillingDetailsModal from '@/Components/Club/Billing/UpdateBillingDetailsModal.vue';
+import { useTranslations } from '@/composables/useTranslations';
+
+const { trans } = useTranslations();
 
 const props = defineProps({
     club: {
@@ -263,7 +266,7 @@ const fetchPaymentMethods = async () => {
         paymentMethods.value = response.data.payment_methods || [];
     } catch (error) {
         console.error('Error fetching payment methods:', error);
-        showToast('Fehler beim Laden der Zahlungsmethoden', 'error');
+        showToast(trans('billing.messages.payment_methods_error'), 'error');
     } finally {
         loading.value = false;
     }
@@ -278,7 +281,7 @@ const closeAddModal = () => {
 };
 
 const handlePaymentMethodAdded = async () => {
-    showToast('Zahlungsmethode erfolgreich hinzugefügt!');
+    showToast(trans('billing.messages.added'));
     await fetchPaymentMethods();
 };
 
@@ -296,7 +299,7 @@ const closeUpdateModal = () => {
 };
 
 const handleBillingDetailsUpdated = async () => {
-    showToast('Rechnungsinformationen erfolgreich aktualisiert!');
+    showToast(trans('billing.messages.updated'));
     await fetchPaymentMethods();
 };
 
@@ -309,11 +312,11 @@ const handleSetDefault = async (paymentMethodId) => {
             })
         );
 
-        showToast('Standard-Zahlungsmethode erfolgreich geändert!');
+        showToast(trans('billing.messages.default_set'));
         await fetchPaymentMethods();
     } catch (error) {
         console.error('Error setting default payment method:', error);
-        showToast('Fehler beim Setzen der Standard-Zahlungsmethode', 'error');
+        showToast(trans('billing.messages.default_error'), 'error');
     }
 };
 
@@ -326,12 +329,12 @@ const handleDelete = async (paymentMethodId) => {
             })
         );
 
-        showToast('Zahlungsmethode erfolgreich entfernt!');
+        showToast(trans('billing.messages.removed'));
         await fetchPaymentMethods();
     } catch (error) {
         console.error('Error deleting payment method:', error);
         showToast(
-            error.response?.data?.message || 'Fehler beim Entfernen der Zahlungsmethode',
+            error.response?.data?.message || trans('billing.messages.remove_error'),
             'error'
         );
     }

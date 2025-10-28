@@ -127,6 +127,18 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'message' => fn () => $request->session()->get('message'),
             ],
+            'locale' => function () use ($request) {
+                // Use authenticated user's locale preference, fallback to app locale
+                if ($user = $request->user()) {
+                    return $user->locale ?? app()->getLocale();
+                }
+                return app()->getLocale();
+            },
+            'translations' => fn () => [
+                'subscription' => __('subscription'),
+                'billing' => __('billing'),
+                'checkout' => __('checkout'),
+            ],
         ];
     }
 }

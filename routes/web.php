@@ -45,7 +45,10 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
+    // User Preferences Routes
+    Route::post('/user/locale', [\App\Http\Controllers\UserPreferencesController::class, 'updateLocale'])->name('user.locale.update');
+
     // Basketball Clubs Routes (explicit names to avoid conflicts)
     Route::get('clubs', [\App\Http\Controllers\ClubController::class, 'index'])->name('web.clubs.index');
     Route::get('clubs/create', [\App\Http\Controllers\ClubController::class, 'create'])->name('web.clubs.create');
