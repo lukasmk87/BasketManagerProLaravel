@@ -3,9 +3,17 @@
 namespace App\Observers;
 
 use App\Models\Player;
+use App\Services\ClubUsageTrackingService;
 
 class PlayerObserver
 {
+    private ClubUsageTrackingService $usageTracker;
+
+    public function __construct(ClubUsageTrackingService $usageTracker)
+    {
+        $this->usageTracker = $usageTracker;
+    }
+
     /**
      * Handle the Player "created" event.
      */
@@ -21,6 +29,9 @@ class PlayerObserver
         foreach ($player->activeTeams as $team) {
             $team->updatePlayerCount();
         }
+
+        // Track usage for all affected clubs
+        $this->trackPlayerUsageForClubs($player, 'track');
     }
 
     /**
@@ -56,6 +67,9 @@ class PlayerObserver
             ->performedOn($player)
             ->causedBy(auth()->user())
             ->log('Player deleted');
+
+        // Untrack usage for all affected clubs
+        $this->trackPlayerUsageForClubs($player, 'untrack');
     }
 
     /**
@@ -72,6 +86,9 @@ class PlayerObserver
             ->performedOn($player)
             ->causedBy(auth()->user())
             ->log('Player restored');
+
+        // Re-track usage for all affected clubs
+        $this->trackPlayerUsageForClubs($player, 'track');
     }
 
     /**
@@ -95,13 +112,42 @@ class PlayerObserver
             ->pluck('player_team.jersey_number')
             ->filter()
             ->toArray();
-        
+
         for ($i = 1; $i <= 99; $i++) {
             if (!in_array($i, $usedNumbers)) {
                 return $i;
             }
         }
-        
+
         return 0; // Fallback
+    }
+
+    /**
+     * Track or untrack player usage for all affected clubs.
+     *
+     * Players can belong to multiple teams across different clubs.
+     * We need to track usage for each unique club the player is associated with.
+     *
+     * @param Player $player
+     * @param string $action 'track' or 'untrack'
+     * @return void
+     */
+    private function trackPlayerUsageForClubs(Player $player, string $action): void
+    {
+        // Get all unique clubs from the player's teams
+        $clubs = $player->teams()
+            ->with('club')
+            ->get()
+            ->pluck('club')
+            ->filter() // Remove nulls
+            ->unique('id'); // Unique by club ID
+
+        foreach ($clubs as $club) {
+            if ($action === 'track') {
+                $this->usageTracker->trackResource($club, 'max_players', 1);
+            } else {
+                $this->usageTracker->untrackResource($club, 'max_players', 1);
+            }
+        }
     }
 }

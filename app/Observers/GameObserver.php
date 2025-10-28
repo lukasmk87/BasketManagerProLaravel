@@ -3,9 +3,17 @@
 namespace App\Observers;
 
 use App\Models\Game;
+use App\Services\ClubUsageTrackingService;
 
 class GameObserver
 {
+    private ClubUsageTrackingService $usageTracker;
+
+    public function __construct(ClubUsageTrackingService $usageTracker)
+    {
+        $this->usageTracker = $usageTracker;
+    }
+
     /**
      * Handle the Game "created" event.
      */
@@ -27,6 +35,11 @@ class GameObserver
                 'away_score' => 0,
                 'is_active' => false,
             ]);
+        }
+
+        // Track usage for both clubs (only current month games count toward limit)
+        if ($game->game_date && $game->game_date->isSameMonth(now())) {
+            $this->trackGameUsageForClubs($game, 'track');
         }
     }
 
@@ -60,6 +73,11 @@ class GameObserver
             ->performedOn($game)
             ->causedBy(auth()->user())
             ->log('Game deleted');
+
+        // Untrack usage if game was in current month
+        if ($game->game_date && $game->game_date->isSameMonth(now())) {
+            $this->trackGameUsageForClubs($game, 'untrack');
+        }
     }
 
     /**
@@ -71,6 +89,11 @@ class GameObserver
             ->performedOn($game)
             ->causedBy(auth()->user())
             ->log('Game restored');
+
+        // Re-track usage if game is in current month
+        if ($game->game_date && $game->game_date->isSameMonth(now())) {
+            $this->trackGameUsageForClubs($game, 'track');
+        }
     }
 
     /**
@@ -113,6 +136,42 @@ class GameObserver
         } else {
             $homeTeam->increment('games_tied');
             $awayTeam->increment('games_tied');
+        }
+    }
+
+    /**
+     * Track or untrack game usage for all affected clubs.
+     *
+     * Games involve two teams which may belong to different clubs.
+     * We track usage for both clubs (if different).
+     *
+     * @param Game $game
+     * @param string $action 'track' or 'untrack'
+     * @return void
+     */
+    private function trackGameUsageForClubs(Game $game, string $action): void
+    {
+        $clubs = collect();
+
+        // Add home team's club
+        if ($game->homeTeam && $game->homeTeam->club) {
+            $clubs->push($game->homeTeam->club);
+        }
+
+        // Add away team's club (if different)
+        if ($game->awayTeam && $game->awayTeam->club) {
+            $clubs->push($game->awayTeam->club);
+        }
+
+        // Remove duplicates (same club hosting both teams)
+        $clubs = $clubs->unique('id');
+
+        foreach ($clubs as $club) {
+            if ($action === 'track') {
+                $this->usageTracker->trackResource($club, 'max_games_per_month', 1);
+            } else {
+                $this->usageTracker->untrackResource($club, 'max_games_per_month', 1);
+            }
         }
     }
 }

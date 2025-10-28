@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
 use App\Models\Club;
+use App\Models\ClubSubscriptionEvent;
+use App\Models\ClubSubscriptionPlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -116,6 +118,19 @@ class ClubSubscriptionWebhookController extends Controller
             'club_subscription_plan_id' => $planId,
         ]);
 
+        // Track subscription creation event for analytics
+        $plan = ClubSubscriptionPlan::find($planId);
+        $this->trackSubscriptionEvent($club, ClubSubscriptionEvent::TYPE_SUBSCRIPTION_CREATED, [
+            'stripe_subscription_id' => $session->subscription,
+            'stripe_event_id' => null, // Checkout session doesn't have event_id
+            'new_plan_id' => $planId,
+            'mrr_change' => $this->calculateMRRFromPlan($plan),
+            'metadata' => [
+                'checkout_session_id' => $session->id,
+                'customer_id' => $session->customer,
+            ],
+        ]);
+
         Log::info('Club checkout completed', [
             'club_id' => $clubId,
             'club_name' => $club->name,
@@ -172,6 +187,24 @@ class ClubSubscriptionWebhookController extends Controller
         }
 
         $club->update($updateData);
+
+        // Track event - differentiate between trial start and paid subscription
+        $eventType = $subscription->status === 'trialing'
+            ? ClubSubscriptionEvent::TYPE_TRIAL_STARTED
+            : ClubSubscriptionEvent::TYPE_SUBSCRIPTION_CREATED;
+
+        $plan = $club->subscriptionPlan;
+        $this->trackSubscriptionEvent($club, $eventType, [
+            'stripe_subscription_id' => $subscription->id,
+            'new_plan_id' => $club->club_subscription_plan_id,
+            'mrr_change' => $eventType === ClubSubscriptionEvent::TYPE_SUBSCRIPTION_CREATED
+                ? $this->calculateMRRFromPlan($plan)
+                : 0, // Trials don't contribute to MRR yet
+            'metadata' => [
+                'subscription_status' => $subscription->status,
+                'trial_end' => $subscription->trial_end,
+            ],
+        ]);
 
         Log::info('Club subscription created', [
             'club_id' => $clubId,
@@ -247,10 +280,25 @@ class ClubSubscriptionWebhookController extends Controller
             return;
         }
 
+        // Get plan before updating to calculate MRR loss
+        $oldPlan = $club->subscriptionPlan;
+
         $club->update([
             'subscription_status' => 'canceled',
             'subscription_ends_at' => now(),
             'club_subscription_plan_id' => null, // Remove plan assignment
+        ]);
+
+        // Track cancellation event (churn)
+        $this->trackSubscriptionEvent($club, ClubSubscriptionEvent::TYPE_SUBSCRIPTION_CANCELED, [
+            'stripe_subscription_id' => $subscription->id,
+            'old_plan_id' => $oldPlan?->id,
+            'mrr_change' => -$this->calculateMRRFromPlan($oldPlan), // Negative for MRR loss
+            'cancellation_reason' => ClubSubscriptionEvent::REASON_VOLUNTARY, // Default to voluntary
+            'metadata' => [
+                'subscription_status' => $subscription->status,
+                'cancel_at_period_end' => $subscription->cancel_at_period_end ?? false,
+            ],
         ]);
 
         Log::info('Club subscription deleted', [
@@ -279,8 +327,24 @@ class ClubSubscriptionWebhookController extends Controller
         }
 
         // Update subscription status to active (in case it was past_due)
+        $wasPastDue = $club->subscription_status === 'past_due';
         $club->update([
             'subscription_status' => 'active',
+        ]);
+
+        // Track payment success event
+        $eventType = $wasPastDue
+            ? ClubSubscriptionEvent::TYPE_PAYMENT_RECOVERED
+            : ClubSubscriptionEvent::TYPE_PAYMENT_SUCCEEDED;
+
+        $this->trackSubscriptionEvent($club, $eventType, [
+            'stripe_subscription_id' => $club->stripe_subscription_id,
+            'metadata' => [
+                'invoice_id' => $invoice->id,
+                'amount_paid' => $invoice->amount_paid / 100,
+                'currency' => $invoice->currency,
+                'was_past_due' => $wasPastDue,
+            ],
         ]);
 
         Log::info('Club payment succeeded', [
@@ -313,6 +377,19 @@ class ClubSubscriptionWebhookController extends Controller
         // Mark subscription as past due
         $club->update([
             'subscription_status' => 'past_due',
+        ]);
+
+        // Track payment failed event (potential involuntary churn)
+        $this->trackSubscriptionEvent($club, ClubSubscriptionEvent::TYPE_PAYMENT_FAILED, [
+            'stripe_subscription_id' => $club->stripe_subscription_id,
+            'cancellation_reason' => ClubSubscriptionEvent::REASON_PAYMENT_FAILED,
+            'metadata' => [
+                'invoice_id' => $invoice->id,
+                'amount_due' => $invoice->amount_due / 100,
+                'currency' => $invoice->currency,
+                'attempt_count' => $invoice->attempt_count,
+                'next_payment_attempt' => $invoice->next_payment_attempt,
+            ],
         ]);
 
         Log::warning('Club payment failed', [
@@ -463,5 +540,74 @@ class ClubSubscriptionWebhookController extends Controller
         }
 
         // TODO: Send notification about payment method removal
+    }
+
+    /**
+     * Track subscription event for analytics.
+     *
+     * @param Club $club
+     * @param string $eventType
+     * @param array $data
+     * @return void
+     */
+    protected function trackSubscriptionEvent(Club $club, string $eventType, array $data = []): void
+    {
+        try {
+            ClubSubscriptionEvent::create([
+                'tenant_id' => $club->tenant_id,
+                'club_id' => $club->id,
+                'event_type' => $eventType,
+                'stripe_subscription_id' => $data['stripe_subscription_id'] ?? null,
+                'stripe_event_id' => $data['stripe_event_id'] ?? null,
+                'old_plan_id' => $data['old_plan_id'] ?? null,
+                'new_plan_id' => $data['new_plan_id'] ?? null,
+                'mrr_change' => $data['mrr_change'] ?? 0,
+                'cancellation_reason' => $data['cancellation_reason'] ?? null,
+                'cancellation_feedback' => $data['cancellation_feedback'] ?? null,
+                'metadata' => $data['metadata'] ?? null,
+                'event_date' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to track subscription event', [
+                'club_id' => $club->id,
+                'event_type' => $eventType,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Calculate MRR from a plan (normalized to monthly).
+     *
+     * @param ClubSubscriptionPlan|null $plan
+     * @return float
+     */
+    protected function calculateMRRFromPlan(?ClubSubscriptionPlan $plan): float
+    {
+        if (! $plan) {
+            return 0;
+        }
+
+        // Normalize to monthly recurring revenue
+        if ($plan->billing_interval === 'yearly') {
+            return round($plan->price / 12, 2);
+        }
+
+        return (float) $plan->price;
+    }
+
+    /**
+     * Calculate MRR change between two plans.
+     *
+     * @param ClubSubscriptionPlan|null $oldPlan
+     * @param ClubSubscriptionPlan|null $newPlan
+     * @return float
+     */
+    protected function calculateMRRChange(?ClubSubscriptionPlan $oldPlan, ?ClubSubscriptionPlan $newPlan): float
+    {
+        $oldMRR = $this->calculateMRRFromPlan($oldPlan);
+        $newMRR = $this->calculateMRRFromPlan($newPlan);
+
+        return $newMRR - $oldMRR;
     }
 }

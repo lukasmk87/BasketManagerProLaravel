@@ -24,6 +24,8 @@ use App\Observers\UserObserver;
 use App\Observers\TeamObserver;
 use App\Observers\PlayerObserver;
 use App\Observers\GameObserver;
+use App\Observers\TrainingSessionObserver;
+use App\Models\TrainingSession;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Validator;
@@ -119,6 +121,7 @@ class BasketManagerServiceProvider extends ServiceProvider
         Team::observe(TeamObserver::class);
         Player::observe(PlayerObserver::class);
         Game::observe(GameObserver::class);
+        TrainingSession::observe(TrainingSessionObserver::class);
     }
 
     /**

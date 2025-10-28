@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
+In German/Auf Deutsch
 ## Project Overview
 
 BasketManager Pro is a production-ready Laravel-based basketball club management application with comprehensive features for multi-tenant club operations, live game scoring, player statistics, training management, and GDPR-compliant emergency contact systems.

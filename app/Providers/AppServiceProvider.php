@@ -21,6 +21,14 @@ class AppServiceProvider extends ServiceProvider
         
         // Register API versioning services
         $this->app->singleton(\App\Services\Api\RouteVersionResolver::class);
+
+        // Register Subscription Analytics Service
+        $this->app->singleton(\App\Services\Stripe\SubscriptionAnalyticsService::class, function ($app) {
+            return new \App\Services\Stripe\SubscriptionAnalyticsService(
+                $app->make(\App\Services\Stripe\StripeClientManager::class),
+                $app->make(\App\Services\ClubUsageTrackingService::class)
+            );
+        });
     }
 
     /**

@@ -3,9 +3,17 @@
 namespace App\Observers;
 
 use App\Models\Team;
+use App\Services\ClubUsageTrackingService;
 
 class TeamObserver
 {
+    private ClubUsageTrackingService $usageTracker;
+
+    public function __construct(ClubUsageTrackingService $usageTracker)
+    {
+        $this->usageTracker = $usageTracker;
+    }
+
     /**
      * Handle the Team "created" event.
      */
@@ -20,6 +28,11 @@ class TeamObserver
         // Auto-generate team slug if not provided
         if (empty($team->slug)) {
             $team->update(['slug' => \Str::slug($team->name)]);
+        }
+
+        // Track usage for club
+        if ($team->club) {
+            $this->usageTracker->trackResource($team->club, 'max_teams', 1);
         }
     }
 
@@ -44,6 +57,11 @@ class TeamObserver
             ->performedOn($team)
             ->causedBy(auth()->user())
             ->log('Team deleted');
+
+        // Untrack usage for club
+        if ($team->club) {
+            $this->usageTracker->untrackResource($team->club, 'max_teams', 1);
+        }
     }
 
     /**
@@ -55,6 +73,11 @@ class TeamObserver
             ->performedOn($team)
             ->causedBy(auth()->user())
             ->log('Team restored');
+
+        // Re-track usage for club (restore = undelete)
+        if ($team->club) {
+            $this->usageTracker->trackResource($team->club, 'max_teams', 1);
+        }
     }
 
     /**
