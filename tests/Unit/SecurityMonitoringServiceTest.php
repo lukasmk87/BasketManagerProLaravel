@@ -24,7 +24,8 @@ class SecurityMonitoringServiceTest extends TestCase
         $this->testUser = User::factory()->create();
     }
 
-    public function test_can_detect_emergency_access_anomaly()
+    /** @test */
+    public function can_detect_emergency_access_anomaly()
     {
         // Create a mock request
         $request = Request::create('/emergency/test', 'GET', [], [], [], [
@@ -40,7 +41,7 @@ class SecurityMonitoringServiceTest extends TestCase
             $request,
             'emergency_access_anomaly',
             [
-                'access_key' => 'test_key',
+                'access_key' => 'key',
                 'anomaly_type' => 'high_frequency_access',
                 'access_count' => 15,
             ]
@@ -53,10 +54,11 @@ class SecurityMonitoringServiceTest extends TestCase
         $this->assertEquals($this->testUser->id, $securityEvent->user_id);
         $this->assertStringContains('Emergency access anomaly detected', $securityEvent->description);
         $this->assertArrayHasKey('access_key', $securityEvent->event_data);
-        $this->assertEquals('test_key', $securityEvent->event_data['access_key']);
+        $this->assertEquals('key', $securityEvent->event_data['access_key']);
     }
 
-    public function test_can_detect_gdpr_compliance_violation()
+    /** @test */
+    public function can_detect_gdpr_compliance_violation()
     {
         $request = Request::create('/gdpr/test', 'POST');
         $this->actingAs($this->testUser);
@@ -75,7 +77,8 @@ class SecurityMonitoringServiceTest extends TestCase
         $this->assertArrayHasKey('violation_type', $securityEvent->event_data);
     }
 
-    public function test_can_monitor_emergency_access_patterns()
+    /** @test */
+    public function can_monitor_emergency_access_patterns()
     {
         $request = Request::create('/emergency/access', 'GET', [], [], [], [
             'REMOTE_ADDR' => '10.0.0.1'
@@ -86,7 +89,7 @@ class SecurityMonitoringServiceTest extends TestCase
 
         // Monitor emergency access multiple times to trigger anomaly
         for ($i = 0; $i < 12; $i++) {
-            $this->securityService->monitorEmergencyAccess($request, 'test_access_key', [
+            $this->securityService->monitorEmergencyAccess($request, 'access_key', [
                 'action' => 'emergency_access_granted',
                 'team_id' => 1,
             ]);
@@ -102,7 +105,8 @@ class SecurityMonitoringServiceTest extends TestCase
         $this->assertEquals('high_frequency_access', $securityEvent->event_data['anomaly_type']);
     }
 
-    public function test_can_monitor_authentication_failures()
+    /** @test */
+    public function can_monitor_authentication_failures()
     {
         $request = Request::create('/login', 'POST', [], [], [], [
             'REMOTE_ADDR' => '203.0.113.1'
@@ -126,7 +130,8 @@ class SecurityMonitoringServiceTest extends TestCase
         $this->assertGreaterThanOrEqual(5, $securityEvent->event_data['failure_count']);
     }
 
-    public function test_can_generate_security_report()
+    /** @test */
+    public function can_generate_security_report()
     {
         // Create some test security events
         SecurityEvent::create([
@@ -164,7 +169,8 @@ class SecurityMonitoringServiceTest extends TestCase
         $this->assertArrayHasKey('critical', $report['severity_breakdown']);
     }
 
-    public function test_security_event_severity_calculation()
+    /** @test */
+    public function security_event_severity_calculation()
     {
         $request = Request::create('/test', 'GET');
 
@@ -187,7 +193,8 @@ class SecurityMonitoringServiceTest extends TestCase
         $this->assertEquals('high', $highEvent->severity);
     }
 
-    public function test_security_event_confidence_scoring()
+    /** @test */
+    public function security_event_confidence_scoring()
     {
         $request = Request::create('/test', 'GET');
 
@@ -202,7 +209,8 @@ class SecurityMonitoringServiceTest extends TestCase
         $this->assertLessThanOrEqual(1.0, $event->confidence_score);
     }
 
-    public function test_automated_security_actions()
+    /** @test */
+    public function automated_security_actions()
     {
         $request = Request::create('/test', 'GET');
 
@@ -217,7 +225,8 @@ class SecurityMonitoringServiceTest extends TestCase
         $this->assertContains('immediate_notification_sent', $criticalEvent->automated_actions);
     }
 
-    public function test_security_event_basic_functionality()
+    /** @test */
+    public function security_event_basic_functionality()
     {
         // Create test events
         $emergencyEvent = SecurityEvent::create([

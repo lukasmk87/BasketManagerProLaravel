@@ -7,12 +7,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ApiVersioningTest extends TestCase
 {
-    /**
-     * Test default API version resolution
-     */
-    public function test_default_version_resolution(): void
+    /** @test */
+    public function default_version_resolution(): void
     {
-        $response = $this->get('/api/');
+        $response = $this->followingRedirects()->get('/api/');
 
         $response->assertStatus(200)
                 ->assertJson([
@@ -33,12 +31,10 @@ class ApiVersioningTest extends TestCase
                 ]);
     }
 
-    /**
-     * Test Accept header version resolution
-     */
-    public function test_accept_header_version_resolution(): void
+    /** @test */
+    public function accept_header_version_resolution(): void
     {
-        $response = $this->withHeaders([
+        $response = $this->followingRedirects()->withHeaders([
             'Accept' => 'application/vnd.basketmanager.v1+json'
         ])->get('/api/');
 
@@ -52,7 +48,8 @@ class ApiVersioningTest extends TestCase
     /**
      * Test API-Version header resolution
      */
-    public function test_api_version_header_resolution(): void
+    /** @test */
+    public function api_version_header_resolution(): void
     {
         $response = $this->withHeaders([
             'API-Version' => '3.0'
@@ -68,7 +65,8 @@ class ApiVersioningTest extends TestCase
     /**
      * Test X-API-Version header resolution
      */
-    public function test_x_api_version_header_resolution(): void
+    /** @test */
+    public function x_api_version_header_resolution(): void
     {
         $response = $this->withHeaders([
             'X-API-Version' => '1.0'
@@ -84,7 +82,8 @@ class ApiVersioningTest extends TestCase
     /**
      * Test query parameter version resolution
      */
-    public function test_query_parameter_version_resolution(): void
+    /** @test */
+    public function query_parameter_version_resolution(): void
     {
         $response = $this->get('/api/?api_version=3.0');
 
@@ -98,7 +97,8 @@ class ApiVersioningTest extends TestCase
     /**
      * Test unsupported version returns error
      */
-    public function test_unsupported_version_returns_error(): void
+    /** @test */
+    public function unsupported_version_returns_error(): void
     {
         $response = $this->withHeaders([
             'API-Version' => '5.0'
@@ -120,7 +120,8 @@ class ApiVersioningTest extends TestCase
     /**
      * Test version response headers
      */
-    public function test_version_response_headers(): void
+    /** @test */
+    public function version_response_headers(): void
     {
         $response = $this->withHeaders([
             'API-Version' => '1.0'
@@ -139,7 +140,8 @@ class ApiVersioningTest extends TestCase
     /**
      * Test health endpoint works across versions
      */
-    public function test_health_endpoint_works_across_versions(): void
+    /** @test */
+    public function health_endpoint_works_across_versions(): void
     {
         // Test default version
         $response = $this->get('/api/health');
@@ -164,7 +166,8 @@ class ApiVersioningTest extends TestCase
     /**
      * Test API status endpoint
      */
-    public function test_api_status_endpoint(): void
+    /** @test */
+    public function api_status_endpoint(): void
     {
         $response = $this->get('/api/status');
 
@@ -190,7 +193,8 @@ class ApiVersioningTest extends TestCase
     /**
      * Test disabled version (v2.0) returns error
      */
-    public function test_disabled_version_returns_error(): void
+    /** @test */
+    public function disabled_version_returns_error(): void
     {
         $response = $this->withHeaders([
             'API-Version' => '2.0'
@@ -206,7 +210,8 @@ class ApiVersioningTest extends TestCase
     /**
      * Test version precedence (Accept header over query param)
      */
-    public function test_version_precedence(): void
+    /** @test */
+    public function version_precedence(): void
     {
         $response = $this->withHeaders([
             'Accept' => 'application/vnd.basketmanager.v3+json'

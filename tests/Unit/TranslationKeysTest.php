@@ -10,7 +10,8 @@ class TranslationKeysTest extends TestCase
     /**
      * Test that all subscription keys exist in German.
      */
-    public function test_all_subscription_keys_exist_in_german(): void
+    /** @test */
+    public function all_subscription_keys_exist_in_german(): void
     {
         $locale = 'de';
         $translations = Lang::get('subscription', [], $locale);
@@ -56,7 +57,8 @@ class TranslationKeysTest extends TestCase
     /**
      * Test that all subscription keys exist in English.
      */
-    public function test_all_subscription_keys_exist_in_english(): void
+    /** @test */
+    public function all_subscription_keys_exist_in_english(): void
     {
         $locale = 'en';
         $translations = Lang::get('subscription', [], $locale);
@@ -102,7 +104,8 @@ class TranslationKeysTest extends TestCase
     /**
      * Test that all billing keys exist in German.
      */
-    public function test_all_billing_keys_exist_in_german(): void
+    /** @test */
+    public function all_billing_keys_exist_in_german(): void
     {
         $locale = 'de';
         $translations = Lang::get('billing', [], $locale);
@@ -128,7 +131,8 @@ class TranslationKeysTest extends TestCase
     /**
      * Test that all billing keys exist in English.
      */
-    public function test_all_billing_keys_exist_in_english(): void
+    /** @test */
+    public function all_billing_keys_exist_in_english(): void
     {
         $locale = 'en';
         $translations = Lang::get('billing', [], $locale);
@@ -154,7 +158,8 @@ class TranslationKeysTest extends TestCase
     /**
      * Test that all checkout keys exist in German.
      */
-    public function test_all_checkout_keys_exist_in_german(): void
+    /** @test */
+    public function all_checkout_keys_exist_in_german(): void
     {
         $locale = 'de';
         $translations = Lang::get('checkout', [], $locale);
@@ -180,7 +185,8 @@ class TranslationKeysTest extends TestCase
     /**
      * Test that all checkout keys exist in English.
      */
-    public function test_all_checkout_keys_exist_in_english(): void
+    /** @test */
+    public function all_checkout_keys_exist_in_english(): void
     {
         $locale = 'en';
         $translations = Lang::get('checkout', [], $locale);
@@ -206,7 +212,8 @@ class TranslationKeysTest extends TestCase
     /**
      * Test that translation keys have parity between DE and EN locales.
      */
-    public function test_translation_key_parity_between_locales(): void
+    /** @test */
+    public function translation_key_parity_between_locales(): void
     {
         $files = ['subscription', 'billing', 'checkout'];
 

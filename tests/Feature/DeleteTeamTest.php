@@ -11,7 +11,8 @@ class DeleteTeamTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_teams_can_be_deleted(): void
+    /** @test */
+    public function teams_can_be_deleted(): void
     {
         $this->actingAs($user = User::factory()->withPersonalTeam()->create());
 
@@ -23,17 +24,18 @@ class DeleteTeamTest extends TestCase
             $otherUser = User::factory()->create(), ['role' => 'test-role']
         );
 
-        $this->delete('/teams/'.$team->id);
+        $this->followingRedirects()->delete('/teams/'.$team->id);
 
         $this->assertNull($team->fresh());
         $this->assertCount(0, $otherUser->fresh()->teams);
     }
 
-    public function test_personal_teams_cant_be_deleted(): void
+    /** @test */
+    public function personal_teams_cant_be_deleted(): void
     {
         $this->actingAs($user = User::factory()->withPersonalTeam()->create());
 
-        $this->delete('/teams/'.$user->currentTeam->id);
+        $this->followingRedirects()->delete('/teams/'.$user->currentTeam->id);
 
         $this->assertNotNull($user->currentTeam->fresh());
     }

@@ -207,6 +207,11 @@ class ResolveTenantMiddleware
      */
     private function setEloquentTenantScope(Tenant $tenant): void
     {
+        // Skip for SQLite (test environment)
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
         // This would typically be handled by a global scope on models
         // For now, we'll store the tenant ID in a way models can access it
         app('db')->connection()->getPdo()->exec("SET @tenant_id = '{$tenant->id}'");
@@ -323,6 +328,9 @@ class ResolveTenantMiddleware
         if (config('database.default') === 'mysql') {
             DB::statement('SET @current_tenant_id = ?', [$tenant->id]);
         }
+
+        // For SQLite (test environment), skip SET commands
+        // SQLite doesn't support session variables in the same way
     }
 
     /**

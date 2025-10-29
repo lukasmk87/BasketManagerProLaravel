@@ -10,11 +10,12 @@ class ProfileInformationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_profile_information_can_be_updated(): void
+    /** @test */
+    public function profile_information_can_be_updated(): void
     {
         $this->actingAs($user = User::factory()->create());
 
-        $this->put('/user/profile-information', [
+        $this->followingRedirects()->put('/user/profile-information', [
             'name' => 'Test Name',
             'email' => 'test@example.com',
         ]);

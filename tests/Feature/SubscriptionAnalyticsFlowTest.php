@@ -68,7 +68,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_complete_subscription_lifecycle_tracks_analytics()
+    /** @test */
+    public function complete_subscription_lifecycle_tracks_analytics()
     {
         // Step 1: Create club with trial
         $club = Club::factory()->for($this->tenant)->create([
@@ -121,7 +122,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_mrr_snapshot_creation_and_retrieval()
+    /** @test */
+    public function mrr_snapshot_creation_and_retrieval()
     {
         // Create snapshots for 6 months
         $snapshots = [];
@@ -145,7 +147,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_subscription_events_logged_correctly()
+    /** @test */
+    public function subscription_events_logged_correctly()
     {
         $club = Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'active',
@@ -176,7 +179,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_cohort_analysis_for_multiple_clubs()
+    /** @test */
+    public function cohort_analysis_for_multiple_clubs()
     {
         $cohortMonth = Carbon::create(2025, 1, 1);
 
@@ -211,7 +215,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_churn_analysis_with_real_cancellations()
+    /** @test */
+    public function churn_analysis_with_real_cancellations()
     {
         $month = Carbon::create(2025, 3, 1);
 
@@ -261,7 +266,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_ltv_calculation_with_real_revenue_data()
+    /** @test */
+    public function ltv_calculation_with_real_revenue_data()
     {
         // Create clubs with varying subscription durations
         $shortLivedClub = Club::factory()->for($this->tenant)->create([
@@ -298,7 +304,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_plan_upgrades_tracked_in_analytics()
+    /** @test */
+    public function plan_upgrades_tracked_in_analytics()
     {
         // Create club on Basic plan
         $club = Club::factory()->for($this->tenant)->create([
@@ -327,7 +334,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_trial_conversion_tracking_end_to_end()
+    /** @test */
+    public function trial_conversion_tracking_end_to_end()
     {
         // 10 trials started
         $trialClubs = Club::factory()->for($this->tenant)->count(10)->create([
@@ -376,7 +384,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_multi_tenant_analytics_isolation()
+    /** @test */
+    public function multi_tenant_analytics_isolation()
     {
         // Create second tenant with clubs
         $tenant2 = Tenant::factory()->create(['name' => 'Tenant 2']);
@@ -416,7 +425,8 @@ class SubscriptionAnalyticsFlowTest extends TestCase
     }
 
     /** @test */
-    public function test_analytics_caching_behavior()
+    /** @test */
+    public function analytics_caching_behavior()
     {
         Club::factory()->for($this->tenant)->count(10)->create([
             'subscription_status' => 'active',

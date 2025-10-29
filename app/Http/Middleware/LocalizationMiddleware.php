@@ -54,6 +54,11 @@ class LocalizationMiddleware
      */
     protected function shouldRedirectForLocale(Request $request, string $locale): bool
     {
+        // Skip redirects for JSON/API requests
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return false;
+        }
+
         $segments = $request->segments();
         $hasLocaleInUrl = !empty($segments) && $this->localizationService->isValidLocale($segments[0]);
         $defaultLocale = config('localization.default_locale');

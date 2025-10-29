@@ -65,7 +65,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     // ========================================================================
 
     /** @test */
-    public function test_calculate_club_mrr_returns_zero_for_inactive_subscription()
+    /** @test */
+    public function calculate_club_mrr_returns_zero_for_inactive_subscription()
     {
         $club = Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'canceled',
@@ -78,7 +79,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_club_mrr_for_monthly_subscription()
+    /** @test */
+    public function calculate_club_mrr_for_monthly_subscription()
     {
         $club = Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'active',
@@ -118,7 +120,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_club_mrr_for_yearly_subscription_normalized_to_monthly()
+    /** @test */
+    public function calculate_club_mrr_for_yearly_subscription_normalized_to_monthly()
     {
         $club = Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'active',
@@ -159,7 +162,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_club_mrr_fallback_when_stripe_fails()
+    /** @test */
+    public function calculate_club_mrr_fallback_when_stripe_fails()
     {
         $club = Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'active',
@@ -183,7 +187,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_tenant_mrr_aggregates_all_active_clubs()
+    /** @test */
+    public function calculate_tenant_mrr_aggregates_all_active_clubs()
     {
         // Create 3 active clubs
         Club::factory()->for($this->tenant)->create([
@@ -214,7 +219,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_tenant_mrr_caches_result()
+    /** @test */
+    public function calculate_tenant_mrr_caches_result()
     {
         Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'active',
@@ -232,7 +238,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_historical_mrr_from_snapshots()
+    /** @test */
+    public function get_historical_mrr_from_snapshots()
     {
         // Create monthly snapshots
         SubscriptionMRRSnapshot::factory()->for($this->tenant)
@@ -261,7 +268,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_historical_mrr_fallback_from_events()
+    /** @test */
+    public function get_historical_mrr_fallback_from_events()
     {
         // No snapshots available, should calculate from clubs
         $club = Club::factory()->for($this->tenant)->create([
@@ -277,7 +285,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_mrr_growth_rate_calculates_percentage()
+    /** @test */
+    public function get_mrr_growth_rate_calculates_percentage()
     {
         SubscriptionMRRSnapshot::factory()->for($this->tenant)
             ->monthly()
@@ -297,7 +306,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_mrr_growth_rate_returns_zero_with_insufficient_data()
+    /** @test */
+    public function get_mrr_growth_rate_returns_zero_with_insufficient_data()
     {
         // Only 1 snapshot
         SubscriptionMRRSnapshot::factory()->for($this->tenant)
@@ -312,7 +322,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_mrr_by_plan_breakdown()
+    /** @test */
+    public function get_mrr_by_plan_breakdown()
     {
         $plan1 = ClubSubscriptionPlan::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -347,7 +358,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_mrr_by_plan_sorted_by_mrr_descending()
+    /** @test */
+    public function get_mrr_by_plan_sorted_by_mrr_descending()
     {
         $planLow = ClubSubscriptionPlan::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -376,7 +388,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_mrr_includes_trialing_subscriptions()
+    /** @test */
+    public function mrr_includes_trialing_subscriptions()
     {
         $club = Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'trialing',
@@ -389,7 +402,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_mrr_excludes_canceled_subscriptions()
+    /** @test */
+    public function mrr_excludes_canceled_subscriptions()
     {
         $club = Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'canceled',
@@ -402,7 +416,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_mrr_excludes_past_due_subscriptions()
+    /** @test */
+    public function mrr_excludes_past_due_subscriptions()
     {
         $club = Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'past_due',
@@ -419,7 +434,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     // ========================================================================
 
     /** @test */
-    public function test_calculate_monthly_churn_rate()
+    /** @test */
+    public function calculate_monthly_churn_rate()
     {
         $month = Carbon::create(2025, 3, 1);
 
@@ -443,7 +459,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_monthly_churn_rate_with_voluntary_involuntary_breakdown()
+    /** @test */
+    public function calculate_monthly_churn_rate_with_voluntary_involuntary_breakdown()
     {
         $month = Carbon::create(2025, 3, 1);
 
@@ -473,7 +490,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_monthly_churn_rate_returns_zero_for_no_customers()
+    /** @test */
+    public function calculate_monthly_churn_rate_returns_zero_for_no_customers()
     {
         $month = Carbon::create(2025, 3, 1);
 
@@ -483,7 +501,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_monthly_churn_rate_caches_result()
+    /** @test */
+    public function calculate_monthly_churn_rate_caches_result()
     {
         $month = Carbon::create(2025, 3, 1);
 
@@ -500,7 +519,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_churn_by_plan_identifies_high_churn_plans()
+    /** @test */
+    public function get_churn_by_plan_identifies_high_churn_plans()
     {
         $planA = ClubSubscriptionPlan::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -533,7 +553,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_churn_by_plan_sorted_by_rate_descending()
+    /** @test */
+    public function get_churn_by_plan_sorted_by_rate_descending()
     {
         $planLowChurn = ClubSubscriptionPlan::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -560,7 +581,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_churn_reasons_breakdown()
+    /** @test */
+    public function get_churn_reasons_breakdown()
     {
         ClubSubscriptionEvent::factory()->for($this->tenant)
             ->voluntaryCancellation()
@@ -585,7 +607,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_churn_reasons_with_percentages()
+    /** @test */
+    public function get_churn_reasons_with_percentages()
     {
         ClubSubscriptionEvent::factory()->for($this->tenant)
             ->voluntaryCancellation()
@@ -604,7 +627,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_revenue_churn_from_mrr_loss()
+    /** @test */
+    public function calculate_revenue_churn_from_mrr_loss()
     {
         $month = Carbon::create(2025, 3, 1);
 
@@ -628,7 +652,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_revenue_churn_returns_zero_when_no_mrr()
+    /** @test */
+    public function calculate_revenue_churn_returns_zero_when_no_mrr()
     {
         $month = Carbon::create(2025, 3, 1);
 
@@ -638,7 +663,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_churn_distinguishes_voluntary_vs_involuntary()
+    /** @test */
+    public function churn_distinguishes_voluntary_vs_involuntary()
     {
         $voluntaryEvent = ClubSubscriptionEvent::factory()->for($this->tenant)
             ->voluntaryCancellation()
@@ -656,7 +682,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_churn_includes_trial_expirations()
+    /** @test */
+    public function churn_includes_trial_expirations()
     {
         ClubSubscriptionEvent::factory()->for($this->tenant)
             ->trialExpired()
@@ -673,7 +700,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     // ========================================================================
 
     /** @test */
-    public function test_calculate_average_ltv_from_mrr_and_duration()
+    /** @test */
+    public function calculate_average_ltv_from_mrr_and_duration()
     {
         Club::factory()->for($this->tenant)->count(5)->create([
             'subscription_status' => 'active',
@@ -687,7 +715,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_average_ltv_uses_default_duration_when_no_data()
+    /** @test */
+    public function calculate_average_ltv_uses_default_duration_when_no_data()
     {
         Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'active',
@@ -702,7 +731,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_calculate_average_ltv_caches_result()
+    /** @test */
+    public function calculate_average_ltv_caches_result()
     {
         Club::factory()->for($this->tenant)->create([
             'subscription_status' => 'active',
@@ -718,7 +748,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_ltv_by_plan_breakdown()
+    /** @test */
+    public function get_ltv_by_plan_breakdown()
     {
         $planLow = ClubSubscriptionPlan::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -747,7 +778,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_ltv_by_plan_sorted_by_ltv_descending()
+    /** @test */
+    public function get_ltv_by_plan_sorted_by_ltv_descending()
     {
         $planLow = ClubSubscriptionPlan::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -776,7 +808,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_cohort_analysis_from_precomputed_data()
+    /** @test */
+    public function get_cohort_analysis_from_precomputed_data()
     {
         $cohort = ClubSubscriptionCohort::factory()->for($this->tenant)
             ->forMonth(2025, 1)
@@ -791,7 +824,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_cohort_analysis_calculates_on_the_fly_when_no_data()
+    /** @test */
+    public function get_cohort_analysis_calculates_on_the_fly_when_no_data()
     {
         // Create clubs in cohort month
         Club::factory()->for($this->tenant)->count(10)->create([
@@ -806,7 +840,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_cohort_analysis_retention_by_month()
+    /** @test */
+    public function get_cohort_analysis_retention_by_month()
     {
         $cohort = ClubSubscriptionCohort::factory()->for($this->tenant)
             ->forMonth(2025, 1)
@@ -828,7 +863,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_cohort_analysis_determines_retention_trend()
+    /** @test */
+    public function get_cohort_analysis_determines_retention_trend()
     {
         $excellent = ClubSubscriptionCohort::factory()->for($this->tenant)
             ->forMonth(2025, 1)
@@ -857,7 +893,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_cohort_analysis_returns_no_data_for_empty_cohort()
+    /** @test */
+    public function get_cohort_analysis_returns_no_data_for_empty_cohort()
     {
         $analysis = $this->service->getCohortAnalysis($this->tenant, '2025-01');
 
@@ -866,7 +903,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_customer_lifetime_stats_aggregate_metrics()
+    /** @test */
+    public function get_customer_lifetime_stats_aggregate_metrics()
     {
         Club::factory()->for($this->tenant)->count(10)->create([
             'subscription_started_at' => now()->subMonths(12),
@@ -884,7 +922,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_customer_lifetime_stats_calculates_median_values()
+    /** @test */
+    public function get_customer_lifetime_stats_calculates_median_values()
     {
         Club::factory()->for($this->tenant)->count(5)->create([
             'subscription_started_at' => now()->subMonths(6),
@@ -898,7 +937,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_ltv_accounts_for_active_and_ended_subscriptions()
+    /** @test */
+    public function ltv_accounts_for_active_and_ended_subscriptions()
     {
         // Active subscription
         Club::factory()->for($this->tenant)->create([
@@ -922,7 +962,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_cohort_analysis_mature_vs_immature_cohorts()
+    /** @test */
+    public function cohort_analysis_mature_vs_immature_cohorts()
     {
         $mature = ClubSubscriptionCohort::factory()->for($this->tenant)
             ->mature()
@@ -941,7 +982,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     // ========================================================================
 
     /** @test */
-    public function test_get_active_subscriptions_count()
+    /** @test */
+    public function get_active_subscriptions_count()
     {
         Club::factory()->for($this->tenant)->count(8)->create([
             'subscription_status' => 'active',
@@ -957,7 +999,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_active_subscriptions_includes_trialing()
+    /** @test */
+    public function get_active_subscriptions_includes_trialing()
     {
         Club::factory()->for($this->tenant)->count(5)->create([
             'subscription_status' => 'active',
@@ -973,7 +1016,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_trial_conversion_rate()
+    /** @test */
+    public function get_trial_conversion_rate()
     {
         // 10 trials started
         ClubSubscriptionEvent::factory()->for($this->tenant)
@@ -993,7 +1037,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_trial_conversion_rate_returns_zero_with_no_trials()
+    /** @test */
+    public function get_trial_conversion_rate_returns_zero_with_no_trials()
     {
         $conversionRate = $this->service->getTrialConversionRate($this->tenant, 30);
 
@@ -1001,7 +1046,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_average_subscription_duration()
+    /** @test */
+    public function get_average_subscription_duration()
     {
         Club::factory()->for($this->tenant)->count(5)->create([
             'subscription_started_at' => now()->subMonths(12),
@@ -1014,7 +1060,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_average_subscription_duration_includes_active_subscriptions()
+    /** @test */
+    public function get_average_subscription_duration_includes_active_subscriptions()
     {
         Club::factory()->for($this->tenant)->count(3)->create([
             'subscription_started_at' => now()->subMonths(6),
@@ -1028,7 +1075,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_upgrade_downgrade_rates()
+    /** @test */
+    public function get_upgrade_downgrade_rates()
     {
         Club::factory()->for($this->tenant)->count(10)->create([
             'subscription_status' => 'active',
@@ -1054,7 +1102,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_upgrade_downgrade_rates_based_on_price_comparison()
+    /** @test */
+    public function get_upgrade_downgrade_rates_based_on_price_comparison()
     {
         $lowPlan = ClubSubscriptionPlan::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -1089,7 +1138,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_get_upgrade_downgrade_rates_calculates_percentages()
+    /** @test */
+    public function get_upgrade_downgrade_rates_calculates_percentages()
     {
         Club::factory()->for($this->tenant)->count(100)->create([
             'subscription_status' => 'active',
@@ -1106,7 +1156,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_upgrade_downgrade_net_change_calculation()
+    /** @test */
+    public function upgrade_downgrade_net_change_calculation()
     {
         ClubSubscriptionEvent::factory()->for($this->tenant)
             ->planUpgraded()
@@ -1124,7 +1175,8 @@ class SubscriptionAnalyticsServiceTest extends TestCase
     }
 
     /** @test */
-    public function test_health_metrics_with_no_subscription_data()
+    /** @test */
+    public function health_metrics_with_no_subscription_data()
     {
         $count = $this->service->getActiveSubscriptionsCount($this->tenant);
         $conversionRate = $this->service->getTrialConversionRate($this->tenant);

@@ -11,7 +11,8 @@ class TwoFactorAuthenticationSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_two_factor_authentication_can_be_enabled(): void
+    /** @test */
+    public function two_factor_authentication_can_be_enabled(): void
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two factor authentication is not enabled.');
@@ -21,13 +22,14 @@ class TwoFactorAuthenticationSettingsTest extends TestCase
 
         $this->withSession(['auth.password_confirmed_at' => time()]);
 
-        $this->post('/user/two-factor-authentication');
+        $this->followingRedirects()->post('/user/two-factor-authentication');
 
         $this->assertNotNull($user->fresh()->two_factor_secret);
         $this->assertCount(8, $user->fresh()->recoveryCodes());
     }
 
-    public function test_recovery_codes_can_be_regenerated(): void
+    /** @test */
+    public function recovery_codes_can_be_regenerated(): void
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two factor authentication is not enabled.');
@@ -37,18 +39,19 @@ class TwoFactorAuthenticationSettingsTest extends TestCase
 
         $this->withSession(['auth.password_confirmed_at' => time()]);
 
-        $this->post('/user/two-factor-authentication');
-        $this->post('/user/two-factor-recovery-codes');
+        $this->followingRedirects()->post('/user/two-factor-authentication');
+        $this->followingRedirects()->post('/user/two-factor-recovery-codes');
 
         $user = $user->fresh();
 
-        $this->post('/user/two-factor-recovery-codes');
+        $this->followingRedirects()->post('/user/two-factor-recovery-codes');
 
         $this->assertCount(8, $user->recoveryCodes());
         $this->assertCount(8, array_diff($user->recoveryCodes(), $user->fresh()->recoveryCodes()));
     }
 
-    public function test_two_factor_authentication_can_be_disabled(): void
+    /** @test */
+    public function two_factor_authentication_can_be_disabled(): void
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two factor authentication is not enabled.');
@@ -58,11 +61,11 @@ class TwoFactorAuthenticationSettingsTest extends TestCase
 
         $this->withSession(['auth.password_confirmed_at' => time()]);
 
-        $this->post('/user/two-factor-authentication');
+        $this->followingRedirects()->post('/user/two-factor-authentication');
 
         $this->assertNotNull($user->fresh()->two_factor_secret);
 
-        $this->delete('/user/two-factor-authentication');
+        $this->followingRedirects()->delete('/user/two-factor-authentication');
 
         $this->assertNull($user->fresh()->two_factor_secret);
     }

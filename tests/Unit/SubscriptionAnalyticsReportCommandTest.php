@@ -50,7 +50,8 @@ class SubscriptionAnalyticsReportCommandTest extends TestCase
     }
 
     /** @test */
-    public function test_command_generates_report_for_single_tenant()
+    /** @test */
+    public function command_generates_report_for_single_tenant()
     {
         $this->mockAnalyticsService();
 
@@ -60,7 +61,8 @@ class SubscriptionAnalyticsReportCommandTest extends TestCase
     }
 
     /** @test */
-    public function test_command_generates_report_for_all_active_tenants()
+    /** @test */
+    public function command_generates_report_for_all_active_tenants()
     {
         // Create additional tenants
         Tenant::factory()->count(2)->create(['is_active' => true]);
@@ -74,7 +76,8 @@ class SubscriptionAnalyticsReportCommandTest extends TestCase
     }
 
     /** @test */
-    public function test_command_output_format_table()
+    /** @test */
+    public function command_output_format_table()
     {
         $this->mockAnalyticsService();
 
@@ -90,7 +93,8 @@ class SubscriptionAnalyticsReportCommandTest extends TestCase
     }
 
     /** @test */
-    public function test_command_output_format_json()
+    /** @test */
+    public function command_output_format_json()
     {
         $this->mockAnalyticsService();
 
@@ -106,7 +110,8 @@ class SubscriptionAnalyticsReportCommandTest extends TestCase
     }
 
     /** @test */
-    public function test_command_output_format_csv()
+    /** @test */
+    public function command_output_format_csv()
     {
         $this->mockAnalyticsService();
 
@@ -120,7 +125,8 @@ class SubscriptionAnalyticsReportCommandTest extends TestCase
     }
 
     /** @test */
-    public function test_command_handles_invalid_format_gracefully()
+    /** @test */
+    public function command_handles_invalid_format_gracefully()
     {
         $this->artisan('subscription:report', [
             '--tenant' => $this->tenant->id,
@@ -131,7 +137,8 @@ class SubscriptionAnalyticsReportCommandTest extends TestCase
     }
 
     /** @test */
-    public function test_command_handles_invalid_tenant_id()
+    /** @test */
+    public function command_handles_invalid_tenant_id()
     {
         $this->artisan('subscription:report', ['--tenant' => 99999])
             ->assertExitCode(1)
@@ -139,7 +146,8 @@ class SubscriptionAnalyticsReportCommandTest extends TestCase
     }
 
     /** @test */
-    public function test_command_logs_errors_on_failure()
+    /** @test */
+    public function command_logs_errors_on_failure()
     {
         Log::shouldReceive('error')
             ->once()

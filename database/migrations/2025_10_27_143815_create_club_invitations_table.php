@@ -43,11 +43,11 @@ return new class extends Migration
             $table->softDeletes();
 
             // Indexes for performance
-            $table->index('club_id', 'idx_club_id');
-            $table->index('created_by_user_id', 'idx_created_by');
-            $table->index('invitation_token', 'idx_token');
-            $table->index('expires_at', 'idx_expires_at');
-            $table->index(['is_active', 'expires_at'], 'idx_active_expires');
+            // Note: club_id, created_by_user_id, and invitation_token already have indexes
+            // (from foreignId() and unique() constraints respectively)
+            // Composite index on is_active + expires_at (covers expires_at queries too)
+            // Using table-specific name for SQLite compatibility (global index namespace)
+            $table->index(['is_active', 'expires_at'], 'idx_club_inv_active_expires');
         });
     }
 
