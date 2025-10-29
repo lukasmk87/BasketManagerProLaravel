@@ -11,7 +11,24 @@
 
 ## 📋 Projektübersicht
 
-BasketManager Pro ist eine vollständig ausgestattete Basketball-Vereinsverwaltungs-Anwendung, die mit Laravel 11+ entwickelt wurde. Das System bietet umfassende Funktionen für Vereinsverwaltung, Teammanagement, Live-Scoring, Spielerstatistiken und Emergency-Services.
+BasketManager Pro ist eine vollständig ausgestattete Basketball-Vereinsverwaltungs-Anwendung, die mit Laravel 12.x entwickelt wurde. Das System bietet umfassende Funktionen für Vereinsverwaltung, Teammanagement, Live-Scoring, Spielerstatistiken, Subscription-Management und Emergency-Services.
+
+### 🆕 Recent Updates (Stand: Oktober 2025)
+
+**Phase 4.4.x - Subscription Analytics (75% Complete)**
+- ✅ **13 Stripe Services** - Vollständige Club-Level Subscription Integration
+- ✅ **Multi-Club Subscriptions** - Mehrere Clubs pro Tenant mit individuellen Plans
+- ✅ **Billing & Payment Management** - Invoice Management, Payment Methods (SEPA, Sofort, Giropay)
+- ✅ **Frontend UI** - Vollständiges Subscription Dashboard mit Stripe.js Integration
+- 🔄 **Subscription Analytics** - MRR/ARR-Tracking, Churn-Analyse, Cohort Analysis (Backend fertig)
+- 📊 **Chart.js Integration** - Analytics-Dashboards in Entwicklung
+
+**Technologie-Updates:**
+- ⬆️ Laravel 11.x → **12.x**
+- ⬆️ Vite 5.x → **7.0.4**
+- ⬆️ Tailwind CSS 3.x → **4.0** (mit @tailwindcss/vite)
+- 📈 **63+ Test-Dateien** (↑ von 37+)
+- 🏗️ **69 Models**, **53 Services**, **68 Controllers**
 
 ### 🎯 Hauptfunktionen
 
@@ -21,7 +38,8 @@ BasketManager Pro ist eine vollständig ausgestattete Basketball-Vereinsverwaltu
 - **📈 Analytics**: Umfassende Statistiken und ML-basierte Vorhersagen
 - **🚨 Emergency System**: QR-Code-basiertes Notfallkontaktsystem
 - **🔒 GDPR-Compliance**: Vollständige DSGVO-konforme Datenverwaltung
-- **💳 Stripe Integration**: Multi-Tenant Subscription Management
+- **💳 Stripe Integration**: Multi-Club Subscription Management (13 Services)
+- **💰 Subscription Analytics**: MRR/ARR-Tracking, Churn-Analyse, Cohorts
 - **📱 PWA**: Progressive Web App mit Offline-Funktionalität
 
 ---
@@ -29,20 +47,24 @@ BasketManager Pro ist eine vollständig ausgestattete Basketball-Vereinsverwaltu
 ## 🏗️ Technologie-Stack
 
 ### Backend
-- **Framework**: Laravel 11.x
-- **PHP Version**: 8.3+
+- **Framework**: Laravel 12.x
+- **PHP Version**: 8.2+
 - **Datenbank**: MySQL 8.0+ / PostgreSQL 14+
 - **Cache/Queue**: Redis 7.0+
-- **Authentication**: Laravel Sanctum + Jetstream
-- **Permissions**: Spatie Laravel Permission
+- **Authentication**: Laravel Sanctum 4.0 + Jetstream 5.3
+- **Permissions**: Spatie Laravel Permission 6.21+
 - **Search**: Laravel Scout
+- **Payments**: Laravel Cashier 15.7+ (Stripe)
 
 ### Frontend
-- **Framework**: Vue.js 3.x
-- **Build Tool**: Vite
-- **CSS Framework**: Tailwind CSS
-- **UI Components**: Headless UI
-- **State Management**: Inertia.js
+- **Framework**: Vue.js 3.3+
+- **Build Tool**: Vite 7.0+
+- **CSS Framework**: Tailwind CSS 4.0 (@tailwindcss/vite)
+- **UI Components**: Headless UI + Heroicons
+- **State Management**: Inertia.js 2.0
+- **Charts**: Chart.js 4.5+
+- **Payments UI**: Stripe.js 8.2+
+- **Date Handling**: date-fns 4.1+
 
 ### DevOps & Infrastructure
 - **Containerization**: Docker
@@ -57,11 +79,11 @@ BasketManager Pro ist eine vollständig ausgestattete Basketball-Vereinsverwaltu
 
 ### Voraussetzungen
 
-- PHP 8.3+
+- PHP 8.2+
 - Node.js 18+
-- Composer
-- MySQL/PostgreSQL
-- Redis
+- Composer 2.x
+- MySQL 8.0+ / PostgreSQL 14+
+- Redis 7.0+
 
 ### Installation Schritte
 
@@ -136,12 +158,15 @@ Das Projekt wurde in 5 Phasen entwickelt:
 - ML-basierte Predictive Analytics
 - Shot Charts & Heat Maps (vorbereitet)
 
-#### Phase 4: Integration & Scaling ✅ **VOLLSTÄNDIG**
-- Multi-Tenant Architecture
-- Stripe Payment Integration
-- Federation APIs (DBB, FIBA)
-- Progressive Web App (PWA)
-- API Documentation & SDK Generation
+#### Phase 4: Integration & Scaling 🔄 **IN ARBEIT (Phase 4.4.x)**
+- ✅ Multi-Tenant Architecture (ABGESCHLOSSEN)
+- ✅ Stripe Payment Integration (ABGESCHLOSSEN)
+  - Phase 4.4.1: Club-Level Subscriptions ✅
+  - Phase 4.4.2: Billing & Payment Management ✅
+  - Phase 4.4.x: Subscription Analytics (75% - IN ARBEIT)
+- ✅ Federation APIs (DBB, FIBA) (ABGESCHLOSSEN)
+- ✅ Progressive Web App (PWA) (ABGESCHLOSSEN)
+- ✅ API Documentation & SDK Generation (ABGESCHLOSSEN)
 
 #### Phase 5: Emergency & Compliance ✅ **VOLLSTÄNDIG**
 - Emergency Contact System mit QR-Codes
@@ -156,11 +181,16 @@ Das Projekt wurde in 5 Phasen entwickelt:
 ### Verfügbare Commands
 
 ```bash
-# Development
-php artisan serve                    # Laravel Server starten
-php artisan queue:work              # Queue Worker starten
+# Development (⭐ Empfohlen)
+composer dev                        # Startet Server + Queue + Logs + Vite parallel
+                                    # Nutzt concurrently mit farbcodierter Ausgabe
+
+# Alternative: Einzelne Prozesse
+php artisan serve                    # Laravel Server starten (Port 8000)
+php artisan queue:listen --tries=1  # Queue Worker starten
+php artisan pail --timeout=0        # Real-time Log Viewer (Laravel Pail)
 php artisan schedule:work           # Scheduler starten
-npm run dev                         # Frontend Development
+npm run dev                         # Frontend Development (Vite)
 
 # Testing
 php artisan test                    # Tests ausführen
@@ -184,7 +214,13 @@ php artisan tenant:usage:reset     # Tenant Usage zurücksetzen
 
 ### 🧪 Testing
 
-Das Projekt verfügt über 37+ Test-Dateien:
+Das Projekt verfügt über **63+ Test-Dateien** mit umfassender Coverage:
+
+**Projektstatistiken:**
+- **69 Models** - Umfassende Basketball-Domain-Modelle
+- **53 Services** - Service-orientierte Architektur
+- **68 Controllers** - API & Web Controllers
+- **63 Test-Dateien** - Feature & Unit Tests
 
 ```bash
 # Alle Tests ausführen
@@ -268,19 +304,111 @@ Automatische SDK-Generierung für:
 
 ## 💳 Subscription & Billing
 
-### Stripe Integration
-- **Multi-Tenant Subscription Management**
-- **Deutsche Zahlungsmethoden** (SEPA, Sofort)
-- **Automated Invoice Generation**
+### Stripe Integration (13 Services)
+
+**Club-Level Subscription Management:**
+- `ClubSubscriptionService` - Plan-Verwaltung, Cancellation, Swapping
+- `ClubSubscriptionCheckoutService` - Checkout-Flow für Clubs
+- `ClubStripeCustomerService` - Stripe Customer Management
+- `ClubInvoiceService` - Invoice Management & PDF-Download
+- `ClubPaymentMethodService` - Payment Methods (Card, SEPA, Sofort, Giropay)
+- `SubscriptionAnalyticsService` - MRR/ARR, Churn-Analyse, Cohorts
+
+**Tenant-Level Services:**
+- `StripeSubscriptionService` - Tenant Subscriptions
+- `StripePaymentService` - Payment Processing
+- `CashierTenantManager` - Multi-Tenant Cashier Integration
+
+**Infrastructure:**
+- `CheckoutService` - General Checkout Logic
+- `PaymentMethodService` - Payment Method Handling
+- `StripeClientManager` - Stripe Client Configuration
+- `WebhookEventProcessor` - Webhook Event Handling (16+ Events)
+
+### Subscription Features
+- ✅ **Multi-Club Subscriptions** (mehrere Clubs pro Tenant)
+- ✅ **Deutsche Zahlungsmethoden** (SEPA, Sofort, Giropay, EPS, iDEAL)
+- ✅ **Automated Invoice Generation** mit PDF-Download
+- ✅ **Billing Portal** für Self-Service
+- ✅ **Proration Preview** bei Plan-Wechsel
+- ✅ **Subscription Analytics** (MRR, ARR, Churn)
+- ✅ **Usage Tracking** pro Club
 - **Subscription Tiers**: Free → Basic → Professional → Enterprise
 
 ### Feature Gates
 ```php
-// Tenant-basierte Feature-Kontrolle
-if (tenant()->hasFeature('live_scoring')) {
-    // Live Scoring Feature verfügbar
+// Club-basierte Feature-Kontrolle
+if ($club->hasFeature('live_scoring')) {
+    // Live Scoring Feature für diesen Club verfügbar
+}
+
+// Hierarchische Limit-Checks (Tenant → Club)
+if ($club->canUse('max_teams', 5)) {
+    // Club kann 5 Teams verwenden
 }
 ```
+
+---
+
+## 💰 Subscription Analytics (Phase 4.4.x - 75%)
+
+### Business Metrics Tracking
+
+**SubscriptionAnalyticsService** bietet umfassende SaaS-Metriken:
+
+#### Key Metrics
+- **MRR (Monthly Recurring Revenue)** - Monatlich wiederkehrende Umsätze
+- **ARR (Annual Recurring Revenue)** - Jährlich hochgerechnete Umsätze
+- **Churn Rate** - Abwanderungsrate von Clubs
+- **Customer Lifetime Value (LTV)** - Durchschnittlicher Kundenwert
+- **Cohort Analysis** - Kohortenbasierte Retention-Analyse
+
+#### Verfügbare Analytics
+
+**Revenue Analytics:**
+```php
+// MRR-Berechnung für Tenant
+$mrr = $analyticsService->calculateMRR($tenant);
+
+// ARR-Hochrechnung
+$arr = $analyticsService->calculateARR($tenant);
+
+// Revenue-Breakdown nach Plan
+$breakdown = $analyticsService->getRevenueBreakdown($tenant);
+```
+
+**Churn Analysis:**
+```php
+// Churn-Rate berechnen
+$churnRate = $analyticsService->calculateChurnRate($tenant, $period);
+
+// Retention-Metriken
+$retention = $analyticsService->getRetentionMetrics($tenant);
+```
+
+**Cohort Analysis:**
+```php
+// Cohort-Performance tracken
+$cohortData = $analyticsService->analyzeCohort($tenant, $startDate);
+
+// Subscription-Events tracken
+$events = ClubSubscriptionEvent::where('tenant_id', $tenant->id)
+    ->where('event_type', 'subscription_created')
+    ->get();
+```
+
+### Analytics Models
+
+- **SubscriptionMRRSnapshot** - Tägliche MRR-Snapshots
+- **ClubSubscriptionEvent** - Subscription Lifecycle Events
+- **ClubSubscriptionCohort** - Kohortenanalyse-Daten
+
+### Visualisierung (in Arbeit)
+
+- 📊 **MRR/ARR Charts** mit Chart.js
+- 📈 **Churn Dashboards** mit Trend-Analysen
+- 🎯 **Cohort Retention Heatmaps**
+- 💹 **Revenue Forecasting** mit ML-Integration
 
 ---
 
@@ -368,17 +496,28 @@ Dieses Projekt ist unter der **MIT License** lizenziert. Siehe [LICENSE](LICENSE
 
 ## 🎯 Roadmap
 
+### ⏳ In Arbeit (Aktuell)
+- 🔄 **Phase 4.4.x**: Subscription Analytics (75% Complete)
+  - [x] SubscriptionAnalyticsService Backend
+  - [x] Analytics Models (MRRSnapshot, Events, Cohorts)
+  - [x] Revenue & Churn Calculation
+  - [ ] Frontend Analytics Dashboard
+  - [ ] Chart.js Visualizations
+  - [ ] Cohort Retention Heatmaps
+
 ### Kurzfristig (Q1 2025)
-- [ ] Shot Charts & Heat Maps UI
-- [ ] Mobile App (React Native) Entwicklung
-- [ ] Advanced ML Model Training
-- [ ] Performance Optimierung
+- [ ] **Phase 4.4.x Abschluss**: Analytics Dashboard UI
+- [ ] Shot Charts & Heat Maps UI für Basketball
+- [ ] Performance Optimierung (Caching, Query-Optimierung)
+- [ ] Enhanced Testing Coverage (80%+ Ziel)
 
 ### Mittelfristig (Q2-Q3 2025)
-- [ ] Federation API Integration (DBB, FIBA)
+- [ ] **Mobile App** (React Native) Entwicklung
+- [ ] Federation API **Live-Integration** (DBB, FIBA)
 - [ ] Video Analysis UI Vervollständigung
-- [ ] Advanced Tournament Brackets
-- [ ] Social Features Integration
+- [ ] Advanced ML Model Training & Deployment
+- [ ] Advanced Tournament Brackets UI
+- [ ] Social Features Integration (Team-Chat, Player-Feed)
 
 ### Langfristig (Q4 2025+)
 - [ ] Multi-Language Expansion
@@ -388,6 +527,31 @@ Dieses Projekt ist unter der **MIT License** lizenziert. Siehe [LICENSE](LICENSE
 
 ---
 
+## 📊 Projekt-Status
+
+**BasketManager Pro Laravel** ist eine **Production-Ready** Basketball-Vereinsverwaltung mit:
+
+- ✅ **Phase 1-3**: Vollständig abgeschlossen (Core, Game System, Training & Advanced Features)
+- 🔄 **Phase 4**: 95% Complete (nur Analytics Dashboard UI ausstehend)
+- ✅ **Phase 5**: Vollständig abgeschlossen (Emergency & Compliance)
+
+**Technische Exzellenz:**
+- 🏗️ **69 Models** - Vollständige Basketball-Domain
+- 🔧 **53 Services** - Service-orientierte Clean Architecture
+- 🎮 **68 Controllers** - REST API & Web
+- ✅ **63+ Tests** - Umfassende Test-Coverage
+- 💳 **13 Stripe Services** - Enterprise Subscription Management
+
+**Enterprise-Features:**
+- Multi-Tenant Architecture mit Row-Level Security
+- GDPR/DSGVO vollständig compliant
+- Real-time Broadcasting für Live-Games
+- Progressive Web App (PWA) mit Offline-Support
+- Subscription Analytics (MRR/ARR/Churn)
+
+---
+
 **🏀 BasketManager Pro Laravel - Die Zukunft der Basketball-Vereinsverwaltung**
 
 *Entwickelt mit ❤️ für die Basketball-Community*
+*Stand: Oktober 2025 - Version 4.4.x*

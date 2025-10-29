@@ -11,20 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('clubs', function (Blueprint $table) {
-            // Add tenant_id foreign key
-            $table->foreignUuid('tenant_id')
-                ->nullable() // Nullable initially to allow data migration
-                ->after('club_subscription_plan_id')
-                ->constrained('tenants')
-                ->onDelete('cascade');
+        // Check if column exists before adding
+        if (!Schema::hasColumn('clubs', 'tenant_id')) {
+            Schema::table('clubs', function (Blueprint $table) {
+                // Add tenant_id foreign key
+                $table->foreignUuid('tenant_id')
+                    ->nullable() // Nullable initially to allow data migration
+                    ->after('club_subscription_plan_id')
+                    ->constrained('tenants')
+                    ->onDelete('cascade');
 
-            // Add index for tenant_id for performance
-            $table->index('tenant_id', 'idx_clubs_tenant');
+                // Add index for tenant_id for performance
+                $table->index('tenant_id', 'idx_clubs_tenant');
 
-            // Add composite index for tenant_id + is_active for common queries
-            $table->index(['tenant_id', 'is_active'], 'idx_clubs_tenant_active');
-        });
+                // Add composite index for tenant_id + is_active for common queries
+                $table->index(['tenant_id', 'is_active'], 'idx_clubs_tenant_active');
+            });
+        }
     }
 
     /**
