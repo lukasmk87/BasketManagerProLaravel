@@ -28,11 +28,10 @@ class SubscriptionAnalyticsReportMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: sprintf(
-                '📊 Subscription Analytics Report - %s (%s)',
-                $this->tenant->name,
-                $this->reportData['date'] ?? now()->format('Y-m')
-            ),
+            subject: __('notifications.subjects.analytics_report', [
+                'tenant_name' => $this->tenant->name,
+                'report_date' => $this->reportData['date'] ?? now()->format('Y-m')
+            ]),
         );
     }
 
@@ -88,21 +87,46 @@ class SubscriptionAnalyticsReportMail extends Mailable implements ShouldQueue
 
         $mrrGrowth = $this->reportData['mrr']['growth_rate_3m'] ?? 0;
         if ($mrrGrowth > 10) {
-            $insights[] = ['type' => 'positive', 'text' => sprintf('Starkes MRR-Wachstum von %.1f%% in den letzten 3 Monaten', $mrrGrowth)];
+            $insights[] = [
+                'type' => 'positive',
+                'text' => __('notifications.analytics_report.key_insights.mrr_growth_positive', [
+                    'rate' => number_format($mrrGrowth, 1)
+                ])
+            ];
         } elseif ($mrrGrowth < 0) {
-            $insights[] = ['type' => 'negative', 'text' => sprintf('MRR-Rückgang von %.1f%% - Handlungsbedarf!', abs($mrrGrowth))];
+            $insights[] = [
+                'type' => 'negative',
+                'text' => __('notifications.analytics_report.key_insights.mrr_growth_negative', [
+                    'rate' => number_format(abs($mrrGrowth), 1)
+                ])
+            ];
         }
 
         $churnRate = $this->reportData['churn']['monthly_rate'] ?? 0;
         if ($churnRate > 5) {
-            $insights[] = ['type' => 'warning', 'text' => sprintf('Churn-Rate bei %.1f%% - über dem Zielwert von 5%%', $churnRate)];
+            $insights[] = [
+                'type' => 'warning',
+                'text' => __('notifications.analytics_report.key_insights.churn_high', [
+                    'rate' => number_format($churnRate, 1)
+                ])
+            ];
         } else {
-            $insights[] = ['type' => 'positive', 'text' => sprintf('Gesunde Churn-Rate von %.1f%%', $churnRate)];
+            $insights[] = [
+                'type' => 'positive',
+                'text' => __('notifications.analytics_report.key_insights.churn_healthy', [
+                    'rate' => number_format($churnRate, 1)
+                ])
+            ];
         }
 
         $trialConversion = $this->reportData['health']['trial_conversion'] ?? 0;
         if ($trialConversion < 20) {
-            $insights[] = ['type' => 'warning', 'text' => sprintf('Niedrige Trial-Conversion von %.1f%% - Onboarding optimieren', $trialConversion)];
+            $insights[] = [
+                'type' => 'warning',
+                'text' => __('notifications.analytics_report.key_insights.trial_conversion_low', [
+                    'rate' => number_format($trialConversion, 1)
+                ])
+            ];
         }
 
         return $insights;

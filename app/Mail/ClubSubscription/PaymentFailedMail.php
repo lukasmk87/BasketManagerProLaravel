@@ -47,10 +47,9 @@ class PaymentFailedMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: sprintf(
-                '⚠️ Zahlung fehlgeschlagen - %s',
-                $this->club->name
-            ),
+            subject: __('notifications.subjects.payment_failed', [
+                'club_name' => $this->club->name
+            ]),
         );
     }
 
@@ -110,17 +109,7 @@ class PaymentFailedMail extends Mailable implements ShouldQueue
      */
     private function translateFailureReason(string $reason): string
     {
-        $translations = [
-            'insufficient_funds' => 'Unzureichende Deckung auf dem Konto',
-            'card_declined' => 'Karte wurde abgelehnt',
-            'expired_card' => 'Karte ist abgelaufen',
-            'incorrect_cvc' => 'Falsche Kartenprüfnummer (CVC)',
-            'processing_error' => 'Verarbeitungsfehler bei der Bank',
-            'card_not_supported' => 'Kartentyp wird nicht unterstützt',
-            'authentication_required' => '3D Secure Authentifizierung erforderlich',
-            'generic_decline' => 'Zahlung wurde abgelehnt',
-        ];
-
-        return $translations[$reason] ?? 'Die Zahlung konnte nicht durchgeführt werden';
+        return __('notifications.payment_failed.failure_reasons.' . $reason, [],
+            __('notifications.payment_failed.failure_reasons.default'));
     }
 }

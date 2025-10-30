@@ -27,11 +27,10 @@ class HighChurnAlertMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: sprintf(
-                '⚠️ Hohe Churn-Rate erkannt - %s (%.1f%%)',
-                $this->tenant->name,
-                $this->churnData['churn_rate']
-            ),
+            subject: __('notifications.subjects.high_churn_alert', [
+                'tenant_name' => $this->tenant->name,
+                'churn_rate' => number_format($this->churnData['churn_rate'], 1)
+            ]),
         );
     }
 
@@ -72,17 +71,17 @@ class HighChurnAlertMail extends Mailable implements ShouldQueue
         $actions = [];
 
         if ($this->churnData['involuntary_churn'] > $this->churnData['voluntary_churn']) {
-            $actions[] = 'Zahlungsmethoden-Updates proaktiv anfordern';
-            $actions[] = 'Dunning-Prozess überprüfen';
+            $actions[] = __('notifications.churn_alert.recommended_actions.payment_updates');
+            $actions[] = __('notifications.churn_alert.recommended_actions.dunning_process');
         }
 
         if ($this->churnData['churn_rate'] > 10) {
-            $actions[] = 'Kundenbefragung zur Abwanderung durchführen';
-            $actions[] = 'Win-back Kampagne starten';
+            $actions[] = __('notifications.churn_alert.recommended_actions.churn_survey');
+            $actions[] = __('notifications.churn_alert.recommended_actions.winback_campaign');
         }
 
-        $actions[] = 'At-Risk Clubs kontaktieren';
-        $actions[] = 'Produkt-Features basierend auf Feedback verbessern';
+        $actions[] = __('notifications.churn_alert.recommended_actions.contact_at_risk');
+        $actions[] = __('notifications.churn_alert.recommended_actions.improve_features');
 
         return $actions;
     }

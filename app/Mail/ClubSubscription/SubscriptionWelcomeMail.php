@@ -47,11 +47,10 @@ class SubscriptionWelcomeMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: sprintf(
-                '🎉 Willkommen bei %s - %s',
-                config('app.name'),
-                $this->club->name
-            ),
+            subject: __('notifications.subjects.subscription_welcome', [
+                'app_name' => config('app.name'),
+                'club_name' => $this->club->name
+            ]),
         );
     }
 
@@ -121,26 +120,26 @@ class SubscriptionWelcomeMail extends Mailable implements ShouldQueue
     {
         return [
             [
-                'title' => 'Teams erstellen',
-                'description' => 'Legen Sie Ihre Basketball-Teams an',
+                'title' => __('notifications.welcome.getting_started.teams.title'),
+                'description' => __('notifications.welcome.getting_started.teams.description'),
                 'url' => route('teams.create', ['club' => $this->club->id]),
                 'icon' => '👥',
             ],
             [
-                'title' => 'Spieler hinzufügen',
-                'description' => 'Fügen Sie Ihre Spieler zu den Teams hinzu',
+                'title' => __('notifications.welcome.getting_started.players.title'),
+                'description' => __('notifications.welcome.getting_started.players.description'),
                 'url' => route('players.index', ['club' => $this->club->id]),
                 'icon' => '🏀',
             ],
             [
-                'title' => 'Spiele planen',
-                'description' => 'Erstellen Sie Ihren Spielplan',
+                'title' => __('notifications.welcome.getting_started.games.title'),
+                'description' => __('notifications.welcome.getting_started.games.description'),
                 'url' => route('games.create', ['club' => $this->club->id]),
                 'icon' => '📅',
             ],
             [
-                'title' => 'Trainings organisieren',
-                'description' => 'Planen Sie Ihre Trainingseinheiten',
+                'title' => __('notifications.welcome.getting_started.trainings.title'),
+                'description' => __('notifications.welcome.getting_started.trainings.description'),
                 'url' => route('trainings.index', ['club' => $this->club->id]),
                 'icon' => '💪',
             ],

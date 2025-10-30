@@ -45,10 +45,9 @@ class PaymentSuccessfulMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: sprintf(
-                'Zahlung erfolgreich - %s',
-                $this->club->name
-            ),
+            subject: __('notifications.subjects.payment_succeeded', [
+                'club_name' => $this->club->name
+            ]),
         );
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Club;
 use App\Models\ClubSubscriptionEvent;
 use App\Models\ClubSubscriptionPlan;
+use App\Services\ClubSubscriptionNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,13 @@ use Stripe\Webhook;
 
 class ClubSubscriptionWebhookController extends Controller
 {
+    /**
+     * @param ClubSubscriptionNotificationService $notificationService
+     */
+    public function __construct(
+        protected ClubSubscriptionNotificationService $notificationService
+    ) {}
+
     /**
      * Handle incoming Stripe webhooks for club subscriptions.
      */
@@ -140,7 +148,24 @@ class ClubSubscriptionWebhookController extends Controller
             'tenant_id' => $club->tenant_id,
         ]);
 
-        // TODO: Send confirmation email to club admin
+        // Send welcome email to club admin
+        try {
+            $plan = ClubSubscriptionPlan::find($planId);
+            if ($plan) {
+                $this->notificationService->sendSubscriptionWelcome($club, $plan);
+
+                Log::info('Club subscription welcome email sent', [
+                    'club_id' => $club->id,
+                    'plan_id' => $plan->id,
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Don't fail webhook if email fails
+            Log::error('Failed to send club subscription welcome email', [
+                'club_id' => $club->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -308,7 +333,28 @@ class ClubSubscriptionWebhookController extends Controller
             'tenant_id' => $club->tenant_id,
         ]);
 
-        // TODO: Send cancellation notification to club admin
+        // Send cancellation notification to club admin
+        try {
+            $cancellationReason = 'voluntary'; // Default to voluntary cancellation
+            $accessUntil = null; // Subscription ended immediately
+
+            $this->notificationService->sendSubscriptionCanceled(
+                $club,
+                $cancellationReason,
+                $accessUntil
+            );
+
+            Log::info('Club subscription cancellation email sent', [
+                'club_id' => $club->id,
+                'reason' => $cancellationReason,
+            ]);
+        } catch (\Exception $e) {
+            // Don't fail webhook if email fails
+            Log::error('Failed to send club subscription cancellation email', [
+                'club_id' => $club->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -356,7 +402,32 @@ class ClubSubscriptionWebhookController extends Controller
             'tenant_id' => $club->tenant_id,
         ]);
 
-        // TODO: Send payment confirmation email to club admin
+        // Send payment confirmation email to club admin
+        try {
+            $invoiceData = [
+                'number' => $invoice->number ?? $invoice->id,
+                'amount' => $invoice->amount_paid / 100, // Convert from cents
+                'currency' => strtoupper($invoice->currency),
+                'paid_at' => now(),
+                'next_billing_date' => $club->subscription_current_period_end,
+                'billing_interval' => 'monthly', // Default, will be determined by subscription
+                'pdf_url' => $invoice->invoice_pdf ?? null,
+            ];
+
+            $this->notificationService->sendPaymentSuccessful($club, $invoiceData);
+
+            Log::info('Club payment success email sent', [
+                'club_id' => $club->id,
+                'invoice_id' => $invoice->id,
+            ]);
+        } catch (\Exception $e) {
+            // Don't fail webhook if email fails
+            Log::error('Failed to send club payment success email', [
+                'club_id' => $club->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -402,7 +473,40 @@ class ClubSubscriptionWebhookController extends Controller
             'tenant_id' => $club->tenant_id,
         ]);
 
-        // TODO: Send payment failure notification to club admin
+        // Send payment failure notification to club admin
+        try {
+            $invoiceData = [
+                'number' => $invoice->number ?? $invoice->id,
+                'amount' => $invoice->amount_due / 100, // Convert from cents
+                'currency' => strtoupper($invoice->currency),
+                'attempted_at' => now(),
+                'grace_period_days' => 3, // Stripe default grace period
+                'retry_attempts' => $invoice->attempt_count ?? 0,
+            ];
+
+            // Extract failure reason from invoice
+            $failureReason = 'generic_decline';
+            if (isset($invoice->charge) && isset($invoice->charge->failure_code)) {
+                $failureReason = $invoice->charge->failure_code;
+            } elseif (isset($invoice->last_finalization_error)) {
+                $failureReason = $invoice->last_finalization_error->code ?? 'generic_decline';
+            }
+
+            $this->notificationService->sendPaymentFailed($club, $invoiceData, $failureReason);
+
+            Log::info('Club payment failed email sent', [
+                'club_id' => $club->id,
+                'invoice_id' => $invoice->id,
+                'failure_reason' => $failureReason,
+            ]);
+        } catch (\Exception $e) {
+            // Don't fail webhook if email fails
+            Log::error('Failed to send club payment failed email', [
+                'club_id' => $club->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -429,7 +533,8 @@ class ClubSubscriptionWebhookController extends Controller
             'tenant_id' => $club->tenant_id,
         ]);
 
-        // TODO: Send notification about new invoice
+        // NOTE: Optional notification - currently not implemented (low priority).
+        // Invoice creation is an internal event. Users are notified when payment succeeds/fails.
     }
 
     /**
@@ -457,7 +562,9 @@ class ClubSubscriptionWebhookController extends Controller
             'tenant_id' => $club->tenant_id,
         ]);
 
-        // TODO: Send invoice notification to club admin
+        // NOTE: No email sent here - invoice.finalized is informational only.
+        // Emails are sent when payment succeeds (invoice.payment_succeeded) or fails (invoice.payment_failed).
+        // This prevents duplicate emails for the same invoice.
     }
 
     /**
@@ -485,7 +592,36 @@ class ClubSubscriptionWebhookController extends Controller
             'tenant_id' => $club->tenant_id,
         ]);
 
-        // TODO: Send 3D Secure authentication request to club admin
+        // Send 3D Secure authentication request to club admin
+        try {
+            $invoiceData = [
+                'number' => $invoice->number ?? $invoice->id,
+                'amount' => $invoice->amount_due / 100, // Convert from cents
+                'currency' => strtoupper($invoice->currency),
+                'attempted_at' => now(),
+                'grace_period_days' => 3,
+                'retry_attempts' => $invoice->attempt_count ?? 0,
+                'payment_intent' => $invoice->payment_intent,
+            ];
+
+            // Use 3DS-specific failure reason
+            $failureReason = 'authentication_required';
+
+            $this->notificationService->sendPaymentFailed($club, $invoiceData, $failureReason);
+
+            Log::info('Club 3D Secure authentication email sent', [
+                'club_id' => $club->id,
+                'invoice_id' => $invoice->id,
+                'payment_intent' => $invoice->payment_intent,
+            ]);
+        } catch (\Exception $e) {
+            // Don't fail webhook if email fails
+            Log::error('Failed to send club 3D Secure authentication email', [
+                'club_id' => $club->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -511,7 +647,8 @@ class ClubSubscriptionWebhookController extends Controller
             'tenant_id' => $club->tenant_id,
         ]);
 
-        // TODO: Send confirmation notification
+        // NOTE: Optional notification - currently not implemented (low priority).
+        // Payment method changes are user-initiated actions and receive immediate UI feedback.
     }
 
     /**
@@ -537,9 +674,10 @@ class ClubSubscriptionWebhookController extends Controller
                 'payment_method_id' => $paymentMethod->id,
                 'tenant_id' => $club->tenant_id,
             ]);
-        }
 
-        // TODO: Send notification about payment method removal
+            // NOTE: Optional notification - currently not implemented (low priority).
+            // Payment method removal is user-initiated and receives immediate UI feedback.
+        }
     }
 
     /**

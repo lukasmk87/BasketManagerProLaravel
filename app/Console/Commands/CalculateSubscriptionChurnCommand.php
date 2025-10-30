@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Tenant;
+use App\Services\ClubSubscriptionNotificationService;
 use App\Services\Stripe\SubscriptionAnalyticsService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -170,7 +171,30 @@ class CalculateSubscriptionChurnCommand extends Command
                 'involuntary_churn' => $churnData['involuntary_churn'],
             ]);
 
-            // TODO: Send alert email to tenant admin
+            // Send high churn alert email to tenant admins
+            try {
+                app(ClubSubscriptionNotificationService::class)->sendHighChurnAlert($tenant, [
+                    'period' => $churnData['period'],
+                    'churn_rate' => $churnData['churn_rate'],
+                    'customers_start' => $churnData['customers_start'],
+                    'customers_end' => $churnData['customers_end'],
+                    'churned_customers' => $churnData['churned_customers'],
+                    'voluntary_churn' => $churnData['voluntary_churn'],
+                    'involuntary_churn' => $churnData['involuntary_churn'],
+                    'churn_reasons' => $churnReasons,
+                    'revenue_impact' => $revenueChurn,
+                ]);
+
+                $this->info("  ✅ High churn alert email queued for tenant admins");
+            } catch (\Exception $e) {
+                // Don't fail the command if email fails
+                $this->error("  ❌ Failed to queue high churn alert: {$e->getMessage()}");
+                Log::error('Failed to send high churn alert email', [
+                    'tenant_id' => $tenant->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+            }
         } else {
             $this->info("  ✅ Churn rate is within acceptable limits.");
         }

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Tenant;
+use App\Services\ClubSubscriptionNotificationService;
 use App\Services\Stripe\SubscriptionAnalyticsService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +18,7 @@ class SubscriptionAnalyticsReportCommand extends Command
     protected $signature = 'subscription:report
                             {--tenant= : Specific tenant ID to generate report for}
                             {--format=table : Output format (table, json, csv)}
-                            {--email : Send report via email (not implemented)}';
+                            {--email : Send report via email to tenant admins}';
 
     /**
      * The console command description.
@@ -117,9 +118,25 @@ class SubscriptionAnalyticsReportCommand extends Command
 
         // Send email if requested
         if ($sendEmail) {
-            $this->warn('📧 Email sending is not yet implemented. Report available in output only.');
-            // TODO: Implement email sending
-            // Mail::to($tenant->admin_email)->send(new SubscriptionAnalyticsReport($report));
+            try {
+                app(ClubSubscriptionNotificationService::class)->sendAnalyticsReport($tenant, [
+                    'date' => $report['date'],
+                    'mrr' => $report['mrr'],
+                    'churn' => $report['churn'],
+                    'ltv' => $report['ltv'],
+                    'health' => $report['health'],
+                ], 'monthly');
+
+                $this->info("  ✅ Analytics report email queued for tenant admins");
+            } catch (\Exception $e) {
+                // Don't fail the command if email fails
+                $this->error("  ❌ Failed to queue analytics report: {$e->getMessage()}");
+                Log::error('Failed to send analytics report email', [
+                    'tenant_id' => $tenant->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+            }
         }
     }
 

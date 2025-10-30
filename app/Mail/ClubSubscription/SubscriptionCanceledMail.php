@@ -30,7 +30,9 @@ class SubscriptionCanceledMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: sprintf('Abonnement gekündigt - %s', $this->club->name),
+            subject: __('notifications.subjects.subscription_canceled', [
+                'club_name' => $this->club->name
+            ]),
         );
     }
 
@@ -65,12 +67,7 @@ class SubscriptionCanceledMail extends Mailable implements ShouldQueue
 
     private function translateReason(string $reason): string
     {
-        return match($reason) {
-            'voluntary' => 'Freiwillige Kündigung',
-            'payment_failed' => 'Zahlungsfehler',
-            'trial_expired' => 'Testzeitraum abgelaufen',
-            'downgrade_to_free' => 'Wechsel zum kostenlosen Plan',
-            default => 'Andere',
-        };
+        return __('notifications.canceled.reasons.' . $reason, [],
+            __('notifications.canceled.reasons.other'));
     }
 }

@@ -29,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(\App\Services\ClubUsageTrackingService::class)
             );
         });
+
+        // Register Club Subscription Notification Service
+        $this->app->singleton(\App\Services\ClubSubscriptionNotificationService::class);
     }
 
     /**
