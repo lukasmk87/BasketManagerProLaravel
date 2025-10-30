@@ -2,11 +2,11 @@
 
 **Projekt:** BasketManager Pro - Mehrere Clubs pro Tenant mit individuellen Stripe-Subscriptions
 **Erstellt:** 2025-10-27
-**Zuletzt aktualisiert:** 2025-10-29 22:00
-**Status:** ✅ Phase 1, 2, 3 & 4 VOLLSTÄNDIG ABGESCHLOSSEN
+**Zuletzt aktualisiert:** 2025-10-30 (Phase 5.1-5.4 abgeschlossen)
+**Status:** ✅ Phase 1, 2, 3 & 4 VOLLSTÄNDIG | Phase 5: 40% (4/10 Steps)
 **Priorität:** ⭐⭐⭐ Hoch
-**Geschätzte verbleibende Zeit:** ~3-5 Arbeitstage (Fehlende Tests + Email-Notifications + Phasen 5-8)
-**Aktueller Fortschritt:** Phase 1: 100% (6/6) | Phase 2: 100% (8/8) | Phase 3: 100% (12/12) | Phase 4: 100% (4.1-4.4 vollständig) | Gesamt: ~70%
+**Geschätzte verbleibende Zeit:** ~2-3 Arbeitstage (Phase 5.5-5.10 + Phasen 6-8)
+**Aktueller Fortschritt:** Phase 1: 100% (6/6) | Phase 2: 100% (8/8) | Phase 3: 100% (12/12) | Phase 4: 100% (4.1-4.4) | Phase 5: 40% (4/10) | Gesamt: ~75%
 ..
 ---
 
@@ -104,7 +104,19 @@ Ermöglichung von **mehreren Clubs pro Tenant**, wobei jeder Club seine eigene S
    - ✅ Artisan Commands & Scheduling (Phase 4.4.3 - ABGESCHLOSSEN) 🆕
    - ✅ Unit & Feature Tests (Phase 4.4.4 - ABGESCHLOSSEN)
 
-5. **Tests** (90% Complete)
+5. **Email Notifications** (40% Complete - Phase 5.1-5.4 ABGESCHLOSSEN) 🆕
+   - ✅ **Database Schema** (2 Migrations: notification_preferences, notification_logs) - Phase 5.1
+   - ✅ **Models** (NotificationPreference, NotificationLog mit 19 Methoden) - Phase 5.2
+   - ✅ **Mail-Klassen** (6 Mail-Klassen: Payment Success/Failed, Welcome, Canceled, Churn Alert, Analytics Report) - Phase 5.3
+   - ✅ **Email-Templates** (6 Markdown Templates mit Laravel Mail Components) - Phase 5.4
+   - ⏳ **ClubSubscriptionNotificationService** (Zentraler Service für Notification-Versand) - Phase 5.5
+   - ⏳ **Webhook-Handler Updates** (6 TODOs in ClubSubscriptionWebhookController) - Phase 5.6
+   - ⏳ **Command-Integration** (CalculateSubscriptionChurnCommand, SubscriptionAnalyticsReportCommand) - Phase 5.7
+   - ⏳ **Lokalisierung** (resources/lang/de/notifications.php mit 150+ Strings) - Phase 5.8
+   - ⏳ **Unit Tests** (Service, Mail-Klassen) - Phase 5.9
+   - ⏳ **Feature Tests** (End-to-End Notification Flow) - Phase 5.10
+
+6. **Tests** (90% Complete)
    - ✅ Unit Tests für ClubStripeCustomerService (11 Tests)
    - ✅ Unit Tests für ClubSubscriptionCheckoutService (8 Tests)
    - ✅ Unit Tests für ClubSubscriptionService (9 Tests)
@@ -4808,5 +4820,970 @@ touch tests/Feature/SubscriptionAnalyticsIntegrationTest.php
 - Cohort-Analyse vorbereitet für LTV-Tracking
 - Churn-Analyse mit Voluntary/Involuntary Split
 - Alle Webhook-Handler tracken jetzt für zukünftige Analytics
+
+---
+
+## 📧 Phase 5: Email Notifications & Alerts
+
+**Priorität:** 🟡 MITTEL
+**Dauer:** 3-4 Tage
+**Status:** 🔄 IN PROGRESS (40% Complete - 4/10 Steps ABGESCHLOSSEN)
+**Implementiert:** 2025-10-30
+
+### Ziele
+
+Vollständiges Email-Notification-System für Club-Subscriptions mit:
+- Transactional Emails (Payment Success/Failed, Welcome, Canceled)
+- Admin Alerts (High Churn Alert)
+- Analytics Reports (Monthly/Quarterly MRR/Churn/LTV Reports)
+- Preference Management (Opt-in/Opt-out per Channel & Event Type)
+- Audit Logging (Delivery Tracking, Open/Click Tracking)
+- German Localization
+
+---
+
+### Phase 5.1: Database Schema für Notifications ✅ **ABGESCHLOSSEN**
+
+**Implementiert am:** 2025-10-30 09:22
+
+**Migration 1:** `create_notification_preferences_table.php` (60 Zeilen)
+
+```php
+Schema::create('notification_preferences', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+
+    // Polymorphic notifiable (Club, Tenant, etc.)
+    $table->morphs('notifiable');
+
+    // Notification settings
+    $table->enum('channel', ['email', 'push', 'sms', 'database'])->default('email');
+    $table->string('event_type'); // payment_succeeded, high_churn_alert, etc.
+    $table->boolean('is_enabled')->default(true);
+    $table->json('settings')->nullable(); // Custom settings per preference
+
+    $table->timestamps();
+
+    // Indexes
+    $table->index(['user_id', 'channel', 'event_type']);
+    $table->index(['notifiable_type', 'notifiable_id']);
+    $table->unique(
+        ['user_id', 'channel', 'event_type', 'notifiable_type', 'notifiable_id'],
+        'unique_preference'
+    );
+});
+```
+
+**Migration 2:** `create_notification_logs_table.php` (80 Zeilen)
+
+```php
+Schema::create('notification_logs', function (Blueprint $table) {
+    $table->id();
+
+    // Polymorphic notifiable
+    $table->morphs('notifiable');
+
+    // Notification details
+    $table->string('notification_type'); // Mail class name
+    $table->enum('channel', ['email', 'push', 'sms', 'database'])->default('email');
+    $table->string('recipient_email')->nullable();
+    $table->foreignId('recipient_user_id')->nullable()->constrained('users')->onDelete('set null');
+
+    // Content preview
+    $table->string('subject')->nullable();
+    $table->text('body_preview')->nullable();
+
+    // Delivery tracking
+    $table->enum('status', ['queued', 'sent', 'delivered', 'failed', 'opened', 'clicked', 'bounced', 'complained'])
+        ->default('queued');
+
+    $table->timestamp('queued_at')->nullable();
+    $table->timestamp('sent_at')->nullable();
+    $table->timestamp('delivered_at')->nullable();
+    $table->timestamp('failed_at')->nullable();
+    $table->timestamp('opened_at')->nullable();
+    $table->timestamp('clicked_at')->nullable();
+
+    // Error handling
+    $table->text('failed_reason')->nullable();
+    $table->integer('retry_count')->default(0);
+
+    // External references
+    $table->string('external_id')->nullable(); // Email provider message ID
+    $table->json('metadata')->nullable();
+
+    $table->timestamps();
+
+    // Indexes
+    $table->index('status');
+    $table->index(['notification_type', 'status']);
+    $table->index(['channel', 'status']);
+    $table->index('recipient_email');
+    $table->index('created_at');
+});
+```
+
+**Ergebnisse:**
+- ✅ 2 Migrations erstellt (140 Zeilen total)
+- ✅ notification_preferences: User-Level Opt-in/Opt-out Management
+- ✅ notification_logs: Comprehensive Audit Trail mit Delivery Tracking
+- ✅ Polymorphic Relations für Flexibilität (Club, Tenant, etc.)
+- ✅ Multi-Channel Support (Email, Push, SMS, Database)
+- ✅ Status Lifecycle: queued → sent → delivered → opened/clicked
+- ✅ Retry-Logic Support mit retry_count
+- ✅ External ID für Email Provider Integration (Mailgun, SES, etc.)
+
+---
+
+### Phase 5.2: Notification Models ✅ **ABGESCHLOSSEN**
+
+**Implementiert am:** 2025-10-30 09:24
+
+**Model 1:** `NotificationPreference.php` (135 Zeilen)
+
+**Features:**
+- **7 Query Scopes:**
+  - `forUser(User $user)` - Filter by user
+  - `channel(string $channel)` - Filter by channel
+  - `eventType(string $eventType)` - Filter by event type
+  - `enabled()` - Only enabled preferences
+  - `disabled()` - Only disabled preferences
+  - `forNotifiable($notifiable)` - Filter by polymorphic notifiable
+  - `forChannelAndEvent(string $channel, string $eventType)` - Combined filter
+
+- **7 Helper Methods:**
+  - `isEnabled(): bool` - Check if preference is enabled
+  - `enable(): void` - Enable this preference
+  - `disable(): void` - Disable this preference
+  - `toggle(): void` - Toggle enabled state
+  - `getSetting(string $key, $default = null)` - Get custom setting
+  - `setSetting(string $key, $value): void` - Set custom setting
+  - `removeSetting(string $key): void` - Remove custom setting
+
+**Model 2:** `NotificationLog.php` (237 Zeilen)
+
+**Features:**
+- **8 Query Scopes:**
+  - `status(string $status)` - Filter by status
+  - `type(string $type)` - Filter by notification type
+  - `channel(string $channel)` - Filter by channel
+  - `sent()` - Only sent notifications
+  - `failed()` - Only failed notifications
+  - `queued()` - Only queued notifications
+  - `forNotifiable($notifiable)` - Filter by polymorphic notifiable
+  - `dateRange(Carbon $from, Carbon $to)` - Filter by date range
+
+- **12 Helper Methods:**
+  - `markAsSent(): void` - Mark as sent with timestamp
+  - `markAsDelivered(): void` - Mark as delivered
+  - `markAsOpened(): void` - Mark as opened
+  - `markAsClicked(): void` - Mark as clicked
+  - `markAsFailed(string $reason): void` - Mark as failed with reason + increment retry_count
+  - `canRetry(int $maxRetries = 3): bool` - Check if retry allowed
+  - `getMetadata(string $key, $default = null)` - Get metadata value
+  - `setMetadata(string $key, $value): void` - Set metadata value
+  - `wasSuccessful(): bool` - Check if status is delivered/opened/clicked
+  - `hasFailed(): bool` - Check if status is failed/bounced/complained
+  - `isPending(): bool` - Check if status is queued/sent
+  - `getDaysOld(): int` - Days since creation
+
+**Ergebnisse:**
+- ✅ 2 Models erstellt (372 Zeilen total)
+- ✅ 15 Query Scopes für flexible Filtering
+- ✅ 19 Helper Methods für Common Operations
+- ✅ Comprehensive Casts (array, boolean, datetime)
+- ✅ Polymorphic Relations (belongsTo User, morphTo Notifiable)
+- ✅ Status Lifecycle Management
+- ✅ Retry Logic Support
+
+---
+
+### Phase 5.3: Mail-Klassen ✅ **ABGESCHLOSSEN**
+
+**Implementiert am:** 2025-10-30 09:30
+
+**6 Mail-Klassen erstellt (677 Zeilen total):**
+
+#### 5.3.1 `PaymentSuccessfulMail.php` (100 Zeilen)
+
+**Purpose:** Zahlungsbestätigung nach erfolgreichem Payment
+
+**Constructor:**
+```php
+public function __construct(
+    public Club $club,
+    public array $invoiceData,
+    public ?string $pdfUrl = null
+) {
+    $this->afterCommit();
+}
+```
+
+**Template Data:**
+- Invoice Number, Amount, Currency, Paid Date
+- Plan Name, Next Billing Date
+- PDF Download URL
+- Dashboard URL
+
+**Queue Config:** 3 tries, 60s backoff
+**Tags:** club-subscription, payment-successful, club:X, tenant:Y
+
+#### 5.3.2 `PaymentFailedMail.php` (127 Zeilen)
+
+**Purpose:** Alert bei fehlgeschlagener Zahlung mit Action Steps
+
+**Constructor:**
+```php
+public function __construct(
+    public Club $club,
+    public array $invoiceData,
+    public string $failureReason,
+    public ?int $gracePeriodDays = 3,
+    public ?int $retryAttempts = null
+) {
+    $this->afterCommit();
+}
+```
+
+**Features:**
+- `translateFailureReason()` - 8 German Error Messages:
+  - insufficient_funds, card_declined, expired_card, incorrect_cvc, processing_error,
+    card_not_supported, authentication_required, generic_decline
+
+**Template Data:**
+- Failure Reason (translated), Grace Period, Access Expiry
+- Update Payment Method URL, Support URL
+- Retry Attempts Counter
+
+**Tags:** includes `priority:high`
+
+#### 5.3.3 `SubscriptionWelcomeMail.php` (150 Zeilen)
+
+**Purpose:** Welcome Email mit Onboarding Steps
+
+**Constructor:**
+```php
+public function __construct(
+    public Club $club,
+    public ClubSubscriptionPlan $plan,
+    public bool $isTrialActive = false,
+    public ?int $trialDaysRemaining = null
+) {
+    $this->afterCommit();
+}
+```
+
+**Features:**
+- `getGettingStartedSteps()` - 4-Step Onboarding:
+  1. 👥 Teams erstellen
+  2. 🏀 Spieler hinzufügen
+  3. 📅 Spiele planen
+  4. 💪 Trainings organisieren
+
+**Template Data:**
+- Plan Details (Name, Price, Features, Limits)
+- Trial Info (Status, Days Remaining, End Date)
+- Getting Started Steps mit URLs
+- Dashboard & Billing Portal Links
+
+#### 5.3.4 `SubscriptionCanceledMail.php` (77 Zeilen)
+
+**Purpose:** Kündigungsbestätigung mit Reactivation Options
+
+**Constructor:**
+```php
+public function __construct(
+    public Club $club,
+    public string $cancellationReason,
+    public ?Carbon $accessUntil = null,
+    public bool $immediatelyCanceled = false
+) {
+    $this->afterCommit();
+}
+```
+
+**Features:**
+- `translateReason()` - 4 Cancellation Reasons:
+  - voluntary, payment_failed, trial_expired, downgrade_to_free
+
+**Template Data:**
+- Cancellation Reason (translated), Days Remaining
+- Resubscribe URL, Export Data URL, Feedback URL
+
+#### 5.3.5 `HighChurnAlertMail.php` (113 Zeilen)
+
+**Purpose:** Admin Alert bei hoher Churn-Rate (>5%)
+
+**Constructor:**
+```php
+public function __construct(
+    public Tenant $tenant,
+    public array $churnData
+) {
+    $this->afterCommit();
+}
+```
+
+**Features:**
+- `getRecommendedActions()` - Dynamic Action List:
+  - If Involuntary > Voluntary: "Zahlungsmethoden-Updates", "Dunning-Prozess"
+  - If Churn >10%: "Kundenbefragung", "Win-back Kampagne"
+  - Always: "At-Risk Clubs kontaktieren", "Produkt-Features verbessern"
+
+**Template Data:**
+- Churn Rate, Customer Counts, Voluntary/Involuntary Split
+- At-Risk Clubs List, Churn Reasons, Revenue Impact
+- Recommended Actions, Analytics URL
+
+**Tags:** admin, churn-alert, priority:high, tenant:X
+**Queue Config:** 2 tries, 120s backoff
+
+#### 5.3.6 `SubscriptionAnalyticsReportMail.php` (110 Zeilen)
+
+**Purpose:** Monthly/Quarterly Analytics Report für Tenant Admins
+
+**Constructor:**
+```php
+public function __construct(
+    public Tenant $tenant,
+    public array $reportData,
+    public string $reportPeriod = 'monthly'
+) {
+    $this->afterCommit();
+}
+```
+
+**Features:**
+- `generateKeyInsights()` - Auto-generated Insights (2-3 items):
+  - MRR Growth >10% → Positive Insight
+  - MRR Growth <0 → Negative Alert
+  - Churn Rate >5% → Warning
+  - Churn Rate ≤5% → Positive
+  - Trial Conversion <20% → Warning
+
+**Template Data:**
+- **MRR Metrics:** Total MRR, Growth Rate (3m), By Plan
+- **Churn Metrics:** Monthly Rate, Revenue Churn, Reasons
+- **LTV Metrics:** Average LTV, By Plan
+- **Health Metrics:** Active Subs, Trial Conversion, Avg Duration, Upgrade/Downgrade Rates
+- Key Insights, Analytics Dashboard URL
+
+**Tags:** admin, analytics-report, tenant:X, period:monthly/quarterly
+**Queue Config:** 2 tries, 120s backoff
+
+**Ergebnisse:**
+- ✅ 6 Mail-Klassen (677 Zeilen total)
+- ✅ Alle implement ShouldQueue + afterCommit()
+- ✅ Retry Logic (2-3 tries, 60-120s backoff)
+- ✅ Tags für Queue Monitoring
+- ✅ German Localization throughout
+- ✅ Markdown Templates (Laravel Mail Components)
+
+---
+
+### Phase 5.4: Email-Templates ✅ **ABGESCHLOSSEN**
+
+**Implementiert am:** 2025-10-30 10:00
+
+**6 Markdown Templates erstellt (480 Zeilen total):**
+
+#### 5.4.1 `payment-successful.blade.php` (45 Zeilen)
+
+**Features:**
+- ✅ Success Header mit Icon
+- Rechnungsdetails-Tabelle (Number, Amount, Date, Plan, Next Billing)
+- PDF Download Button (if available)
+- "Was passiert jetzt?" Section mit Checkmarks
+- Info Panel mit Tipp
+- Dashboard CTA Button
+
+**Laravel Mail Components:** `<x-mail::message>`, `<x-mail::table>`, `<x-mail::button>`, `<x-mail::panel>`
+
+#### 5.4.2 `payment-failed.blade.php` (54 Zeilen)
+
+**Features:**
+- ⚠️ Alert Header
+- Fehlergrund-Panel (translated reason, invoice details)
+- "Was Sie jetzt tun sollten" Section mit Urgency
+- Retry Attempts Warning (if applicable)
+- Important Info Table (Plan, Access Expiry, Days Remaining)
+- "Häufige Lösungen" Liste
+- Update Payment Method CTA (error color)
+- Support Contact Button
+
+#### 5.4.3 `subscription-welcome.blade.php` (75 Zeilen)
+
+**Features:**
+- 🎉 Welcome Header
+- Trial Panel (if active) mit Countdown
+- Plan Details Table (Price, Teams, Players, Games, Trainings)
+- Features List mit Checkmarks
+- 4 Getting Started Steps (Icon, Title, Description, CTA Button for each)
+- Important Links Table (Dashboard, Billing Portal, Support)
+- Tip Panel
+- Next Billing Info
+
+#### 5.4.4 `subscription-canceled.blade.php` (72 Zeilen)
+
+**Features:**
+- Kündigungsbestätigung Header
+- Kündigungsgrund Panel
+- Access Status Section:
+  - If not immediate: "Zugriff bleibt aktiv" mit Days Remaining
+  - If immediate: "Sofortige Kündigung" Warning
+- "Was Sie jetzt tun können" Section:
+  - Data Export CTA
+  - Feedback CTA
+  - Resubscribe CTA (success color)
+- Testimonials Panel (Social Proof)
+- Data Retention Warning
+
+#### 5.4.5 `high-churn-alert.blade.php` (84 Zeilen)
+
+**Features:**
+- ⚠️ Alert Header mit Tenant Name
+- Churn Rate Panel mit Status Badge:
+  - 🔴 KRITISCH (>10%)
+  - 🟡 WARNUNG (5-10%)
+- Churn Metrics Table (Customers Start/End, Churned, Voluntary/Involuntary, Revenue Impact)
+- At-Risk Clubs Table (Club, Risk Score, Last Login, Reason)
+- Kündigungsgründe Liste mit Percentages
+- Recommended Actions Checklist
+- Analytics Dashboard CTA
+- Nächste Schritte Section (Sofort/Diese Woche/Monatlich)
+- Impact Warning Panel (Annual Projection)
+
+#### 5.4.6 `analytics-report.blade.php` (150 Zeilen)
+
+**Features:**
+- 📊 Report Header mit Datum & Period
+- Key Insights Liste (Positive ✅ / Warning ⚠️ / Negative 🔴)
+- **4 Metric Sections:**
+  1. 💰 MRR Section:
+     - Total MRR Panel mit Growth Badge (📈/📉/→)
+     - MRR by Plan Table
+  2. 🔄 Churn Section:
+     - Churn Rate Table mit Status
+     - Hauptgründe Liste
+  3. 💎 LTV Section:
+     - Average LTV Panel
+     - LTV by Plan Table
+  4. 🏥 Health Section:
+     - Health Metrics Table
+     - Upgrade/Downgrade Rates
+- Analytics Dashboard CTA
+- Empfehlungen Section (Dynamic based on metrics)
+- Next Report Info Panel
+
+**Laravel Mail Components Used:**
+- `<x-mail::message>` - Main wrapper
+- `<x-mail::button>` - CTAs mit color variants (default, success, error, secondary)
+- `<x-mail::table>` - Data tables
+- `<x-mail::panel>` - Info boxes
+
+**Ergebnisse:**
+- ✅ 6 Email-Templates (480 Zeilen total)
+- ✅ Laravel Mail Components für Responsive Design
+- ✅ Conditional Content mit Blade Directives
+- ✅ German Localization throughout
+- ✅ Clear Call-to-Actions
+- ✅ Status Badges & Icons
+- ✅ Structured Layouts (Tables, Lists, Panels)
+- ✅ Mobile-Friendly (Laravel Mail auto-responsive)
+
+---
+
+### Phase 5.5: ClubSubscriptionNotificationService ⏳ **AUSSTEHEND**
+
+**Geschätzte Größe:** ~350 Zeilen
+
+**Zweck:** Zentraler Service für alle Subscription-Notifications
+
+**Haupt-Methoden (Geplant):**
+
+```php
+class ClubSubscriptionNotificationService
+{
+    /**
+     * Send notification with preference checking and logging.
+     */
+    public function send(
+        Mailable $mail,
+        $notifiable,
+        User $recipient,
+        string $eventType,
+        array $metadata = []
+    ): ?NotificationLog;
+
+    /**
+     * Check if user has enabled notification for event.
+     */
+    public function canSend(User $user, string $channel, string $eventType, $notifiable): bool;
+
+    /**
+     * Send payment successful notification.
+     */
+    public function sendPaymentSuccessful(Club $club, array $invoiceData): void;
+
+    /**
+     * Send payment failed notification.
+     */
+    public function sendPaymentFailed(Club $club, array $invoiceData, string $reason): void;
+
+    /**
+     * Send subscription welcome notification.
+     */
+    public function sendSubscriptionWelcome(Club $club, ClubSubscriptionPlan $plan): void;
+
+    /**
+     * Send subscription canceled notification.
+     */
+    public function sendSubscriptionCanceled(Club $club, string $reason, ?Carbon $accessUntil): void;
+
+    /**
+     * Send high churn alert to tenant admins.
+     */
+    public function sendHighChurnAlert(Tenant $tenant, array $churnData): void;
+
+    /**
+     * Send analytics report to tenant admins.
+     */
+    public function sendAnalyticsReport(Tenant $tenant, array $reportData, string $period): void;
+
+    /**
+     * Get notification preferences for user.
+     */
+    public function getPreferences(User $user, $notifiable = null): Collection;
+
+    /**
+     * Update notification preference.
+     */
+    public function updatePreference(
+        User $user,
+        string $channel,
+        string $eventType,
+        $notifiable,
+        bool $enabled
+    ): NotificationPreference;
+}
+```
+
+**Features:**
+- ✅ Preference-Checking vor jedem Versand
+- ✅ Automatic Logging in notification_logs
+- ✅ Retry-Logic für Failed Notifications
+- ✅ Rate-Limiting (z.B. max 1 High Churn Alert pro 24h)
+- ✅ Recipient Resolution (Club Admins, Tenant Admins)
+- ✅ Event Type Constants (PAYMENT_SUCCEEDED, PAYMENT_FAILED, etc.)
+
+**Dependencies:**
+- Mail Facade (Queue-aware)
+- NotificationPreference & NotificationLog Models
+- Club, Tenant, User Models
+- 6 Mail-Klassen
+
+**Nächster Schritt:** Implementierung mit Tests
+
+---
+
+### Phase 5.6: Webhook-Handler Updates ⏳ **AUSSTEHEND**
+
+**Ziel:** 6 TODOs in `ClubSubscriptionWebhookController.php` vervollständigen
+
+**TODOs (aus Phase 1 & 2):**
+
+1. **Zeile 1177:** `// TODO: Send payment confirmation email`
+   - **Action:** `$notificationService->sendPaymentSuccessful($club, $invoiceData)`
+
+2. **Zeile 1198:** `// TODO: Send payment failure notification to club admin`
+   - **Action:** `$notificationService->sendPaymentFailed($club, $invoiceData, $failureReason)`
+
+3. **Zeile 1499:** `// TODO: Send invoice finalized email` (invoice.finalized)
+   - **Action:** Optional - "Ihre Rechnung ist bereit" Email
+
+4. **Zeile 4017:** High Churn Alert (in `CalculateSubscriptionChurnCommand`)
+   - **Action:** `$notificationService->sendHighChurnAlert($tenant, $churnData)`
+
+5. **Zeile 4568:** Analytics Report (in `SubscriptionAnalyticsReportCommand`)
+   - **Action:** `$notificationService->sendAnalyticsReport($tenant, $reportData, $period)`
+
+6. **Zeile 4582:** Analytics Report (in `SubscriptionAnalyticsReportCommand` - another section)
+   - **Action:** Same as #5, different location
+
+**Implementation:**
+```php
+// Example: In handlePaymentSucceeded()
+protected function handlePaymentSucceeded($invoice): void
+{
+    $club = Club::where('stripe_customer_id', $invoice->customer)->first();
+    if (!$club) return;
+
+    // Update payment status
+    $club->update(['subscription_status' => 'active']);
+
+    // Send notification
+    $invoiceData = [
+        'number' => $invoice->number,
+        'amount' => $invoice->amount_paid,
+        'currency' => $invoice->currency,
+        'paid_at' => now(),
+        'next_billing_date' => $club->subscription_current_period_end,
+        'plan_name' => $club->subscriptionPlan?->name ?? 'N/A',
+    ];
+
+    app(ClubSubscriptionNotificationService::class)
+        ->sendPaymentSuccessful($club, $invoiceData);
+
+    Log::info('Payment succeeded for club', [...]);
+}
+```
+
+**Ergebnis:** Alle Webhook-Events triggern automatisch Emails
+
+---
+
+### Phase 5.7: Command-Integration ⏳ **AUSSTEHEND**
+
+**Ziel:** Email-Versand in 2 Artisan Commands integrieren
+
+#### 5.7.1 `CalculateSubscriptionChurnCommand` Update
+
+**Zeile 4017:** Nach Churn-Berechnung
+
+```php
+// Check if churn rate is above threshold (5%)
+if ($churnRate > 5) {
+    // Send high churn alert
+    app(ClubSubscriptionNotificationService::class)
+        ->sendHighChurnAlert($tenant, [
+            'period' => $monthStr,
+            'churn_rate' => $churnRate,
+            'customers_start' => $customersStart,
+            'customers_end' => $customersEnd,
+            'churned_customers' => $churnedCount,
+            'voluntary_churn' => $voluntaryChurn,
+            'involuntary_churn' => $involuntaryChurn,
+            'at_risk_clubs' => $atRiskClubs,
+            'churn_reasons' => $churnReasons,
+            'revenue_impact' => $revenueImpact,
+        ]);
+
+    $this->info("High churn alert sent for tenant {$tenant->id} (Rate: {$churnRate}%)");
+}
+```
+
+#### 5.7.2 `SubscriptionAnalyticsReportCommand` Update
+
+**Zeile 4568 & 4582:** Nach Report-Generierung
+
+```php
+// Send analytics report email
+app(ClubSubscriptionNotificationService::class)
+    ->sendAnalyticsReport($tenant, [
+        'date' => $reportDate,
+        'mrr' => [
+            'total' => $totalMRR,
+            'growth_rate_3m' => $mrrGrowthRate,
+            'by_plan' => $mrrByPlan,
+        ],
+        'churn' => [
+            'monthly_rate' => $churnRate,
+            'revenue_churn' => $revenueChurn,
+            'reasons' => $churnReasons,
+        ],
+        'ltv' => [
+            'average' => $averageLTV,
+            'by_plan' => $ltvByPlan,
+        ],
+        'health' => [
+            'active_subscriptions' => $activeCount,
+            'trial_conversion' => $trialConversion,
+            'avg_duration_days' => $avgDuration,
+            'upgrade_downgrade' => $upgradeDowngradeRates,
+        ],
+    ], $period);
+
+$this->info("Analytics report sent for tenant {$tenant->id}");
+```
+
+**Ergebnis:** Commands senden automatisch Emails nach Berechnung
+
+---
+
+### Phase 5.8: Lokalisierung ⏳ **AUSSTEHEND**
+
+**Datei:** `resources/lang/de/notifications.php` (~150 Zeilen)
+
+**Structure:**
+
+```php
+<?php
+
+return [
+    // Event Types
+    'events' => [
+        'payment_succeeded' => 'Zahlung erfolgreich',
+        'payment_failed' => 'Zahlung fehlgeschlagen',
+        'subscription_welcome' => 'Willkommen',
+        'subscription_canceled' => 'Abonnement gekündigt',
+        'high_churn_alert' => 'Hohe Kündigungsrate',
+        'analytics_report' => 'Analytics-Bericht',
+        'invoice_created' => 'Rechnung erstellt',
+        'invoice_finalized' => 'Rechnung finalisiert',
+        'trial_ending_soon' => 'Testphase endet bald',
+        'subscription_renewed' => 'Abonnement verlängert',
+    ],
+
+    // Channels
+    'channels' => [
+        'email' => 'E-Mail',
+        'push' => 'Push-Benachrichtigung',
+        'sms' => 'SMS',
+        'database' => 'In-App',
+    ],
+
+    // Mail Subjects (Fallback)
+    'subjects' => [
+        'payment_succeeded' => 'Zahlung erfolgreich - :club_name',
+        'payment_failed' => '⚠️ Zahlung fehlgeschlagen - :club_name',
+        'subscription_welcome' => '🎉 Willkommen bei :app_name - :club_name',
+        'subscription_canceled' => 'Abonnement gekündigt - :club_name',
+        'high_churn_alert' => '⚠️ Hohe Churn-Rate erkannt - :tenant_name',
+        'analytics_report' => '📊 Subscription Analytics Report - :tenant_name',
+    ],
+
+    // Status Messages
+    'status' => [
+        'queued' => 'In Warteschlange',
+        'sent' => 'Gesendet',
+        'delivered' => 'Zugestellt',
+        'failed' => 'Fehlgeschlagen',
+        'opened' => 'Geöffnet',
+        'clicked' => 'Geklickt',
+        'bounced' => 'Nicht zustellbar',
+        'complained' => 'Als Spam markiert',
+    ],
+
+    // Common Phrases
+    'common' => [
+        'hello' => 'Hallo :name,',
+        'regards' => 'Mit freundlichen Grüßen',
+        'team_signature' => 'Ihr :app_name Team',
+        'view_dashboard' => 'Dashboard öffnen',
+        'contact_support' => 'Support kontaktieren',
+        'unsubscribe' => 'Abmelden',
+    ],
+
+    // Preference Management
+    'preferences' => [
+        'title' => 'Benachrichtigungseinstellungen',
+        'description' => 'Verwalten Sie, wie und wann Sie Benachrichtigungen erhalten möchten.',
+        'enable_all' => 'Alle aktivieren',
+        'disable_all' => 'Alle deaktivieren',
+        'save' => 'Einstellungen speichern',
+        'saved' => 'Einstellungen erfolgreich gespeichert',
+    ],
+];
+```
+
+**Usage:**
+```php
+// In Mail classes
+$subject = __('notifications.subjects.payment_succeeded', ['club_name' => $club->name]);
+
+// In Views
+{{ __('notifications.common.hello', ['name' => $user->name]) }}
+```
+
+**Ergebnis:** Zentralisierte German Translations für alle Notifications
+
+---
+
+### Phase 5.9: Unit Tests ⏳ **AUSSTEHEND**
+
+**Geschätzte Größe:** ~400 Zeilen
+
+**Test Files:**
+
+#### 5.9.1 `ClubSubscriptionNotificationServiceTest.php` (~150 Zeilen)
+
+**Tests:**
+- `test_can_send_checks_preference()` - Preference-Checking Logic
+- `test_send_payment_successful()` - Payment Success Notification
+- `test_send_payment_failed()` - Payment Failed Notification
+- `test_send_subscription_welcome()` - Welcome Email
+- `test_send_subscription_canceled()` - Cancellation Email
+- `test_send_high_churn_alert()` - Churn Alert
+- `test_send_analytics_report()` - Analytics Report
+- `test_send_creates_notification_log()` - Logging Verification
+- `test_send_respects_user_preference()` - Opt-out Respected
+- `test_send_handles_queue_failure()` - Error Handling
+
+#### 5.9.2 `NotificationPreferenceTest.php` (~100 Zeilen)
+
+**Tests:**
+- `test_create_preference()` - Model Creation
+- `test_scopes()` - All 7 Scopes
+- `test_enable_disable_toggle()` - Helper Methods
+- `test_get_set_setting()` - Settings Management
+- `test_unique_constraint()` - Database Constraint
+
+#### 5.9.3 `NotificationLogTest.php` (~150 Zeilen)
+
+**Tests:**
+- `test_create_log()` - Model Creation
+- `test_mark_as_sent()` - Status Transition
+- `test_mark_as_delivered()` - Status Transition
+- `test_mark_as_failed()` - Error Handling + Retry Count
+- `test_can_retry()` - Retry Logic
+- `test_scopes()` - All 8 Scopes
+- `test_helper_methods()` - wasSuccessful(), hasFailed(), isPending()
+- `test_metadata_management()` - Metadata Get/Set
+
+**Ergebnis:** Comprehensive Test Coverage für Notification-System
+
+---
+
+### Phase 5.10: Feature Tests ⏳ **AUSSTEHEND**
+
+**Geschätzte Größe:** ~300 Zeilen
+
+**Test File:** `ClubSubscriptionNotificationFlowTest.php`
+
+**End-to-End Tests:**
+
+```php
+class ClubSubscriptionNotificationFlowTest extends TestCase
+{
+    use RefreshDatabase;
+
+    /** @test */
+    public function payment_succeeded_webhook_sends_email()
+    {
+        // Setup Club with active subscription
+        $club = Club::factory()->withSubscription()->create();
+
+        // Mock Stripe webhook payload
+        $payload = $this->createStripeWebhookPayload('invoice.payment_succeeded', [
+            'customer' => $club->stripe_customer_id,
+            'amount_paid' => 4900,
+        ]);
+
+        // Send webhook
+        $this->postJson(route('webhooks.stripe.club-subscriptions'), $payload);
+
+        // Assert email queued
+        Mail::assertQueued(PaymentSuccessfulMail::class, function ($mail) use ($club) {
+            return $mail->club->id === $club->id;
+        });
+
+        // Assert notification log created
+        $this->assertDatabaseHas('notification_logs', [
+            'notifiable_type' => Club::class,
+            'notifiable_id' => $club->id,
+            'notification_type' => PaymentSuccessfulMail::class,
+            'status' => 'queued',
+        ]);
+    }
+
+    /** @test */
+    public function high_churn_alert_sent_when_threshold_exceeded()
+    {
+        // Setup Tenant with high churn data
+        $tenant = Tenant::factory()->create();
+        $club1 = Club::factory()->for($tenant)->withCanceledSubscription()->create();
+        $club2 = Club::factory()->for($tenant)->withCanceledSubscription()->create();
+
+        // Run churn calculation command
+        $this->artisan('subscription:calculate-churn', ['--tenant' => $tenant->id]);
+
+        // Assert high churn alert sent
+        Mail::assertQueued(HighChurnAlertMail::class, function ($mail) use ($tenant) {
+            return $mail->tenant->id === $tenant->id
+                && $mail->churnData['churn_rate'] > 5;
+        });
+    }
+
+    /** @test */
+    public function user_can_opt_out_of_notifications()
+    {
+        // Setup user with notification preference disabled
+        $user = User::factory()->create();
+        $club = Club::factory()->create();
+
+        NotificationPreference::create([
+            'user_id' => $user->id,
+            'notifiable_type' => Club::class,
+            'notifiable_id' => $club->id,
+            'channel' => 'email',
+            'event_type' => 'payment_succeeded',
+            'is_enabled' => false,
+        ]);
+
+        // Trigger payment succeeded
+        $service = app(ClubSubscriptionNotificationService::class);
+        $service->sendPaymentSuccessful($club, $invoiceData);
+
+        // Assert email NOT queued
+        Mail::assertNotQueued(PaymentSuccessfulMail::class);
+    }
+
+    /** @test */
+    public function analytics_report_sent_monthly()
+    {
+        // Setup Tenant with subscription data
+        $tenant = Tenant::factory()->create();
+
+        // Run analytics report command
+        $this->artisan('subscription:analytics-report', ['--period' => 'monthly']);
+
+        // Assert analytics report sent
+        Mail::assertQueued(SubscriptionAnalyticsReportMail::class, function ($mail) use ($tenant) {
+            return $mail->tenant->id === $tenant->id
+                && $mail->reportPeriod === 'monthly';
+        });
+    }
+}
+```
+
+**Tests:**
+- `test_payment_succeeded_webhook_sends_email()` - Webhook → Email Flow
+- `test_payment_failed_webhook_sends_email()` - Failed Payment Flow
+- `test_subscription_welcome_sent_on_checkout()` - Checkout → Welcome Email
+- `test_subscription_canceled_sent_on_cancellation()` - Cancel → Cancellation Email
+- `test_high_churn_alert_sent_when_threshold_exceeded()` - Churn Command Integration
+- `test_analytics_report_sent_monthly()` - Analytics Command Integration
+- `test_user_can_opt_out_of_notifications()` - Preference Respected
+- `test_notification_log_tracks_delivery()` - Logging Verified
+- `test_failed_notification_retries()` - Retry Logic
+- `test_notification_rate_limiting()` - Rate Limiting
+
+**Ergebnis:** Full Integration Testing des Notification-Systems
+
+---
+
+## 📊 Phase 5 Status Summary
+
+**Completed (4/10 Steps - 40%):**
+- ✅ Phase 5.1: Database Schema (140 Zeilen)
+- ✅ Phase 5.2: Models (372 Zeilen)
+- ✅ Phase 5.3: Mail-Klassen (677 Zeilen)
+- ✅ Phase 5.4: Email-Templates (480 Zeilen)
+
+**Total Implemented:** 1,669 Zeilen Code
+
+**Pending (6/10 Steps - 60%):**
+- ⏳ Phase 5.5: ClubSubscriptionNotificationService (~350 Zeilen)
+- ⏳ Phase 5.6: Webhook-Handler Updates (~50 Zeilen Änderungen)
+- ⏳ Phase 5.7: Command-Integration (~40 Zeilen Änderungen)
+- ⏳ Phase 5.8: Lokalisierung (~150 Zeilen)
+- ⏳ Phase 5.9: Unit Tests (~400 Zeilen)
+- ⏳ Phase 5.10: Feature Tests (~300 Zeilen)
+
+**Total Remaining:** ~1,290 Zeilen Code
+
+**Geschätzte verbleibende Zeit:** 1,5-2 Arbeitstage
+
+**Nächster Schritt:** Phase 5.5 - ClubSubscriptionNotificationService implementieren
 
 ---
