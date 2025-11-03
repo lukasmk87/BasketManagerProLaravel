@@ -85,6 +85,11 @@ class StripeServiceProvider extends ServiceProvider
      */
     private function configureStripe(): void
     {
+        // Skip Stripe configuration during installation
+        if (!file_exists(storage_path('installed'))) {
+            return;
+        }
+
         // Set global Stripe API version
         \Stripe\Stripe::setApiVersion(config('stripe.api_version'));
 

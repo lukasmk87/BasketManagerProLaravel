@@ -16,8 +16,13 @@ class ConfigureTenantStripe
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Skip Stripe configuration for installation routes
+        if ($request->is('install') || $request->is('install/*')) {
+            return $next($request);
+        }
+
         // Get the current tenant from the app service container
-        $tenant = app('tenant');
+        $tenant = app()->has('tenant') ? app('tenant') : null;
         
         if ($tenant) {
             // Configure Cashier/Stripe for the current tenant

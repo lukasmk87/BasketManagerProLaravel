@@ -24,6 +24,16 @@ class ResolveTenantMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Skip tenant resolution for installation routes
+        if ($request->is('install') || $request->is('install/*')) {
+            return $next($request);
+        }
+
+        // Skip tenant resolution for emergency routes (QR code access)
+        if ($request->is('emergency/*')) {
+            return $next($request);
+        }
+
         try {
             // Resolve tenant from request
             $tenant = $this->resolveTenant($request);
