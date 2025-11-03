@@ -42,8 +42,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import { useStripe } from '@/composables/useStripe';
 import { formatStripeError } from '@/utils/stripeErrors';
+
+const page = usePage();
 
 const props = defineProps({
     // Styling
@@ -91,7 +94,7 @@ const props = defineProps({
     },
     merchantName: {
         type: String,
-        default: 'BasketManager Pro',
+        default: undefined,
     },
 
     // Custom Styling
@@ -112,6 +115,9 @@ const emit = defineEmits([
 ]);
 
 const { stripe: stripeInstance } = useStripe();
+
+// Computed value for merchant name with proper fallback chain
+const displayMerchantName = computed(() => props.merchantName || page.props.appName || 'BasketManager Pro');
 
 const elementId = `stripe-sepa-${Math.random().toString(36).substr(2, 9)}`;
 let stripe = null;
@@ -173,7 +179,7 @@ const elementOptions = computed(() => {
 });
 
 const getDefaultMandateText = () => {
-    return `Durch Angabe Ihrer IBAN und Bestätigung dieser Zahlung ermächtigen Sie ${props.merchantName} und Stripe, unserem Zahlungsdienstleister, eine Anweisung an Ihre Bank zu senden, Ihr Konto zu belasten, sowie Ihre Bank, Ihr Konto entsprechend dieser Anweisung zu belasten. Sie haben Anspruch auf Erstattung von Ihrer Bank gemäß den Bedingungen Ihres Vertrages mit Ihrer Bank. Eine Erstattung muss innerhalb von 8 Wochen ab dem Datum der Belastung Ihres Kontos beantragt werden.`;
+    return `Durch Angabe Ihrer IBAN und Bestätigung dieser Zahlung ermächtigen Sie ${displayMerchantName.value} und Stripe, unserem Zahlungsdienstleister, eine Anweisung an Ihre Bank zu senden, Ihr Konto zu belasten, sowie Ihre Bank, Ihr Konto entsprechend dieser Anweisung zu belasten. Sie haben Anspruch auf Erstattung von Ihrer Bank gemäß den Bedingungen Ihres Vertrages mit Ihrer Bank. Eine Erstattung muss innerhalb von 8 Wochen ab dem Datum der Belastung Ihres Kontos beantragt werden.`;
 };
 
 const initializeElement = async () => {

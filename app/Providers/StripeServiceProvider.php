@@ -96,7 +96,7 @@ class StripeServiceProvider extends ServiceProvider
 
         // Set application info for debugging
         \Stripe\Stripe::setAppInfo(
-            'BasketManager Pro',
+            app_name(),
             config('app.version', '4.0'),
             'https://basketmanager-pro.com',
             'pp_partner_MQxxxxxxxxxxxxxxxxxx' // Stripe Partner ID if applicable

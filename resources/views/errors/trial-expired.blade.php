@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testphase beendet - BasketManager Pro</title>
+    <title>Testphase beendet - {{ app_name() }}</title>
     <style>
         * {
             margin: 0;
@@ -324,7 +324,7 @@
         <div class="trial-badge">TRIAL EXPIRED</div>
         
         <div class="error-message">
-            Ihre 14-tägige kostenlose Testphase von BasketManager Pro ist abgelaufen. Um weiterhin alle Funktionen nutzen zu können, wählen Sie einen passenden Tarif.
+            Ihre 14-tägige kostenlose Testphase von {{ app_name() }} ist abgelaufen. Um weiterhin alle Funktionen nutzen zu können, wählen Sie einen passenden Tarif.
         </div>
         
         <div class="trial-summary">

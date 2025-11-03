@@ -154,7 +154,7 @@ class PlayerPerformancePredictionService
             'dataset_version' => '1.0.0',
             'description' => "Player performance training data for {$season} season",
             'data_type' => 'player_performance_features',
-            'source_system' => 'BasketManager Pro',
+            'source_system' => app_name(),
             'dataset_purpose' => 'training',
             'target_model_type' => 'player_performance',
             'raw_data' => $trainingRecords,

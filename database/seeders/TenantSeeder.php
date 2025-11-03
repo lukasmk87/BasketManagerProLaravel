@@ -17,7 +17,7 @@ class TenantSeeder extends Seeder
         Tenant::firstOrCreate(
             ['slug' => 'basketmanager-pro'],
             [
-                'name' => 'BasketManager Pro',
+                'name' => config('app.name', 'BasketManager Pro'),
                 'domain' => 'basketmanager-pro.de',
                 'billing_email' => 'info@basketmanager-pro.de',
                 'billing_name' => 'Cathrin Hein MBA.',
@@ -42,10 +42,10 @@ class TenantSeeder extends Seeder
         Tenant::firstOrCreate(
             ['slug' => 'staging'],
             [
-                'name' => 'BasketManager Pro Staging',
+                'name' => config('app.name', 'BasketManager Pro') . ' Staging',
                 'domain' => 'staging.basketmanager-pro.de',
                 'billing_email' => 'staging@basketmanager-pro.de',
-                'billing_name' => 'BasketManager Pro Staging',
+                'billing_name' => config('app.name', 'BasketManager Pro') . ' Staging',
                 'country_code' => 'DE',
                 'timezone' => 'Europe/Berlin',
                 'locale' => 'de',

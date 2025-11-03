@@ -211,7 +211,7 @@ class InjuryRiskPredictionService
             'dataset_version' => '1.0.0',
             'description' => "Injury risk training data for {$season} season",
             'data_type' => 'injury_risk_features',
-            'source_system' => 'BasketManager Pro',
+            'source_system' => app_name(),
             'dataset_purpose' => 'training',
             'target_model_type' => 'injury_risk',
             'raw_data' => $trainingRecords,

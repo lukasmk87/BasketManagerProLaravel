@@ -6,13 +6,13 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <!-- SEO Meta Tags -->
-    <title>BasketManager Pro - Die All-in-One Basketball Vereinsverwaltung</title>
+    <title>{{ app_name() }} - Die All-in-One Basketball Vereinsverwaltung</title>
     <meta name="description" content="Professionelle Basketball-Vereinsverwaltung mit Live-Scoring, Spieler-Management, Training-Tools und mehr. 20% günstiger als die Konkurrenz. Jetzt kostenlos testen!">
     <meta name="keywords" content="Basketball, Vereinsverwaltung, Live Scoring, Basketball Software, Basketball App, Team Management">
-    <meta name="author" content="BasketManager Pro">
+    <meta name="author" content="{{ app_name() }}">
     
     <!-- Open Graph -->
-    <meta property="og:title" content="BasketManager Pro - Die All-in-One Basketball Vereinsverwaltung">
+    <meta property="og:title" content="{{ app_name() }} - Die All-in-One Basketball Vereinsverwaltung">
     <meta property="og:description" content="Professionelle Basketball-Vereinsverwaltung mit Live-Scoring, Spieler-Management, Training-Tools und mehr.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url('/') }}">
@@ -113,7 +113,7 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center">
-                        <span class="text-2xl font-bold gradient-text">🏀 BasketManager Pro</span>
+                        <span class="text-2xl font-bold gradient-text">🏀 {{ app_name() }}</span>
                     </div>
                 </div>
                 
@@ -212,7 +212,7 @@
                     Alles was Ihr Basketball-Verein braucht
                 </h2>
                 <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Von der Spielerverwaltung bis zum Live-Scoring - BasketManager Pro deckt alle Bereiche der modernen Vereinsarbeit ab.
+                    Von der Spielerverwaltung bis zum Live-Scoring - {{ app_name() }} deckt alle Bereiche der modernen Vereinsarbeit ab.
                 </p>
             </div>
             
@@ -414,7 +414,7 @@
                     Was Trainer und Vereine sagen
                 </h2>
                 <p class="text-xl text-gray-600">
-                    Über 500 Vereine vertrauen bereits auf BasketManager Pro
+                    Über 500 Vereine vertrauen bereits auf {{ app_name() }}
                 </p>
             </div>
             
@@ -424,7 +424,7 @@
                         <div class="text-orange-500">⭐⭐⭐⭐⭐</div>
                     </div>
                     <p class="text-gray-600 mb-6">
-                        "BasketManager Pro hat unsere Vereinsarbeit revolutioniert. Das Live-Scoring ist ein Game-Changer für unsere Zuschauer und die Statistiken helfen uns enorm bei der Spielerentwicklung."
+                        "{{ app_name() }} hat unsere Vereinsarbeit revolutioniert. Das Live-Scoring ist ein Game-Changer für unsere Zuschauer und die Statistiken helfen uns enorm bei der Spielerentwicklung."
                     </p>
                     <div class="flex items-center">
                         <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold">
@@ -484,18 +484,18 @@
                     Häufig gestellte Fragen
                 </h2>
                 <p class="text-xl text-gray-600">
-                    Alles was Sie über BasketManager Pro wissen müssen
+                    Alles was Sie über {{ app_name() }} wissen müssen
                 </p>
             </div>
             
             <div class="space-y-8">
                 <div class="border border-gray-200 rounded-lg p-6">
                     <button class="w-full text-left flex justify-between items-center" onclick="toggleFAQ(1)">
-                        <h3 class="text-lg font-bold text-gray-900">Ist BasketManager Pro GDPR-konform?</h3>
+                        <h3 class="text-lg font-bold text-gray-900">Ist {{ app_name() }} GDPR-konform?</h3>
                         <span class="text-gray-500" id="faq-icon-1">+</span>
                     </button>
                     <div class="mt-4 text-gray-600 hidden" id="faq-content-1">
-                        Ja, BasketManager Pro ist vollständig GDPR-konform entwickelt. Alle Daten werden auf deutschen Servern gehostet, wir haben umfassende Datenschutz-Features implementiert und unterstützen alle GDPR-Anforderungen wie Datenexport und Löschung auf Anfrage.
+                        Ja, {{ app_name() }} ist vollständig GDPR-konform entwickelt. Alle Daten werden auf deutschen Servern gehostet, wir haben umfassende Datenschutz-Features implementiert und unterstützen alle GDPR-Anforderungen wie Datenexport und Löschung auf Anfrage.
                     </div>
                 </div>
                 
@@ -531,11 +531,11 @@
                 
                 <div class="border border-gray-200 rounded-lg p-6">
                     <button class="w-full text-left flex justify-between items-center" onclick="toggleFAQ(5)">
-                        <h3 class="text-lg font-bold text-gray-900">Wie unterscheidet sich BasketManager Pro von der Konkurrenz?</h3>
+                        <h3 class="text-lg font-bold text-gray-900">Wie unterscheidet sich {{ app_name() }} von der Konkurrenz?</h3>
                         <span class="text-gray-500" id="faq-icon-5">+</span>
                     </button>
                     <div class="mt-4 text-gray-600 hidden" id="faq-content-5">
-                        BasketManager Pro ist speziell für Basketball entwickelt - nicht nur eine angepasste Fußball-Software. Wir bieten einzigartige Features wie Basketball-spezifische Statistiken, Notfall-Management, Video-Analyse und ML-basierte Performance-Vorhersagen. Dabei sind wir 20% günstiger als vergleichbare Lösungen.
+                        {{ app_name() }} ist speziell für Basketball entwickelt - nicht nur eine angepasste Fußball-Software. Wir bieten einzigartige Features wie Basketball-spezifische Statistiken, Notfall-Management, Video-Analyse und ML-basierte Performance-Vorhersagen. Dabei sind wir 20% günstiger als vergleichbare Lösungen.
                     </div>
                 </div>
             </div>
@@ -572,7 +572,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
                     <div class="flex items-center mb-4">
-                        <span class="text-2xl font-bold gradient-text">🏀 BasketManager Pro</span>
+                        <span class="text-2xl font-bold gradient-text">🏀 {{ app_name() }}</span>
                     </div>
                     <p class="text-gray-400 mb-4">
                         Die moderne All-in-One Basketball Vereinsverwaltung. Made in Germany.
@@ -617,7 +617,7 @@
             
             <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
                 <p class="text-gray-400 text-sm">
-                    © 2025 BasketManager Pro. Alle Rechte vorbehalten.
+                    © 2025 {{ app_name() }}. Alle Rechte vorbehalten.
                 </p>
                 <div class="flex items-center mt-4 md:mt-0">
                     <span class="text-gray-400 text-sm mr-2">🇩🇪 Hosted in Germany</span>

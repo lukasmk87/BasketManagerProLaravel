@@ -29,6 +29,41 @@ The application uses tenant-based data isolation:
 - Feature gates controlled by subscription tier
 - Tenant usage tracking and limits
 
+### Dynamic Application Branding
+
+The application supports dynamic app naming with tenant-aware configuration:
+
+**Helper Function**: `app_name()`
+- Location: `app/Helpers/AppHelper.php`
+- Automatically loaded via Composer autoload
+- Fallback hierarchy:
+  1. Tenant-specific `app_name` (from `tenants.app_name` column)
+  2. `APP_NAME` from `.env` configuration
+  3. `'BasketManager Pro'` as default fallback
+
+**Usage Examples:**
+```php
+// In Blade templates
+{{ app_name() }}
+
+// In PHP/Controllers
+$appName = app_name();
+
+// In Vue.js components (via Inertia shared props)
+page.props.appName
+```
+
+**Configuration:**
+- Set globally in `.env`: `APP_NAME="Your Custom Name"`
+- Set per-tenant in database: `tenants.app_name` column (nullable)
+- Used in 50+ locations: landing pages, emails, invoices, error pages, Vue components
+
+**Benefits:**
+- White-label support for enterprise clients
+- Easy rebranding without code changes
+- Tenant-specific customization
+- Consistent branding across all touchpoints
+
 ## RBAC System
 
 **11 Roles** with **136 Permissions** across 14 categories:

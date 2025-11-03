@@ -257,7 +257,7 @@ class SubscriptionController extends Controller
             $tenant = $this->cashierManager->getCurrentTenant();
             
             return $tenant->downloadInvoice($invoiceId, [
-                'vendor' => 'BasketManager Pro',
+                'vendor' => app_name(),
                 'product' => 'Basketball Club Management',
             ]);
             

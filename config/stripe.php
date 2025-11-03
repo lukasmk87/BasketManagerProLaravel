@@ -256,7 +256,7 @@ return [
     |
     */
     'invoices' => [
-        'company_name' => env('STRIPE_COMPANY_NAME', 'BasketManager Pro'),
+        'company_name' => env('STRIPE_COMPANY_NAME', config('app.name', 'BasketManager Pro')),
         'company_address' => env('STRIPE_COMPANY_ADDRESS'),
         'vat_number' => env('STRIPE_VAT_NUMBER'),
         'email' => env('STRIPE_INVOICE_EMAIL', 'invoices@basketmanager-pro.com'),

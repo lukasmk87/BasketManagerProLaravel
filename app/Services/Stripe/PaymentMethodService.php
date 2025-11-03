@@ -213,13 +213,13 @@ class PaymentMethodService
 
         $defaultOptions = [
             'currency' => $currency,
-            'description' => 'BasketManager Pro Payment',
+            'description' => app_name() . ' Payment',
             'metadata' => [
                 'tenant_id' => $billable instanceof Tenant ? $billable->id : null,
                 'user_id' => $billable instanceof User ? $billable->id : null,
-                'platform' => 'BasketManager Pro',
+                'platform' => app_name(),
             ],
-            'statement_descriptor' => 'BasketManager Pro',
+            'statement_descriptor' => app_name(),
         ];
 
         $paymentOptions = array_merge($defaultOptions, $options);

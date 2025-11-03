@@ -75,7 +75,7 @@ class CheckoutService
             'metadata' => [
                 'tenant_id' => $billable instanceof Tenant ? $billable->id : null,
                 'user_id' => $billable instanceof User ? $billable->id : null,
-                'platform' => 'BasketManager Pro',
+                'platform' => app_name(),
                 'checkout_type' => 'subscription',
             ],
         ];
@@ -126,7 +126,7 @@ class CheckoutService
             'metadata' => [
                 'tenant_id' => $billable instanceof Tenant ? $billable->id : null,
                 'user_id' => $billable instanceof User ? $billable->id : null,
-                'platform' => 'BasketManager Pro',
+                'platform' => app_name(),
                 'checkout_type' => 'payment',
             ],
         ];
@@ -176,7 +176,7 @@ class CheckoutService
             'metadata' => [
                 'tenant_id' => $billable instanceof Tenant ? $billable->id : null,
                 'user_id' => $billable instanceof User ? $billable->id : null,
-                'platform' => 'BasketManager Pro',
+                'platform' => app_name(),
                 'checkout_type' => 'setup',
             ],
         ];
@@ -314,7 +314,7 @@ class CheckoutService
         $defaultOptions['invoice_creation'] = [
             'enabled' => true,
             'invoice_data' => [
-                'description' => 'BasketManager Pro Subscription',
+                'description' => app_name() . ' Subscription',
                 'metadata' => [
                     'created_via' => 'checkout',
                 ],

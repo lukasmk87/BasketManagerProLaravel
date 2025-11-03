@@ -290,7 +290,7 @@ self.addEventListener('push', event => {
     };
     
     const notificationConfig = basketballNotifications[type] || {
-        title: title || 'BasketManager Pro',
+        title: title || app_name(),
         icon: '/images/logo-192.png',
         badge: '/images/badge-72.png'
     };

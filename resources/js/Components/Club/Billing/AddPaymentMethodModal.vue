@@ -247,7 +247,10 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import { useStripe } from '@/composables/useStripe';
+
+const page = usePage();
 
 const props = defineProps({
     show: {
@@ -260,13 +263,16 @@ const props = defineProps({
     },
     clubName: {
         type: String,
-        default: 'BasketManager Pro',
+        default: undefined,
     },
 });
 
 const emit = defineEmits(['close', 'added']);
 
 const { stripe: stripeInstance } = useStripe();
+
+// Computed value for app name with proper fallback chain
+const displayName = computed(() => props.clubName || page.props.appName || 'BasketManager Pro');
 
 const selectedType = ref('card');
 const billingDetails = ref({

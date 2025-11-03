@@ -6,11 +6,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- SEO Meta Tags -->
-    <title>{{ $page->title }} - BasketManager Pro</title>
+    <title>{{ $page->title }} - {{ app_name() }}</title>
     <meta name="description" content="{{ $page->meta_description ?? $page->excerpt }}">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ $page->title }} - BasketManager Pro">
+    <meta property="og:title" content="{{ $page->title }} - {{ app_name() }}">
     <meta property="og:description" content="{{ $page->meta_description ?? $page->excerpt }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url()->current() }}">
@@ -110,7 +110,7 @@
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center">
                     <a href="{{ route('landing') }}" class="flex items-center">
-                        <span class="text-2xl font-bold gradient-text">🏀 BasketManager Pro</span>
+                        <span class="text-2xl font-bold gradient-text">🏀 {{ app_name() }}</span>
                     </a>
                 </div>
 
@@ -161,7 +161,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
                     <div class="flex items-center mb-4">
-                        <span class="text-2xl font-bold gradient-text">🏀 BasketManager Pro</span>
+                        <span class="text-2xl font-bold gradient-text">🏀 {{ app_name() }}</span>
                     </div>
                     <p class="text-gray-400 mb-4">
                         Die moderne All-in-One Basketball Vereinsverwaltung. Made in Germany.
@@ -197,7 +197,7 @@
 
             <div class="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
                 <p class="text-gray-400 text-sm">
-                    © {{ date('Y') }} BasketManager Pro. Alle Rechte vorbehalten.
+                    © {{ date('Y') }} {{ app_name() }}. Alle Rechte vorbehalten.
                 </p>
                 <div class="flex items-center mt-4 md:mt-0">
                     <span class="text-gray-400 text-sm mr-2">🇩🇪 Hosted in Germany</span>

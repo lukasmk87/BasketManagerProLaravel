@@ -20,7 +20,7 @@ return [
         'footer_text' => 'If you\'re having trouble clicking the ":actionText" button, copy and paste the URL below into your web browser:',
         'copyright' => '© :year BasketManager Pro. All rights reserved.',
         'unsubscribe' => 'If you no longer wish to receive these emails, you can unsubscribe here: :url',
-        'app_name' => 'BasketManager Pro',
+        'app_name' => config('app.name', 'BasketManager Pro'),
         'privacy_notice' => 'This email may contain confidential information. If you received this email in error, please delete it.',
     ],
 

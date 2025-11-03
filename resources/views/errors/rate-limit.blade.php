@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rate Limit erreicht - BasketManager Pro</title>
+    <title>Rate Limit erreicht - {{ app_name() }}</title>
     <style>
         * {
             margin: 0;

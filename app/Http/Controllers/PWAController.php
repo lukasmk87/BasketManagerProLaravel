@@ -275,7 +275,7 @@ class PWAController extends Controller
     private function generateTenantManifest(?string $tenantId): array
     {
         $defaultManifest = [
-            'name' => 'BasketManager Pro',
+            'name' => app_name(),
             'short_name' => 'BasketManager',
             'description' => 'Professional Basketball Club Management System',
             'start_url' => '/',
@@ -298,7 +298,7 @@ class PWAController extends Controller
             $branding = $tenant->branding ?? [];
             
             return array_merge($defaultManifest, [
-                'name' => $branding['app_name'] ?? ($tenant->name . ' - BasketManager Pro'),
+                'name' => $branding['app_name'] ?? ($tenant->name . ' - ' . app_name()),
                 'short_name' => $branding['short_name'] ?? $tenant->name,
                 'description' => $branding['description'] ?? "Basketball management for {$tenant->name}",
                 'theme_color' => $branding['primary_color'] ?? '#2d3748',

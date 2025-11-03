@@ -6,7 +6,7 @@ const page = usePage()
 
 // Get club logo from current club context
 const clubLogo = computed(() => page.props.currentClub?.logo_url)
-const clubName = computed(() => page.props.currentClub?.name || 'BasketManager Pro')
+const clubName = computed(() => page.props.currentClub?.name || page.props.appName || 'BasketManager Pro')
 </script>
 
 <template>
