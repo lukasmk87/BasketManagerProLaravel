@@ -144,6 +144,7 @@ class InstallationService
 
             // Create Super Admin user
             $user = User::create([
+                'tenant_id' => $tenant->id, // Link user to tenant via direct relationship
                 'name' => $data['admin_name'],
                 'email' => $data['admin_email'],
                 'password' => Hash::make($data['admin_password']),
@@ -160,17 +161,6 @@ class InstallationService
             } else {
                 throw new \Exception('Super Admin role not found. Please run seeders first.');
             }
-
-            // Link user to tenant
-            DB::table('tenant_user')->insert([
-                'tenant_id' => $tenant->id,
-                'user_id' => $user->id,
-                'role' => 'owner',
-                'is_active' => true,
-                'joined_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
 
             // Create default club for the tenant
             $club = Club::create([
