@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 
             // Scoping
-            $table->unsignedBigInteger('tenant_id')->nullable()->index();
+            $table->uuid('tenant_id')->nullable()->index();
             $table->unsignedBigInteger('club_id')->nullable()->index();
 
             // Feature identification

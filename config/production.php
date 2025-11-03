@@ -9,7 +9,7 @@ return [
     
     // Performance Optimization
     'cache' => [
-        'default' => 'redis',
+        'default' => env('CACHE_STORE', 'redis'),
         'ttl' => 3600,
         'query_cache_enabled' => true,
     ],

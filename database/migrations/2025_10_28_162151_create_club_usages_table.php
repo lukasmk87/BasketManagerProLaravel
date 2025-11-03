@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('club_usages', function (Blueprint $table) {
             $table->id();
             $table->foreignId('club_id')->constrained('clubs')->cascadeOnDelete();
-            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
+            $table->uuid('tenant_id');
             $table->string('metric'); // e.g., 'max_teams', 'max_players', 'max_games_per_month'
             $table->bigInteger('usage_count')->default(0);
             $table->timestamp('period_start'); // Start of tracking period (monthly reset)
@@ -22,6 +22,9 @@ return new class extends Migration
             $table->timestamp('last_tracked_at')->nullable();
             $table->json('metadata')->nullable(); // Additional context (e.g., breakdown by team)
             $table->timestamps();
+
+            // Foreign key constraint for tenant_id (UUID)
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
 
             // Indexes for performance
             $table->index('club_id');

@@ -154,8 +154,8 @@ class SubscriptionHealthCheckCommand extends Command
 
         $this->line("Health Score: <{$statusColor}>{$score}/100</{$statusColor}>");
         $this->line("Status: <{$statusColor}>" . strtoupper($result['status'] ?? 'unknown') . "</{$statusColor}>");
-        $this->line("Period: {$result['period'] ?? 'N/A'}");
-        $this->line("Checked At: {$result['checked_at'] ?? now()->toIso8601String()}");
+        $this->line("Period: " . ($result['period'] ?? 'N/A'));
+        $this->line("Checked At: " . ($result['checked_at'] ?? now()->toIso8601String()));
         $this->newLine();
 
         // Metrics
