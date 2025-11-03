@@ -5,6 +5,7 @@ namespace App\Services\Install;
 use App\Models\Club;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\TenantLimitsService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -126,19 +127,48 @@ class InstallationService
         try {
             DB::beginTransaction();
 
+            // Get subscription limits based on tier
+            $limits = TenantLimitsService::getLimits($data['subscription_tier']);
+
+            // Extract domain from APP_URL
+            $domain = parse_url(config('app.url'), PHP_URL_HOST);
+
             // Create tenant first
             $tenant = Tenant::create([
                 'name' => $data['tenant_name'],
                 'app_name' => $data['tenant_name'], // White-Label support: tenant-specific app name
                 'slug' => \Str::slug($data['tenant_name']),
-                'domain' => parse_url(config('app.url'), PHP_URL_HOST),
-                'database' => config('database.connections.'.config('database.default').'.database'),
+                'domain' => $domain,
+                'database_name' => config('database.connections.'.config('database.default').'.database'),
+                'billing_email' => $data['admin_email'], // Use admin email as billing email
+                'country_code' => env('TENANT_COUNTRY', 'DE'),
+                'timezone' => config('app.timezone', 'Europe/Berlin'),
+                'locale' => $data['language'] ?? config('app.locale', 'de'),
+                'currency' => env('TENANT_CURRENCY', 'EUR'),
                 'subscription_tier' => $data['subscription_tier'],
                 'subscription_status' => 'active',
+                'is_active' => true,
                 'trial_ends_at' => now()->addDays(30), // 30-day trial
+
+                // Subscription limits from TenantLimitsService
+                'max_users' => $limits['max_users'],
+                'max_teams' => $limits['max_teams'],
+                'max_storage_gb' => $limits['max_storage_gb'],
+                'max_api_calls_per_hour' => $limits['max_api_calls_per_hour'],
+
+                // Settings with features, branding, and contact
                 'settings' => [
                     'language' => $data['language'] ?? 'de',
                     'timezone' => config('app.timezone'),
+                    'features' => $limits['features'], // Feature flags
+                    'branding' => [
+                        'primary_color' => env('TENANT_PRIMARY_COLOR', '#4F46E5'),
+                        'logo_url' => env('TENANT_LOGO_URL'),
+                    ],
+                    'contact' => [
+                        'support_email' => env('TENANT_SUPPORT_EMAIL', $data['admin_email']),
+                        'phone' => env('TENANT_PHONE'),
+                    ],
                 ],
             ]);
 

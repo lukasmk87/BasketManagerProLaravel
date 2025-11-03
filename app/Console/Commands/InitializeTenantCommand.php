@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Tenant;
+use App\Services\TenantLimitsService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
@@ -162,8 +163,8 @@ class InitializeTenantCommand extends Command
                 $counter++;
             }
 
-            // Get limits
-            $limits = $this->getSubscriptionLimits($tier);
+            // Get limits from TenantLimitsService
+            $limits = TenantLimitsService::getLimits($tier);
 
             // Create tenant
             $tenant = Tenant::create([
@@ -238,14 +239,14 @@ class InitializeTenantCommand extends Command
      */
     private function showTierDetails(string $tier): void
     {
-        $limits = $this->getSubscriptionLimits($tier);
+        $formatted = TenantLimitsService::getFormattedLimits($tier);
 
-        $this->info('📊 ' . strtoupper($tier) . ' Tier Details:');
-        $this->line('   Max Users: ' . ($limits['max_users'] == -1 ? 'Unlimited' : $limits['max_users']));
-        $this->line('   Max Teams: ' . ($limits['max_teams'] == -1 ? 'Unlimited' : $limits['max_teams']));
-        $this->line('   Max Storage: ' . ($limits['max_storage_gb'] == -1 ? 'Unlimited' : $limits['max_storage_gb'] . ' GB'));
-        $this->line('   API Calls: ' . ($limits['max_api_calls_per_hour'] == -1 ? 'Unlimited' : number_format($limits['max_api_calls_per_hour']) . '/hour'));
-        $this->line('   Features: ' . count($limits['features']) . ' enabled');
+        $this->info('📊 ' . TenantLimitsService::getTierDisplayName($tier) . ' Tier Details:');
+        $this->line('   Max Users: ' . $formatted['users']);
+        $this->line('   Max Teams: ' . $formatted['teams']);
+        $this->line('   Max Storage: ' . $formatted['storage']);
+        $this->line('   API Calls: ' . $formatted['api_calls']);
+        $this->line('   Features: ' . $formatted['features'] . ' enabled');
     }
 
     /**
@@ -258,44 +259,5 @@ class InitializeTenantCommand extends Command
         $domain = explode('/', $domain)[0];
         $domain = preg_replace('#^www\.#', '', $domain);
         return $domain ?: null;
-    }
-
-    /**
-     * Get subscription limits
-     */
-    private function getSubscriptionLimits(string $tier): array
-    {
-        $limits = [
-            'free' => [
-                'max_users' => 10,
-                'max_teams' => 5,
-                'max_storage_gb' => 5,
-                'max_api_calls_per_hour' => 100,
-                'features' => ['basic_stats' => true, 'team_management' => true, 'player_roster' => true],
-            ],
-            'basic' => [
-                'max_users' => 50,
-                'max_teams' => 20,
-                'max_storage_gb' => 50,
-                'max_api_calls_per_hour' => 1000,
-                'features' => ['basic_stats' => true, 'advanced_stats' => true, 'team_management' => true, 'player_roster' => true, 'training_management' => true, 'game_scheduling' => true],
-            ],
-            'professional' => [
-                'max_users' => 200,
-                'max_teams' => 50,
-                'max_storage_gb' => 200,
-                'max_api_calls_per_hour' => 5000,
-                'features' => ['basic_stats' => true, 'advanced_stats' => true, 'team_management' => true, 'player_roster' => true, 'training_management' => true, 'game_scheduling' => true, 'live_scoring' => true, 'video_analysis' => true, 'tournament_management' => true, 'api_access' => true],
-            ],
-            'enterprise' => [
-                'max_users' => -1,
-                'max_teams' => -1,
-                'max_storage_gb' => -1,
-                'max_api_calls_per_hour' => -1,
-                'features' => ['basic_stats' => true, 'advanced_stats' => true, 'team_management' => true, 'player_roster' => true, 'training_management' => true, 'game_scheduling' => true, 'live_scoring' => true, 'video_analysis' => true, 'tournament_management' => true, 'api_access' => true, 'white_label' => true, 'custom_domain' => true, 'priority_support' => true, 'sla_guarantee' => true],
-            ],
-        ];
-
-        return $limits[$tier] ?? $limits['professional'];
     }
 }

@@ -126,6 +126,8 @@ php artisan tinker
 # Multi-tenancy
 php artisan tenant:setup-rls         # Configure Row Level Security
 php artisan tenant:usage:reset       # Reset tenant usage metrics
+php artisan tenant:repair-limits     # Repair tenant subscription limits and features (see INSTALLATION_WIZARD_FIX.md)
+php artisan tenant:initialize        # Initialize first tenant for new installation
 
 # Subscription Management & Migration
 php artisan subscriptions:migrate-clubs      # Migrate existing clubs to subscription plans
@@ -180,6 +182,7 @@ php artisan train:ml-models          # Train machine learning models
 
 **Infrastructure Services:**
 - `TenantService` - Multi-tenant scope management
+- `TenantLimitsService` - Subscription tier limits management (centralized limits for all 4 tiers)
 - `FeatureGateService` - Subscription-based feature control
 - `FeatureFlagService` - Feature flag management with rollout strategies (percentage, whitelist, gradual)
 - `SubscriptionHealthMonitorService` - Subscription system health monitoring (6 metrics, alerts, health scores)
