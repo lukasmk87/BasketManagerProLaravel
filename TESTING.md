@@ -311,3 +311,91 @@ Fügen Sie diese Scripts zu `composer.json` hinzu:
    - Minimale Datenbank-Seeds
    - Mockery für externe Dependencies
    - Factory States für verschiedene Szenarien
+
+---
+
+## Subscription & Billing Tests
+
+### Environment Setup
+
+Für Subscription-Tests benötigen Sie **Stripe Test Mode Keys** in `.env.testing`:
+
+```env
+# Stripe Test Mode Keys
+STRIPE_KEY=pk_test_51...
+STRIPE_SECRET=sk_test_51...
+STRIPE_WEBHOOK_SECRET=whsec_test_...
+STRIPE_WEBHOOK_SECRET_CLUB=whsec_test_...  # Optional: Separate webhook for clubs
+```
+
+**Wichtig:** Verwenden Sie **niemals** Production Keys (`pk_live_`, `sk_live_`) in Tests!
+
+### Test Categories
+
+Das Projekt verfügt über **40 Subscription-Tests** in 4 Kategorien:
+
+1. **Integration Tests (23 Tests)** - Stripe Webhook-Events
+   ```bash
+   php artisan test tests/Integration/ClubSubscriptionWebhookTest.php
+   ```
+
+2. **E2E Tests (17 Tests)** - Kompletter Checkout-Flow
+   ```bash
+   php artisan test tests/Feature/ClubCheckoutE2ETest.php
+   ```
+
+3. **Unit Tests** - Service & Mail Testing
+   ```bash
+   php artisan test --filter=ClubSubscription --testsuite=Unit
+   ```
+
+4. **Feature Tests** - Lifecycle & Flow Testing
+   ```bash
+   php artisan test --filter=ClubSubscription --testsuite=Feature
+   ```
+
+### Stripe Test Cards
+
+Die folgenden Test-Karten werden in E2E Tests verwendet:
+
+| Kartennummer | Szenario |
+|--------------|----------|
+| `4242 4242 4242 4242` | ✅ Success |
+| `4000 0000 0000 0002` | ❌ Declined |
+| `4000 0000 0000 9995` | ❌ Insufficient Funds |
+| `4000 0027 6000 3184` | 🔐 3D Secure Required |
+| `4000 0082 6000 0000` | 🇩🇪 SEPA Direct Debit (Germany) |
+
+### Webhook Testing
+
+Alle 11 kritischen Webhook-Events sind getestet:
+- `checkout.session.completed`
+- `customer.subscription.created/updated/deleted`
+- `invoice.payment_succeeded/failed`
+- `invoice.created/finalized/payment_action_required`
+- `payment_method.attached/detached`
+
+### Running Subscription Tests
+
+```bash
+# Alle Subscription-Tests
+php artisan test --filter=ClubSubscription
+
+# Mit Coverage
+php artisan test --filter=ClubSubscription --coverage
+
+# Nur Webhooks
+php artisan test tests/Integration/ClubSubscriptionWebhookTest.php
+
+# Nur Checkout
+php artisan test tests/Feature/ClubCheckoutE2ETest.php
+```
+
+### Detaillierte Dokumentation
+
+Siehe **[Subscription Testing Guide](docs/SUBSCRIPTION_TESTING.md)** für:
+- Komplette Test-Übersicht
+- Mock Strategies
+- Troubleshooting
+- Best Practices
+- Test Statistics

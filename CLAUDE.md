@@ -92,6 +92,12 @@ php artisan tinker
 php artisan tenant:setup-rls         # Configure Row Level Security
 php artisan tenant:usage:reset       # Reset tenant usage metrics
 
+# Subscription Analytics
+php artisan subscription:update-mrr       # Calculate MRR snapshots (daily/monthly)
+php artisan subscription:calculate-churn  # Calculate churn rates
+php artisan subscription:update-cohorts   # Update cohort analytics
+php artisan subscription:analytics-report # Generate analytics reports
+
 # API Documentation
 php artisan generate:openapi-docs    # Generate OpenAPI 3.0 docs
 
@@ -102,13 +108,23 @@ php artisan db:analyze-performance   # Database performance analysis
 # Emergency System
 php artisan emergency:health-check   # Test emergency contact system
 
-# Subscriptions
+# Webhooks & Payments
 php artisan manage:webhooks          # Manage Stripe webhook endpoints
+
+# Machine Learning
+php artisan train:ml-models          # Train machine learning models
 ```
+
+**Scheduled Tasks** (configured in `routes/console.php`):
+- Daily at 00:00 - MRR snapshot calculation
+- Monthly on 1st at 01:00 - Monthly MRR calculation
+- Monthly on 1st at 02:00 - Churn rate calculation
+- Monthly on 1st at 03:00 - Cohort analytics update
+- Weekly - Push subscription cleanup
 
 ## Service-Oriented Architecture
 
-Core services in `app/Services/` with domain-based subdirectory organization:
+**61 Services** in `app/Services/` with domain-based subdirectory organization:
 
 **Domain Services:**
 - `ClubService`, `TeamService`, `PlayerService` - Core basketball entities
@@ -127,17 +143,21 @@ Core services in `app/Services/` with domain-based subdirectory organization:
 - `TwoFactorAuthService` - 2FA implementation
 
 **Integration Services (Subdirectories):**
-- `Stripe/` - Stripe payment integration (10 services):
+- `Stripe/` - Stripe payment integration (14 services):
   - `CheckoutService` - General payment processing
   - `ClubSubscriptionCheckoutService` - Club-specific checkout sessions
   - `ClubSubscriptionService` - Club plan management (assign, cancel, swap, sync)
   - `ClubStripeCustomerService` - Club Stripe customer management
+  - `ClubInvoiceService` - Invoice management and PDF download
+  - `ClubPaymentMethodService` - Payment methods (Card, SEPA, Sofort, Giropay, EPS, iDEAL)
+  - `SubscriptionAnalyticsService` - MRR/ARR tracking, churn analysis, cohort analytics
   - `StripeSubscriptionService` - Subscription management
   - `StripePaymentService` - Payment handling
-  - `PaymentMethodService` - Payment method management
+  - `PaymentMethodService` - Payment method handling
   - `CashierTenantManager` - Multi-tenant Cashier integration
   - `StripeClientManager` - Stripe client configuration
-  - `WebhookEventProcessor` - Webhook event handling
+  - `WebhookEventProcessor` - Webhook event handling (16+ events)
+  - `ClubSubscriptionNotificationService` - Subscription notifications
 - `Federation/` - Basketball federation APIs:
   - `DBBApiService` - DBB (German Basketball Federation) API
   - `FIBAApiService` - FIBA API integration
@@ -163,15 +183,18 @@ Core services in `app/Services/` with domain-based subdirectory organization:
 
 ## Route Organization
 
-Routes are modular and feature-based for better maintainability:
+Routes are modular and feature-based for better maintainability (**24 route files**):
 
 **Core Routes:**
 - `routes/web.php` - Main web routes with locale prefixes (`/{locale}/...`)
-- `routes/api/v2.php` - Main API v2 endpoints (primary)
-- `routes/api/v1.php` - Legacy API v1 endpoints
-- `routes/api/v4.php` - API v4 endpoints
-- `routes/api/v4_teams_only.php` - API v4 teams-only endpoints
-- `routes/console.php` - Artisan console commands
+- `routes/console.php` - Artisan console commands and scheduled tasks
+- `routes/channels.php` - Broadcasting channel authorization
+
+**API Versioning:**
+- `routes/api/v1.php` - Legacy API v1 (deprecated, backward compatibility)
+- `routes/api/v2.php` - **Primary API v2** (main production API, 16KB)
+- `routes/api/v4.php` - Latest API v4 (17KB, newer endpoints)
+- `routes/api/v4_teams_only.php` - API v4 teams-only specialized endpoints
 
 **Feature-Specific Routes:**
 - `routes/api_training.php` - Training and drill management API
@@ -188,12 +211,9 @@ Routes are modular and feature-based for better maintainability:
 **Specialized Routes:**
 - `routes/emergency.php` - QR-code emergency access (no auth required)
 - `routes/gdpr.php` - GDPR compliance endpoints (data export/deletion)
-- `routes/pwa.php` - PWA manifest and service worker
+- `routes/pwa.php` - PWA manifest and service worker (20KB)
 - `routes/security.php` - Security and 2FA endpoints
-- `routes/notifications.php` - Push notification endpoints
-
-**Real-time:**
-- `routes/channels.php` - Broadcasting channel authorization
+- `routes/notifications.php` - Push notification endpoints (12KB)
 
 ## Real-time Broadcasting
 
@@ -211,7 +231,35 @@ PUSHER_APP_KEY=your-key
 PUSHER_APP_SECRET=your-secret
 ```
 
+## Middleware Architecture
+
+**16 Custom Middleware** for request/response pipeline:
+
+**Multi-Tenancy:**
+- `ResolveTenantMiddleware` - Domain/subdomain/slug-based tenant resolution
+- `ConfigureTenantStripe` - Dynamic Stripe configuration per tenant
+
+**Security & Access Control:**
+- `EnforceFeatureGates` - Subscription tier-based feature access
+- `EnforceClubLimits` - Usage limit enforcement (users, teams, storage)
+- `EnterpriseRateLimitMiddleware` - Advanced tenant-aware rate limiting
+- `TenantRateLimitMiddleware` - Tenant-based rate limiting
+- `SecurityHeadersMiddleware` - Security headers (CSP, HSTS, X-Frame-Options)
+- `EnhancedCsrfProtection` - Enhanced CSRF protection
+
+**Performance:**
+- `DatabasePerformanceMiddleware` - Query performance monitoring
+- `ApiResponseCompressionMiddleware` - Response compression
+
+**API:**
+- `ApiVersioningMiddleware` - API version handling (v1, v2, v4)
+
+**Localization:**
+- `LocalizationMiddleware` - Language resolution and URL prefix handling
+
 ## Key Models
+
+**69 Models** across **116 migrations** with comprehensive relationships:
 
 **Core Domain Models:**
 - `User` - Multi-role users with Spatie Permission
@@ -223,12 +271,22 @@ PUSHER_APP_SECRET=your-secret
 - `TrainingSession`, `Drill` - Training management
 - `Tournament` - Tournament brackets and standings
 
+**Subscription & Analytics Models:**
+- `Subscription` - Tenant/Club subscriptions with Cashier integration
+- `SubscriptionPlan`, `ClubSubscriptionPlan` - Plan definitions
+- `SubscriptionMRRSnapshot` - Daily MRR tracking for revenue analytics
+- `ClubSubscriptionEvent` - Subscription lifecycle events (created, upgraded, cancelled)
+- `ClubSubscriptionCohort` - Cohort analytics for retention tracking
+- `ClubUsage` - Club usage metrics and limits
+
 **Specialized Models:**
 - `EmergencyContact` - QR-code enabled emergency contacts
 - `GdprDataSubjectRequest` - GDPR Article 15/17 requests
 - `ApiUsageTracking` - Tenant API usage limits
 - `GymBooking` - Facility scheduling
 - `DBBIntegration`, `FIBAIntegration` - Federation data
+- `VideoFile`, `VideoAnalysisSession` - Video analysis
+- `MLModel`, `MLPrediction` - Machine learning models
 
 All critical models use soft deletes and have comprehensive relationships defined.
 
@@ -248,22 +306,137 @@ All critical models use soft deletes and have comprehensive relationships define
 **Position Validation:**
 Point Guard (PG), Shooting Guard (SG), Small Forward (SF), Power Forward (PF), Center (C)
 
+## Machine Learning & Video Analysis
+
+**AI-Powered Features:**
+- `AIVideoAnalysisService` - AI-powered video analysis for player performance
+- `VideoProcessingService` - Video processing, storage, and frame extraction
+- Player tracking algorithms for movement analysis
+- Automatic shot chart generation from video
+- Frame-level annotations and highlight reel generation
+
+**ML Infrastructure:**
+- `MLModel` - Model registry with versioning
+- `MLPrediction` - Prediction storage and tracking
+- `MLExperiment` - Experiment tracking for model development
+- `MLTrainingData` - Training dataset management
+- `MLFeatureStore` - Feature storage for ML pipelines
+
+**Predictive Analytics:**
+- Injury risk prediction based on player workload
+- Player performance forecasting
+- Automated insights from game statistics
+
 ## Stripe Integration
 
-Multi-tenant subscription system:
+Multi-tenant subscription system with **two-level architecture**: Tenant-Level and Club-Level subscriptions.
+
+### Tenant-Level Subscriptions
+
+**Subscription Tiers:**
+- **Free**: 10 users, 5 teams, 5GB storage
+- **Basic** (€29/mo): 50 users, 20 teams, 50GB storage
+- **Professional** (€99/mo): 200 users, 50 teams, 200GB storage
+- **Enterprise** (Custom): Unlimited resources
+
+### Club-Level Subscriptions (Multi-Club System)
+
+Each club can have its own independent Stripe subscription:
+
+**Club Subscription Plans:**
+- **Free Club** (€0): 2 teams, 30 players, basic features
+- **Standard Club** (€49/mo, €441/yr): 10 teams, 150 players, live scoring
+- **Premium Club** (€149/mo, €1,341/yr): 50 teams, 500 players, advanced stats, video analysis
+- **Enterprise Club** (€299/mo, €2,691/yr): 100 teams, 1000 players, all features
+
+**13 Stripe Services:**
+- `ClubStripeCustomerService` - Stripe Customer Management
+- `ClubSubscriptionCheckoutService` - Checkout Session Creation
+- `ClubSubscriptionService` - Subscription Lifecycle (Cancel, Swap, Sync)
+- `ClubInvoiceService` - Invoice Management (List, Show, PDF, Upcoming)
+- `ClubPaymentMethodService` - Payment Methods (Card, SEPA, Giropay, EPS, iDEAL)
+- `SubscriptionAnalyticsService` - MRR/ARR/Churn Analytics (17 methods)
+- `ClubSubscriptionNotificationService` - Email Notifications (19 methods)
+- `StripeClientManager` - Multi-tenant Stripe client configuration
+- `CashierTenantManager` - Cashier integration for tenants
+- `CheckoutService`, `StripeSubscriptionService`, `StripePaymentService`, `PaymentMethodService`, `WebhookEventProcessor`
+
+**17 Club Subscription API Endpoints:**
+1. `GET /club/{club}/subscription` - Subscription Overview
+2. `POST /club/{club}/checkout` - Create Checkout Session
+3. `GET /club/{club}/checkout/success` - Success Page
+4. `GET /club/{club}/checkout/cancel` - Cancel Page
+5. `POST /club/{club}/billing-portal` - Billing Portal Session
+6. `GET /club/{club}/billing/invoices` - List Invoices (with pagination & filtering)
+7. `GET /club/{club}/billing/invoices/{invoice}` - Show Invoice
+8. `GET /club/{club}/billing/invoices/upcoming` - Upcoming Invoice Preview
+9. `GET /club/{club}/billing/invoices/{invoice}/pdf` - Download PDF
+10. `GET /club/{club}/billing/payment-methods` - List Payment Methods
+11. `POST /club/{club}/billing/payment-methods/setup` - Create SetupIntent
+12. `POST /club/{club}/billing/payment-methods/attach` - Attach Payment Method
+13. `DELETE /club/{club}/billing/payment-methods/{pm}` - Detach Payment Method
+14. `PUT /club/{club}/billing/payment-methods/{pm}` - Update Billing Details
+15. `POST /club/{club}/billing/payment-methods/{pm}/default` - Set Default
+16. `POST /club/{club}/billing/preview-plan-swap` - Proration Preview
+17. `POST /club/{club}/billing/swap-plan` - Execute Plan Swap
+
+**Payment Methods** (German market focus):
+- Credit/Debit Cards (Visa, Mastercard, Amex)
+- SEPA Direct Debit
+- Sofort
+- Giropay
+- EPS (Austria)
+- Bancontact (Belgium)
+- iDEAL (Netherlands)
+
+**Feature Gates:**
 ```php
-// Feature gates based on subscription
-if (tenant()->hasFeature('live_scoring')) {
-    // Feature available
+// Check subscription features (hierarchical: Tenant → Club)
+if ($club->hasFeature('live_scoring')) {
+    // Feature available based on club's plan
 }
 
-// Subscription tiers: free, basic, professional, enterprise
+// Check usage limits (effective limit = min(tenant_limit, club_limit))
+$club->canUse('teams', 1);
+$club->getLimit('max_teams');
 ```
 
-Webhook events handled in `StripeWebhookController`:
-- `checkout.session.completed`
-- `customer.subscription.updated`
-- `invoice.payment_succeeded`
+**Subscription Analytics:**
+- MRR/ARR (Monthly/Annual Recurring Revenue) tracking
+- Churn rate calculation and analysis (voluntary & involuntary)
+- Customer Lifetime Value (LTV) metrics
+- Cohort analytics with retention tracking (24 months)
+- Automated daily/monthly snapshots via scheduled commands
+- Subscription health metrics (trial conversion, payment recovery)
+
+**Webhook Events** (11 club-subscription events handled in `ClubSubscriptionWebhookController`):
+- `checkout.session.completed` - Checkout completed, subscription activated
+- `customer.subscription.created` - Subscription created
+- `customer.subscription.updated` - Plan changes, renewals, status updates
+- `customer.subscription.deleted` - Cancellations (churn)
+- `invoice.payment_succeeded` - Successful payments
+- `invoice.payment_failed` - Failed payments (churn risk)
+- `invoice.created` - Invoice created
+- `invoice.finalized` - Invoice finalized
+- `invoice.payment_action_required` - 3D Secure authentication required
+- `payment_method.attached` - Payment method added
+- `payment_method.detached` - Payment method removed
+
+**Email Notifications (6 Mail classes):**
+- `SubscriptionWelcomeMail` - Welcome email after subscription
+- `PaymentSuccessfulMail` - Payment confirmation with invoice
+- `PaymentFailedMail` - Payment failure notification with retry info
+- `SubscriptionCanceledMail` - Cancellation confirmation
+- `ChurnRiskAlertMail` - Alert for clubs at risk of churn
+- `AnalyticsReportMail` - Monthly analytics reports to admins
+
+**📚 Comprehensive Documentation:**
+- [Subscription API Reference](/docs/SUBSCRIPTION_API_REFERENCE.md) - Complete API documentation (17 endpoints, 11 webhooks)
+- [Integration Guide](/docs/SUBSCRIPTION_INTEGRATION_GUIDE.md) - Developer setup, webhook configuration, service usage
+- [Deployment Guide](/docs/SUBSCRIPTION_DEPLOYMENT_GUIDE.md) - Production deployment, Stripe Live keys, queue workers
+- [Architecture Guide](/docs/SUBSCRIPTION_ARCHITECTURE.md) - System architecture, data flows, analytics pipeline
+- [Admin Guide](/docs/SUBSCRIPTION_ADMIN_GUIDE.md) - User guide for club administrators
+- [Testing Guide](/docs/SUBSCRIPTION_TESTING.md) - Comprehensive test suite (40 tests, 4,350+ lines)
 
 ## Emergency System
 
@@ -286,10 +459,13 @@ All personal data access logged via `spatie/laravel-activitylog`.
 
 ## Testing Strategy
 
-**Test Infrastructure:**
+**Test Infrastructure** (**71 test files**, including 40 subscription tests):
 - Feature tests for all API endpoints and web routes
 - Unit tests for services and statistics calculations
+- Integration tests for Stripe webhook events (23 tests)
+- E2E tests for complete checkout flows (17 tests)
 - In-memory SQLite database for fast test execution (configured in `phpunit.xml`)
+- MySQL configuration available for production-parity testing
 - Test environment automatically disables Telescope, Pulse, Nightwatch
 
 **BasketballTestCase Base Class:**
@@ -339,6 +515,26 @@ php artisan test --parallel               # Run tests in parallel
 - `tests/Feature/ClubSubscriptionLifecycleTest.php` - Full subscription lifecycle tests
 - `tests/Unit/ClubSubscriptionCheckoutServiceTest.php` - Checkout service unit tests
 - `tests/Unit/ClubSubscriptionServiceTest.php` - Subscription service unit tests
+
+**Subscription Testing:**
+
+Das Multi-Club Subscription-System verfügt über **40 comprehensive tests** (~4,350 Zeilen):
+- **23 Integration Tests** - Stripe webhook events (all 11 events covered)
+- **17 E2E Tests** - Complete checkout flow with payment scenarios
+- **100% Coverage** for critical services
+
+```bash
+# Run all subscription tests
+php artisan test --filter=ClubSubscription
+
+# Integration tests (Webhooks)
+php artisan test tests/Integration/ClubSubscriptionWebhookTest.php
+
+# E2E tests (Checkout)
+php artisan test tests/Feature/ClubCheckoutE2ETest.php
+```
+
+See `/docs/SUBSCRIPTION_TESTING.md` for comprehensive testing guide.
 
 Test users available for all 11 roles (see `TEST_USERS.md`).
 

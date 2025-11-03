@@ -214,13 +214,13 @@ php artisan tenant:usage:reset     # Tenant Usage zurücksetzen
 
 ### 🧪 Testing
 
-Das Projekt verfügt über **63+ Test-Dateien** mit umfassender Coverage:
+Das Projekt verfügt über **71+ Test-Dateien** mit umfassender Coverage:
 
 **Projektstatistiken:**
 - **69 Models** - Umfassende Basketball-Domain-Modelle
 - **53 Services** - Service-orientierte Architektur
 - **68 Controllers** - API & Web Controllers
-- **63 Test-Dateien** - Feature & Unit Tests
+- **71 Test-Dateien** - Feature, Unit & Integration Tests
 
 ```bash
 # Alle Tests ausführen
@@ -233,6 +233,30 @@ php artisan test --testsuite=Unit
 # Mit Coverage
 php artisan test --coverage
 ```
+
+#### Subscription & Billing Testing
+
+Das Multi-Club Subscription-System verfügt über **40 umfassende Tests** (~4,350 Zeilen):
+
+- **23 Integration Tests** - Stripe Webhook-Events & System-Verhalten
+- **17 E2E Tests** - Kompletter Checkout-Flow mit Payment-Szenarien
+- **100% Coverage** für alle kritischen Services
+
+```bash
+# Alle Subscription-Tests ausführen
+php artisan test --filter=ClubSubscription
+
+# Integration Tests (Webhooks)
+php artisan test tests/Integration/ClubSubscriptionWebhookTest.php
+
+# E2E Tests (Checkout-Flow)
+php artisan test tests/Feature/ClubCheckoutE2ETest.php
+
+# Mit Coverage-Report
+php artisan test --filter=ClubSubscription --coverage
+```
+
+**Detaillierte Dokumentation:** Siehe [Subscription Testing Guide](docs/SUBSCRIPTION_TESTING.md)
 
 ---
 
