@@ -7,6 +7,7 @@ use App\Services\Install\PermissionChecker;
 use App\Services\Install\EnvironmentManager;
 use App\Services\Install\InstallationService;
 use App\Services\Install\StripeValidator;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -251,7 +252,7 @@ class InstallController extends Controller
     /**
      * Step 5: Database Setup Page
      */
-    public function database(): Response
+    public function database(): Response|RedirectResponse
     {
         // Check if environment is configured
         if (! session('environment_configured')) {
@@ -302,7 +303,7 @@ class InstallController extends Controller
     /**
      * Step 6: Super Admin Creation Form
      */
-    public function admin(): Response
+    public function admin(): Response|RedirectResponse
     {
         // Check if migrations are completed
         if (! session('migrations_completed')) {
@@ -415,7 +416,7 @@ class InstallController extends Controller
     /**
      * Step 7: Installation Complete
      */
-    public function complete(): Response
+    public function complete(): Response|RedirectResponse
     {
         if (! session('installation_complete')) {
             return redirect()->route('install.index');
