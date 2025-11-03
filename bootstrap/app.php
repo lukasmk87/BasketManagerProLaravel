@@ -73,6 +73,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::prefix('api')
                 ->middleware('api')
                 ->group(base_path('routes/api_game_registrations.php'));
+
+            // Health Check API routes
+            \Illuminate\Support\Facades\Route::prefix('api')
+                ->middleware('api')
+                ->group(base_path('routes/health.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

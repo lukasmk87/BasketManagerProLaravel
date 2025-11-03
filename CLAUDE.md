@@ -92,11 +92,20 @@ php artisan tinker
 php artisan tenant:setup-rls         # Configure Row Level Security
 php artisan tenant:usage:reset       # Reset tenant usage metrics
 
+# Subscription Management & Migration
+php artisan subscriptions:migrate-clubs      # Migrate existing clubs to subscription plans
+php artisan subscriptions:validate           # Validate subscription data integrity
+php artisan db:seed --class=ClubSubscriptionPlanSeeder --sync-stripe  # Sync plans with Stripe
+
 # Subscription Analytics
 php artisan subscription:update-mrr       # Calculate MRR snapshots (daily/monthly)
 php artisan subscription:calculate-churn  # Calculate churn rates
 php artisan subscription:update-cohorts   # Update cohort analytics
 php artisan subscription:analytics-report # Generate analytics reports
+
+# Subscription Health Monitoring
+php artisan subscriptions:health-check       # Perform subscription system health check
+php artisan subscriptions:health-check --alert  # Health check with email alerts
 
 # API Documentation
 php artisan generate:openapi-docs    # Generate OpenAPI 3.0 docs
@@ -137,6 +146,8 @@ php artisan train:ml-models          # Train machine learning models
 **Infrastructure Services:**
 - `TenantService` - Multi-tenant scope management
 - `FeatureGateService` - Subscription-based feature control
+- `FeatureFlagService` - Feature flag management with rollout strategies (percentage, whitelist, gradual)
+- `SubscriptionHealthMonitorService` - Subscription system health monitoring (6 metrics, alerts, health scores)
 - `GDPRComplianceService` - GDPR Article 15/17/20/30 compliance
 - `EmergencyAccessService` - QR-code based emergency contacts
 - `SecurityMonitoringService` - Security event tracking
@@ -183,7 +194,7 @@ php artisan train:ml-models          # Train machine learning models
 
 ## Route Organization
 
-Routes are modular and feature-based for better maintainability (**24 route files**):
+Routes are modular and feature-based for better maintainability (**25 route files**):
 
 **Core Routes:**
 - `routes/web.php` - Main web routes with locale prefixes (`/{locale}/...`)
@@ -214,6 +225,7 @@ Routes are modular and feature-based for better maintainability (**24 route file
 - `routes/pwa.php` - PWA manifest and service worker (20KB)
 - `routes/security.php` - Security and 2FA endpoints
 - `routes/notifications.php` - Push notification endpoints (12KB)
+- `routes/health.php` - Subscription health check API endpoints (11 endpoints)
 
 ## Real-time Broadcasting
 
@@ -233,7 +245,7 @@ PUSHER_APP_SECRET=your-secret
 
 ## Middleware Architecture
 
-**16 Custom Middleware** for request/response pipeline:
+**17 Custom Middleware** for request/response pipeline:
 
 **Multi-Tenancy:**
 - `ResolveTenantMiddleware` - Domain/subdomain/slug-based tenant resolution
@@ -241,6 +253,7 @@ PUSHER_APP_SECRET=your-secret
 
 **Security & Access Control:**
 - `EnforceFeatureGates` - Subscription tier-based feature access
+- `CheckFeatureFlag` - Feature flag-based route protection with rollout strategies
 - `EnforceClubLimits` - Usage limit enforcement (users, teams, storage)
 - `EnterpriseRateLimitMiddleware` - Advanced tenant-aware rate limiting
 - `TenantRateLimitMiddleware` - Tenant-based rate limiting
