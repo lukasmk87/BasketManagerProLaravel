@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Installation Status
+    |--------------------------------------------------------------------------
+    |
+    | This value indicates whether the application has been installed via
+    | the web-based installation wizard. When false, users will be redirected
+    | to the installation wizard. This is set automatically during installation.
+    |
+    */
+
+    'installed' => env('APP_INSTALLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

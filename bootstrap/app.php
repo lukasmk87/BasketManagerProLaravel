@@ -16,10 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function () {
+            // Installation routes (MUST BE FIRST - no tenant/auth middleware)
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/install.php'));
+
             // Register WEB routes FIRST to ensure they take precedence
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/web.php'));
-            
+
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/subscription.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
@@ -83,6 +87,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\VerifyCsrfToken::class,
+            \App\Http\Middleware\RedirectIfNotInstalled::class, // Check if app is installed
             \App\Http\Middleware\ResolveTenantMiddleware::class,
             \App\Http\Middleware\ConfigureTenantStripe::class,
             \App\Http\Middleware\LocalizationMiddleware::class,
@@ -110,6 +115,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'feature.gate' => \App\Http\Middleware\EnforceFeatureGates::class,
             'tenant.rate_limit' => \App\Http\Middleware\TenantRateLimitMiddleware::class,
             'enforce.club.limits' => \App\Http\Middleware\EnforceClubLimits::class,
+            'prevent.installed' => \App\Http\Middleware\PreventInstalledAccess::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         ]);
