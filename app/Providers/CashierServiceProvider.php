@@ -23,15 +23,20 @@ class CashierServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Skip during installation to prevent 500 errors when database is not yet set up
+        if (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))) {
+            return;
+        }
+
         // Set custom customer model if needed (default is User)
         // Cashier::useCustomerModel(User::class);
-        
+
         // Set custom subscription model if needed
         // Cashier::useSubscriptionModel(Subscription::class);
-        
+
         // Configure Cashier to use tenant-aware Stripe configuration
         $this->configureTenantAwareStripe();
-        
+
         // Set up German locale for currency formatting
         $this->configureLocalization();
     }

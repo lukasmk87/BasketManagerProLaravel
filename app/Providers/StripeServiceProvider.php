@@ -86,7 +86,7 @@ class StripeServiceProvider extends ServiceProvider
     private function configureStripe(): void
     {
         // Skip Stripe configuration during installation
-        if (!file_exists(storage_path('installed'))) {
+        if (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))) {
             return;
         }
 
@@ -99,9 +99,15 @@ class StripeServiceProvider extends ServiceProvider
         // Configure telemetry
         \Stripe\Stripe::setEnableTelemetry(config('stripe.performance.enable_telemetry', true));
 
-        // Set application info for debugging
+        // Set application info for debugging - use safe app_name() with fallback
+        try {
+            $appName = app_name();
+        } catch (\Exception $e) {
+            $appName = config('app.name', 'BasketManager Pro');
+        }
+
         \Stripe\Stripe::setAppInfo(
-            app_name(),
+            $appName,
             config('app.version', '4.0'),
             'https://basketmanager-pro.com',
             'pp_partner_MQxxxxxxxxxxxxxxxxxx' // Stripe Partner ID if applicable

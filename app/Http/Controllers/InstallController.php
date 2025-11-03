@@ -41,6 +41,12 @@ class InstallController extends Controller
      */
     public function index(): Response
     {
+        // Create temporary installation lock to prevent service providers
+        // from accessing database before migrations are completed
+        if (!file_exists(storage_path('installing'))) {
+            file_put_contents(storage_path('installing'), now()->toDateTimeString());
+        }
+
         return Inertia::render('Install/Index', [
             'appName' => $this->getAppName(),
             'languages' => [
@@ -259,10 +265,50 @@ class InstallController extends Controller
             return redirect()->route('install.environment')->with('warning', __('install.configure_environment_first'));
         }
 
+        // Test database connection
+        $dbStatus = [
+            'connected' => false,
+            'message' => null,
+            'database_name' => config('database.connections.'.config('database.default').'.database'),
+        ];
+
+        try {
+            DB::connection()->getPdo();
+            $dbStatus['connected'] = true;
+            $dbStatus['message'] = 'Database connection successful';
+
+            // For MySQL, check if database exists
+            if (config('database.default') === 'mysql') {
+                try {
+                    $dbName = $dbStatus['database_name'];
+                    $databases = DB::select('SHOW DATABASES');
+                    $databaseList = collect($databases)->pluck('Database')->toArray();
+                    $exists = in_array($dbName, $databaseList);
+
+                    if (!$exists) {
+                        $dbStatus['connected'] = false;
+                        $dbStatus['message'] = "Database '{$dbName}' does not exist. Please create it before running migrations.";
+                    }
+                } catch (\Exception $e) {
+                    // If SHOW DATABASES fails, try to USE the database
+                    try {
+                        DB::statement("USE `{$dbStatus['database_name']}`");
+                    } catch (\Exception $useEx) {
+                        $dbStatus['connected'] = false;
+                        $dbStatus['message'] = "Cannot access database '{$dbStatus['database_name']}'. It may not exist.";
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $dbStatus['connected'] = false;
+            $dbStatus['message'] = 'Database connection failed: ' . $e->getMessage();
+        }
+
         return Inertia::render('Install/Database', [
             'appName' => $this->getAppName(),
             'language' => session('install_language', 'de'),
             'migrationStatus' => session('migrations_completed', false),
+            'databaseStatus' => $dbStatus,
         ]);
     }
 
@@ -423,6 +469,11 @@ class InstallController extends Controller
         }
 
         $adminEmail = session('admin_email');
+
+        // Remove temporary installation lock - installation is now complete
+        if (file_exists(storage_path('installing'))) {
+            @unlink(storage_path('installing'));
+        }
 
         // Clear installation complete flag
         session()->forget(['installation_complete', 'admin_email']);

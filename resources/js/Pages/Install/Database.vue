@@ -8,6 +8,39 @@
                 {{ $t('database_description') }}
             </p>
 
+            <!-- Database Status Banner -->
+            <div v-if="!migrationStarted" class="mb-8">
+                <div v-if="databaseStatus.connected" class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <div>
+                            <p class="text-green-800 font-semibold">{{ $t('database_connected') }}</p>
+                            <p class="text-green-700 text-sm">{{ $t('database_name') }}: <code class="bg-green-100 px-2 py-1 rounded">{{ databaseStatus.database_name }}</code></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        <div>
+                            <p class="text-yellow-800 font-semibold">{{ $t('database_not_connected') }}</p>
+                            <p class="text-yellow-700 text-sm mb-2">{{ databaseStatus.message }}</p>
+                            <div class="bg-yellow-100 rounded p-3 text-sm text-yellow-800 mt-2">
+                                <p class="font-semibold mb-1">{{ $t('database_creation_help') }}</p>
+                                <code class="block bg-yellow-200 p-2 rounded mt-1 text-xs">
+                                    CREATE DATABASE `{{ databaseStatus.database_name }}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+                                </code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Migration Status -->
             <div v-if="!migrationStarted" class="text-center py-12">
                 <div class="text-6xl mb-6">🗄️</div>
@@ -16,8 +49,8 @@
                 </p>
                 <button
                     @click="runMigrations"
-                    :disabled="running"
-                    class="px-8 py-4 bg-orange-600 text-white text-lg font-semibold rounded-lg hover:bg-orange-700 disabled:bg-gray-400 transition-colors shadow-lg"
+                    :disabled="running || !databaseStatus.connected"
+                    class="px-8 py-4 bg-orange-600 text-white text-lg font-semibold rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
                 >
                     <span v-if="!running">🚀 {{ $t('run_migrations') }}</span>
                     <span v-else>
@@ -28,6 +61,9 @@
                         {{ $t('migrations_running') }}
                     </span>
                 </button>
+                <p v-if="!databaseStatus.connected" class="text-sm text-gray-500 mt-4">
+                    {{ $t('fix_database_first') }}
+                </p>
             </div>
 
             <!-- Migration Output -->
@@ -121,6 +157,14 @@ const props = defineProps({
     migrationStatus: {
         type: Boolean,
         default: false
+    },
+    databaseStatus: {
+        type: Object,
+        default: () => ({
+            connected: false,
+            message: null,
+            database_name: null
+        })
     }
 });
 
@@ -187,6 +231,11 @@ const $t = (key) => {
             database_title: 'Datenbank einrichten',
             database_description: 'Dieser Schritt erstellt alle notwendigen Datenbanktabellen und Grunddaten.',
             database_ready_message: 'Klicken Sie auf "Migrationen ausführen", um die Datenbank einzurichten.',
+            database_connected: 'Datenbankverbindung erfolgreich',
+            database_not_connected: 'Datenbankverbindung fehlgeschlagen',
+            database_name: 'Datenbank',
+            database_creation_help: 'So erstellen Sie die Datenbank:',
+            fix_database_first: 'Bitte beheben Sie zuerst die Datenbankprobleme, bevor Sie fortfahren.',
             run_migrations: 'Migrationen ausführen',
             migrations_running: 'Migrationen werden ausgeführt...',
             migrations_completed: 'Migrationen erfolgreich abgeschlossen!',
@@ -200,6 +249,11 @@ const $t = (key) => {
             database_title: 'Set Up Database',
             database_description: 'This step will create all necessary database tables and seed initial data.',
             database_ready_message: 'Click "Run Migrations" to set up the database.',
+            database_connected: 'Database connection successful',
+            database_not_connected: 'Database connection failed',
+            database_name: 'Database',
+            database_creation_help: 'To create the database:',
+            fix_database_first: 'Please fix database issues first before proceeding.',
             run_migrations: 'Run Migrations',
             migrations_running: 'Running migrations...',
             migrations_completed: 'Migrations completed successfully!',

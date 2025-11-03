@@ -42,6 +42,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Skip all boot logic during installation to prevent 500 errors
+        // when database tables don't exist yet
+        if ($this->isInstalling()) {
+            return;
+        }
+
         // Register Artisan commands
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -164,5 +170,30 @@ class AppServiceProvider extends ServiceProvider
                 'reason' => $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Check if installation is in progress
+     *
+     * @return bool
+     */
+    private function isInstalling(): bool
+    {
+        // Check if installed marker exists
+        if (!file_exists(storage_path('installed'))) {
+            return true;
+        }
+
+        // Check if temporary installing marker exists
+        if (file_exists(storage_path('installing'))) {
+            return true;
+        }
+
+        // Check current request path (if available)
+        if (request()->is('install') || request()->is('install/*')) {
+            return true;
+        }
+
+        return false;
     }
 }

@@ -77,13 +77,84 @@ class InstallationService
         try {
             $output = [];
 
-            // Run migrations
-            Artisan::call('migrate', ['--force' => true]);
-            $output[] = 'Migrations completed successfully';
+            // Step 1: Verify database connection
+            $output[] = '🔍 Testing database connection...';
+            try {
+                DB::connection()->getPdo();
+                $output[] = '✅ Database connection successful';
+            } catch (\Exception $e) {
+                return [
+                    'success' => false,
+                    'message' => 'Database connection failed. Please verify your database credentials in the Environment step.',
+                    'output' => array_merge($output, [
+                        '❌ Cannot connect to database',
+                        '💡 Error: ' . $e->getMessage(),
+                        '',
+                        '📝 Please check:',
+                        '  - Database host and port are correct',
+                        '  - Database username and password are correct',
+                        '  - Database server is running',
+                        '  - Firewall allows connection to database port',
+                    ]),
+                ];
+            }
 
-            // Seed required data (roles, permissions, legal pages)
+            // Step 2: Check if database exists (for MySQL/MariaDB)
+            if (config('database.default') === 'mysql') {
+                $dbName = config('database.connections.mysql.database');
+                $output[] = "🔍 Checking if database '{$dbName}' exists...";
+
+                try {
+                    $databases = DB::select('SHOW DATABASES');
+                    $databaseList = collect($databases)->pluck('Database')->toArray();
+                    $exists = in_array($dbName, $databaseList);
+
+                    if (!$exists) {
+                        return [
+                            'success' => false,
+                            'message' => "Database '{$dbName}' does not exist. Please create it first.",
+                            'output' => array_merge($output, [
+                                "❌ Database '{$dbName}' not found",
+                                '',
+                                '📝 To create the database, run this SQL command:',
+                                "   CREATE DATABASE `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;",
+                                '',
+                                '💡 Or create it via your hosting control panel (e.g., cPanel, Plesk)',
+                            ]),
+                        ];
+                    }
+
+                    $output[] = "✅ Database '{$dbName}' exists";
+                } catch (\Exception $e) {
+                    // If SHOW DATABASES fails, try to USE the database
+                    try {
+                        DB::statement("USE `{$dbName}`");
+                        $output[] = "✅ Database '{$dbName}' is accessible";
+                    } catch (\Exception $useEx) {
+                        return [
+                            'success' => false,
+                            'message' => "Cannot access database '{$dbName}'. It may not exist or you don't have permission.",
+                            'output' => array_merge($output, [
+                                "❌ Cannot access database '{$dbName}'",
+                                '💡 Error: ' . $useEx->getMessage(),
+                            ]),
+                        ];
+                    }
+                }
+            }
+
+            // Step 3: Run migrations
+            $output[] = '🔄 Running database migrations...';
+            Artisan::call('migrate', ['--force' => true]);
+            $output[] = '✅ Migrations completed successfully';
+
+            // Step 4: Seed required data (roles, permissions, legal pages)
+            $output[] = '🌱 Seeding required data (roles, permissions)...';
             $this->seedRequiredData();
-            $output[] = 'Required data seeded successfully';
+            $output[] = '✅ Required data seeded successfully';
+
+            $output[] = '';
+            $output[] = '🎉 Database setup completed successfully!';
 
             return [
                 'success' => true,
@@ -94,7 +165,10 @@ class InstallationService
             return [
                 'success' => false,
                 'message' => 'Migration failed: '.$e->getMessage(),
-                'output' => [],
+                'output' => array_merge($output ?? [], [
+                    '❌ Migration failed',
+                    '💡 Error: ' . $e->getMessage(),
+                ]),
             ];
         }
     }

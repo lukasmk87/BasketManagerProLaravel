@@ -63,6 +63,11 @@ class BasketManagerServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Skip during installation to prevent 500 errors when database/models are not yet set up
+        if (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))) {
+            return;
+        }
+
         // Register Policies
         $this->registerPolicies();
 

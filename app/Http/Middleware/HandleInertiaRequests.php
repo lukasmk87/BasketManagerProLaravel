@@ -35,6 +35,22 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // During installation, return minimal shared data to prevent DB access errors
+        if (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))) {
+            return [
+                ...parent::share($request),
+                'appName' => fn () => config('app.name', 'BasketManager Pro'),
+                'csrf_token' => fn () => csrf_token(),
+                'auth' => ['user' => null],
+                'currentClub' => null,
+                'flash' => [
+                    'success' => fn () => $request->session()->get('success'),
+                    'error' => fn () => $request->session()->get('error'),
+                    'message' => fn () => $request->session()->get('message'),
+                ],
+            ];
+        }
+
         return [
             ...parent::share($request),
             'appName' => fn () => app_name(),

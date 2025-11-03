@@ -13,6 +13,11 @@ if (!function_exists('app_name')) {
      */
     function app_name(): string
     {
+        // Skip tenant resolution during installation
+        if (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))) {
+            return config('app.name', 'BasketManager Pro');
+        }
+
         // Try to get tenant-specific app name from request attributes
         // This only works when a request context is available
         try {

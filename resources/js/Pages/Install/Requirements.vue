@@ -134,8 +134,15 @@ const RequirementRow = {
             <div class="flex-1">
                 <span class="font-medium text-gray-900">{{ requirement.name }}</span>
                 <div class="text-sm text-gray-600">
-                    <span v-if="requirement.required">Required: {{ requirement.required }}</span>
-                    <span v-if="requirement.current"> | Current: {{ requirement.current }}</span>
+                    <!-- Show Required/Current for PHP Version, Memory, etc. -->
+                    <template v-if="requirement.required || requirement.current">
+                        <span v-if="requirement.required">Required: {{ requirement.required }}</span>
+                        <span v-if="requirement.current"> | Current: {{ requirement.current }}</span>
+                    </template>
+                    <!-- Show Message for Extensions, Functions, etc. -->
+                    <template v-else-if="requirement.message">
+                        <span>{{ requirement.message }}</span>
+                    </template>
                 </div>
             </div>
             <div class="flex-shrink-0 ml-4">

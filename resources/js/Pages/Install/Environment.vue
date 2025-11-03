@@ -175,6 +175,38 @@
                         <p v-if="form.errors.db_password" class="mt-1 text-sm text-red-600">{{ form.errors.db_password }}</p>
                     </div>
 
+                    <!-- Database Creation Help -->
+                    <div v-if="form.db_connection !== 'sqlite'" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                            <div class="text-sm">
+                                <p class="text-yellow-800 font-semibold mb-1">⚠️ {{ $t('db_must_exist') }}</p>
+                                <p class="text-yellow-700 mb-2">{{ $t('db_creation_instructions') }}</p>
+                                <div v-if="form.db_connection === 'mysql'" class="bg-yellow-100 rounded p-2 font-mono text-xs">
+                                    <code class="block text-yellow-900">
+                                        CREATE DATABASE `{{ form.db_database || 'your_database' }}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+                                    </code>
+                                    <code class="block text-yellow-900 mt-1" v-if="form.db_username">
+                                        GRANT ALL PRIVILEGES ON `{{ form.db_database || 'your_database' }}`.* TO '{{ form.db_username }}'@'localhost';
+                                    </code>
+                                </div>
+                                <div v-else-if="form.db_connection === 'pgsql'" class="bg-yellow-100 rounded p-2 font-mono text-xs">
+                                    <code class="block text-yellow-900">
+                                        CREATE DATABASE {{ form.db_database || 'your_database' }};
+                                    </code>
+                                    <code class="block text-yellow-900 mt-1" v-if="form.db_username">
+                                        GRANT ALL PRIVILEGES ON DATABASE {{ form.db_database || 'your_database' }} TO {{ form.db_username }};
+                                    </code>
+                                </div>
+                                <p class="text-yellow-700 text-xs mt-2">
+                                    {{ $t('db_or_use_hosting') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div v-if="form.db_connection !== 'sqlite'">
                         <button
                             type="button"
@@ -525,6 +557,9 @@ const $t = (key) => {
             db_username_label: 'Benutzername',
             db_password_label: 'Passwort',
             test_database_connection: 'Datenbankverbindung testen',
+            db_must_exist: 'Die Datenbank muss bereits existieren',
+            db_creation_instructions: 'Bitte erstellen Sie die Datenbank, bevor Sie fortfahren. Verwenden Sie die folgenden SQL-Befehle:',
+            db_or_use_hosting: 'Alternativ können Sie die Datenbank über Ihr Hosting-Control-Panel (z.B. cPanel, Plesk) erstellen.',
             mail_mailer_label: 'Mail-Treiber',
             mail_host_label: 'SMTP Host',
             mail_port_label: 'SMTP Port',
@@ -569,6 +604,9 @@ const $t = (key) => {
             db_username_label: 'Username',
             db_password_label: 'Password',
             test_database_connection: 'Test Database Connection',
+            db_must_exist: 'The database must already exist',
+            db_creation_instructions: 'Please create the database before proceeding. Use the following SQL commands:',
+            db_or_use_hosting: 'Alternatively, you can create the database via your hosting control panel (e.g., cPanel, Plesk).',
             mail_mailer_label: 'Mail Driver',
             mail_host_label: 'SMTP Host',
             mail_port_label: 'SMTP Port',
