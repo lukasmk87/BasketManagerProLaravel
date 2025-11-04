@@ -99,9 +99,12 @@ return [
     /*
      * When set to true, the method for checking permissions will be registered on the gate.
      * Set this to false if you want to implement custom logic for checking permissions.
+     *
+     * IMPORTANT: Disabled during installation to prevent database queries before migrations run.
      */
 
-    'register_permission_check_method' => true,
+    'register_permission_check_method' => file_exists(storage_path('installed'))
+        && !file_exists(storage_path('installing')),
 
     /*
      * When set to true, Laravel\Octane\Events\OperationTerminated event listener will be registered

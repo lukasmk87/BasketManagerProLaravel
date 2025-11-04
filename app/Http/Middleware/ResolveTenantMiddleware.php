@@ -13,8 +13,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ResolveTenantMiddleware
 {
+    /**
+     * Lazy load TenantService to prevent database access during installation
+     */
     public function __construct(
-        private TenantService $tenantService
+        private ?TenantService $tenantService = null
     ) {}
 
     /**
@@ -24,8 +27,11 @@ class ResolveTenantMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Skip tenant resolution for installation routes
-        if ($request->is('install') || $request->is('install/*')) {
+        // Skip tenant resolution during installation to prevent database access before migrations
+        if (!file_exists(storage_path('installed'))
+            || file_exists(storage_path('installing'))
+            || $request->is('install')
+            || $request->is('install/*')) {
             return $next($request);
         }
 
@@ -351,6 +357,11 @@ class ResolveTenantMiddleware
         // Skip logging for mock tenants
         if ($tenant->id === 'staging-tenant') {
             return;
+        }
+
+        // Lazy load TenantService when needed
+        if (!$this->tenantService) {
+            $this->tenantService = app(TenantService::class);
         }
 
         // Only log once per session to avoid spam (skip for API requests without session)

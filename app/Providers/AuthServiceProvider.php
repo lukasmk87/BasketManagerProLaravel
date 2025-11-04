@@ -53,6 +53,11 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Skip during installation to prevent database access before migrations
+        if (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))) {
+            return;
+        }
+
         $this->registerPolicies();
 
         // Define additional gates for drill management

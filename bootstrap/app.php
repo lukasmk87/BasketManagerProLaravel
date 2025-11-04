@@ -85,11 +85,13 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // NOTE: Installation routes use 'install' middleware group (defined below) which is separate
+        // from 'web' middleware group. These middleware below have installation checks and skip for /install routes.
         $middleware->web(append: [
+            \App\Http\Middleware\RedirectIfNotInstalled::class, // FIRST: Check if app is installed before any other middleware
             \App\Http\Middleware\VerifyCsrfToken::class,
-            \App\Http\Middleware\RedirectIfNotInstalled::class, // Check if app is installed
-            \App\Http\Middleware\ResolveTenantMiddleware::class,
-            \App\Http\Middleware\ConfigureTenantStripe::class,
+            \App\Http\Middleware\ResolveTenantMiddleware::class, // Has installation check, uses lazy loading
+            \App\Http\Middleware\ConfigureTenantStripe::class, // Has installation check
             \App\Http\Middleware\LocalizationMiddleware::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,

@@ -136,6 +136,11 @@ class AppServiceProvider extends ServiceProvider
      */
     private function checkTenantSetup(): void
     {
+        // Skip if installation is in progress to prevent database access before migrations
+        if ($this->isInstalling()) {
+            return;
+        }
+
         // Skip check if running in console (migrations, seeders, etc.)
         // or if the request is for the tenant initialization itself
         if ($this->app->runningInConsole()) {
