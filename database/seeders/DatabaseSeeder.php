@@ -208,7 +208,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ],
             $trainer->id => [
-                'role' => 'coach',
+                'role' => 'trainer',
                 'joined_at' => now()->toDateString(),
                 'is_active' => true,
             ],
