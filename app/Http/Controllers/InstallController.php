@@ -99,7 +99,7 @@ class InstallController extends Controller
 
         return Inertia::render('Install/Requirements', [
             'appName' => $this->getAppName(),
-            'requirements' => $requirements,
+            'requirements' => $requirements['requirements'],
             'canProceed' => $requirements['satisfied'],
             'language' => session('install_language', 'de'),
         ]);
@@ -419,6 +419,10 @@ class InstallController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Admin creation validation failed', [
+                'errors' => $validator->errors()->toArray(),
+                'input' => $request->except('admin_password', 'admin_password_confirmation')
+            ]);
             return back()->withErrors($validator)->withInput();
         }
 
@@ -455,7 +459,26 @@ class InstallController extends Controller
 
             return back()->with('error', $result['message'] ?? __('install.admin_creation_failed'))->withInput();
         } catch (\Exception $e) {
-            return back()->with('error', __('install.admin_creation_failed').': '.$e->getMessage())->withInput();
+            \Log::error('Admin creation exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'input' => $request->except('admin_password', 'admin_password_confirmation')
+            ]);
+
+            // Provide more helpful error messages based on exception type
+            $errorMessage = __('install.admin_creation_failed') . ': ';
+
+            if (str_contains($e->getMessage(), 'Super Admin role not found')) {
+                $errorMessage .= 'Database roles were not seeded correctly. Please go back to the Database step and run migrations with seed option.';
+            } elseif (str_contains($e->getMessage(), 'Duplicate entry')) {
+                $errorMessage .= 'This email address is already registered. Please use a different email.';
+            } elseif (str_contains($e->getMessage(), 'connection') || str_contains($e->getMessage(), 'database')) {
+                $errorMessage .= 'Database connection failed. Please check your database configuration.';
+            } else {
+                $errorMessage .= $e->getMessage();
+            }
+
+            return back()->with('error', $errorMessage)->withInput();
         }
     }
 

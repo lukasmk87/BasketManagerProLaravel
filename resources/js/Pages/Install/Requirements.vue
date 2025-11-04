@@ -12,7 +12,44 @@
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ $t('php_version') }}</h3>
                 <div class="bg-gray-50 rounded-lg p-4">
-                    <RequirementRow :requirement="requirements.php_version" />
+                    <div class="flex items-center justify-between py-2">
+                        <div class="flex-1">
+                            <span class="font-medium text-gray-900">{{ requirements.php_version.name }}</span>
+                            <div class="text-sm text-gray-600">
+                                <span v-if="requirements.php_version.required">Required: {{ requirements.php_version.required }}</span>
+                                <span v-if="requirements.php_version.current"> | Current: {{ requirements.php_version.current }}</span>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 ml-4">
+                            <span
+                                v-if="requirements.php_version.status === 'success'"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                OK
+                            </span>
+                            <span
+                                v-else-if="requirements.php_version.status === 'warning'"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                Warning
+                            </span>
+                            <span
+                                v-else
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                                Error
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -20,11 +57,47 @@
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ $t('php_extensions') }}</h3>
                 <div class="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <RequirementRow
+                    <div
                         v-for="(ext, name) in requirements.extensions"
                         :key="name"
-                        :requirement="ext"
-                    />
+                        class="flex items-center justify-between py-2"
+                    >
+                        <div class="flex-1">
+                            <span class="font-medium text-gray-900">{{ ext.name }}</span>
+                            <div class="text-sm text-gray-600" v-if="ext.message">
+                                <span>{{ ext.message }}</span>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 ml-4">
+                            <span
+                                v-if="ext.status === 'success'"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                OK
+                            </span>
+                            <span
+                                v-else-if="ext.status === 'warning'"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                Warning
+                            </span>
+                            <span
+                                v-else
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                                Error
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -32,8 +105,85 @@
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ $t('php_configuration') }}</h3>
                 <div class="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <RequirementRow :requirement="requirements.memory_limit" />
-                    <RequirementRow :requirement="requirements.upload_max_filesize" />
+                    <!-- Memory Limit -->
+                    <div class="flex items-center justify-between py-2">
+                        <div class="flex-1">
+                            <span class="font-medium text-gray-900">{{ requirements.memory_limit.name }}</span>
+                            <div class="text-sm text-gray-600">
+                                <span v-if="requirements.memory_limit.required">Required: {{ requirements.memory_limit.required }}</span>
+                                <span v-if="requirements.memory_limit.current"> | Current: {{ requirements.memory_limit.current }}</span>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 ml-4">
+                            <span
+                                v-if="requirements.memory_limit.status === 'success'"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                OK
+                            </span>
+                            <span
+                                v-else-if="requirements.memory_limit.status === 'warning'"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                Warning
+                            </span>
+                            <span
+                                v-else
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                                Error
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Upload Max Filesize -->
+                    <div class="flex items-center justify-between py-2">
+                        <div class="flex-1">
+                            <span class="font-medium text-gray-900">{{ requirements.upload_max_filesize.name }}</span>
+                            <div class="text-sm text-gray-600">
+                                <span v-if="requirements.upload_max_filesize.required">Required: {{ requirements.upload_max_filesize.required }}</span>
+                                <span v-if="requirements.upload_max_filesize.current"> | Current: {{ requirements.upload_max_filesize.current }}</span>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 ml-4">
+                            <span
+                                v-if="requirements.upload_max_filesize.status === 'success'"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                OK
+                            </span>
+                            <span
+                                v-else-if="requirements.upload_max_filesize.status === 'warning'"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                Warning
+                            </span>
+                            <span
+                                v-else
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                                Error
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -122,65 +272,5 @@ const $t = (key) => {
         }
     };
     return translations[props.language]?.[key] || key;
-};
-</script>
-
-<script>
-// RequirementRow Component
-const RequirementRow = {
-    props: ['requirement'],
-    template: `
-        <div class="flex items-center justify-between py-2">
-            <div class="flex-1">
-                <span class="font-medium text-gray-900">{{ requirement.name }}</span>
-                <div class="text-sm text-gray-600">
-                    <!-- Show Required/Current for PHP Version, Memory, etc. -->
-                    <template v-if="requirement.required || requirement.current">
-                        <span v-if="requirement.required">Required: {{ requirement.required }}</span>
-                        <span v-if="requirement.current"> | Current: {{ requirement.current }}</span>
-                    </template>
-                    <!-- Show Message for Extensions, Functions, etc. -->
-                    <template v-else-if="requirement.message">
-                        <span>{{ requirement.message }}</span>
-                    </template>
-                </div>
-            </div>
-            <div class="flex-shrink-0 ml-4">
-                <span
-                    v-if="requirement.status === 'success'"
-                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
-                >
-                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                    OK
-                </span>
-                <span
-                    v-else-if="requirement.status === 'warning'"
-                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"
-                >
-                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                    Warning
-                </span>
-                <span
-                    v-else
-                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800"
-                >
-                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                    </svg>
-                    Error
-                </span>
-            </div>
-        </div>
-    `
-};
-
-export default {
-    components: {
-        RequirementRow
-    }
 };
 </script>

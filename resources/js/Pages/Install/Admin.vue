@@ -8,6 +8,29 @@
                 {{ $t('admin_description') }}
             </p>
 
+            <!-- Flash Error Message -->
+            <div v-if="$page.props.flash?.error" class="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg" role="alert">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                    <div>
+                        <p class="font-semibold">{{ $t('error_occurred') }}</p>
+                        <p class="text-sm mt-1">{{ $page.props.flash.error }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flash Success Message (for any success notifications) -->
+            <div v-if="$page.props.flash?.success" class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg" role="alert">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <p>{{ $page.props.flash.success }}</p>
+                </div>
+            </div>
+
             <form @submit.prevent="submit" class="space-y-6">
                 <!-- Tenant Name -->
                 <div>
@@ -323,7 +346,29 @@ const passwordStrength = computed(() => {
 });
 
 const submit = () => {
-    form.post(route('install.admin.create'));
+    console.log('🚀 Submitting admin creation form...');
+    console.log('Form data:', {
+        tenant_name: form.tenant_name,
+        admin_name: form.admin_name,
+        admin_email: form.admin_email,
+        subscription_tier: form.subscription_tier
+    });
+
+    form.post(route('install.admin.create'), {
+        onSuccess: (response) => {
+            console.log('✅ SUCCESS - Admin created successfully!');
+            console.log('Response:', response);
+            // Inertia.js will automatically handle the redirect to /install/complete
+        },
+        onError: (errors) => {
+            console.error('❌ ERROR - Installation failed:', errors);
+            console.error('Form errors:', form.errors);
+            // Errors are automatically bound to form.errors and displayed in template
+        },
+        onFinish: () => {
+            console.log('⏹️ Request finished, processing:', form.processing);
+        }
+    });
 };
 
 const $t = (key) => {
@@ -347,6 +392,7 @@ const $t = (key) => {
             hide_password: 'Passwort verbergen',
             subscription_tier_label: 'Subscription-Tier',
             subscription_tier_description: 'Wählen Sie Ihren Subscription-Plan (kann später geändert werden)',
+            error_occurred: 'Fehler bei der Installation',
             back: 'Zurück',
             finish: 'Installation abschließen'
         },
@@ -369,6 +415,7 @@ const $t = (key) => {
             hide_password: 'Hide password',
             subscription_tier_label: 'Subscription Tier',
             subscription_tier_description: 'Choose your subscription plan (can be changed later)',
+            error_occurred: 'Installation Error',
             back: 'Back',
             finish: 'Finish Installation'
         }

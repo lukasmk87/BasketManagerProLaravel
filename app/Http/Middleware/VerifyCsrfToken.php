@@ -16,6 +16,7 @@ class VerifyCsrfToken extends Middleware
         // For example: webhook endpoints
         'webhooks/*',
         'api/*', // API routes should use Sanctum instead
+        'install/*', // Installation routes (protected by PreventInstalledAccess middleware)
     ];
 
     /**
