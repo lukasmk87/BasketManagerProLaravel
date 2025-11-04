@@ -16,8 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function () {
-            // Installation routes (MUST BE FIRST - no tenant/auth middleware)
-            \Illuminate\Support\Facades\Route::middleware('web')
+            // Installation routes (MUST BE FIRST - uses array-based sessions, no database dependency)
+            \Illuminate\Support\Facades\Route::middleware('install')
                 ->group(base_path('routes/install.php'));
 
             // Register WEB routes FIRST to ensure they take precedence
@@ -100,11 +100,22 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Http\Middleware\HandleCors::class,
         ]);
-        
+
         $middleware->api(append: [
             \App\Http\Middleware\ResolveTenantMiddleware::class,
             \App\Http\Middleware\ConfigureTenantStripe::class,
             \App\Http\Middleware\ApiVersioningMiddleware::class,
+        ]);
+
+        // Installation middleware group - Uses array-based sessions (no database dependency)
+        // before migrations run. InstallationSessionMiddleware forces 'array' session driver.
+        $middleware->group('install', [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \App\Http\Middleware\InstallationSessionMiddleware::class, // MUST run before StartSession
+            \Illuminate\Session\Middleware\StartSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         ]);
 
         // Register middleware aliases

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['web', 'guest', 'throttle:60,1', 'prevent.installed'])
+Route::middleware(['guest', 'throttle:60,1', 'prevent.installed'])
     ->prefix('install')
     ->name('install.')
     ->group(function () {
