@@ -10,16 +10,23 @@
 
             <!-- Tabs -->
             <div class="border-b border-gray-200 mb-6">
-                <nav class="-mb-px flex space-x-8">
+                <nav class="-mb-px flex space-x-8" role="tablist" aria-label="Environment configuration tabs">
                     <button
                         v-for="tab in tabs"
                         :key="tab.id"
+                        :id="`tab-${tab.id}`"
+                        type="button"
+                        role="tab"
+                        :aria-selected="activeTab === tab.id"
+                        :aria-controls="`panel-${tab.id}`"
+                        :tabindex="activeTab === tab.id ? 0 : -1"
                         @click="activeTab = tab.id"
+                        @keydown="handleTabKeydown($event, tab.id)"
                         :class="[
                             activeTab === tab.id
                                 ? 'border-orange-500 text-orange-600'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
+                            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-t'
                         ]"
                     >
                         {{ tab.icon }} {{ $t(tab.label) }}
@@ -29,7 +36,15 @@
 
             <form @submit.prevent="submit">
                 <!-- Application Tab -->
-                <div v-show="activeTab === 'application'" class="space-y-4">
+                <div
+                    v-show="activeTab === 'application'"
+                    id="panel-application"
+                    role="tabpanel"
+                    aria-labelledby="tab-application"
+                    :aria-hidden="activeTab !== 'application'"
+                    tabindex="0"
+                    class="space-y-4"
+                >
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             {{ $t('app_name_label') }} <span class="text-red-500">*</span>
@@ -89,7 +104,15 @@
                 </div>
 
                 <!-- Database Tab -->
-                <div v-show="activeTab === 'database'" class="space-y-4">
+                <div
+                    v-show="activeTab === 'database'"
+                    id="panel-database"
+                    role="tabpanel"
+                    aria-labelledby="tab-database"
+                    :aria-hidden="activeTab !== 'database'"
+                    tabindex="0"
+                    class="space-y-4"
+                >
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             {{ $t('db_connection_label') }} <span class="text-red-500">*</span>
@@ -164,15 +187,20 @@
                     </div>
 
                     <div v-if="form.db_connection !== 'sqlite'">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label for="db_password" class="block text-sm font-medium text-gray-700 mb-1">
                             {{ $t('db_password_label') }}
                         </label>
                         <input
+                            id="db_password"
                             v-model="form.db_password"
                             type="password"
+                            name="db_password"
+                            autocomplete="off"
+                            :aria-invalid="!!form.errors.db_password"
+                            :aria-describedby="form.errors.db_password ? 'db_password_error' : null"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         />
-                        <p v-if="form.errors.db_password" class="mt-1 text-sm text-red-600">{{ form.errors.db_password }}</p>
+                        <p v-if="form.errors.db_password" id="db_password_error" role="alert" class="mt-1 text-sm text-red-600">{{ form.errors.db_password }}</p>
                     </div>
 
                     <!-- Database Creation Help -->
@@ -227,7 +255,15 @@
                 </div>
 
                 <!-- Mail Tab -->
-                <div v-show="activeTab === 'mail'" class="space-y-4">
+                <div
+                    v-show="activeTab === 'mail'"
+                    id="panel-mail"
+                    role="tabpanel"
+                    aria-labelledby="tab-mail"
+                    :aria-hidden="activeTab !== 'mail'"
+                    tabindex="0"
+                    class="space-y-4"
+                >
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <p class="text-sm text-blue-800">
                             ℹ️ {{ $t('mail_configuration_optional') }}
@@ -288,14 +324,20 @@
                     </div>
 
                     <div v-if="form.mail_mailer === 'smtp'">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label for="mail_password" class="block text-sm font-medium text-gray-700 mb-1">
                             {{ $t('mail_password_label') }}
                         </label>
                         <input
+                            id="mail_password"
                             v-model="form.mail_password"
                             type="password"
+                            name="mail_password"
+                            autocomplete="off"
+                            :aria-invalid="!!form.errors.mail_password"
+                            :aria-describedby="form.errors.mail_password ? 'mail_password_error' : null"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         />
+                        <p v-if="form.errors.mail_password" id="mail_password_error" role="alert" class="mt-1 text-sm text-red-600">{{ form.errors.mail_password }}</p>
                     </div>
 
                     <div v-if="form.mail_mailer === 'smtp'">
@@ -337,7 +379,15 @@
                 </div>
 
                 <!-- Stripe Tab -->
-                <div v-show="activeTab === 'stripe'" class="space-y-4">
+                <div
+                    v-show="activeTab === 'stripe'"
+                    id="panel-stripe"
+                    role="tabpanel"
+                    aria-labelledby="tab-stripe"
+                    :aria-hidden="activeTab !== 'stripe'"
+                    tabindex="0"
+                    class="space-y-4"
+                >
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <p class="text-sm text-blue-800">
                             ℹ️ {{ $t('stripe_configuration_optional') }}
@@ -358,28 +408,39 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label for="stripe_secret" class="block text-sm font-medium text-gray-700 mb-1">
                             {{ $t('stripe_secret_label') }}
                         </label>
                         <input
+                            id="stripe_secret"
                             v-model="form.stripe_secret"
                             type="password"
+                            name="stripe_secret"
+                            autocomplete="off"
+                            :aria-invalid="!!form.errors.stripe_secret"
+                            :aria-describedby="form.errors.stripe_secret ? 'stripe_secret_error' : null"
                             :placeholder="$t('stripe_secret_placeholder')"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
                         />
-                        <p v-if="form.errors.stripe_secret" class="mt-1 text-sm text-red-600">{{ form.errors.stripe_secret }}</p>
+                        <p v-if="form.errors.stripe_secret" id="stripe_secret_error" role="alert" class="mt-1 text-sm text-red-600">{{ form.errors.stripe_secret }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label for="stripe_webhook_secret" class="block text-sm font-medium text-gray-700 mb-1">
                             {{ $t('stripe_webhook_label') }}
                         </label>
                         <input
+                            id="stripe_webhook_secret"
                             v-model="form.stripe_webhook_secret"
                             type="password"
+                            name="stripe_webhook_secret"
+                            autocomplete="off"
+                            :aria-invalid="!!form.errors.stripe_webhook_secret"
+                            :aria-describedby="form.errors.stripe_webhook_secret ? 'stripe_webhook_secret_error' : null"
                             :placeholder="$t('stripe_webhook_placeholder')"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
                         />
+                        <p v-if="form.errors.stripe_webhook_secret" id="stripe_webhook_secret_error" role="alert" class="mt-1 text-sm text-red-600">{{ form.errors.stripe_webhook_secret }}</p>
                     </div>
 
                     <div v-if="form.stripe_key && form.stripe_secret">
@@ -450,12 +511,66 @@ const testingStripe = ref(false);
 const databaseTestResult = ref(null);
 const stripeTestResult = ref(null);
 
+// Password visibility toggles
+const showDbPassword = ref(false);
+const showMailPassword = ref(false);
+const showStripeSecret = ref(false);
+const showStripeWebhookSecret = ref(false);
+
 const tabs = [
     { id: 'application', label: 'tab_application', icon: '⚙️' },
     { id: 'database', label: 'tab_database', icon: '🗄️' },
     { id: 'mail', label: 'tab_mail', icon: '📧' },
     { id: 'stripe', label: 'tab_stripe', icon: '💳' }
 ];
+
+// Keyboard navigation for tabs (ARIA pattern)
+const handleTabKeydown = (event, tabId) => {
+    const currentIndex = tabs.findIndex(tab => tab.id === tabId);
+    let nextIndex;
+
+    switch (event.key) {
+        case 'ArrowRight':
+            event.preventDefault();
+            nextIndex = (currentIndex + 1) % tabs.length;
+            activeTab.value = tabs[nextIndex].id;
+            document.getElementById(`tab-${tabs[nextIndex].id}`)?.focus();
+            break;
+        case 'ArrowLeft':
+            event.preventDefault();
+            nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+            activeTab.value = tabs[nextIndex].id;
+            document.getElementById(`tab-${tabs[nextIndex].id}`)?.focus();
+            break;
+        case 'Home':
+            event.preventDefault();
+            activeTab.value = tabs[0].id;
+            document.getElementById(`tab-${tabs[0].id}`)?.focus();
+            break;
+        case 'End':
+            event.preventDefault();
+            activeTab.value = tabs[tabs.length - 1].id;
+            document.getElementById(`tab-${tabs[tabs.length - 1].id}`)?.focus();
+            break;
+    }
+};
+
+const togglePasswordVisibility = (field) => {
+    switch (field) {
+        case 'db_password':
+            showDbPassword.value = !showDbPassword.value;
+            break;
+        case 'mail_password':
+            showMailPassword.value = !showMailPassword.value;
+            break;
+        case 'stripe_secret':
+            showStripeSecret.value = !showStripeSecret.value;
+            break;
+        case 'stripe_webhook_secret':
+            showStripeWebhookSecret.value = !showStripeWebhookSecret.value;
+            break;
+    }
+};
 
 const form = useForm({
     app_name: props.currentEnv.app_name,

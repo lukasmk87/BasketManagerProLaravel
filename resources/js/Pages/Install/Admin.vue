@@ -11,72 +11,112 @@
             <form @submit.prevent="submit" class="space-y-6">
                 <!-- Tenant Name -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ $t('tenant_name_label') }} <span class="text-red-500">*</span>
+                    <label for="tenant_name" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ $t('tenant_name_label') }} <span class="text-red-500" aria-label="required">*</span>
                     </label>
                     <input
+                        id="tenant_name"
                         v-model="form.tenant_name"
                         type="text"
+                        name="tenant_name"
                         required
+                        aria-required="true"
+                        :aria-invalid="!!form.errors.tenant_name"
+                        :aria-describedby="form.errors.tenant_name ? 'tenant_name_error' : null"
                         :placeholder="$t('tenant_name_placeholder')"
+                        autocomplete="organization"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
-                    <p v-if="form.errors.tenant_name" class="mt-1 text-sm text-red-600">{{ form.errors.tenant_name }}</p>
+                    <p v-if="form.errors.tenant_name" id="tenant_name_error" role="alert" class="mt-1 text-sm text-red-600">{{ form.errors.tenant_name }}</p>
                 </div>
 
                 <!-- Admin Name -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ $t('admin_name_label') }} <span class="text-red-500">*</span>
+                    <label for="admin_name" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ $t('admin_name_label') }} <span class="text-red-500" aria-label="required">*</span>
                     </label>
                     <input
+                        id="admin_name"
                         v-model="form.admin_name"
                         type="text"
+                        name="admin_name"
                         required
+                        aria-required="true"
+                        :aria-invalid="!!form.errors.admin_name"
+                        :aria-describedby="form.errors.admin_name ? 'admin_name_error' : null"
                         :placeholder="$t('admin_name_placeholder')"
+                        autocomplete="name"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
-                    <p v-if="form.errors.admin_name" class="mt-1 text-sm text-red-600">{{ form.errors.admin_name }}</p>
+                    <p v-if="form.errors.admin_name" id="admin_name_error" role="alert" class="mt-1 text-sm text-red-600">{{ form.errors.admin_name }}</p>
                 </div>
 
                 <!-- Admin Email -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ $t('admin_email_label') }} <span class="text-red-500">*</span>
+                    <label for="admin_email" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ $t('admin_email_label') }} <span class="text-red-500" aria-label="required">*</span>
                     </label>
                     <input
+                        id="admin_email"
                         v-model="form.admin_email"
                         type="email"
+                        name="admin_email"
                         required
+                        aria-required="true"
+                        :aria-invalid="!!form.errors.admin_email"
+                        :aria-describedby="form.errors.admin_email ? 'admin_email_error' : null"
                         :placeholder="$t('admin_email_placeholder')"
+                        autocomplete="email"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
-                    <p v-if="form.errors.admin_email" class="mt-1 text-sm text-red-600">{{ form.errors.admin_email }}</p>
+                    <p v-if="form.errors.admin_email" id="admin_email_error" role="alert" class="mt-1 text-sm text-red-600">{{ form.errors.admin_email }}</p>
                 </div>
 
                 <!-- Admin Password -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ $t('admin_password_label') }} <span class="text-red-500">*</span>
+                    <label for="admin_password" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ $t('admin_password_label') }} <span class="text-red-500" aria-label="required">*</span>
                     </label>
-                    <input
-                        v-model="form.admin_password"
-                        type="password"
-                        required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                        @input="checkPasswordStrength"
-                    />
-                    <p v-if="form.errors.admin_password" class="mt-1 text-sm text-red-600">{{ form.errors.admin_password }}</p>
+                    <div class="relative">
+                        <input
+                            id="admin_password"
+                            v-model="form.admin_password"
+                            :type="showPassword ? 'text' : 'password'"
+                            name="admin_password"
+                            required
+                            aria-required="true"
+                            :aria-invalid="!!form.errors.admin_password"
+                            :aria-describedby="form.errors.admin_password ? 'admin_password_error' : 'password_strength_meter'"
+                            autocomplete="new-password"
+                            class="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            @input="checkPasswordStrength"
+                        />
+                        <button
+                            type="button"
+                            @click="togglePasswordVisibility('password')"
+                            :aria-label="showPassword ? $t('hide_password') : $t('show_password')"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded p-1"
+                        >
+                            <svg v-if="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p v-if="form.errors.admin_password" id="admin_password_error" role="alert" class="mt-1 text-sm text-red-600">{{ form.errors.admin_password }}</p>
 
                     <!-- Password Strength Meter -->
-                    <div v-if="form.admin_password" class="mt-2">
+                    <div v-if="form.admin_password" id="password_strength_meter" class="mt-2" role="status" aria-live="polite">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs text-gray-600">{{ $t('password_strength') }}</span>
                             <span class="text-xs font-semibold" :class="passwordStrength.color">
                                 {{ $t(passwordStrength.label) }}
                             </span>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2" role="progressbar" :aria-valuenow="passwordStrength.width" aria-valuemin="0" aria-valuemax="100" :aria-label="$t('password_strength') + ': ' + $t(passwordStrength.label)">
                             <div
                                 class="h-2 rounded-full transition-all duration-300"
                                 :class="passwordStrength.bgColor"
@@ -88,15 +128,38 @@
 
                 <!-- Password Confirmation -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ $t('admin_password_confirm_label') }} <span class="text-red-500">*</span>
+                    <label for="admin_password_confirmation" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ $t('admin_password_confirm_label') }} <span class="text-red-500" aria-label="required">*</span>
                     </label>
-                    <input
-                        v-model="form.admin_password_confirmation"
-                        type="password"
-                        required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    />
+                    <div class="relative">
+                        <input
+                            id="admin_password_confirmation"
+                            v-model="form.admin_password_confirmation"
+                            :type="showPasswordConfirmation ? 'text' : 'password'"
+                            name="admin_password_confirmation"
+                            required
+                            aria-required="true"
+                            :aria-invalid="!!form.errors.admin_password_confirmation"
+                            :aria-describedby="form.errors.admin_password_confirmation ? 'admin_password_confirmation_error' : null"
+                            autocomplete="new-password"
+                            class="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        />
+                        <button
+                            type="button"
+                            @click="togglePasswordVisibility('confirmation')"
+                            :aria-label="showPasswordConfirmation ? $t('hide_password') : $t('show_password')"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded p-1"
+                        >
+                            <svg v-if="!showPasswordConfirmation" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p v-if="form.errors.admin_password_confirmation" id="admin_password_confirmation_error" role="alert" class="mt-1 text-sm text-red-600">{{ form.errors.admin_password_confirmation }}</p>
                 </div>
 
                 <!-- Subscription Tier -->
@@ -197,6 +260,18 @@ const form = useForm({
     subscription_tier: 'professional'
 });
 
+// Password visibility toggles
+const showPassword = ref(false);
+const showPasswordConfirmation = ref(false);
+
+const togglePasswordVisibility = (field) => {
+    if (field === 'password') {
+        showPassword.value = !showPassword.value;
+    } else if (field === 'confirmation') {
+        showPasswordConfirmation.value = !showPasswordConfirmation.value;
+    }
+};
+
 // Auto-fill tenant name with app name when component mounts
 onMounted(() => {
     // Only auto-fill if tenant_name is empty and appName is not the default
@@ -268,6 +343,8 @@ const $t = (key) => {
             password_weak: 'Schwach',
             password_medium: 'Mittel',
             password_strong: 'Stark',
+            show_password: 'Passwort anzeigen',
+            hide_password: 'Passwort verbergen',
             subscription_tier_label: 'Subscription-Tier',
             subscription_tier_description: 'Wählen Sie Ihren Subscription-Plan (kann später geändert werden)',
             back: 'Zurück',
@@ -288,6 +365,8 @@ const $t = (key) => {
             password_weak: 'Weak',
             password_medium: 'Medium',
             password_strong: 'Strong',
+            show_password: 'Show password',
+            hide_password: 'Hide password',
             subscription_tier_label: 'Subscription Tier',
             subscription_tier_description: 'Choose your subscription plan (can be changed later)',
             back: 'Back',

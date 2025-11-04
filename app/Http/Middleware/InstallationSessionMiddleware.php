@@ -9,9 +9,10 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Installation Session Middleware
  *
- * Forces the session driver to use 'array' (in-memory) sessions during installation
- * to avoid database dependency before migrations are run. This prevents the HTTP 500
- * error caused by StartSession middleware trying to access the non-existent 'sessions' table.
+ * Forces the session driver to use 'file' sessions during installation
+ * to avoid database dependency before migrations are run. File sessions persist
+ * between requests (unlike 'array' sessions) allowing CSRF tokens and session data
+ * to work correctly. This prevents HTTP 500 and HTTP 419 CSRF errors.
  */
 class InstallationSessionMiddleware
 {
@@ -22,8 +23,8 @@ class InstallationSessionMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Force array-based sessions during installation (no database dependency)
-        config(['session.driver' => 'array']);
+        // Force file-based sessions during installation (persists between requests, no database dependency)
+        config(['session.driver' => 'file']);
 
         return $next($request);
     }

@@ -34,6 +34,11 @@ Route::get('/roadmap', function () {
     return view('roadmap');
 })->name('roadmap');
 
+// CSRF Token Endpoint (for frontend token refresh)
+Route::get('/api/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->middleware('web');
+
 // Legal Pages (public)
 Route::get('/{localizedSlug}', [\App\Http\Controllers\LegalPageController::class, 'show'])
     ->where('localizedSlug', 'datenschutz|agb|impressum|gdpr')
