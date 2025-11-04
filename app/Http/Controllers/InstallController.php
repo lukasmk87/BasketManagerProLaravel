@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\Install\RequirementChecker;
 use App\Services\Install\PermissionChecker;
 use App\Services\Install\EnvironmentManager;
@@ -10,6 +11,7 @@ use App\Services\Install\StripeValidator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -441,6 +443,16 @@ class InstallController extends Controller
                 // Mark installation as complete
                 $this->installationService->markAsInstalled();
 
+                // Automatically log in the Super Admin
+                $user = User::where('email', $request->admin_email)->first();
+                if ($user) {
+                    Auth::login($user);
+                    \Log::info('Super Admin automatically logged in after installation', [
+                        'user_id' => $user->id,
+                        'email' => $user->email
+                    ]);
+                }
+
                 // Clear installation session data
                 session()->forget([
                     'install_language',
@@ -504,7 +516,7 @@ class InstallController extends Controller
         return Inertia::render('Install/Complete', [
             'appName' => $this->getAppName(),
             'adminEmail' => $adminEmail,
-            'loginUrl' => route('login'),
+            'dashboardUrl' => route('dashboard'),
             'language' => app()->getLocale(),
         ]);
     }

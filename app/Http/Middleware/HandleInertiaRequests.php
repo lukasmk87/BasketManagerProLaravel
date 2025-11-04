@@ -43,6 +43,9 @@ class HandleInertiaRequests extends Middleware
                 'csrf_token' => fn () => csrf_token(),
                 'auth' => ['user' => null],
                 'currentClub' => null,
+                'jetstream' => [
+                    'hasEmailVerification' => false,  // Disable email verification during installation
+                ],
                 'flash' => [
                     'success' => fn () => $request->session()->get('success'),
                     'error' => fn () => $request->session()->get('error'),

@@ -154,6 +154,33 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // ============================
+    // EMAIL VERIFICATION
+    // ============================
+
+    /**
+     * Determine if the user has verified their email address.
+     * Override Laravel's default implementation to correctly check email_verified_at.
+     *
+     * @return bool
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        return ! is_null($this->email_verified_at);
+    }
+
+    /**
+     * Mark the given user's email as verified.
+     *
+     * @return bool
+     */
+    public function markEmailAsVerified(): bool
+    {
+        return $this->forceFill([
+            'email_verified_at' => $this->freshTimestamp(),
+        ])->save();
+    }
+
+    // ============================
     // RELATIONSHIPS
     // ============================
 
