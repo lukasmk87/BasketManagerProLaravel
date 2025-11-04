@@ -355,11 +355,8 @@ const submit = () => {
     });
 
     form.post(route('install.admin.create'), {
-        onSuccess: (response) => {
-            console.log('✅ SUCCESS - Admin created successfully!');
-            console.log('Response:', response);
-            // Inertia.js will automatically handle the redirect to /install/complete
-        },
+        // onSuccess callback removed to allow Inertia.js automatic redirect handling
+        // When no onSuccess is defined, Inertia.js automatically follows redirects
         onError: (errors) => {
             console.error('❌ ERROR - Installation failed:', errors);
             console.error('Form errors:', form.errors);
