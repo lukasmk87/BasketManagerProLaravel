@@ -6,16 +6,19 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <!-- SEO Meta Tags -->
-    <title>{{ app_name() }} - Die All-in-One Basketball Vereinsverwaltung</title>
-    <meta name="description" content="Professionelle Basketball-Vereinsverwaltung mit Live-Scoring, Spieler-Management, Training-Tools und mehr. 20% günstiger als die Konkurrenz. Jetzt kostenlos testen!">
-    <meta name="keywords" content="Basketball, Vereinsverwaltung, Live Scoring, Basketball Software, Basketball App, Team Management">
+    <title>{{ $content['seo']['title'] ?? app_name() . ' - Die All-in-One Basketball Vereinsverwaltung' }}</title>
+    <meta name="description" content="{{ $content['seo']['description'] ?? 'Professionelle Basketball-Vereinsverwaltung mit Live-Scoring, Spieler-Management, Training-Tools und mehr.' }}">
+    <meta name="keywords" content="{{ $content['seo']['keywords'] ?? 'Basketball, Vereinsverwaltung, Live Scoring, Basketball Software, Basketball App, Team Management' }}">
     <meta name="author" content="{{ app_name() }}">
-    
+
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ app_name() }} - Die All-in-One Basketball Vereinsverwaltung">
-    <meta property="og:description" content="Professionelle Basketball-Vereinsverwaltung mit Live-Scoring, Spieler-Management, Training-Tools und mehr.">
+    <meta property="og:title" content="{{ $content['seo']['title'] ?? app_name() . ' - Die All-in-One Basketball Vereinsverwaltung' }}">
+    <meta property="og:description" content="{{ $content['seo']['description'] ?? 'Professionelle Basketball-Vereinsverwaltung mit Live-Scoring, Spieler-Management, Training-Tools und mehr.' }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url('/') }}">
+    @if(!empty($content['seo']['og_image']))
+    <meta property="og:image" content="{{ asset($content['seo']['og_image']) }}">
+    @endif
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -164,41 +167,40 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center animate-fade-in-up">
                 <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                    Die All-in-One<br>
-                    <span class="text-orange-600">Basketball</span><br>
-                    Vereinsverwaltung
+                    {!! nl2br(e($content['hero']['headline'] ?? 'Die All-in-One Basketball Vereinsverwaltung')) !!}
                 </h1>
                 <p class="text-xl md:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto">
-                    Professionelles Team-Management, Live-Scoring, Training-Tools und mehr. 
-                    20% günstiger als die Konkurrenz. GDPR-konform und Made in Germany.
+                    {{ $content['hero']['subheadline'] ?? 'Professionelles Team-Management, Live-Scoring, Training-Tools und mehr. 20% günstiger als die Konkurrenz. GDPR-konform und Made in Germany.' }}
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="{{ route('register') }}" class="bg-white text-orange-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-orange-50 transition-colors shadow-lg">
-                        🚀 Kostenlos testen (30 Tage)
+                    <a href="{{ $content['hero']['cta_primary_link'] ?? route('register') }}" class="bg-white text-orange-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-orange-50 transition-colors shadow-lg">
+                        {{ $content['hero']['cta_primary_text'] ?? '🚀 Kostenlos testen' }}
                     </a>
-                    <a href="#demo" class="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-white hover:text-orange-600 transition-colors">
-                        📹 Demo ansehen
+                    @if(!empty($content['hero']['cta_secondary_text']))
+                    <a href="{{ $content['hero']['cta_secondary_link'] ?? '#demo' }}" class="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-white hover:text-orange-600 transition-colors">
+                        {{ $content['hero']['cta_secondary_text'] }}
                     </a>
+                    @endif
                 </div>
             </div>
-            
+
             <!-- Hero Stats -->
             <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                 <div class="text-gray-900">
-                    <div class="text-3xl md:text-4xl font-bold">500+</div>
-                    <div class="text-gray-600">Vereine</div>
+                    <div class="text-3xl md:text-4xl font-bold">{{ $content['hero']['stats']['clubs'] ?? '500+' }}</div>
+                    <div class="text-gray-600">{{ $content['hero']['stats_labels']['clubs'] ?? 'Vereine' }}</div>
                 </div>
                 <div class="text-gray-900">
-                    <div class="text-3xl md:text-4xl font-bold">2000+</div>
-                    <div class="text-gray-600">Teams</div>
+                    <div class="text-3xl md:text-4xl font-bold">{{ $content['hero']['stats']['teams'] ?? '2.000+' }}</div>
+                    <div class="text-gray-600">{{ $content['hero']['stats_labels']['teams'] ?? 'Teams' }}</div>
                 </div>
                 <div class="text-gray-900">
-                    <div class="text-3xl md:text-4xl font-bold">15000+</div>
-                    <div class="text-gray-600">Spieler</div>
+                    <div class="text-3xl md:text-4xl font-bold">{{ $content['hero']['stats']['players'] ?? '15.000+' }}</div>
+                    <div class="text-gray-600">{{ $content['hero']['stats_labels']['players'] ?? 'Spieler' }}</div>
                 </div>
                 <div class="text-gray-900">
-                    <div class="text-3xl md:text-4xl font-bold">99.9%</div>
-                    <div class="text-gray-600">Uptime</div>
+                    <div class="text-3xl md:text-4xl font-bold">{{ $content['hero']['stats']['uptime'] ?? '99,9%' }}</div>
+                    <div class="text-gray-600">{{ $content['hero']['stats_labels']['uptime'] ?? 'Verfügbarkeit' }}</div>
                 </div>
             </div>
         </div>

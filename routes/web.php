@@ -16,9 +16,17 @@ Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
-    
-    // Show landing page for guests
-    return view('landing');
+
+    // Load landing page content from database
+    $landingPageService = app(\App\Services\LandingPageService::class);
+    $tenantId = null; // TODO: Get tenant ID from domain/subdomain if multi-tenant
+
+    $content = $landingPageService->getAllContent($tenantId);
+
+    // Show landing page for guests with dynamic content
+    return view('landing', [
+        'content' => $content,
+    ]);
 })->name('landing');
 
 Route::get('/welcome', function () {
@@ -248,6 +256,20 @@ Route::middleware([
         Route::get('/legal-pages', [\App\Http\Controllers\LegalPageController::class, 'index'])->name('legal-pages.index');
         Route::get('/legal-pages/{page}/edit', [\App\Http\Controllers\LegalPageController::class, 'edit'])->name('legal-pages.edit');
         Route::put('/legal-pages/{page}', [\App\Http\Controllers\LegalPageController::class, 'update'])->name('legal-pages.update');
+
+        // Landing Page Management
+        Route::prefix('landing-page')->name('landing-page.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\LandingPageController::class, 'index'])->name('index');
+            Route::get('/{section}/edit', [\App\Http\Controllers\LandingPageController::class, 'edit'])->name('edit');
+            Route::put('/{section}', [\App\Http\Controllers\LandingPageController::class, 'update'])->name('update');
+            Route::post('/{section}/publish', [\App\Http\Controllers\LandingPageController::class, 'publish'])->name('publish');
+            Route::post('/{section}/unpublish', [\App\Http\Controllers\LandingPageController::class, 'unpublish'])->name('unpublish');
+            Route::get('/{section}/preview', [\App\Http\Controllers\LandingPageController::class, 'preview'])->name('preview');
+
+            // Image Upload
+            Route::post('/upload-image', [\App\Http\Controllers\FileUploadController::class, 'uploadImage'])->name('upload-image');
+            Route::delete('/delete-image/{filename}', [\App\Http\Controllers\FileUploadController::class, 'deleteImage'])->name('delete-image');
+        });
     });
     
     // Gym Management Routes

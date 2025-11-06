@@ -144,6 +144,9 @@ class RoleAndPermissionSeeder extends Seeder
             // Legal Pages Management
             'manage legal pages',
 
+            // Landing Page Management
+            'manage landing page',
+
             // Subscription & Tenant Management
             'manage-subscriptions',
             'view tenant subscriptions',
@@ -246,6 +249,9 @@ class RoleAndPermissionSeeder extends Seeder
             // Legal Pages
             'manage legal pages',
 
+            // Landing Page
+            'manage landing page',
+
             // Subscription Management
             'manage-subscriptions', 'view tenant subscriptions', 'edit tenant subscriptions', 'manage subscription plans',
 
@@ -307,6 +313,9 @@ class RoleAndPermissionSeeder extends Seeder
             
             // Financial
             'view financial data', 'manage budgets', 'generate financial reports',
+
+            // Landing Page (own tenant only)
+            'manage landing page',
 
             // Club Subscription Plans (limited - only for their tenant)
             'view club subscription plans', 'create club subscription plans',

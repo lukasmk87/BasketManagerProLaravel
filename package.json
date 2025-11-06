@@ -25,9 +25,12 @@
     "dependencies": {
         "@heroicons/vue": "^2.2.0",
         "@stripe/stripe-js": "^8.2.0",
+        "@vueuse/core": "^14.0.0",
         "chart.js": "^4.5.0",
         "date-fns": "^4.1.0",
         "laravel-echo": "^2.1.7",
-        "pusher-js": "^8.4.0"
+        "pusher-js": "^8.4.0",
+        "sortablejs": "^1.15.6",
+        "vue-draggable-plus": "^0.6.0"
     }
 }
