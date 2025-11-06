@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('landing_page_contents', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignUuid('tenant_id')->nullable()->constrained('tenants')->onDelete('cascade');
             $table->string('section'); // hero, features, pricing, testimonials, faq, cta, footer, seo
             $table->json('content'); // Structured content data
             $table->boolean('is_published')->default(false);
