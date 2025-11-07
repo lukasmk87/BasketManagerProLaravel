@@ -246,9 +246,9 @@ class InstallationService
                 ],
             ]);
 
-            // Create Super Admin user
+            // Create Super Admin user (system-level user, NOT bound to any tenant)
             $user = User::create([
-                'tenant_id' => $tenant->id, // Link user to tenant via direct relationship
+                'tenant_id' => null, // ✅ Super Admins are tenant-independent (can manage ALL tenants)
                 'name' => $data['admin_name'],
                 'email' => $data['admin_email'],
                 'password' => Hash::make($data['admin_password']),

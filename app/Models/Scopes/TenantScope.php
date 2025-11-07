@@ -13,6 +13,12 @@ class TenantScope implements Scope
      */
     public function apply(Builder $builder, Model $model): void
     {
+        // ✅ SKIP tenant filtering for Super Admins (system users, tenant_id = NULL)
+        // Super Admins should see ALL data across ALL tenants
+        if (auth()->check() && auth()->user()->hasRole('super_admin')) {
+            return; // Bypass tenant scope entirely
+        }
+
         // Only apply tenant scope if tenant is set and model has tenant_id column
         $tenant = app()->bound('tenant') ? app('tenant') : null;
 

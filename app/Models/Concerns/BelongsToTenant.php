@@ -19,6 +19,12 @@ trait BelongsToTenant
         // Automatically set tenant_id when creating new models
         static::creating(function ($model) {
             if (empty($model->tenant_id)) {
+                // ✅ SKIP auto-assignment for Super Admins (they must explicitly set tenant_id)
+                // Super Admins are system users and should manually specify which tenant to use
+                if (auth()->check() && auth()->user()->hasRole('super_admin')) {
+                    return; // Super Admins don't get automatic tenant assignment
+                }
+
                 $tenant = app()->bound('tenant') ? app('tenant') : null;
                 if ($tenant) {
                     $model->tenant_id = $tenant->id;

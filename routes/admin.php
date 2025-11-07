@@ -34,6 +34,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('tenants/{tenant}', [TenantSubscriptionController::class, 'update'])->name('tenants.update');
     Route::delete('tenants/{tenant}', [TenantSubscriptionController::class, 'destroy'])->name('tenants.destroy');
 
+    // Tenant Selection for Super Admin Filtering
+    Route::post('select-tenant/{tenant}', [TenantSubscriptionController::class, 'selectTenant'])->name('select-tenant');
+    Route::delete('clear-tenant', [TenantSubscriptionController::class, 'clearTenantSelection'])->name('clear-tenant');
+
     // Tenant Subscription & Limits Management
     Route::put('tenants/{tenant}/subscription', [TenantSubscriptionController::class, 'updateSubscription'])->name('tenants.subscription.update');
     Route::put('tenants/{tenant}/limits', [TenantSubscriptionController::class, 'updateLimits'])->name('tenants.limits.update');

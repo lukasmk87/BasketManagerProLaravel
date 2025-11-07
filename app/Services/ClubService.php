@@ -27,7 +27,15 @@ class ClubService
 
             // Set tenant_id from current tenant context if not provided
             if (empty($data['tenant_id'])) {
-                // Try to get tenant from app container
+                // ✅ Super Admins MUST explicitly specify tenant_id (no auto-assignment)
+                if (auth()->check() && auth()->user()->hasRole('super_admin')) {
+                    throw new \InvalidArgumentException(
+                        'Super Admins must explicitly specify tenant_id when creating clubs. ' .
+                        'Please provide tenant_id in the data array.'
+                    );
+                }
+
+                // For regular users, try to get tenant from app container
                 $tenant = app()->bound('tenant') ? app('tenant') : null;
 
                 if ($tenant) {

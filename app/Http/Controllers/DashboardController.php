@@ -64,12 +64,19 @@ class DashboardController extends Controller
 
     /**
      * Get admin-specific dashboard data.
+     *
+     * Note: For Super Admins, all queries automatically bypass TenantScope
+     * and return data from ALL tenants. For regular Admins, queries are
+     * automatically scoped to their current tenant.
      */
     public function getAdminDashboard(User $user): array
     {
         try {
             $systemStats = $this->userService->getUserStatistics();
 
+            // ✅ All queries below automatically:
+            // - For Super Admins: Show ALL tenants (TenantScope bypassed)
+            // - For Regular Admins: Show only current tenant (TenantScope applied)
             $dashboardStats = [
                 'system_overview' => [
                     'total_users' => $systemStats['total_users'],

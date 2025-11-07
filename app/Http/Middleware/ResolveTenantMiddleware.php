@@ -49,16 +49,34 @@ class ResolveTenantMiddleware
                 if (app()->environment('staging') && $request->getHost() === 'staging.basketmanager-pro.de') {
                     $tenant = $this->createMockStagingTenant();
                 }
-                // Allow Super-Admins to access - set their default tenant context
+                // Super-Admins are system users - skip tenant resolution entirely
                 elseif ($this->isSuperAdmin($request)) {
-                    // Super-Admins need a tenant context to access tenant-scoped resources
-                    $tenant = $this->resolveSuperAdminTenant($request);
+                    // Super-Admins operate tenant-independently and see ALL data
+                    // They have tenant_id = NULL in database
+                    // No tenant context is set (app('tenant') = NULL)
 
-                    if (!$tenant) {
-                        // If no tenant found, allow access without context (for system-level pages)
+                    // Optional: Check if Super Admin selected a specific tenant filter (session-based)
+                    if ($request->hasSession()) {
+                        $selectedTenantId = $request->session()->get('super_admin_selected_tenant_id');
+                        if ($selectedTenantId) {
+                            $selectedTenant = Tenant::where('id', $selectedTenantId)->where('is_active', true)->first();
+                            if ($selectedTenant) {
+                                // Set tenant context only for filtering purposes (not permanent binding)
+                                $tenant = $selectedTenant;
+                                // Continue with tenant context setup below
+                            } else {
+                                // Tenant selection is invalid, clear it
+                                $request->session()->forget('super_admin_selected_tenant_id');
+                                return $next($request);
+                            }
+                        } else {
+                            // No tenant selected - proceed without tenant context
+                            return $next($request);
+                        }
+                    } else {
+                        // No session available - proceed without tenant context
                         return $next($request);
                     }
-                    // Continue with tenant context setup below
                 } else {
                     return $this->handleTenantNotFound($request);
                 }
@@ -470,35 +488,4 @@ class ResolveTenantMiddleware
         return $request->user()->hasRole('super_admin');
     }
 
-    /**
-     * Resolve tenant for Super-Admin users.
-     *
-     * Super-Admins need a tenant context to access tenant-scoped resources.
-     * Priority: User's tenant_id > First active tenant
-     */
-    private function resolveSuperAdminTenant(Request $request): ?Tenant
-    {
-        $user = $request->user();
-
-        // First, try to use the tenant from the user's profile
-        if ($user && $user->tenant_id) {
-            $tenant = Cache::remember(
-                "tenant:id:{$user->tenant_id}",
-                3600,
-                fn () => Tenant::where('id', $user->tenant_id)->where('is_active', true)->first()
-            );
-
-            if ($tenant) {
-                return $tenant;
-            }
-        }
-
-        // Fallback: Use the first active tenant
-        // This ensures Super-Admins can access the system even if their tenant_id is invalid
-        return Cache::remember(
-            'tenant:first_active',
-            3600,
-            fn () => Tenant::where('is_active', true)->orderBy('created_at', 'asc')->first()
-        );
-    }
 }

@@ -154,6 +154,37 @@ class HandleInertiaRequests extends Middleware
                 }
                 return app()->getLocale();
             },
+            'superAdmin' => function () use ($request) {
+                $user = $request->user();
+
+                if (!$user || !$user->hasRole('super_admin')) {
+                    return null;
+                }
+
+                // Get selected tenant from session
+                $selectedTenantId = $request->session()->get('super_admin_selected_tenant_id');
+                $selectedTenant = null;
+
+                if ($selectedTenantId) {
+                    $selectedTenant = \App\Models\Tenant::where('id', $selectedTenantId)
+                        ->where('is_active', true)
+                        ->select('id', 'name', 'domain', 'subdomain')
+                        ->first();
+                }
+
+                // Get all available tenants for Super Admin
+                $availableTenants = \App\Models\Tenant::select('id', 'name', 'domain', 'subdomain', 'is_active', 'is_suspended')
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get();
+
+                return [
+                    'isSuperAdmin' => true,
+                    'selectedTenantId' => $selectedTenantId,
+                    'selectedTenant' => $selectedTenant,
+                    'availableTenants' => $availableTenants,
+                ];
+            },
             'translations' => fn () => [
                 'subscription' => __('subscription'),
                 'billing' => __('billing'),

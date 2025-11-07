@@ -534,4 +534,53 @@ class TenantSubscriptionController extends Controller
             return back()->with('error', 'Fehler beim Erstellen der Customization: '.$e->getMessage());
         }
     }
+
+    /**
+     * Select a tenant for filtering (Super Admin only).
+     * Sets the tenant ID in session for temporary filtering.
+     */
+    public function selectTenant(Tenant $tenant): RedirectResponse
+    {
+        // Verify user is Super Admin
+        if (!auth()->user() || !auth()->user()->hasRole('super_admin')) {
+            abort(403, 'Only Super Admins can select tenants for filtering.');
+        }
+
+        // Verify tenant is active
+        if (!$tenant->is_active) {
+            return back()->with('error', 'Dieser Tenant ist nicht aktiv und kann nicht ausgewählt werden.');
+        }
+
+        // Set tenant in session for filtering
+        request()->session()->put('super_admin_selected_tenant_id', $tenant->id);
+
+        Log::info('Super Admin selected tenant for filtering', [
+            'tenant_id' => $tenant->id,
+            'tenant_name' => $tenant->name,
+            'super_admin_id' => auth()->id(),
+        ]);
+
+        return back()->with('success', "Tenant '{$tenant->name}' wurde als Filter ausgewählt.");
+    }
+
+    /**
+     * Clear tenant selection (Super Admin only).
+     * Removes the tenant filter and shows all tenants again.
+     */
+    public function clearTenantSelection(): RedirectResponse
+    {
+        // Verify user is Super Admin
+        if (!auth()->user() || !auth()->user()->hasRole('super_admin')) {
+            abort(403, 'Only Super Admins can clear tenant selection.');
+        }
+
+        // Clear tenant selection from session
+        request()->session()->forget('super_admin_selected_tenant_id');
+
+        Log::info('Super Admin cleared tenant filter', [
+            'super_admin_id' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'Tenant-Filter wurde entfernt. Alle Tenants werden angezeigt.');
+    }
 }
