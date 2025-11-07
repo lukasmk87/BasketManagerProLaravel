@@ -49,11 +49,16 @@ class ResolveTenantMiddleware
                 if (app()->environment('staging') && $request->getHost() === 'staging.basketmanager-pro.de') {
                     $tenant = $this->createMockStagingTenant();
                 }
-                // Allow Super-Admins to access without tenant (for localhost development & cross-tenant management)
+                // Allow Super-Admins to access - set their default tenant context
                 elseif ($this->isSuperAdmin($request)) {
-                    // Super-Admins can proceed without tenant binding
-                    // This allows them to see all clubs across all tenants
-                    return $next($request);
+                    // Super-Admins need a tenant context to access tenant-scoped resources
+                    $tenant = $this->resolveSuperAdminTenant($request);
+
+                    if (!$tenant) {
+                        // If no tenant found, allow access without context (for system-level pages)
+                        return $next($request);
+                    }
+                    // Continue with tenant context setup below
                 } else {
                     return $this->handleTenantNotFound($request);
                 }
@@ -463,5 +468,37 @@ class ResolveTenantMiddleware
 
         // Check if user has the super_admin role
         return $request->user()->hasRole('super_admin');
+    }
+
+    /**
+     * Resolve tenant for Super-Admin users.
+     *
+     * Super-Admins need a tenant context to access tenant-scoped resources.
+     * Priority: User's tenant_id > First active tenant
+     */
+    private function resolveSuperAdminTenant(Request $request): ?Tenant
+    {
+        $user = $request->user();
+
+        // First, try to use the tenant from the user's profile
+        if ($user && $user->tenant_id) {
+            $tenant = Cache::remember(
+                "tenant:id:{$user->tenant_id}",
+                3600,
+                fn () => Tenant::where('id', $user->tenant_id)->where('is_active', true)->first()
+            );
+
+            if ($tenant) {
+                return $tenant;
+            }
+        }
+
+        // Fallback: Use the first active tenant
+        // This ensures Super-Admins can access the system even if their tenant_id is invalid
+        return Cache::remember(
+            'tenant:first_active',
+            3600,
+            fn () => Tenant::where('is_active', true)->orderBy('created_at', 'asc')->first()
+        );
     }
 }

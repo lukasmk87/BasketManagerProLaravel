@@ -43,6 +43,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var array<int, string>
      */
     protected $fillable = [
+        'tenant_id',
         'name',
         'email',
         'password',
@@ -244,6 +245,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Club::class, 'club_user')
                     ->withPivot('role', 'joined_at', 'is_active')
                     ->withTimestamps();
+    }
+
+    /**
+     * Get the tenant that the user belongs to.
+     */
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
     }
 
     /**

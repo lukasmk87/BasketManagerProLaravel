@@ -60,6 +60,14 @@ class AuthServiceProvider extends ServiceProvider
 
         $this->registerPolicies();
 
+        // Super Admins bypass all authorization checks
+        Gate::before(function ($user, $ability) {
+            if ($user->hasRole('super_admin')) {
+                return true; // Auto-authorize all actions
+            }
+            return null; // Continue with normal authorization flow
+        });
+
         // Define additional gates for drill management
         Gate::define('view-drills', function ($user) {
             return $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']) ||
