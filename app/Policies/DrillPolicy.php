@@ -4,10 +4,12 @@ namespace App\Policies;
 
 use App\Models\Drill;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesUsers;
 use Illuminate\Auth\Access\Response;
 
 class DrillPolicy
 {
+    use AuthorizesUsers;
     /**
      * Determine whether the user can view any models.
      */

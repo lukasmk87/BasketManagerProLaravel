@@ -3,10 +3,12 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesUsers;
 use Spatie\Permission\Models\Role;
 
 class RolePolicy
 {
+    use AuthorizesUsers;
     /**
      * Determine whether the user can view any roles.
      */

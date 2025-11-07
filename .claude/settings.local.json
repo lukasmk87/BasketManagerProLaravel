@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(php artisan:*)",
-      "Bash(mysql:*)"
+      "Bash(mysql:*)",
+      "Bash(php -r:*)"
     ],
     "deny": [],
     "ask": []

@@ -4,10 +4,12 @@ namespace App\Policies;
 
 use App\Models\ClubInvitation;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesUsers;
 use Illuminate\Auth\Access\Response;
 
 class ClubInvitationPolicy
 {
+    use AuthorizesUsers;
     /**
      * Determine whether the user can view any models.
      * Club admins can view invitations for their clubs.

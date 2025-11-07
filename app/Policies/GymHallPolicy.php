@@ -4,10 +4,12 @@ namespace App\Policies;
 
 use App\Models\GymHall;
 use App\Models\User;
+use App\Policies\Concerns\AuthorizesUsers;
 use Illuminate\Auth\Access\Response;
 
 class GymHallPolicy
 {
+    use AuthorizesUsers;
     /**
      * Determine whether the user can view any gym halls.
      */
