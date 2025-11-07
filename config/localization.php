@@ -60,8 +60,8 @@ return [
         'session',    // Session storage
         'cookie',     // Cookie preference
         'user',       // User profile preference
+        'default',    // Fallback to default (prioritized over browser)
         'browser',    // Browser Accept-Language header
-        'default',    // Fallback to default
     ],
 
     /*
