@@ -278,15 +278,8 @@ class InstallationService
                 ],
             ]);
 
-            // Link user to club
-            DB::table('club_user')->insert([
-                'club_id' => $club->id,
-                'user_id' => $user->id,
-                'role' => 'admin',
-                'joined_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Super Admin bleibt club-unabhängig (keine club_user Verknüpfung)
+            // Super Admin kann später manuell Clubs beitreten
 
             // Sync subscription plans with Stripe (if Stripe is configured)
             if (config('services.stripe.key') && config('services.stripe.secret')) {

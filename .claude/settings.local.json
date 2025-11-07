@@ -3,7 +3,10 @@
     "allow": [
       "Bash(php artisan:*)",
       "Bash(mysql:*)",
-      "Bash(php -r:*)"
+      "Bash(php -r:*)",
+      "Bash(php -l:*)",
+      "Bash(test:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

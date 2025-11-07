@@ -371,11 +371,11 @@ const submit = () => {
 const $t = (key) => {
     const translations = {
         de: {
-            admin_title: 'Super Admin erstellen',
-            admin_description: 'Dieser Account wird die vollständige Kontrolle über Ihre BasketManager Pro Installation haben.',
+            admin_title: 'System-Administrator erstellen',
+            admin_description: 'Dieser mandanten-unabhängige Super Admin Account hat vollständigen Zugriff auf ALLE Tenants und kann später manuell Clubs beitreten.',
             tenant_name_label: 'Organisationsname',
             tenant_name_placeholder: 'Mein Basketball Club',
-            admin_name_label: 'Admin-Name',
+            admin_name_label: 'Super Admin Name',
             admin_name_placeholder: 'Max Mustermann',
             admin_email_label: 'Admin-E-Mail',
             admin_email_placeholder: 'admin@example.com',
@@ -394,11 +394,11 @@ const $t = (key) => {
             finish: 'Installation abschließen'
         },
         en: {
-            admin_title: 'Create Super Admin',
-            admin_description: 'This account will have full control over your BasketManager Pro installation.',
+            admin_title: 'Create System Administrator',
+            admin_description: 'This tenant-independent Super Admin account has full access to ALL tenants and can manually join clubs later.',
             tenant_name_label: 'Organization Name',
             tenant_name_placeholder: 'My Basketball Club',
-            admin_name_label: 'Admin Name',
+            admin_name_label: 'Super Admin Name',
             admin_name_placeholder: 'John Doe',
             admin_email_label: 'Admin Email',
             admin_email_placeholder: 'admin@example.com',

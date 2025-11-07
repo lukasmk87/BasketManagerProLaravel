@@ -73,7 +73,14 @@ page.props.appName
 - 🟡 Team Manager / Scorer / Referee (specialized)
 - 🟠 Player / 🟣 Parent / ⚪ Guest (limited access)
 
-See `BERECHTIGUNGS_MATRIX.md` and `ROLLEN_DOKUMENTATION_README.md` for detailed permission matrices and role hierarchies.
+**Super Admin Architecture:**
+- **Tenant-Independent**: Super Admins have `tenant_id = null` and can access ALL tenants
+- **Club-Independent**: Super Admins are NOT automatically linked to clubs during installation
+- **Middleware Bypass**: Super Admins bypass `TenantScope` and `ResolveTenantMiddleware`
+- **Created During Installation**: The Installation Wizard creates the first Super Admin without tenant/club associations
+- **Manual Club Access**: Super Admins can manually join clubs later if needed
+
+See `BERECHTIGUNGS_MATRIX.md`, `ROLLEN_DOKUMENTATION_README.md`, and `TENANT_FREE_SUPER_ADMIN_ARCHITECTURE.md` for detailed permission matrices and role hierarchies.
 
 ## Development Commands
 

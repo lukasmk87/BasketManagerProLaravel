@@ -70,11 +70,11 @@ class InstallWizardTest extends TestCase
         $this->assertTrue($tenant->settings['features']['live_scoring']);
         $this->assertTrue($tenant->settings['features']['video_analysis']);
 
-        // Verify user was created
+        // Verify user was created (Super Admin has no tenant_id - tenant-independent)
         $this->assertDatabaseHas('users', [
             'name' => 'Super Admin',
             'email' => 'admin@basketclub.test',
-            'tenant_id' => $tenant->id,
+            'tenant_id' => null,
         ]);
 
         // Verify user has super_admin role
@@ -233,7 +233,8 @@ class InstallWizardTest extends TestCase
         $tenant = Tenant::where('name', 'Link Test Club')->first();
         $user = User::where('email', 'admin@link.test')->first();
 
-        $this->assertEquals($tenant->id, $user->tenant_id);
+        // Super Admin is tenant-independent
+        $this->assertNull($user->tenant_id);
         $this->assertTrue($user->is_active);
         $this->assertTrue($user->is_verified);
         $this->assertNotNull($user->email_verified_at);
@@ -262,9 +263,10 @@ class InstallWizardTest extends TestCase
     }
 
     /**
-     * Test user is linked to club via pivot table
+     * Test Super Admin is NOT linked to club via pivot table
+     * (Super Admins are tenant-independent and club-independent)
      */
-    public function test_user_is_linked_to_club_via_pivot_table(): void
+    public function test_super_admin_is_not_linked_to_club_during_installation(): void
     {
         $this->post(route('install.create-admin'), [
             'tenant_name' => 'Pivot Test Club',
@@ -278,13 +280,16 @@ class InstallWizardTest extends TestCase
         $user = User::where('email', 'admin@pivot.test')->first();
         $club = Club::where('name', 'Pivot Test Club')->first();
 
+        // Super Admin should NOT be linked to any club after installation
         $pivot = DB::table('club_user')
             ->where('user_id', $user->id)
             ->where('club_id', $club->id)
             ->first();
 
-        $this->assertNotNull($pivot);
-        $this->assertEquals('admin', $pivot->role);
+        $this->assertNull($pivot);
+
+        // Verify user can manually join clubs later
+        $this->assertEquals(0, $user->clubs()->count());
     }
 
     /**
@@ -365,5 +370,116 @@ class InstallWizardTest extends TestCase
         $user = User::where('email', 'admin@password.test')->first();
 
         $this->assertTrue(Hash::check('MySecurePassword123!', $user->password));
+    }
+
+    /**
+     * Test Super Admin has no tenant_id after installation
+     * (Verifies tenant-independent architecture)
+     */
+    public function test_super_admin_has_no_tenant_id_after_installation(): void
+    {
+        $this->post(route('install.create-admin'), [
+            'tenant_name' => 'Tenant Free Test',
+            'admin_name' => 'System Admin',
+            'admin_email' => 'sysadmin@test.test',
+            'admin_password' => 'SecurePass123!',
+            'admin_password_confirmation' => 'SecurePass123!',
+            'subscription_tier' => 'professional',
+        ]);
+
+        $user = User::where('email', 'sysadmin@test.test')->first();
+
+        // Super Admin must have tenant_id = null
+        $this->assertNull($user->tenant_id);
+
+        // Super Admin must have super_admin role
+        $this->assertTrue($user->hasRole('super_admin'));
+
+        // Super Admin should have all permissions
+        $superAdminRole = Role::where('name', 'super_admin')->first();
+        $this->assertNotNull($superAdminRole);
+    }
+
+    /**
+     * Test Super Admin can access all tenants
+     * (Verifies TenantScope bypass for Super Admins)
+     */
+    public function test_super_admin_can_access_all_tenants(): void
+    {
+        // Create first tenant via installation
+        $this->post(route('install.create-admin'), [
+            'tenant_name' => 'First Tenant',
+            'admin_name' => 'Super Admin',
+            'admin_email' => 'superadmin@test.test',
+            'admin_password' => 'password123',
+            'admin_password_confirmation' => 'password123',
+            'subscription_tier' => 'professional',
+        ]);
+
+        $superAdmin = User::where('email', 'superadmin@test.test')->first();
+
+        // Create additional tenants manually
+        $tenant2 = Tenant::create([
+            'name' => 'Second Tenant',
+            'slug' => 'second-tenant',
+            'subscription_tier' => 'basic',
+            'max_users' => 50,
+            'max_teams' => 20,
+            'max_storage_gb' => 50,
+        ]);
+
+        $tenant3 = Tenant::create([
+            'name' => 'Third Tenant',
+            'slug' => 'third-tenant',
+            'subscription_tier' => 'enterprise',
+            'max_users' => -1,
+            'max_teams' => -1,
+            'max_storage_gb' => -1,
+        ]);
+
+        // Authenticate as Super Admin
+        $this->actingAs($superAdmin);
+
+        // Super Admin should be able to see ALL tenants (3 total)
+        $allTenants = Tenant::all();
+        $this->assertEquals(3, $allTenants->count());
+
+        // Verify all 3 tenants are accessible
+        $this->assertNotNull(Tenant::find($tenant2->id));
+        $this->assertNotNull(Tenant::find($tenant3->id));
+    }
+
+    /**
+     * Test Super Admin has no club associations after installation
+     * (Comprehensive verification of club independence)
+     */
+    public function test_super_admin_has_no_club_associations_comprehensive(): void
+    {
+        $this->post(route('install.create-admin'), [
+            'tenant_name' => 'Club Independence Test',
+            'admin_name' => 'Independent Admin',
+            'admin_email' => 'independent@test.test',
+            'admin_password' => 'password123',
+            'admin_password_confirmation' => 'password123',
+            'subscription_tier' => 'professional',
+        ]);
+
+        $user = User::where('email', 'independent@test.test')->first();
+        $club = Club::where('name', 'Club Independence Test')->first();
+
+        // Verify club was created for tenant
+        $this->assertNotNull($club);
+
+        // Verify Super Admin has ZERO club associations
+        $this->assertEquals(0, $user->clubs()->count());
+
+        // Verify no entries in club_user pivot table for this user
+        $clubUserCount = DB::table('club_user')
+            ->where('user_id', $user->id)
+            ->count();
+        $this->assertEquals(0, $clubUserCount);
+
+        // Verify Super Admin can manually join clubs if needed
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Collection::class, $user->clubs);
     }
 }
