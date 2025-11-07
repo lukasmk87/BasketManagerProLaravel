@@ -24,6 +24,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/web.php'));
 
+            // Debug routes (temporary - DELETE AFTER DEBUGGING)
+            if (file_exists(base_path('routes/debug.php'))) {
+                \Illuminate\Support\Facades\Route::middleware('web')
+                    ->group(base_path('routes/debug.php'));
+            }
+
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/subscription.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
