@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class InstallationService
@@ -184,6 +185,16 @@ class InstallationService
             '--force' => true,
         ]);
 
+        // Clear Spatie Permission cache after seeding (critical for Gate::before() to work)
+        Artisan::call('permission:cache-reset');
+
+        // Explicitly sync all permissions to super_admin role (failsafe)
+        $superAdmin = Role::where('name', 'super_admin')->first();
+        if ($superAdmin) {
+            $allPermissions = Permission::all();
+            $superAdmin->syncPermissions($allPermissions);
+        }
+
         // Seed legal pages with placeholders
         if (class_exists('Database\\Seeders\\LegalPagesSeeder')) {
             Artisan::call('db:seed', [
@@ -331,6 +342,9 @@ class InstallationService
         Artisan::call('cache:clear');
         Artisan::call('route:clear');
         Artisan::call('view:clear');
+
+        // Clear Spatie Permission cache (critical for Super Admin Gate::before() bypass)
+        Artisan::call('permission:cache-reset');
     }
 
     /**
