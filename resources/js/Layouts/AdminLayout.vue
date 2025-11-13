@@ -110,16 +110,16 @@ const isCurrentRoute = (routeName) => {
                             </Link>
 
                             <!-- User Dropdown -->
-                            <div class="ml-3 relative">
+                            <div v-if="$page.props.auth.user" class="ml-3 relative">
                                 <Dropdown align="right" width="48">
                                     <template #trigger>
                                         <button v-if="$page.props.jetstream.managesProfilePhotos" class="flex text-sm border-2 border-indigo-400 rounded-full focus:outline-none focus:border-white transition">
-                                            <img class="h-8 w-8 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name">
+                                            <img class="h-8 w-8 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user?.name || 'User'">
                                         </button>
 
                                         <span v-else class="inline-flex rounded-md">
                                             <button type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white hover:text-indigo-100 focus:outline-none transition ease-in-out duration-150">
-                                                {{ $page.props.auth.user.name }}
+                                                {{ $page.props.auth.user?.name || 'User' }}
 
                                                 <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -178,18 +178,18 @@ const isCurrentRoute = (routeName) => {
                     </div>
 
                     <!-- Responsive Settings Options -->
-                    <div class="pt-4 pb-1 border-t border-indigo-700">
+                    <div v-if="$page.props.auth.user" class="pt-4 pb-1 border-t border-indigo-700">
                         <div class="flex items-center px-4">
                             <div v-if="$page.props.jetstream.managesProfilePhotos" class="shrink-0 mr-3">
-                                <img class="h-10 w-10 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name">
+                                <img class="h-10 w-10 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user?.name || 'User'">
                             </div>
 
                             <div>
                                 <div class="font-medium text-base text-white">
-                                    {{ $page.props.auth.user.name }}
+                                    {{ $page.props.auth.user?.name || 'Unbekannt' }}
                                 </div>
                                 <div class="font-medium text-sm text-indigo-200">
-                                    {{ $page.props.auth.user.email }}
+                                    {{ $page.props.auth.user?.email || '' }}
                                 </div>
                             </div>
                         </div>
