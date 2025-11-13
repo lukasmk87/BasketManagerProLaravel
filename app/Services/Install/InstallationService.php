@@ -273,6 +273,10 @@ class InstallationService
             $superAdminRole = Role::where('name', 'super_admin')->first();
             if ($superAdminRole) {
                 $user->assignRole($superAdminRole);
+
+                // Clear permission cache immediately after role assignment
+                // This ensures the role is properly cached before auto-login
+                app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
             } else {
                 throw new \Exception('Super Admin role not found. Please run seeders first.');
             }

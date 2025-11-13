@@ -443,13 +443,22 @@ class InstallController extends Controller
                 // Mark installation as complete
                 $this->installationService->markAsInstalled();
 
-                // Automatically log in the Super Admin
-                $user = User::where('email', $request->admin_email)->first();
+                // Force permission cache clear before auto-login to ensure fresh permissions
+                Artisan::call('permission:cache-reset');
+                app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+                // Automatically log in the Super Admin with freshly loaded permissions
+                $user = User::with('roles', 'permissions')
+                    ->where('email', $request->admin_email)
+                    ->first();
+
                 if ($user) {
                     Auth::login($user);
                     \Log::info('Super Admin automatically logged in after installation', [
                         'user_id' => $user->id,
-                        'email' => $user->email
+                        'email' => $user->email,
+                        'roles' => $user->roles->pluck('name')->toArray(),
+                        'permissions_count' => $user->getAllPermissions()->count()
                     ]);
                 }
 

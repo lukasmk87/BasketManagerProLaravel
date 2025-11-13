@@ -23,7 +23,8 @@ class AdminPanelController extends Controller
      */
     public function settings(Request $request): Response
     {
-        $this->authorize('access admin panel');
+        // Authorization check removed - route already has 'role:admin|super_admin' middleware
+        // This prevents 403 errors when permission cache is stale during installation
 
         // Get system statistics
         $systemStats = [

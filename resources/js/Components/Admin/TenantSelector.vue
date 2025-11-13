@@ -11,7 +11,7 @@
             </svg>
 
             <span v-if="selectedTenant" class="font-semibold text-indigo-600">
-                {{ selectedTenant.name }}
+                {{ selectedTenant?.name || 'Kein Tenant ausgewählt' }}
             </span>
             <span v-else class="text-gray-600 dark:text-gray-400">
                 Alle Tenants
@@ -80,10 +80,10 @@
                             <div class="flex items-center justify-between">
                                 <div class="flex-1 min-w-0">
                                     <div class="font-medium truncate">
-                                        {{ tenant.name }}
+                                        {{ tenant?.name || 'Unbekannter Tenant' }}
                                     </div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                        {{ tenant.domain || tenant.subdomain }}
+                                        {{ tenant?.domain || tenant?.subdomain || 'N/A' }}
                                     </div>
                                 </div>
                                 <svg
@@ -140,11 +140,14 @@ const filteredTenants = computed(() => {
     }
 
     const searchLower = search.value.toLowerCase();
-    return props.availableTenants.filter(tenant =>
-        tenant.name.toLowerCase().includes(searchLower) ||
-        (tenant.domain && tenant.domain.toLowerCase().includes(searchLower)) ||
-        (tenant.subdomain && tenant.subdomain.toLowerCase().includes(searchLower))
-    );
+    return props.availableTenants.filter(tenant => {
+        // Null-safe checks for tenant properties
+        const nameMatch = tenant?.name?.toLowerCase().includes(searchLower) || false;
+        const domainMatch = tenant?.domain?.toLowerCase().includes(searchLower) || false;
+        const subdomainMatch = tenant?.subdomain?.toLowerCase().includes(searchLower) || false;
+
+        return nameMatch || domainMatch || subdomainMatch;
+    });
 });
 
 // Select a tenant
