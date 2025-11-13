@@ -6,7 +6,8 @@
       "Bash(php -r:*)",
       "Bash(php -l:*)",
       "Bash(test:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

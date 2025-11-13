@@ -163,6 +163,72 @@ class RoleAndPermissionSeeder extends Seeder
             'create player invitations',
             'manage player invitations',
             'assign pending players',
+
+            // Video Management
+            'view videos',
+            'upload videos',
+            'edit videos',
+            'delete videos',
+            'annotate videos',
+            'manage video analysis',
+
+            // Gym/Facility Management
+            'view gym halls',
+            'create gym halls',
+            'edit gym halls',
+            'delete gym halls',
+            'view bookings',
+            'create bookings',
+            'manage bookings',
+
+            // Federation Integration
+            'view federation data',
+            'sync federation data',
+            'manage dbb integration',
+            'manage fiba integration',
+
+            // Machine Learning & Analytics
+            'view ml models',
+            'train ml models',
+            'view predictions',
+            'manage ml datasets',
+
+            // Shot Charts & Advanced Stats
+            'view shot charts',
+            'edit shot charts',
+            'export shot charts',
+
+            // Push Notifications
+            'manage push subscriptions',
+            'send push notifications',
+            'view notification analytics',
+
+            // API Management
+            'view api usage',
+            'manage api tokens',
+            'view api logs',
+
+            // Security Management
+            'view security logs',
+            'manage 2fa settings',
+            'manage security policies',
+
+            // User Preferences
+            'view user preferences',
+            'edit user preferences',
+
+            // File Management
+            'upload files',
+            'manage file storage',
+
+            // Import/Export Features
+            'import games',
+            'import users',
+            'import data',
+
+            // PWA Management
+            'manage pwa settings',
+            'update service worker',
         ];
 
         foreach ($permissions as $permission) {
@@ -260,6 +326,45 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Player Registration Invitations
             'create player invitations', 'manage player invitations', 'assign pending players',
+
+            // Video Management
+            'view videos', 'upload videos', 'edit videos', 'delete videos',
+            'annotate videos', 'manage video analysis',
+
+            // Gym/Facility Management
+            'view gym halls', 'create gym halls', 'edit gym halls', 'delete gym halls',
+            'view bookings', 'create bookings', 'manage bookings',
+
+            // Federation Integration
+            'view federation data', 'sync federation data',
+            'manage dbb integration', 'manage fiba integration',
+
+            // ML & Analytics
+            'view ml models', 'train ml models', 'view predictions', 'manage ml datasets',
+
+            // Shot Charts
+            'view shot charts', 'edit shot charts', 'export shot charts',
+
+            // Push Notifications
+            'manage push subscriptions', 'send push notifications', 'view notification analytics',
+
+            // API Management
+            'view api usage', 'manage api tokens', 'view api logs',
+
+            // Security
+            'view security logs', 'manage 2fa settings', 'manage security policies',
+
+            // User Preferences
+            'view user preferences', 'edit user preferences',
+
+            // File Management
+            'upload files', 'manage file storage',
+
+            // Import/Export
+            'import games', 'import users', 'import data',
+
+            // PWA
+            'manage pwa settings', 'update service worker',
         ]);
 
         // Club Administrator Role
@@ -322,6 +427,28 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Player Registration Invitations
             'create player invitations', 'manage player invitations', 'assign pending players',
+
+            // Video Management (limited)
+            'view videos', 'upload videos', 'annotate videos',
+
+            // Gym/Facility Management
+            'view gym halls', 'create gym halls', 'edit gym halls',
+            'view bookings', 'create bookings', 'manage bookings',
+
+            // Federation Integration (view only)
+            'view federation data',
+
+            // Shot Charts
+            'view shot charts', 'export shot charts',
+
+            // Push Notifications
+            'send push notifications', 'view notification analytics',
+
+            // File Management
+            'upload files',
+
+            // Import/Export
+            'import games', 'import users',
         ]);
 
         // Head Coach/Trainer Role
@@ -363,6 +490,21 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Player Registration Invitations (only create, not manage or assign)
             'create player invitations',
+
+            // Video Management
+            'view videos', 'upload videos', 'annotate videos',
+
+            // Gym/Facility Management (limited)
+            'view gym halls', 'view bookings',
+
+            // Shot Charts
+            'view shot charts', 'edit shot charts',
+
+            // File Management
+            'upload files',
+
+            // User Preferences
+            'view user preferences', 'edit user preferences',
         ]);
 
         // Assistant Coach Role
@@ -398,6 +540,18 @@ class RoleAndPermissionSeeder extends Seeder
             
             // Media
             'upload media',
+
+            // Video Management (view only)
+            'view videos',
+
+            // Gym/Facility Management (view only)
+            'view gym halls',
+
+            // Shot Charts (view only)
+            'view shot charts',
+
+            // User Preferences
+            'view user preferences',
         ]);
 
         // Scorer/Statistician Role
@@ -442,6 +596,18 @@ class RoleAndPermissionSeeder extends Seeder
             
             // Communication
             'access messaging system',
+
+            // Video Management (view only)
+            'view videos',
+
+            // Gym/Facility Management
+            'view gym halls', 'view bookings',
+
+            // Shot Charts
+            'view shot charts',
+
+            // User Preferences
+            'view user preferences', 'edit user preferences',
         ]);
 
         // Parent/Guardian Role
@@ -467,6 +633,12 @@ class RoleAndPermissionSeeder extends Seeder
             
             // Communication
             'access messaging system',
+
+            // Video Management (view only)
+            'view videos',
+
+            // User Preferences
+            'view user preferences', 'edit user preferences',
         ]);
 
         // Team Manager Role
@@ -495,6 +667,18 @@ class RoleAndPermissionSeeder extends Seeder
             
             // Media
             'upload media',
+
+            // Video Management
+            'view videos', 'upload videos',
+
+            // Gym/Facility Management
+            'view gym halls', 'view bookings', 'create bookings',
+
+            // Shot Charts
+            'view shot charts',
+
+            // File Management
+            'upload files',
         ]);
 
         // Guest/Fan Role
