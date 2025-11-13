@@ -7,7 +7,8 @@
       "Bash(php -l:*)",
       "Bash(test:*)",
       "Bash(cat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

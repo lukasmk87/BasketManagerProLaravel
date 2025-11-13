@@ -113,6 +113,7 @@
                             autocomplete="new-password"
                             class="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                             @input="checkPasswordStrength"
+                            @change="(e) => { form.admin_password = e.target.value; checkPasswordStrength(); }"
                         />
                         <button
                             type="button"
@@ -166,6 +167,7 @@
                             :aria-describedby="form.errors.admin_password_confirmation ? 'admin_password_confirmation_error' : null"
                             autocomplete="new-password"
                             class="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            @change="(e) => form.admin_password_confirmation = e.target.value"
                         />
                         <button
                             type="button"
@@ -301,6 +303,25 @@ onMounted(() => {
     if (!form.tenant_name && props.appName && props.appName !== 'BasketManager Pro') {
         form.tenant_name = props.appName;
     }
+
+    // Handle browser autocomplete for password fields
+    // Browser autocomplete may fill fields without triggering Vue's v-model reactivity
+    // This timer ensures that autocompleted values are synced to Vue's reactive state
+    setTimeout(() => {
+        const passwordInput = document.getElementById('admin_password');
+        const confirmInput = document.getElementById('admin_password_confirmation');
+
+        if (passwordInput && passwordInput.value && !form.admin_password) {
+            console.log('🔄 Syncing autocompleted password field to Vue state');
+            form.admin_password = passwordInput.value;
+            checkPasswordStrength();
+        }
+
+        if (confirmInput && confirmInput.value && !form.admin_password_confirmation) {
+            console.log('🔄 Syncing autocompleted password confirmation field to Vue state');
+            form.admin_password_confirmation = confirmInput.value;
+        }
+    }, 500);
 });
 
 const passwordStrengthScore = ref(0);
@@ -351,8 +372,40 @@ const submit = () => {
         tenant_name: form.tenant_name,
         admin_name: form.admin_name,
         admin_email: form.admin_email,
-        subscription_tier: form.subscription_tier
+        subscription_tier: form.subscription_tier,
+        // Security: Don't log passwords, but show if they exist
+        has_password: !!form.admin_password,
+        password_length: form.admin_password?.length || 0,
+        has_confirmation: !!form.admin_password_confirmation,
+        confirmation_length: form.admin_password_confirmation?.length || 0
     });
+
+    // Client-side validation before submission
+    if (!form.admin_password || form.admin_password.trim() === '') {
+        console.error('❌ Validation Error: Password field is empty');
+        alert('Bitte füllen Sie das Passwort-Feld aus.');
+        return;
+    }
+
+    if (!form.admin_password_confirmation || form.admin_password_confirmation.trim() === '') {
+        console.error('❌ Validation Error: Password confirmation field is empty');
+        alert('Bitte bestätigen Sie das Passwort.');
+        return;
+    }
+
+    if (form.admin_password !== form.admin_password_confirmation) {
+        console.error('❌ Validation Error: Passwords do not match');
+        alert('Die Passwörter stimmen nicht überein.');
+        return;
+    }
+
+    if (form.admin_password.length < 8) {
+        console.error('❌ Validation Error: Password too short');
+        alert('Das Passwort muss mindestens 8 Zeichen lang sein.');
+        return;
+    }
+
+    console.log('✅ Client-side validation passed, submitting form...');
 
     form.post(route('install.admin.create'), {
         // onSuccess callback removed to allow Inertia.js automatic redirect handling
@@ -360,6 +413,7 @@ const submit = () => {
         onError: (errors) => {
             console.error('❌ ERROR - Installation failed:', errors);
             console.error('Form errors:', form.errors);
+            console.error('Full error response:', errors);
             // Errors are automatically bound to form.errors and displayed in template
         },
         onFinish: () => {
