@@ -18,23 +18,27 @@ class LandingPageService
      * Get content for a specific section with fallback hierarchy.
      *
      * Fallback order:
-     * 1. Tenant-specific published content
-     * 2. Global published content
-     * 3. Default hardcoded content
+     * 1. Tenant-specific published content for requested locale
+     * 2. Global published content for requested locale
+     * 3. Tenant-specific published content for default locale (de)
+     * 4. Global published content for default locale (de)
+     * 5. Default hardcoded content
      *
      * @param string $section The section name
      * @param int|null $tenantId The tenant ID (null for global)
+     * @param string $locale The locale (default: 'de')
      * @return array The section content
      */
-    public function getContent(string $section, ?int $tenantId = null): array
+    public function getContent(string $section, ?int $tenantId = null, string $locale = 'de'): array
     {
-        $cacheKey = $this->getCacheKey($section, $tenantId);
+        $cacheKey = $this->getCacheKey($section, $tenantId, $locale);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($section, $tenantId) {
-            // Try tenant-specific content first
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($section, $tenantId, $locale) {
+            // Try tenant-specific content for requested locale
             if ($tenantId) {
                 $content = LandingPageContent::forTenant($tenantId)
                     ->forSection($section)
+                    ->where('locale', $locale)
                     ->published()
                     ->first();
 
@@ -43,14 +47,40 @@ class LandingPageService
                 }
             }
 
-            // Try global content
+            // Try global content for requested locale
             $globalContent = LandingPageContent::global()
                 ->forSection($section)
+                ->where('locale', $locale)
                 ->published()
                 ->first();
 
             if ($globalContent) {
                 return $globalContent->content;
+            }
+
+            // If not default locale, try fallback to default locale (de)
+            if ($locale !== 'de') {
+                if ($tenantId) {
+                    $content = LandingPageContent::forTenant($tenantId)
+                        ->forSection($section)
+                        ->where('locale', 'de')
+                        ->published()
+                        ->first();
+
+                    if ($content) {
+                        return $content->content;
+                    }
+                }
+
+                $globalContent = LandingPageContent::global()
+                    ->forSection($section)
+                    ->where('locale', 'de')
+                    ->published()
+                    ->first();
+
+                if ($globalContent) {
+                    return $globalContent->content;
+                }
             }
 
             // Fall back to defaults
@@ -77,15 +107,17 @@ class LandingPageService
     }
 
     /**
-     * Get draft content for editing (not published).
+     * Get draft content for editing (published or draft).
      *
      * @param string $section The section name
      * @param int|null $tenantId The tenant ID
+     * @param string $locale The locale (default: 'de')
      * @return LandingPageContent|null
      */
-    public function getDraft(string $section, ?int $tenantId = null): ?LandingPageContent
+    public function getDraft(string $section, ?int $tenantId = null, string $locale = 'de'): ?LandingPageContent
     {
-        $query = LandingPageContent::forSection($section);
+        $query = LandingPageContent::forSection($section)
+            ->where('locale', $locale);
 
         if ($tenantId) {
             $query->forTenant($tenantId);
@@ -102,6 +134,7 @@ class LandingPageService
      * @param string $section The section name
      * @param array $content The content data
      * @param int|null $tenantId The tenant ID
+     * @param string $locale The locale (default: 'de')
      * @param bool $publish Whether to publish immediately
      * @return LandingPageContent
      */
@@ -109,6 +142,7 @@ class LandingPageService
         string $section,
         array $content,
         ?int $tenantId = null,
+        string $locale = 'de',
         bool $publish = false
     ): LandingPageContent {
         $this->validateSection($section);
@@ -118,6 +152,7 @@ class LandingPageService
             [
                 'section' => $section,
                 'tenant_id' => $tenantId,
+                'locale' => $locale,
             ],
             [
                 'content' => $content,
@@ -126,12 +161,13 @@ class LandingPageService
             ]
         );
 
-        // Invalidate cache
-        $this->invalidateCache($section, $tenantId);
+        // Invalidate cache for this locale
+        $this->invalidateCache($section, $tenantId, $locale);
 
         Log::info('Landing page content saved', [
             'section' => $section,
             'tenant_id' => $tenantId,
+            'locale' => $locale,
             'published' => $publish,
         ]);
 
@@ -143,16 +179,18 @@ class LandingPageService
      *
      * @param string $section The section name
      * @param int|null $tenantId The tenant ID
+     * @param string $locale The locale (default: 'de')
      * @return bool
      */
-    public function publishContent(string $section, ?int $tenantId = null): bool
+    public function publishContent(string $section, ?int $tenantId = null, string $locale = 'de'): bool
     {
-        $content = $this->getDraft($section, $tenantId);
+        $content = $this->getDraft($section, $tenantId, $locale);
 
         if (!$content) {
             Log::warning('Attempted to publish non-existent content', [
                 'section' => $section,
                 'tenant_id' => $tenantId,
+                'locale' => $locale,
             ]);
             return false;
         }
@@ -160,11 +198,12 @@ class LandingPageService
         $result = $content->publish();
 
         if ($result) {
-            $this->invalidateCache($section, $tenantId);
+            $this->invalidateCache($section, $tenantId, $locale);
 
             Log::info('Landing page content published', [
                 'section' => $section,
                 'tenant_id' => $tenantId,
+                'locale' => $locale,
             ]);
         }
 
@@ -176,11 +215,12 @@ class LandingPageService
      *
      * @param string $section The section name
      * @param int|null $tenantId The tenant ID
+     * @param string $locale The locale (default: 'de')
      * @return bool
      */
-    public function unpublishContent(string $section, ?int $tenantId = null): bool
+    public function unpublishContent(string $section, ?int $tenantId = null, string $locale = 'de'): bool
     {
-        $content = $this->getDraft($section, $tenantId);
+        $content = $this->getDraft($section, $tenantId, $locale);
 
         if (!$content) {
             return false;
@@ -189,15 +229,76 @@ class LandingPageService
         $result = $content->unpublish();
 
         if ($result) {
-            $this->invalidateCache($section, $tenantId);
+            $this->invalidateCache($section, $tenantId, $locale);
 
             Log::info('Landing page content unpublished', [
                 'section' => $section,
                 'tenant_id' => $tenantId,
+                'locale' => $locale,
             ]);
         }
 
         return $result;
+    }
+
+    /**
+     * Copy content from one locale to another.
+     *
+     * @param string $section The section name
+     * @param int|null $tenantId The tenant ID
+     * @param string $fromLocale Source locale
+     * @param string $toLocale Target locale
+     * @param bool $overwrite Whether to overwrite existing content
+     * @return LandingPageContent|null
+     */
+    public function copyContentToLocale(
+        string $section,
+        ?int $tenantId = null,
+        string $fromLocale = 'de',
+        string $toLocale = 'en',
+        bool $overwrite = false
+    ): ?LandingPageContent {
+        // Get source content
+        $sourceContent = $this->getDraft($section, $tenantId, $fromLocale);
+
+        if (!$sourceContent) {
+            Log::warning('Source content not found for locale copy', [
+                'section' => $section,
+                'tenant_id' => $tenantId,
+                'from_locale' => $fromLocale,
+            ]);
+            return null;
+        }
+
+        // Check if target already exists
+        $targetContent = $this->getDraft($section, $tenantId, $toLocale);
+
+        if ($targetContent && !$overwrite) {
+            Log::info('Target locale content already exists, skipping copy', [
+                'section' => $section,
+                'tenant_id' => $tenantId,
+                'to_locale' => $toLocale,
+            ]);
+            return $targetContent;
+        }
+
+        // Copy content
+        $copiedContent = $this->saveContent(
+            $section,
+            $sourceContent->content,
+            $tenantId,
+            $toLocale,
+            false // Don't publish automatically
+        );
+
+        Log::info('Landing page content copied to new locale', [
+            'section' => $section,
+            'tenant_id' => $tenantId,
+            'from_locale' => $fromLocale,
+            'to_locale' => $toLocale,
+        ]);
+
+        return $copiedContent;
     }
 
     /**
@@ -533,28 +634,34 @@ class LandingPageService
      * @param int|null $tenantId The tenant ID
      * @return string
      */
-    private function getCacheKey(string $section, ?int $tenantId): string
+    private function getCacheKey(string $section, ?int $tenantId, string $locale = 'de'): string
     {
         $tenantPart = $tenantId ? "tenant:{$tenantId}" : 'global';
-        return "landing_page:{$tenantPart}:{$section}:published";
+        return "landing_page:{$tenantPart}:{$section}:{$locale}:published";
     }
 
     /**
-     * Invalidate cache for a section.
+     * Invalidate cache for a section (all locales).
      *
      * @param string $section The section name
      * @param int|null $tenantId The tenant ID
+     * @param string|null $locale Specific locale or null for all
      * @return void
      */
-    private function invalidateCache(string $section, ?int $tenantId): void
+    private function invalidateCache(string $section, ?int $tenantId, ?string $locale = null): void
     {
-        $cacheKey = $this->getCacheKey($section, $tenantId);
-        Cache::forget($cacheKey);
+        $locales = $locale ? [$locale] : ['de', 'en'];
 
-        Log::debug('Landing page cache invalidated', [
-            'section' => $section,
-            'tenant_id' => $tenantId,
-            'cache_key' => $cacheKey,
-        ]);
+        foreach ($locales as $loc) {
+            $cacheKey = $this->getCacheKey($section, $tenantId, $loc);
+            Cache::forget($cacheKey);
+
+            Log::debug('Landing page cache invalidated', [
+                'section' => $section,
+                'tenant_id' => $tenantId,
+                'locale' => $loc,
+                'cache_key' => $cacheKey,
+            ]);
+        }
     }
 }

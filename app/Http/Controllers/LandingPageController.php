@@ -24,11 +24,16 @@ class LandingPageController extends Controller
         $this->authorize('manage landing page');
 
         $tenantId = $this->getTenantId();
+        $currentLocale = $request->query('locale', 'de');
 
-        // Get all sections with their content
+        // Get all sections with their content for current locale
         $sections = [];
         foreach (LandingPageContent::SECTIONS as $section) {
-            $draft = $this->landingPageService->getDraft($section, $tenantId);
+            $draft = $this->landingPageService->getDraft($section, $tenantId, $currentLocale);
+
+            // Get status for both locales
+            $draftDe = $this->landingPageService->getDraft($section, $tenantId, 'de');
+            $draftEn = $this->landingPageService->getDraft($section, $tenantId, 'en');
 
             $sections[] = [
                 'section' => $section,
@@ -38,12 +43,18 @@ class LandingPageController extends Controller
                 'published_at' => $draft?->published_at,
                 'updated_at' => $draft?->updated_at,
                 'has_content' => $draft !== null,
+                'locale_status' => [
+                    'de' => $this->getLocaleStatus($draftDe),
+                    'en' => $this->getLocaleStatus($draftEn),
+                ],
             ];
         }
 
         return Inertia::render('Admin/LandingPage/Index', [
             'sections' => $sections,
             'tenant_id' => $tenantId,
+            'current_locale' => $currentLocale,
+            'available_locales' => ['de', 'en'],
             'is_super_admin' => Auth::user()?->hasRole('super_admin'),
         ]);
     }
@@ -60,20 +71,26 @@ class LandingPageController extends Controller
         }
 
         $tenantId = $this->getTenantId();
+        $currentLocale = $request->query('locale', 'de');
 
         // Get existing draft or create from published/default
-        $draft = $this->landingPageService->getDraft($section, $tenantId);
+        $draft = $this->landingPageService->getDraft($section, $tenantId, $currentLocale);
 
         // If no draft exists, get published content to use as starting point
         if (!$draft) {
-            $publishedContent = $this->landingPageService->getContent($section, $tenantId);
+            $publishedContent = $this->landingPageService->getContent($section, $tenantId, $currentLocale);
             $draft = new LandingPageContent([
                 'section' => $section,
                 'tenant_id' => $tenantId,
+                'locale' => $currentLocale,
                 'content' => $publishedContent,
                 'is_published' => false,
             ]);
         }
+
+        // Check if other locale has content (for copy feature)
+        $otherLocale = $currentLocale === 'de' ? 'en' : 'de';
+        $otherLocaleDraft = $this->landingPageService->getDraft($section, $tenantId, $otherLocale);
 
         return Inertia::render('Admin/LandingPage/EditSection', [
             'section' => $section,
@@ -83,6 +100,9 @@ class LandingPageController extends Controller
             'is_published' => $draft->is_published,
             'published_at' => $draft->published_at,
             'tenant_id' => $tenantId,
+            'current_locale' => $currentLocale,
+            'available_locales' => ['de', 'en'],
+            'other_locale_has_content' => $otherLocaleDraft !== null,
             'schema' => $this->getSectionSchema($section),
         ]);
     }
@@ -99,6 +119,7 @@ class LandingPageController extends Controller
         }
 
         $tenantId = $this->getTenantId();
+        $locale = $request->input('locale', 'de');
 
         // Validate based on section type
         $validated = $this->validateSectionContent($request, $section);
@@ -108,10 +129,11 @@ class LandingPageController extends Controller
             $section,
             $validated['content'],
             $tenantId,
+            $locale,
             false
         );
 
-        return redirect()->route('admin.landing-page.index')
+        return redirect()->route('admin.landing-page.index', ['locale' => $locale])
             ->with('success', 'Inhalte wurden erfolgreich als Entwurf gespeichert.');
     }
 
@@ -127,15 +149,16 @@ class LandingPageController extends Controller
         }
 
         $tenantId = $this->getTenantId();
+        $locale = $request->input('locale', 'de');
 
-        $success = $this->landingPageService->publishContent($section, $tenantId);
+        $success = $this->landingPageService->publishContent($section, $tenantId, $locale);
 
         if ($success) {
-            return redirect()->route('admin.landing-page.index')
+            return redirect()->route('admin.landing-page.index', ['locale' => $locale])
                 ->with('success', 'Inhalte wurden erfolgreich veröffentlicht.');
         }
 
-        return redirect()->route('admin.landing-page.index')
+        return redirect()->route('admin.landing-page.index', ['locale' => $locale])
             ->with('error', 'Fehler beim Veröffentlichen. Bitte stellen Sie sicher, dass Inhalte vorhanden sind.');
     }
 
@@ -151,15 +174,16 @@ class LandingPageController extends Controller
         }
 
         $tenantId = $this->getTenantId();
+        $locale = $request->input('locale', 'de');
 
-        $success = $this->landingPageService->unpublishContent($section, $tenantId);
+        $success = $this->landingPageService->unpublishContent($section, $tenantId, $locale);
 
         if ($success) {
-            return redirect()->route('admin.landing-page.index')
+            return redirect()->route('admin.landing-page.index', ['locale' => $locale])
                 ->with('success', 'Veröffentlichung wurde rückgängig gemacht.');
         }
 
-        return redirect()->route('admin.landing-page.index')
+        return redirect()->route('admin.landing-page.index', ['locale' => $locale])
             ->with('error', 'Fehler beim Zurücknehmen der Veröffentlichung.');
     }
 
@@ -175,18 +199,70 @@ class LandingPageController extends Controller
         }
 
         $tenantId = $this->getTenantId();
+        $locale = $request->query('locale', 'de');
 
         // Get draft content
-        $draft = $this->landingPageService->getDraft($section, $tenantId);
-        $content = $draft ? $draft->content : $this->landingPageService->getContent($section, $tenantId);
+        $draft = $this->landingPageService->getDraft($section, $tenantId, $locale);
+        $content = $draft ? $draft->content : $this->landingPageService->getContent($section, $tenantId, $locale);
 
         // Return preview view
         return Inertia::render('Admin/LandingPage/Preview', [
             'section' => $section,
             'label' => $this->getSectionLabel($section),
             'content' => $content,
+            'current_locale' => $locale,
             'is_preview' => true,
         ]);
+    }
+
+    /**
+     * Copy content from one locale to another (Admin).
+     */
+    public function copyToLocale(Request $request, string $section)
+    {
+        $this->authorize('manage landing page');
+
+        if (!in_array($section, LandingPageContent::SECTIONS)) {
+            abort(404, 'Section not found');
+        }
+
+        $validated = $request->validate([
+            'from_locale' => 'required|in:de,en',
+            'to_locale' => 'required|in:de,en',
+            'overwrite' => 'sometimes|boolean',
+        ]);
+
+        $tenantId = $this->getTenantId();
+
+        $result = $this->landingPageService->copyContentToLocale(
+            $section,
+            $tenantId,
+            $validated['from_locale'],
+            $validated['to_locale'],
+            $validated['overwrite'] ?? false
+        );
+
+        if ($result) {
+            return redirect()
+                ->route('admin.landing-page.edit', ['section' => $section, 'locale' => $validated['to_locale']])
+                ->with('success', "Inhalte wurden erfolgreich von {$validated['from_locale']} nach {$validated['to_locale']} kopiert.");
+        }
+
+        return redirect()
+            ->route('admin.landing-page.edit', ['section' => $section, 'locale' => $validated['to_locale']])
+            ->with('error', 'Fehler beim Kopieren der Inhalte. Bitte stellen Sie sicher, dass Quellinhalte vorhanden sind.');
+    }
+
+    /**
+     * Get locale status for a draft.
+     */
+    private function getLocaleStatus(?LandingPageContent $draft): string
+    {
+        if (!$draft) {
+            return 'not_configured';
+        }
+
+        return $draft->is_published ? 'published' : 'draft';
     }
 
     /**

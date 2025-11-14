@@ -20,6 +20,7 @@ class LandingPageContent extends Model
     protected $fillable = [
         'tenant_id',
         'section',
+        'locale',
         'content',
         'is_published',
         'published_at',

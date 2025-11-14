@@ -4,10 +4,19 @@ import { router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import LandingPageLocaleSwitcher from '@/Components/Landing/LandingPageLocaleSwitcher.vue';
 
 const props = defineProps({
     sections: Array,
     tenant_id: Number,
+    current_locale: {
+        type: String,
+        default: 'de'
+    },
+    available_locales: {
+        type: Array,
+        default: () => ['de', 'en']
+    },
     is_super_admin: Boolean,
 });
 
@@ -30,15 +39,50 @@ const getSectionIcon = (section) => {
     return icons[section] || 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01';
 };
 
+const currentLocale = ref(props.current_locale);
+
+const switchLocale = (locale) => {
+    router.get(route('admin.landing-page.index', { locale }), {}, {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
 const publishSection = (section) => {
     if (confirm(`Möchten Sie die Änderungen für "${section.label}" wirklich veröffentlichen?`)) {
-        router.post(route('admin.landing-page.publish', section.section));
+        router.post(route('admin.landing-page.publish', section.section), {
+            locale: currentLocale.value
+        });
     }
 };
 
 const unpublishSection = (section) => {
     if (confirm(`Möchten Sie die Veröffentlichung für "${section.label}" wirklich rückgängig machen?`)) {
-        router.post(route('admin.landing-page.unpublish', section.section));
+        router.post(route('admin.landing-page.unpublish', section.section), {
+            locale: currentLocale.value
+        });
+    }
+};
+
+const getLocaleStatusClass = (status) => {
+    switch (status) {
+        case 'published':
+            return 'bg-green-100 text-green-800';
+        case 'draft':
+            return 'bg-yellow-100 text-yellow-800';
+        default:
+            return 'bg-gray-100 text-gray-600';
+    }
+};
+
+const getLocaleStatusText = (status) => {
+    switch (status) {
+        case 'published':
+            return 'Veröffentlicht';
+        case 'draft':
+            return 'Entwurf';
+        default:
+            return 'Nicht konfiguriert';
     }
 };
 </script>
@@ -58,7 +102,13 @@ const unpublishSection = (section) => {
                     </p>
                 </div>
 
-                <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-4">
+                    <LandingPageLocaleSwitcher
+                        v-model="currentLocale"
+                        @change="switchLocale"
+                        :show-label="true"
+                    />
+
                     <SecondaryButton :href="route('admin.settings')" as="Link">
                         Zurück zum Admin Panel
                     </SecondaryButton>
@@ -105,26 +155,30 @@ const unpublishSection = (section) => {
                                     {{ section.description }}
                                 </p>
 
-                                <!-- Status Badge -->
-                                <div class="mb-4">
-                                    <span v-if="section.is_published" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        Veröffentlicht
-                                    </span>
-                                    <span v-else-if="section.has_content" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        Entwurf
-                                    </span>
-                                    <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        Nicht konfiguriert
-                                    </span>
+                                <!-- Status Badges (Multi-Locale) -->
+                                <div class="mb-4 space-y-2">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs font-medium text-gray-500 w-8">DE:</span>
+                                        <span
+                                            :class="[
+                                                'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                                                getLocaleStatusClass(section.locale_status?.de)
+                                            ]"
+                                        >
+                                            {{ getLocaleStatusText(section.locale_status?.de) }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs font-medium text-gray-500 w-8">EN:</span>
+                                        <span
+                                            :class="[
+                                                'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                                                getLocaleStatusClass(section.locale_status?.en)
+                                            ]"
+                                        >
+                                            {{ getLocaleStatusText(section.locale_status?.en) }}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <!-- Meta Info -->
@@ -136,11 +190,11 @@ const unpublishSection = (section) => {
                                 <!-- Actions -->
                                 <div class="flex flex-col space-y-2">
                                     <PrimaryButton
-                                        :href="route('admin.landing-page.edit', section.section)"
+                                        :href="route('admin.landing-page.edit', { section: section.section, locale: currentLocale })"
                                         as="Link"
                                         class="text-sm w-full justify-center"
                                     >
-                                        Bearbeiten
+                                        Bearbeiten ({{ currentLocale.toUpperCase() }})
                                     </PrimaryButton>
 
                                     <div class="flex space-x-2">

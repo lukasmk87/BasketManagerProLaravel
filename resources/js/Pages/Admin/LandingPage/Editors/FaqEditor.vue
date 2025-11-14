@@ -4,6 +4,7 @@ import DraggableList from '@/Components/Landing/DraggableList.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import RichTextEditor from '@/Components/RichTextEditor.vue';
 
 const props = defineProps({
     modelValue: {
@@ -111,36 +112,15 @@ const characterCount = (text, max) => {
 
                         <!-- Answer -->
                         <div>
-                            <InputLabel :for="`faq_answer_${index}`" value="Antwort *" />
-                            <textarea
+                            <InputLabel :for="`faq_answer_${index}`" value="Antwort * (mit Formatierung)" />
+                            <RichTextEditor
                                 :id="`faq_answer_${index}`"
                                 v-model="item.answer"
-                                rows="4"
-                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                required
-                                maxlength="1000"
+                                :max-length="2000"
                                 placeholder="z.B. Ja, absolut. Wir sind zu 100% DSGVO-konform, hosten ausschließlich in Deutschland und nehmen Datenschutz sehr ernst."
-                            ></textarea>
+                                :error="errors[`content.items.${index}.answer`]"
+                            />
                             <InputError class="mt-2" :message="errors[`content.items.${index}.answer`]" />
-
-                            <!-- Character Counter with Progress Bar -->
-                            <div class="mt-2">
-                                <div class="flex items-center justify-between mb-1">
-                                    <p class="text-xs" :class="characterCount(item.answer, 1000).isOver ? 'text-red-600' : 'text-gray-500'">
-                                        {{ characterCount(item.answer, 1000).count }} / 1.000 Zeichen
-                                    </p>
-                                    <p class="text-xs" :class="characterCount(item.answer, 1000).remaining < 0 ? 'text-red-600' : 'text-gray-500'">
-                                        {{ characterCount(item.answer, 1000).remaining >= 0 ? `${characterCount(item.answer, 1000).remaining} verbleibend` : `${Math.abs(characterCount(item.answer, 1000).remaining)} zu viel` }}
-                                    </p>
-                                </div>
-                                <div class="w-full bg-gray-200 rounded-full h-1.5">
-                                    <div
-                                        class="h-1.5 rounded-full transition-all"
-                                        :class="characterCount(item.answer, 1000).isOver ? 'bg-red-600' : 'bg-indigo-600'"
-                                        :style="{ width: `${Math.min(100, characterCount(item.answer, 1000).percentage)}%` }"
-                                    ></div>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Live Preview -->
@@ -153,9 +133,8 @@ const characterCount = (text, max) => {
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
                                 </summary>
-                                <p class="mt-3 text-gray-600 text-sm">
-                                    {{ item.answer || 'Antwort...' }}
-                                </p>
+                                <div class="mt-3 text-gray-600 text-sm prose prose-sm max-w-none" v-html="item.answer || '<p class=\'text-gray-400\'>Antwort...</p>'">
+                                </div>
                             </details>
                         </div>
                     </div>

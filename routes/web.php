@@ -265,6 +265,7 @@ Route::middleware([
             Route::post('/{section}/publish', [\App\Http\Controllers\LandingPageController::class, 'publish'])->name('publish');
             Route::post('/{section}/unpublish', [\App\Http\Controllers\LandingPageController::class, 'unpublish'])->name('unpublish');
             Route::get('/{section}/preview', [\App\Http\Controllers\LandingPageController::class, 'preview'])->name('preview');
+            Route::post('/{section}/copy-locale', [\App\Http\Controllers\LandingPageController::class, 'copyToLocale'])->name('copy-locale');
 
             // Image Upload
             Route::post('/upload-image', [\App\Http\Controllers\FileUploadController::class, 'uploadImage'])->name('upload-image');

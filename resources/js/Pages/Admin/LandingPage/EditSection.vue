@@ -1,12 +1,14 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import RichTextEditor from '@/Components/RichTextEditor.vue';
+import LandingPageLocaleSwitcher from '@/Components/Landing/LandingPageLocaleSwitcher.vue';
 import FaqEditor from './Editors/FaqEditor.vue';
 import FeaturesEditor from './Editors/FeaturesEditor.vue';
 import TestimonialsEditor from './Editors/TestimonialsEditor.vue';
@@ -20,13 +22,27 @@ const props = defineProps({
     is_published: Boolean,
     published_at: String,
     tenant_id: Number,
+    current_locale: {
+        type: String,
+        default: 'de'
+    },
+    available_locales: {
+        type: Array,
+        default: () => ['de', 'en']
+    },
+    other_locale_has_content: {
+        type: Boolean,
+        default: false
+    },
     schema: Object,
 });
 
 const form = useForm({
     content: props.content || {},
+    locale: props.current_locale,
 });
 
+const currentLocale = ref(props.current_locale);
 const hasUnsavedChanges = ref(false);
 
 watch(
@@ -44,6 +60,32 @@ const saveContent = () => {
             hasUnsavedChanges.value = false;
         },
     });
+};
+
+const switchLocale = (locale) => {
+    if (hasUnsavedChanges.value) {
+        if (!confirm('Sie haben ungespeicherte Änderungen. Möchten Sie trotzdem die Sprache wechseln?')) {
+            currentLocale.value = props.current_locale; // Reset to current
+            return;
+        }
+    }
+
+    router.get(route('admin.landing-page.edit', { section: props.section, locale }), {}, {
+        preserveState: false,
+    });
+};
+
+const copyFromLocale = () => {
+    const fromLocale = currentLocale.value === 'de' ? 'en' : 'de';
+    const toLocale = currentLocale.value;
+
+    if (confirm(`Möchten Sie die Inhalte von ${fromLocale.toUpperCase()} nach ${toLocale.toUpperCase()} kopieren? Bestehende Inhalte werden überschrieben.`)) {
+        router.post(route('admin.landing-page.copy-locale', props.section), {
+            from_locale: fromLocale,
+            to_locale: toLocale,
+            overwrite: true,
+        });
+    }
 };
 
 const publishContent = () => {
@@ -137,8 +179,28 @@ if (typeof window !== 'undefined') {
                 </div>
 
                 <div class="flex items-center space-x-3">
+                    <!-- Locale Switcher -->
+                    <LandingPageLocaleSwitcher
+                        v-model="currentLocale"
+                        @change="switchLocale"
+                        :show-label="true"
+                    />
+
+                    <!-- Copy from other locale button -->
+                    <button
+                        v-if="other_locale_has_content"
+                        @click="copyFromLocale"
+                        type="button"
+                        class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                    >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                        Von {{ currentLocale === 'de' ? 'EN' : 'DE' }} kopieren
+                    </button>
+
                     <a
-                        :href="route('admin.landing-page.preview', section)"
+                        :href="route('admin.landing-page.preview', { section, locale: currentLocale })"
                         target="_blank"
                         class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                     >
@@ -149,7 +211,7 @@ if (typeof window !== 'undefined') {
                         Vorschau
                     </a>
 
-                    <SecondaryButton :href="route('admin.landing-page.index')" as="Link">
+                    <SecondaryButton :href="route('admin.landing-page.index', { locale: currentLocale })" as="Link">
                         Zurück zur Übersicht
                     </SecondaryButton>
                 </div>
@@ -199,17 +261,15 @@ if (typeof window !== 'undefined') {
 
                                 <!-- Subheadline -->
                                 <div>
-                                    <InputLabel for="subheadline" value="Unterüberschrift *" />
-                                    <textarea
+                                    <InputLabel for="subheadline" value="Unterüberschrift * (mit Formatierung)" />
+                                    <RichTextEditor
                                         id="subheadline"
                                         v-model="form.content.subheadline"
-                                        rows="3"
-                                        class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                        required
-                                        maxlength="500"
-                                    ></textarea>
+                                        :max-length="1000"
+                                        placeholder="Beschreibungstext mit optionaler Formatierung..."
+                                        :error="form.errors['content.subheadline']"
+                                    />
                                     <InputError class="mt-2" :message="form.errors['content.subheadline']" />
-                                    <p class="mt-1 text-xs text-gray-500">{{ characterCount('subheadline', 500) }}</p>
                                 </div>
 
                                 <!-- Primary CTA -->
@@ -351,14 +411,14 @@ if (typeof window !== 'undefined') {
 
                                 <!-- Subheadline -->
                                 <div>
-                                    <InputLabel for="subheadline" value="Unterüberschrift" />
-                                    <textarea
+                                    <InputLabel for="subheadline" value="Unterüberschrift (mit Formatierung)" />
+                                    <RichTextEditor
                                         id="subheadline"
                                         v-model="form.content.subheadline"
-                                        rows="2"
-                                        class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                        maxlength="500"
-                                    ></textarea>
+                                        :max-length="1000"
+                                        placeholder="Optionaler Beschreibungstext..."
+                                        :error="form.errors['content.subheadline']"
+                                    />
                                     <InputError class="mt-2" :message="form.errors['content.subheadline']" />
                                 </div>
 

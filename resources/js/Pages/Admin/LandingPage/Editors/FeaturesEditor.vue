@@ -5,6 +5,7 @@ import IconPicker from '@/Components/Landing/IconPicker.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import RichTextEditor from '@/Components/RichTextEditor.vue';
 
 const props = defineProps({
     modelValue: {
@@ -137,36 +138,15 @@ const characterCount = (text, max) => {
 
                         <!-- Description -->
                         <div>
-                            <InputLabel :for="`feature_description_${index}`" value="Beschreibung *" />
-                            <textarea
+                            <InputLabel :for="`feature_description_${index}`" value="Beschreibung * (mit Formatierung)" />
+                            <RichTextEditor
                                 :id="`feature_description_${index}`"
                                 v-model="item.description"
-                                rows="3"
-                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                required
-                                maxlength="200"
+                                :max-length="500"
                                 placeholder="z.B. Erfasse Spielzüge in Echtzeit und generiere automatisch detaillierte Statistiken."
-                            ></textarea>
+                                :error="errors[`content.items.${index}.description`]"
+                            />
                             <InputError class="mt-2" :message="errors[`content.items.${index}.description`]" />
-
-                            <!-- Character Counter with Progress Bar -->
-                            <div class="mt-2">
-                                <div class="flex items-center justify-between mb-1">
-                                    <p class="text-xs" :class="characterCount(item.description, 200).isOver ? 'text-red-600' : 'text-gray-500'">
-                                        {{ characterCount(item.description, 200).count }} / 200 Zeichen
-                                    </p>
-                                    <p class="text-xs" :class="characterCount(item.description, 200).remaining < 0 ? 'text-red-600' : 'text-gray-500'">
-                                        {{ characterCount(item.description, 200).remaining >= 0 ? `${characterCount(item.description, 200).remaining} verbleibend` : `${Math.abs(characterCount(item.description, 200).remaining)} zu viel` }}
-                                    </p>
-                                </div>
-                                <div class="w-full bg-gray-200 rounded-full h-1.5">
-                                    <div
-                                        class="h-1.5 rounded-full transition-all"
-                                        :class="characterCount(item.description, 200).isOver ? 'bg-red-600' : 'bg-indigo-600'"
-                                        :style="{ width: `${Math.min(100, characterCount(item.description, 200).percentage)}%` }"
-                                    ></div>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Preview Card -->
@@ -185,7 +165,7 @@ const characterCount = (text, max) => {
                                 </div>
                                 <div class="flex-1">
                                     <h4 class="text-lg font-semibold text-gray-900 mb-2">{{ item.title || 'Titel...' }}</h4>
-                                    <p class="text-sm text-gray-600">{{ item.description || 'Beschreibung...' }}</p>
+                                    <div class="text-sm text-gray-600 prose prose-sm max-w-none" v-html="item.description || '<p class=\'text-gray-400\'>Beschreibung...</p>'"></div>
                                 </div>
                             </div>
                         </div>
