@@ -9,7 +9,13 @@
       "Bash(cat:*)",
       "Bash(findstr:*)",
       "Bash(npm run build:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(if [ -f storage/installed ])",
+      "Bash(then echo \"installed marker exists\")",
+      "Bash(else echo \"installed marker MISSING\")",
+      "Bash(fi)",
+      "Bash(dir:*)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []

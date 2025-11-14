@@ -188,6 +188,9 @@ const getIconColor = (tab) => {
                                     <SecondaryButton :href="route('admin.legal-pages.index')" as="Link" class="justify-center">
                                         Legal Pages verwalten
                                     </SecondaryButton>
+                                    <SecondaryButton :href="route('admin.landing-page.index')" as="Link" class="justify-center">
+                                        Landing Page verwalten
+                                    </SecondaryButton>
                                     <SecondaryButton :href="route('admin.system')" as="Link" class="justify-center">
                                         System-Info
                                     </SecondaryButton>

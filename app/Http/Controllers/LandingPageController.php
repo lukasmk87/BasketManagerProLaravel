@@ -21,8 +21,7 @@ class LandingPageController extends Controller
      */
     public function index(Request $request): Response
     {
-        $this->authorize('manage landing page');
-
+        // Authorization handled by route middleware: role:admin|super_admin
         $tenantId = $this->getTenantId();
         $currentLocale = $request->query('locale', 'de');
 
@@ -64,8 +63,7 @@ class LandingPageController extends Controller
      */
     public function edit(Request $request, string $section): Response
     {
-        $this->authorize('manage landing page');
-
+        // Authorization handled by route middleware: role:admin|super_admin
         if (!in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
@@ -112,8 +110,7 @@ class LandingPageController extends Controller
      */
     public function update(Request $request, string $section)
     {
-        $this->authorize('manage landing page');
-
+        // Authorization handled by route middleware: role:admin|super_admin
         if (!in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
@@ -142,8 +139,7 @@ class LandingPageController extends Controller
      */
     public function publish(Request $request, string $section)
     {
-        $this->authorize('manage landing page');
-
+        // Authorization handled by route middleware: role:admin|super_admin
         if (!in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
@@ -167,8 +163,7 @@ class LandingPageController extends Controller
      */
     public function unpublish(Request $request, string $section)
     {
-        $this->authorize('manage landing page');
-
+        // Authorization handled by route middleware: role:admin|super_admin
         if (!in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
@@ -192,8 +187,7 @@ class LandingPageController extends Controller
      */
     public function preview(Request $request, string $section): Response
     {
-        $this->authorize('manage landing page');
-
+        // Authorization handled by route middleware: role:admin|super_admin
         if (!in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
@@ -220,8 +214,7 @@ class LandingPageController extends Controller
      */
     public function copyToLocale(Request $request, string $section)
     {
-        $this->authorize('manage landing page');
-
+        // Authorization handled by route middleware: role:admin|super_admin
         if (!in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }

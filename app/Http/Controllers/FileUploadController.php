@@ -11,8 +11,8 @@ class FileUploadController extends Controller
 {
     public function __construct()
     {
+        // Authorization handled by route middleware: role:admin|super_admin
         $this->middleware('auth');
-        $this->middleware('can:manage landing page');
     }
 
     /**
