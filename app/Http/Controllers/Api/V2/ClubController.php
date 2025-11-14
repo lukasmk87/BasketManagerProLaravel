@@ -8,11 +8,18 @@ use App\Http\Requests\Api\V2\Clubs\UpdateClubRequest;
 use App\Http\Requests\Api\V2\Clubs\IndexClubsRequest;
 use App\Http\Resources\ClubResource;
 use App\Models\Club;
+use App\Services\ClubService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ClubController extends Controller
 {
+    /**
+     * Create a new controller instance.
+     */
+    public function __construct(
+        protected ClubService $clubService
+    ) {}
     /**
      * Display a listing of clubs.
      */
@@ -72,12 +79,9 @@ class ClubController extends Controller
         $this->authorize('create', Club::class);
 
         $clubData = $request->validated();
-        $club = Club::create($clubData);
 
-        // Add current user as club admin if specified
-        if ($request->has('add_current_user_as_admin') && $request->add_current_user_as_admin) {
-            $club->addMember(auth()->user(), 'admin');
-        }
+        // Use ClubService to properly handle tenant_id and club creation
+        $club = $this->clubService->createClub($clubData);
 
         return new ClubResource($club->load(['teams', 'users']));
     }

@@ -122,6 +122,30 @@ class ClubController extends Controller
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048',
         ]);
 
+        // Handle tenant_id for Super Admins
+        // Super Admins must explicitly specify tenant_id, but we can auto-detect it from context
+        if (auth()->check() && auth()->user()->hasRole('super_admin') && empty($validated['tenant_id'])) {
+            // Try to get tenant from current context (session-selected tenant)
+            $tenant = app()->bound('tenant') ? app('tenant') : null;
+
+            if ($tenant) {
+                $validated['tenant_id'] = $tenant->id;
+            } else {
+                // Fallback: Get the first active tenant from the domain
+                $tenant = \App\Models\Tenant::resolveFromDomain(request()->getHost());
+
+                if ($tenant) {
+                    $validated['tenant_id'] = $tenant->id;
+                } else {
+                    // Last fallback: Get any active tenant (for development/testing)
+                    $tenant = \App\Models\Tenant::where('is_active', true)->first();
+                    if ($tenant) {
+                        $validated['tenant_id'] = $tenant->id;
+                    }
+                }
+            }
+        }
+
         $club = $this->clubService->createClub($validated);
 
         // Handle logo upload if provided
