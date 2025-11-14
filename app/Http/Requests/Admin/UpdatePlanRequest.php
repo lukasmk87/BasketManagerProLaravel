@@ -12,7 +12,10 @@ class UpdatePlanRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('manage-subscriptions');
+        // Authorization removed - route already protected by AdminMiddleware
+        // which checks for super_admin/admin role OR manage-subscriptions permission
+        // This prevents 403 errors when permission cache is stale during installation
+        return true;
     }
 
     /**

@@ -14,7 +14,8 @@ class LimitEnforcementService
 
     public function __construct()
     {
-        $this->tenant = app('tenant');
+        // Null-safe tenant binding - Super Admins may not have a tenant context
+        $this->tenant = app()->bound('tenant') ? app('tenant') : null;
 
         if ($this->tenant) {
             $this->customization = $this->tenant->activeCustomization;
