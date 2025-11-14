@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -22,6 +23,12 @@ class RoleAndPermissionSeeder extends Seeder
 
         // Create roles and assign permissions
         $this->createRoles();
+
+        // Clear all caches including bootstrap cache to ensure
+        // AuthServiceProvider's Gate::before() callback is properly registered
+        Artisan::call('optimize:clear');
+
+        $this->command->info('All caches cleared (including bootstrap cache).');
     }
 
     /**

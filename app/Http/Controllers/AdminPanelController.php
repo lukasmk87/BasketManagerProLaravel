@@ -106,7 +106,7 @@ class AdminPanelController extends Controller
      */
     public function users(Request $request): Response
     {
-        $this->authorize('view users');
+        $this->authorize('viewAny', User::class);
 
         $users = User::with(['roles', 'clubs'])
             ->withCount(['clubs', 'coachedTeams'])
@@ -210,7 +210,7 @@ class AdminPanelController extends Controller
      */
     public function createUser(Request $request): Response
     {
-        $this->authorize('create users');
+        $this->authorize('create', User::class);
 
         // Super-Admins see all clubs from all tenants, regular admins see only their tenant's clubs
         $clubs = auth()->user()->hasRole('super_admin')
@@ -228,7 +228,7 @@ class AdminPanelController extends Controller
      */
     public function storeUser(Request $request)
     {
-        $this->authorize('create users');
+        $this->authorize('create', User::class);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -283,7 +283,7 @@ class AdminPanelController extends Controller
      */
     public function editUser(Request $request, User $user): Response
     {
-        $this->authorize('edit users');
+        $this->authorize('update', $user);
 
         // Super-Admins see all clubs from all tenants, regular admins see only their tenant's clubs
         $clubs = auth()->user()->hasRole('super_admin')
@@ -302,7 +302,7 @@ class AdminPanelController extends Controller
      */
     public function updateUser(Request $request, User $user)
     {
-        $this->authorize('edit users');
+        $this->authorize('update', $user);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -418,7 +418,7 @@ class AdminPanelController extends Controller
      */
     public function sendPasswordResetLink(Request $request, User $user)
     {
-        $this->authorize('edit users');
+        $this->authorize('update', $user);
 
         // Use UserService to send password reset
         $userService = app(\App\Services\UserService::class);
