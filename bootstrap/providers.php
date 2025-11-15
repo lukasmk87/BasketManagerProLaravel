@@ -5,6 +5,7 @@ return [
     App\Providers\AuthServiceProvider::class,
     App\Providers\BasketManagerServiceProvider::class,
     App\Providers\BroadcastServiceProvider::class,
+    App\Providers\ClubTransferServiceProvider::class,
     App\Providers\FeatureGateServiceProvider::class,
     App\Providers\FortifyServiceProvider::class,
     App\Providers\JetstreamServiceProvider::class,
