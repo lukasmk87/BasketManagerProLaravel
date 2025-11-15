@@ -11,6 +11,7 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Providers\StripeServiceProvider::class,
         \App\Providers\CashierServiceProvider::class,
         \App\Providers\FeatureGateServiceProvider::class,
+        \App\Providers\ClubTransferServiceProvider::class,
     ])
     ->withRouting(
         commands: __DIR__.'/../routes/console.php',

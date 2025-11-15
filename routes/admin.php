@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\TenantSubscriptionController;
 use App\Http\Controllers\Admin\UsageLimitsController;
+use App\Http\Controllers\Admin\ClubTransferController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,4 +47,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Usage & Limits
     Route::get('usage/limits/{tenant}', [UsageLimitsController::class, 'getLimits'])->name('usage.limits');
     Route::get('usage/stats', [UsageLimitsController::class, 'getStats'])->name('usage.stats');
+
+    // Club Transfer Management
+    Route::get('club-transfers', [ClubTransferController::class, 'index'])->name('club-transfers.index');
+    Route::get('club-transfers/{transfer}', [ClubTransferController::class, 'show'])->name('club-transfers.show');
+    Route::post('clubs/{club}/transfer-preview', [ClubTransferController::class, 'preview'])->name('clubs.transfer.preview');
+    Route::post('clubs/{club}/transfer', [ClubTransferController::class, 'store'])->name('clubs.transfer');
+    Route::post('clubs/batch-transfer', [ClubTransferController::class, 'batchStore'])->name('clubs.batch-transfer');
+    Route::post('club-transfers/{transfer}/rollback', [ClubTransferController::class, 'rollback'])->name('club-transfers.rollback');
+    Route::delete('club-transfers/{transfer}', [ClubTransferController::class, 'destroy'])->name('club-transfers.destroy');
 });

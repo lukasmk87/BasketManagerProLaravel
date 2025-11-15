@@ -48,3 +48,23 @@ app(Schedule::class)->command('subscription:update-cohorts')
     ->runInBackground()
     ->name('subscription-cohorts')
     ->description('Update cohort retention analytics');
+
+// Club Transfer Scheduled Tasks
+app(Schedule::class)->command('club-transfer:cleanup-rollback-data')
+    ->dailyAt('04:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->name('club-transfer-cleanup-rollback')
+    ->description('Cleanup expired club transfer rollback data (>24h)');
+
+// Optional: Weekly cleanup of old transfer records
+app(Schedule::class)->call(function () {
+    // Delete soft-deleted transfers older than 90 days
+    \App\Models\ClubTransfer::onlyTrashed()
+        ->where('deleted_at', '<', now()->subDays(90))
+        ->forceDelete();
+})->weekly()
+    ->sundays()
+    ->at('05:00')
+    ->name('club-transfer-cleanup-old-records')
+    ->description('Permanently delete old club transfer records (>90 days)');
