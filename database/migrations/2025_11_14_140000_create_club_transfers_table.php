@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('club_transfers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('club_id')->constrained('clubs')->onDelete('cascade');
+            $table->foreignId('club_id')->constrained('clubs')->cascadeOnDelete();
             $table->foreignUuid('source_tenant_id')->constrained('tenants')->onDelete('cascade');
             $table->foreignUuid('target_tenant_id')->constrained('tenants')->onDelete('cascade');
-            $table->foreignUuid('initiated_by')->constrained('users')->onDelete('cascade');
+            $table->foreignId('initiated_by')->constrained('users')->cascadeOnDelete();
 
             $table->enum('status', [
                 'pending',
