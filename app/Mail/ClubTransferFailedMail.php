@@ -39,7 +39,7 @@ class ClubTransferFailedMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.club-transfer-failed',
+            markdown: 'emails.club-transfer.transfer-failed',
             with: [
                 'transfer' => $this->transfer,
                 'admin' => $this->admin,

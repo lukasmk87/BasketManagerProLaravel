@@ -38,7 +38,7 @@ class ClubTransferCompletedMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.club-transfer-completed',
+            markdown: 'emails.club-transfer.transfer-completed',
             with: [
                 'transfer' => $this->transfer,
                 'admin' => $this->admin,
