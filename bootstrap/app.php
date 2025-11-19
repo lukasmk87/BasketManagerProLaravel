@@ -89,6 +89,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::prefix('api')
                 ->middleware('api')
                 ->group(base_path('routes/health.php'));
+
+            // Season Management API routes
+            \Illuminate\Support\Facades\Route::prefix('api')
+                ->middleware('api')
+                ->group(base_path('routes/season.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

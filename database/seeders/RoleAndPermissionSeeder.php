@@ -236,6 +236,19 @@ class RoleAndPermissionSeeder extends Seeder
             // PWA Management
             'manage pwa settings',
             'update service worker',
+
+            // Season Management
+            'view seasons',
+            'view any seasons',
+            'create seasons',
+            'edit seasons',
+            'delete seasons',
+            'manage seasons',
+            'complete seasons',
+            'activate seasons',
+            'start new season',
+            'export season statistics',
+            'compare seasons',
         ];
 
         foreach ($permissions as $permission) {
@@ -372,6 +385,11 @@ class RoleAndPermissionSeeder extends Seeder
 
             // PWA
             'manage pwa settings', 'update service worker',
+
+            // Season Management
+            'view seasons', 'view any seasons', 'create seasons', 'edit seasons',
+            'delete seasons', 'manage seasons', 'complete seasons', 'activate seasons',
+            'start new season', 'export season statistics', 'compare seasons',
         ]);
 
         // Club Administrator Role
@@ -456,6 +474,11 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Import/Export
             'import games', 'import users',
+
+            // Season Management (full management for own club)
+            'view seasons', 'create seasons', 'edit seasons', 'delete seasons',
+            'manage seasons', 'complete seasons', 'activate seasons',
+            'start new season', 'export season statistics', 'compare seasons',
         ]);
 
         // Head Coach/Trainer Role
@@ -512,6 +535,9 @@ class RoleAndPermissionSeeder extends Seeder
 
             // User Preferences
             'view user preferences', 'edit user preferences',
+
+            // Season Management (view and export only)
+            'view seasons', 'export season statistics', 'compare seasons',
         ]);
 
         // Assistant Coach Role
@@ -559,6 +585,9 @@ class RoleAndPermissionSeeder extends Seeder
 
             // User Preferences
             'view user preferences',
+
+            // Season Management (view only)
+            'view seasons',
         ]);
 
         // Scorer/Statistician Role

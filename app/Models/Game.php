@@ -42,6 +42,7 @@ class Game extends Model implements HasMedia
         'is_home_game',
         'type',
         'season',
+        'season_id',
         'league',
         'division',
         'status',
@@ -193,6 +194,14 @@ class Game extends Model implements HasMedia
     public function awayTeam(): BelongsTo
     {
         return $this->belongsTo(Team::class, 'away_team_id');
+    }
+
+    /**
+     * Get the season this game belongs to.
+     */
+    public function season(): BelongsTo
+    {
+        return $this->belongsTo(Season::class);
     }
 
     /**

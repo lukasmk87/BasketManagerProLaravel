@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import StatisticsWidget from '@/Components/Basketball/StatisticsWidget.vue';
 import TeamCard from '@/Components/Basketball/TeamCard.vue';
 import RecentActivity from '@/Components/Basketball/RecentActivity.vue';
+import CurrentSeasonBanner from '@/Components/Seasons/CurrentSeasonBanner.vue';
 
 const props = defineProps({
     dashboardData: Object,
@@ -70,6 +71,13 @@ const getTeamDisplayName = (game, isHome = true) => {
         </div>
 
         <template v-else>
+            <!-- Current Season Banner -->
+            <CurrentSeasonBanner
+                v-if="dashboardData.current_season"
+                :club="primaryClub"
+                :season="dashboardData.current_season"
+            />
+
             <!-- Club Header -->
             <div class="bg-white overflow-hidden shadow rounded-lg">
                 <div class="p-6">

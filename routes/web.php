@@ -119,7 +119,13 @@ Route::middleware([
     Route::put('players/{player}', [\App\Http\Controllers\PlayerController::class, 'update'])->name('web.players.update');
     Route::patch('players/{player}', [\App\Http\Controllers\PlayerController::class, 'update'])->name('web.players.patch');
     Route::delete('players/{player}', [\App\Http\Controllers\PlayerController::class, 'destroy'])->name('web.players.destroy');
-    
+
+    // Season Management Routes
+    Route::prefix('club/{club}/seasons')->name('club.seasons.')->group(function () {
+        Route::get('/compare', [\App\Http\Controllers\SeasonController::class, 'compare'])->name('compare');
+        Route::post('/{season}/export', [\App\Http\Controllers\SeasonController::class, 'export'])->name('export');
+    });
+
     // Game Import Routes (MUST come BEFORE generic game routes to avoid conflicts)
     Route::prefix('games/import')->name('games.import.')->group(function () {
         Route::get('/', [\App\Http\Controllers\GameImportController::class, 'index'])->name('index');

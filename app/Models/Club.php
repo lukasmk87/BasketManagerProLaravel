@@ -174,6 +174,14 @@ class Club extends Model implements HasMedia
     }
 
     /**
+     * Get the seasons belonging to this club.
+     */
+    public function seasons(): HasMany
+    {
+        return $this->hasMany(Season::class);
+    }
+
+    /**
      * Get the users that belong to this club.
      */
     public function users(): BelongsToMany

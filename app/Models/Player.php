@@ -265,6 +265,14 @@ class Player extends Model implements HasMedia
         return $this->belongsTo(PlayerRegistrationInvitation::class, 'registered_via_invitation_id');
     }
 
+    /**
+     * Get the season statistics for this player.
+     */
+    public function seasonStatistics(): HasMany
+    {
+        return $this->hasMany(SeasonStatistic::class);
+    }
+
     // ============================
     // SCOPES
     // ============================

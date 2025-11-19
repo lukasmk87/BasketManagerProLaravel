@@ -37,6 +37,7 @@ class BasketballTeam extends Model implements HasMedia
         'division',
         'league',
         'season',
+        'season_id',
         'season_start',
         'season_end',
         'primary_color',
@@ -124,6 +125,14 @@ class BasketballTeam extends Model implements HasMedia
     public function club(): BelongsTo
     {
         return $this->belongsTo(Club::class);
+    }
+
+    /**
+     * Get the season this team belongs to.
+     */
+    public function season(): BelongsTo
+    {
+        return $this->belongsTo(Season::class);
     }
 
     /**

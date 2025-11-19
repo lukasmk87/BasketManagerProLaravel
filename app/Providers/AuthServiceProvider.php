@@ -28,6 +28,8 @@ use Spatie\Permission\Models\Role;
 use App\Policies\RolePolicy;
 use App\Models\ClubTransfer;
 use App\Policies\ClubTransferPolicy;
+use App\Models\Season;
+use App\Policies\SeasonPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -49,6 +51,7 @@ class AuthServiceProvider extends ServiceProvider
         ClubSubscriptionPlan::class => ClubSubscriptionPlanPolicy::class,
         Role::class => RolePolicy::class,
         ClubTransfer::class => ClubTransferPolicy::class,
+        Season::class => SeasonPolicy::class,
     ];
 
     /**
