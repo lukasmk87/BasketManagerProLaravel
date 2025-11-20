@@ -15,7 +15,9 @@
       "Bash(else echo \"installed marker MISSING\")",
       "Bash(fi)",
       "Bash(dir:*)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(npm install)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

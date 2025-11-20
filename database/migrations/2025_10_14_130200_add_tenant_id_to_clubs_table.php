@@ -11,22 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Check if column exists before adding
-        if (!Schema::hasColumn('clubs', 'tenant_id')) {
-            Schema::table('clubs', function (Blueprint $table) {
-                // Add tenant_id foreign key
+        Schema::table('clubs', function (Blueprint $table) {
+            // Check if column exists before adding
+            if (!Schema::hasColumn('clubs', 'tenant_id')) {
+                // Add tenant_id foreign key (creates index automatically)
                 $table->foreignUuid('tenant_id')
                     ->nullable() // Nullable initially to allow data migration
-                    ->after('club_subscription_plan_id')
                     ->constrained('tenants')
                     ->onDelete('cascade');
+            }
+        });
 
-                // Add index for tenant_id for performance
-                $table->index('tenant_id', 'idx_clubs_tenant');
-
-                // Add composite index for tenant_id + is_active for common queries
+        // Add composite index for tenant_id + is_active for common queries (if not exists)
+        // Use try-catch to handle index already exists error
+        try {
+            Schema::table('clubs', function (Blueprint $table) {
                 $table->index(['tenant_id', 'is_active'], 'idx_clubs_tenant_active');
             });
+        } catch (\Exception $e) {
+            // Index already exists, silently continue
         }
     }
 
@@ -36,13 +39,18 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('clubs', function (Blueprint $table) {
-            // Drop indexes first
-            $table->dropIndex('idx_clubs_tenant_active');
-            $table->dropIndex('idx_clubs_tenant');
+            // Drop composite index if exists
+            try {
+                $table->dropIndex('idx_clubs_tenant_active');
+            } catch (\Exception $e) {
+                // Index doesn't exist, continue
+            }
 
             // Drop foreign key and column
-            $table->dropForeign(['tenant_id']);
-            $table->dropColumn('tenant_id');
+            if (Schema::hasColumn('clubs', 'tenant_id')) {
+                $table->dropForeign(['tenant_id']);
+                $table->dropColumn('tenant_id');
+            }
         });
     }
 };
