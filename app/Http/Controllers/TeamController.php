@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Team;
 use App\Models\Club;
 use App\Models\Player;
+use App\Models\User;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -263,8 +265,13 @@ class TeamController extends Controller
     {
         $this->authorize('update', $team);
 
-        // Load players relationship to match the show() method
-        $team->load(['players.user']);
+        // Load players and coaches relationships
+        $team->load([
+            'players.user',
+            'coaches' => function ($query) {
+                $query->withPivot('coaching_license', 'coaching_certifications', 'coaching_specialties', 'joined_at', 'is_active');
+            }
+        ]);
 
         $user = auth()->user();
         
@@ -289,6 +296,24 @@ class TeamController extends Controller
             $playerData = $player->toArray();
             $playerData['user'] = $player->user?->toArray();
             return $playerData;
+        })->toArray();
+
+        // Add coaches data with pivot information
+        $teamData['coaches'] = $team->coaches->map(function($coach) {
+            $coachData = [
+                'id' => $coach->id,
+                'name' => $coach->name,
+                'email' => $coach->email,
+                'role' => $coach->pivot->role,
+                'coaching_license' => $coach->pivot->coaching_license,
+                'coaching_certifications' => $coach->pivot->coaching_certifications
+                    ? json_decode($coach->pivot->coaching_certifications, true)
+                    : [],
+                'coaching_specialties' => $coach->pivot->coaching_specialties,
+                'joined_at' => $coach->pivot->joined_at,
+                'is_active' => $coach->pivot->is_active,
+            ];
+            return $coachData;
         })->toArray();
 
         return Inertia::render('Teams/Edit', [
@@ -488,5 +513,211 @@ class TeamController extends Controller
         return response()->json([
             'message' => 'Spieler wurde erfolgreich vom Team entfernt.',
         ]);
+    }
+
+    /**
+     * Get available coaches for a club.
+     *
+     * Returns all users with 'trainer' role in the specified club.
+     */
+    public function getAvailableCoaches(Request $request, Club $club)
+    {
+        // Authorization: User must be able to assign coaches
+        $this->authorize('assignCoaches', Team::class);
+
+        // Get users with 'trainer' role in this club
+        $coaches = $club->users()
+            ->whereHas('roles', function($q) {
+                $q->where('name', 'trainer');
+            })
+            ->where('is_active', true)
+            ->select('id', 'name', 'email')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'coaches' => $coaches,
+        ]);
+    }
+
+    /**
+     * Assign a head coach to a team.
+     *
+     * Validates that the user has trainer role and belongs to the same club,
+     * then assigns them as head coach in both legacy and modern systems.
+     */
+    public function assignHeadCoach(Request $request, Team $team)
+    {
+        $this->authorize('assignCoaches', $team);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'coaching_license' => 'nullable|string|max:255',
+            'coaching_certifications' => 'nullable|array',
+            'coaching_specialties' => 'nullable|string|max:1000',
+        ]);
+
+        $user = User::findOrFail($validated['user_id']);
+
+        // Validate user has trainer role
+        if (!$user->hasRole('trainer')) {
+            return back()->withErrors([
+                'user_id' => 'Der ausgewählte Benutzer hat keine Trainer-Rolle.'
+            ]);
+        }
+
+        // Validate user belongs to same club
+        if (!$user->clubs()->where('club_id', $team->club_id)->exists()) {
+            return back()->withErrors([
+                'user_id' => 'Der Trainer gehört nicht zum gleichen Club.'
+            ]);
+        }
+
+        DB::transaction(function() use ($team, $user, $validated) {
+            // Update legacy field
+            $team->head_coach_id = $user->id;
+            $team->save();
+
+            // Update modern system (team_user pivot)
+            // First, remove any existing head_coach role for other users
+            DB::table('team_user')
+                ->where('team_id', $team->id)
+                ->where('role', 'head_coach')
+                ->delete();
+
+            // Then attach new head coach
+            $team->users()->syncWithoutDetaching([
+                $user->id => [
+                    'role' => 'head_coach',
+                    'joined_at' => now(),
+                    'is_active' => true,
+                    'coaching_license' => $validated['coaching_license'] ?? null,
+                    'coaching_certifications' => isset($validated['coaching_certifications'])
+                        ? json_encode($validated['coaching_certifications'])
+                        : null,
+                    'coaching_specialties' => $validated['coaching_specialties'] ?? null,
+                ]
+            ]);
+        });
+
+        return redirect()->back()->with('success', 'Head Coach erfolgreich zugewiesen.');
+    }
+
+    /**
+     * Manage assistant coaches for a team.
+     *
+     * Adds or removes assistant coaches. Supports unlimited assistant coaches.
+     */
+    public function manageAssistantCoaches(Request $request, Team $team)
+    {
+        $this->authorize('assignCoaches', $team);
+
+        $validated = $request->validate([
+            'action' => 'required|in:add,remove',
+            'user_id' => 'required|exists:users,id',
+            'coaching_license' => 'nullable|string|max:255',
+            'coaching_certifications' => 'nullable|array',
+            'coaching_specialties' => 'nullable|string|max:1000',
+        ]);
+
+        $user = User::findOrFail($validated['user_id']);
+
+        if ($validated['action'] === 'add') {
+            // Validate user has trainer role
+            if (!$user->hasRole('trainer')) {
+                return back()->withErrors([
+                    'user_id' => 'Der ausgewählte Benutzer hat keine Trainer-Rolle.'
+                ]);
+            }
+
+            // Validate user belongs to same club
+            if (!$user->clubs()->where('club_id', $team->club_id)->exists()) {
+                return back()->withErrors([
+                    'user_id' => 'Der Trainer gehört nicht zum gleichen Club.'
+                ]);
+            }
+
+            // Check if user is already a coach on this team
+            if ($team->coaches()->where('user_id', $user->id)->exists()) {
+                return back()->withErrors([
+                    'user_id' => 'Dieser Trainer ist bereits diesem Team zugeordnet.'
+                ]);
+            }
+
+            DB::transaction(function() use ($team, $user, $validated) {
+                // Update legacy field (assistant_coaches array)
+                $assistants = $team->assistant_coaches ?? [];
+                if (!in_array($user->id, $assistants)) {
+                    $assistants[] = $user->id;
+                    $team->assistant_coaches = $assistants;
+                    $team->save();
+                }
+
+                // Update modern system
+                $team->users()->attach($user->id, [
+                    'role' => 'assistant_coach',
+                    'joined_at' => now(),
+                    'is_active' => true,
+                    'coaching_license' => $validated['coaching_license'] ?? null,
+                    'coaching_certifications' => isset($validated['coaching_certifications'])
+                        ? json_encode($validated['coaching_certifications'])
+                        : null,
+                    'coaching_specialties' => $validated['coaching_specialties'] ?? null,
+                ]);
+            });
+
+            return redirect()->back()->with('success', 'Co-Trainer erfolgreich hinzugefügt.');
+
+        } else {
+            // Remove assistant coach
+            DB::transaction(function() use ($team, $user) {
+                // Update legacy field
+                $assistants = $team->assistant_coaches ?? [];
+                if (($key = array_search($user->id, $assistants)) !== false) {
+                    unset($assistants[$key]);
+                    $team->assistant_coaches = array_values($assistants);
+                    $team->save();
+                }
+
+                // Update modern system
+                $team->users()->detach($user->id);
+            });
+
+            return redirect()->back()->with('success', 'Co-Trainer erfolgreich entfernt.');
+        }
+    }
+
+    /**
+     * Update coach details (license, certifications, specialties).
+     *
+     * Updates the pivot table information for a coach.
+     */
+    public function updateCoachDetails(Request $request, Team $team, User $user)
+    {
+        $this->authorize('assignCoaches', $team);
+
+        // Verify user is a coach on this team
+        if (!$team->coaches()->where('user_id', $user->id)->exists()) {
+            return back()->withErrors([
+                'error' => 'Dieser Benutzer ist kein Trainer dieses Teams.'
+            ]);
+        }
+
+        $validated = $request->validate([
+            'coaching_license' => 'nullable|string|max:255',
+            'coaching_certifications' => 'nullable|array',
+            'coaching_specialties' => 'nullable|string|max:1000',
+        ]);
+
+        // Update pivot data
+        $team->users()->updateExistingPivot($user->id, [
+            'coaching_license' => $validated['coaching_license'] ?? null,
+            'coaching_certifications' => isset($validated['coaching_certifications'])
+                ? json_encode($validated['coaching_certifications'])
+                : null,
+            'coaching_specialties' => $validated['coaching_specialties'] ?? null,
+        ]);
+
+        return redirect()->back()->with('success', 'Trainer-Details erfolgreich aktualisiert.');
     }
 }

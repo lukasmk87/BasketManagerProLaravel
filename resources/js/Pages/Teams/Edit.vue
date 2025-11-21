@@ -42,6 +42,17 @@
                             Spieler
                         </button>
                         <button
+                            @click="activeTab = 'coaches'"
+                            :class="[
+                                'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                activeTab === 'coaches'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            ]"
+                        >
+                            Trainer
+                        </button>
+                        <button
                             @click="activeTab = 'schedule'"
                             :class="[
                                 'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
@@ -402,6 +413,11 @@
                         </div>
                     </div>
 
+                    <!-- Coaches Tab -->
+                    <div v-show="activeTab === 'coaches'" class="p-6">
+                        <CoachesTab :team="team" :coaches="team.coaches || []" />
+                    </div>
+
                     <!-- Hall Schedule Tab -->
                     <div v-show="activeTab === 'schedule'" class="p-6">
                         <TeamHallSchedule :team-id="team.id" />
@@ -462,6 +478,7 @@ import InputError from '@/Components/InputError.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import PlayerManagementModal from '@/Components/PlayerManagementModal.vue'
 import TeamHallSchedule from '@/Components/Teams/TeamHallSchedule.vue'
+import CoachesTab from '@/Components/Teams/CoachesTab.vue'
 
 const props = defineProps({
     team: Object,

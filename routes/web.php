@@ -99,7 +99,17 @@ Route::middleware([
         Route::put('/{player}', [\App\Http\Controllers\TeamController::class, 'updatePlayer'])->name('update');
         Route::delete('/{player}', [\App\Http\Controllers\TeamController::class, 'detachPlayer'])->name('detach');
     });
-    
+
+    // Basketball Team Coaches Routes (nested resource for managing coaches in teams)
+    Route::prefix('basketball-teams/{team}/coaches')->name('web.teams.coaches.')->group(function () {
+        Route::post('/head', [\App\Http\Controllers\TeamController::class, 'assignHeadCoach'])->name('assignHead');
+        Route::post('/assistants', [\App\Http\Controllers\TeamController::class, 'manageAssistantCoaches'])->name('manageAssistants');
+        Route::put('/{user}', [\App\Http\Controllers\TeamController::class, 'updateCoachDetails'])->name('update');
+    });
+
+    // Get available coaches for a club
+    Route::get('clubs/{club}/coaches/available', [\App\Http\Controllers\TeamController::class, 'getAvailableCoaches'])->name('web.clubs.coaches.available');
+
     // Player Search API for team management
     Route::get('/api/players/search', [\App\Http\Controllers\PlayerController::class, 'search'])->name('players.search');
     
