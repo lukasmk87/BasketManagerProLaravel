@@ -32,7 +32,18 @@
                             <div class="flex items-center">
                                 <div>
                                     <div class="font-medium text-gray-900">{{ coach.name }}</div>
-                                    <div class="text-gray-500">{{ coach.email }}</div>
+                                    <div class="text-gray-500 text-xs">{{ coach.email }}</div>
+                                    <!-- System Roles Badges (only if more than just 'trainer' role) -->
+                                    <div v-if="coach.system_role_labels && coach.system_role_labels.length > 1" class="flex flex-wrap gap-1 mt-1">
+                                        <span
+                                            v-for="roleLabel in coach.system_role_labels"
+                                            :key="roleLabel"
+                                            :class="getRoleBadgeClass(roleLabel)"
+                                            class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
+                                        >
+                                            {{ roleLabel }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -245,6 +256,24 @@ const handleCoachAssigned = () => {
     showAddModal.value = false
     // Page will reload automatically via Inertia
 }
+
+// Get CSS class for role badge based on role label
+const getRoleBadgeClass = (roleLabel) => {
+    const classes = {
+        'Super Admin': 'bg-red-100 text-red-800',
+        'Admin': 'bg-red-100 text-red-800',
+        'Club Admin': 'bg-purple-100 text-purple-800',
+        'Trainer': 'bg-blue-100 text-blue-800',
+        'Co-Trainer': 'bg-blue-100 text-blue-800',
+        'Spieler': 'bg-green-100 text-green-800',
+        'Elternteil': 'bg-yellow-100 text-yellow-800',
+        'Anschreiber': 'bg-gray-100 text-gray-800',
+        'Schiedsrichter': 'bg-orange-100 text-orange-800',
+        'Team Manager': 'bg-indigo-100 text-indigo-800',
+        'Gast': 'bg-gray-100 text-gray-600',
+    };
+    return classes[roleLabel] || 'bg-gray-100 text-gray-800';
+};
 
 // Load available coaches on mount
 onMounted(() => {

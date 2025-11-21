@@ -19,26 +19,45 @@
                                 </h3>
 
                                 <div class="space-y-4">
-                                    <!-- Coach Selection -->
+                                    <!-- Coach Selection with Role Badges -->
                                     <div>
-                                        <label for="coach_id" class="block text-sm font-medium text-gray-700 mb-1">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
                                             Trainer auswählen *
                                         </label>
-                                        <select
-                                            id="coach_id"
-                                            v-model="form.user_id"
-                                            required
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                        >
-                                            <option value="">-- Bitte wählen --</option>
-                                            <option
+                                        <div class="mt-2 space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-2">
+                                            <label
                                                 v-for="coach in availableCoachesFiltered"
                                                 :key="coach.id"
-                                                :value="coach.id"
+                                                class="flex items-start p-3 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
+                                                :class="form.user_id === coach.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
                                             >
-                                                {{ coach.name }} ({{ coach.email }})
-                                            </option>
-                                        </select>
+                                                <input
+                                                    v-model="form.user_id"
+                                                    type="radio"
+                                                    :value="coach.id"
+                                                    class="h-4 w-4 mt-1 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                    required
+                                                />
+                                                <div class="ml-3 flex-1">
+                                                    <div class="font-medium text-gray-900">{{ coach.name }}</div>
+                                                    <div class="text-sm text-gray-500">{{ coach.email }}</div>
+                                                    <!-- System Roles Badges -->
+                                                    <div v-if="coach.role_labels && coach.role_labels.length > 0" class="flex flex-wrap gap-1 mt-2">
+                                                        <span
+                                                            v-for="roleLabel in coach.role_labels"
+                                                            :key="roleLabel"
+                                                            :class="getRoleBadgeClass(roleLabel)"
+                                                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                                        >
+                                                            {{ roleLabel }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                            <div v-if="availableCoachesFiltered.length === 0" class="text-center py-4 text-gray-500 text-sm">
+                                                Keine verfügbaren Trainer gefunden
+                                            </div>
+                                        </div>
                                         <p v-if="errors.user_id" class="mt-1 text-sm text-red-600">
                                             {{ errors.user_id }}
                                         </p>
@@ -259,4 +278,22 @@ const close = () => {
         emit('close')
     }
 }
+
+// Get CSS class for role badge based on role label
+const getRoleBadgeClass = (roleLabel) => {
+    const classes = {
+        'Super Admin': 'bg-red-100 text-red-800',
+        'Admin': 'bg-red-100 text-red-800',
+        'Club Admin': 'bg-purple-100 text-purple-800',
+        'Trainer': 'bg-blue-100 text-blue-800',
+        'Co-Trainer': 'bg-blue-100 text-blue-800',
+        'Spieler': 'bg-green-100 text-green-800',
+        'Elternteil': 'bg-yellow-100 text-yellow-800',
+        'Anschreiber': 'bg-gray-100 text-gray-800',
+        'Schiedsrichter': 'bg-orange-100 text-orange-800',
+        'Team Manager': 'bg-indigo-100 text-indigo-800',
+        'Gast': 'bg-gray-100 text-gray-600',
+    };
+    return classes[roleLabel] || 'bg-gray-100 text-gray-800';
+};
 </script>

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -216,6 +217,43 @@ class BasketballTeam extends Model implements HasMedia
     public function assistantCoaches(): BelongsToMany
     {
         return $this->users()->wherePivot('role', 'assistant_coach');
+    }
+
+    /**
+     * Get all coaches from the dedicated team_coaches table.
+     *
+     * This is the NEW relationship that supports multi-role users
+     * (e.g., a player-coach can be both a player and a coach).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function teamCoaches(): HasMany
+    {
+        return $this->hasMany(TeamCoach::class, 'team_id');
+    }
+
+    /**
+     * Get the head coach from the team_coaches table.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function teamHeadCoach(): HasOne
+    {
+        return $this->hasOne(TeamCoach::class, 'team_id')
+            ->where('role', 'head_coach')
+            ->where('is_active', true);
+    }
+
+    /**
+     * Get assistant coaches from the team_coaches table.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function teamAssistantCoaches(): HasMany
+    {
+        return $this->hasMany(TeamCoach::class, 'team_id')
+            ->where('role', 'assistant_coach')
+            ->where('is_active', true);
     }
 
     /**

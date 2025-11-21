@@ -6,6 +6,7 @@ use App\Models\Team;
 use App\Models\Club;
 use App\Models\Player;
 use App\Models\User;
+use App\Models\TeamCoach;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -265,12 +266,10 @@ class TeamController extends Controller
     {
         $this->authorize('update', $team);
 
-        // Load players and coaches relationships
+        // Load players and NEW coaches relationships from team_coaches table
         $team->load([
             'players.user',
-            'coaches' => function ($query) {
-                $query->withPivot('coaching_license', 'coaching_certifications', 'coaching_specialties', 'joined_at', 'is_active');
-            }
+            'teamCoaches.user.roles' // Load coaches with their system roles
         ]);
 
         $user = auth()->user();
@@ -298,22 +297,22 @@ class TeamController extends Controller
             return $playerData;
         })->toArray();
 
-        // Add coaches data with pivot information
-        $teamData['coaches'] = $team->coaches->map(function($coach) {
-            $coachData = [
-                'id' => $coach->id,
-                'name' => $coach->name,
-                'email' => $coach->email,
-                'role' => $coach->pivot->role,
-                'coaching_license' => $coach->pivot->coaching_license,
-                'coaching_certifications' => $coach->pivot->coaching_certifications
-                    ? json_decode($coach->pivot->coaching_certifications, true)
-                    : [],
-                'coaching_specialties' => $coach->pivot->coaching_specialties,
-                'joined_at' => $coach->pivot->joined_at,
-                'is_active' => $coach->pivot->is_active,
+        // Add coaches data from NEW team_coaches table with system roles
+        $teamData['coaches'] = $team->teamCoaches->map(function($teamCoach) {
+            return [
+                'id' => $teamCoach->user->id,
+                'name' => $teamCoach->user->name,
+                'email' => $teamCoach->user->email,
+                'role' => $teamCoach->role, // head_coach or assistant_coach
+                'coaching_license' => $teamCoach->coaching_license,
+                'coaching_certifications' => $teamCoach->coaching_certifications ?? [],
+                'coaching_specialties' => $teamCoach->coaching_specialties,
+                'joined_at' => $teamCoach->joined_at,
+                'is_active' => $teamCoach->is_active,
+                // NEW: System roles for multi-role support
+                'system_roles' => $teamCoach->user->roles->pluck('name')->toArray(),
+                'system_role_labels' => $this->getRoleLabels($teamCoach->user->roles),
             ];
-            return $coachData;
         })->toArray();
 
         return Inertia::render('Teams/Edit', [
@@ -518,22 +517,33 @@ class TeamController extends Controller
     /**
      * Get available coaches for a club.
      *
-     * Returns all users with 'trainer' role in the specified club.
+     * Returns all users with 'trainer' role in the specified club,
+     * including ALL their system roles for display in the UI.
      */
     public function getAvailableCoaches(Request $request, Club $club)
     {
         // Authorization: User must be able to assign coaches
         $this->authorize('assignCoaches', Team::class);
 
-        // Get users with 'trainer' role in this club
+        // Get users with 'trainer' role in this club WITH all their roles
         $coaches = $club->users()
             ->whereHas('roles', function($q) {
                 $q->where('name', 'trainer');
             })
             ->where('is_active', true)
+            ->with('roles:id,name')  // Load all system roles
             ->select('id', 'name', 'email')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(function($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'roles' => $user->roles->pluck('name'),  // All role names
+                    'role_labels' => $this->getRoleLabels($user->roles),  // German labels
+                ];
+            });
 
         return response()->json([
             'coaches' => $coaches,
@@ -541,10 +551,35 @@ class TeamController extends Controller
     }
 
     /**
+     * Get German labels for system roles.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection  $roles
+     * @return array
+     */
+    private function getRoleLabels($roles)
+    {
+        $labels = [
+            'super_admin' => 'Super Admin',
+            'admin' => 'Admin',
+            'club_admin' => 'Club Admin',
+            'trainer' => 'Trainer',
+            'assistant_coach' => 'Co-Trainer',
+            'player' => 'Spieler',
+            'parent' => 'Elternteil',
+            'scorer' => 'Anschreiber',
+            'referee' => 'Schiedsrichter',
+            'team_manager' => 'Team Manager',
+            'guest' => 'Gast',
+        ];
+
+        return $roles->map(fn($role) => $labels[$role->name] ?? $role->name)->toArray();
+    }
+
+    /**
      * Assign a head coach to a team.
      *
-     * Validates that the user has trainer role and belongs to the same club,
-     * then assigns them as head coach in both legacy and modern systems.
+     * Uses the NEW team_coaches table, allowing multi-role users (e.g., player-coach).
+     * Validates that the user has trainer role and belongs to the same club.
      */
     public function assignHeadCoach(Request $request, Team $team)
     {
@@ -574,39 +609,41 @@ class TeamController extends Controller
         }
 
         DB::transaction(function() use ($team, $user, $validated) {
-            // Update legacy field
+            // Update legacy field for backward compatibility
             $team->head_coach_id = $user->id;
             $team->save();
 
-            // Update modern system (team_user pivot)
-            // First, remove any existing head_coach role for other users
-            DB::table('team_user')
-                ->where('team_id', $team->id)
+            // Deactivate any existing head coach in team_coaches table
+            TeamCoach::where('team_id', $team->id)
                 ->where('role', 'head_coach')
-                ->delete();
+                ->where('user_id', '!=', $user->id)
+                ->update(['is_active' => false]);
 
-            // Then attach new head coach
-            $team->users()->syncWithoutDetaching([
-                $user->id => [
+            // Create or update head coach in team_coaches table
+            TeamCoach::updateOrCreate(
+                [
+                    'team_id' => $team->id,
+                    'user_id' => $user->id,
                     'role' => 'head_coach',
+                ],
+                [
+                    'coaching_license' => $validated['coaching_license'] ?? null,
+                    'coaching_certifications' => $validated['coaching_certifications'] ?? null,
+                    'coaching_specialties' => $validated['coaching_specialties'] ?? null,
                     'joined_at' => now(),
                     'is_active' => true,
-                    'coaching_license' => $validated['coaching_license'] ?? null,
-                    'coaching_certifications' => isset($validated['coaching_certifications'])
-                        ? json_encode($validated['coaching_certifications'])
-                        : null,
-                    'coaching_specialties' => $validated['coaching_specialties'] ?? null,
                 ]
-            ]);
+            );
         });
 
-        return redirect()->back()->with('success', 'Head Coach erfolgreich zugewiesen.');
+        return redirect()->back()->with('success', 'Haupttrainer erfolgreich zugewiesen.');
     }
 
     /**
      * Manage assistant coaches for a team.
      *
-     * Adds or removes assistant coaches. Supports unlimited assistant coaches.
+     * Uses the NEW team_coaches table. Adds or removes assistant coaches.
+     * Supports unlimited assistant coaches without conflicts with player role.
      */
     public function manageAssistantCoaches(Request $request, Team $team)
     {
@@ -637,10 +674,16 @@ class TeamController extends Controller
                 ]);
             }
 
-            // Check if user is already a coach on this team
-            if ($team->coaches()->where('user_id', $user->id)->exists()) {
+            // Check if user is already an assistant coach on this team
+            $existingCoach = TeamCoach::where('team_id', $team->id)
+                ->where('user_id', $user->id)
+                ->where('role', 'assistant_coach')
+                ->where('is_active', true)
+                ->first();
+
+            if ($existingCoach) {
                 return back()->withErrors([
-                    'user_id' => 'Dieser Trainer ist bereits diesem Team zugeordnet.'
+                    'user_id' => 'Dieser Trainer ist bereits als Co-Trainer diesem Team zugeordnet.'
                 ]);
             }
 
@@ -653,16 +696,16 @@ class TeamController extends Controller
                     $team->save();
                 }
 
-                // Update modern system
-                $team->users()->attach($user->id, [
+                // Create in team_coaches table
+                TeamCoach::create([
+                    'team_id' => $team->id,
+                    'user_id' => $user->id,
                     'role' => 'assistant_coach',
+                    'coaching_license' => $validated['coaching_license'] ?? null,
+                    'coaching_certifications' => $validated['coaching_certifications'] ?? null,
+                    'coaching_specialties' => $validated['coaching_specialties'] ?? null,
                     'joined_at' => now(),
                     'is_active' => true,
-                    'coaching_license' => $validated['coaching_license'] ?? null,
-                    'coaching_certifications' => isset($validated['coaching_certifications'])
-                        ? json_encode($validated['coaching_certifications'])
-                        : null,
-                    'coaching_specialties' => $validated['coaching_specialties'] ?? null,
                 ]);
             });
 
@@ -679,8 +722,11 @@ class TeamController extends Controller
                     $team->save();
                 }
 
-                // Update modern system
-                $team->users()->detach($user->id);
+                // Delete from team_coaches table
+                TeamCoach::where('team_id', $team->id)
+                    ->where('user_id', $user->id)
+                    ->where('role', 'assistant_coach')
+                    ->delete();
             });
 
             return redirect()->back()->with('success', 'Co-Trainer erfolgreich entfernt.');
@@ -690,16 +736,21 @@ class TeamController extends Controller
     /**
      * Update coach details (license, certifications, specialties).
      *
-     * Updates the pivot table information for a coach.
+     * Updates the team_coaches table information for a coach.
      */
     public function updateCoachDetails(Request $request, Team $team, User $user)
     {
         $this->authorize('assignCoaches', $team);
 
-        // Verify user is a coach on this team
-        if (!$team->coaches()->where('user_id', $user->id)->exists()) {
+        // Verify user is a coach on this team in team_coaches table
+        $teamCoach = TeamCoach::where('team_id', $team->id)
+            ->where('user_id', $user->id)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$teamCoach) {
             return back()->withErrors([
-                'error' => 'Dieser Benutzer ist kein Trainer dieses Teams.'
+                'error' => 'Dieser Benutzer ist kein aktiver Trainer dieses Teams.'
             ]);
         }
 
@@ -709,12 +760,10 @@ class TeamController extends Controller
             'coaching_specialties' => 'nullable|string|max:1000',
         ]);
 
-        // Update pivot data
-        $team->users()->updateExistingPivot($user->id, [
+        // Update team_coaches record
+        $teamCoach->update([
             'coaching_license' => $validated['coaching_license'] ?? null,
-            'coaching_certifications' => isset($validated['coaching_certifications'])
-                ? json_encode($validated['coaching_certifications'])
-                : null,
+            'coaching_certifications' => $validated['coaching_certifications'] ?? null,
             'coaching_specialties' => $validated['coaching_specialties'] ?? null,
         ]);
 
