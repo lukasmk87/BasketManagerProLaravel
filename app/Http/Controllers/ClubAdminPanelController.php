@@ -316,6 +316,7 @@ class ClubAdminPanelController extends Controller
             ->map(function ($team) {
                 return [
                     'id' => $team->id,
+                    'slug' => $team->slug,
                     'name' => $team->name,
                     'season' => $team->season,
                     'league' => $team->league,

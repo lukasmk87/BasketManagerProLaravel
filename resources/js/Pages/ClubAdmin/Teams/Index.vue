@@ -57,7 +57,7 @@ const formatDate = (date) => {
                         <div class="p-6">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="text-lg font-semibold text-gray-900">
-                                    <Link :href="route('web.teams.show', team.id)" class="hover:text-blue-600">
+                                    <Link :href="route('web.teams.show', team.slug)" class="hover:text-blue-600">
                                         {{ team.name }}
                                     </Link>
                                 </h3>
@@ -112,13 +112,13 @@ const formatDate = (date) => {
 
                             <div class="mt-4 flex items-center space-x-2">
                                 <Link
-                                    :href="route('web.teams.show', team.id)"
+                                    :href="route('web.teams.show', team.slug)"
                                     class="flex-1 inline-flex justify-center items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     Anzeigen
                                 </Link>
                                 <Link
-                                    :href="route('web.teams.edit', team.id)"
+                                    :href="route('web.teams.edit', team.slug)"
                                     class="flex-1 inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     Bearbeiten
