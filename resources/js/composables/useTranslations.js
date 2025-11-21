@@ -1,109 +1,104 @@
 import { usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
 
 /**
- * Vue composable for accessing Laravel translations in Vue components.
+ * Composable für den Zugriff auf Übersetzungen aus Laravel Backend
  *
- * Usage:
- * import { useTranslations } from '@/composables/useTranslations';
- * const { trans, transChoice, locale } = useTranslations();
+ * Übersetzungen werden über HandleInertiaRequests Middleware als verschachtelte
+ * Objekte bereitgestellt (z.B. { billing: { title: 'Abrechnung', ... } })
  *
- * trans('subscription.title')
- * trans('subscription.messages.plan_swapped', { plan: 'Premium' })
+ * @example
+ * const { trans } = useTranslations();
+ * const title = trans('billing.title'); // 'Abrechnung'
+ * const missing = trans('missing.key'); // '' (leerer String als Fallback)
  */
 export function useTranslations() {
     const page = usePage();
 
-    // Get translations from page props (shared via HandleInertiaRequests)
-    const translations = computed(() => page.props.translations || {});
-    const locale = computed(() => page.props.locale || 'de');
-
     /**
-     * Translate a key with optional parameter replacements.
+     * Übersetzt einen verschachtelten Schlüssel (z.B. 'billing.title')
      *
-     * @param {string} key - Translation key using dot notation (e.g., 'subscription.title')
-     * @param {object} replacements - Key-value pairs for placeholder replacement (e.g., { name: 'John' })
-     * @returns {string} Translated string with placeholders replaced
-     *
-     * @example
-     * trans('subscription.title') // => 'Club Abonnement'
-     * trans('subscription.messages.plan_swapped', { plan: 'Premium' }) // => 'Plan erfolgreich gewechselt zu Premium!'
+     * @param {string} key - Der Übersetzungsschlüssel (mit Punktnotation für verschachtelte Werte)
+     * @returns {string} Die Übersetzung oder leerer String bei fehlenden Werten
      */
-    const trans = (key, replacements = {}) => {
-        // Get translation using dot notation
-        let translation = getNestedProperty(translations.value, key);
-
-        // Fallback to key if translation not found
-        if (!translation) {
+    const trans = (key) => {
+        if (!key || typeof key !== 'string') {
             if (import.meta.env.DEV) {
-                console.warn(`[useTranslations] Translation not found for key: ${key}`);
+                console.warn('[useTranslations] Invalid translation key:', key);
             }
-            return key;
+            return '';
         }
 
-        // Replace placeholders (e.g., :name, :count, :plan)
-        if (typeof translation === 'string') {
-            Object.keys(replacements).forEach(placeholder => {
-                const regex = new RegExp(`:${placeholder}`, 'g');
-                translation = translation.replace(regex, replacements[placeholder]);
-            });
+        // Hole die Übersetzungen aus den Inertia Page Props
+        const translations = page.props.translations;
+
+        if (!translations) {
+            if (import.meta.env.DEV) {
+                console.warn('[useTranslations] No translations available in page props');
+            }
+            return '';
         }
 
-        return translation;
+        // Zerlege den Key in Teile (z.B. 'billing.invoices.title' -> ['billing', 'invoices', 'title'])
+        const keys = key.split('.');
+
+        // Navigiere durch das verschachtelte Objekt
+        let result = translations;
+        for (const k of keys) {
+            if (result && typeof result === 'object' && k in result) {
+                result = result[k];
+            } else {
+                // Übersetzung nicht gefunden
+                if (import.meta.env.DEV) {
+                    console.warn(`[useTranslations] Translation not found for key: ${key}`);
+                }
+                return '';
+            }
+        }
+
+        // Stelle sicher, dass das Ergebnis ein String ist
+        if (typeof result === 'string') {
+            return result;
+        }
+
+        // Falls das Ergebnis ein Objekt ist (z.B. trans('billing') gibt das ganze Objekt zurück)
+        if (typeof result === 'object') {
+            if (import.meta.env.DEV) {
+                console.warn(`[useTranslations] Translation key "${key}" returned an object instead of a string. Did you mean to access a nested property?`);
+            }
+            return '';
+        }
+
+        return String(result);
     };
 
     /**
-     * Get nested property from object using dot notation.
+     * Prüft, ob eine Übersetzung existiert
      *
-     * @param {object} obj - The object to traverse
-     * @param {string} path - Dot-notated path (e.g., 'subscription.plans.title')
-     * @returns {any} The value at the path, or undefined if not found
-     *
-     * @private
+     * @param {string} key - Der Übersetzungsschlüssel
+     * @returns {boolean} true wenn die Übersetzung existiert
      */
-    const getNestedProperty = (obj, path) => {
-        if (!obj || typeof obj !== 'object') {
-            return undefined;
+    const hasTranslation = (key) => {
+        if (!key || typeof key !== 'string') return false;
+
+        const translations = page.props.translations;
+        if (!translations) return false;
+
+        const keys = key.split('.');
+        let result = translations;
+
+        for (const k of keys) {
+            if (result && typeof result === 'object' && k in result) {
+                result = result[k];
+            } else {
+                return false;
+            }
         }
 
-        return path.split('.').reduce((acc, part) => {
-            return acc && typeof acc === 'object' ? acc[part] : undefined;
-        }, obj);
-    };
-
-    /**
-     * Pluralize translation based on count.
-     * Simple implementation - can be enhanced for complex pluralization rules.
-     *
-     * @param {string} key - Translation key
-     * @param {number} count - Count for pluralization
-     * @param {object} replacements - Additional replacements
-     * @returns {string} Translated string
-     *
-     * @example
-     * transChoice('subscription.trial.days_remaining', 5, { days: 5, unit: 'Tage' })
-     */
-    const transChoice = (key, count, replacements = {}) => {
-        const translation = trans(key, { count, ...replacements });
-        return translation;
-    };
-
-    /**
-     * Check if a translation key exists.
-     *
-     * @param {string} key - Translation key to check
-     * @returns {boolean} True if translation exists
-     */
-    const has = (key) => {
-        const translation = getNestedProperty(translations.value, key);
-        return translation !== undefined;
+        return typeof result === 'string';
     };
 
     return {
         trans,
-        transChoice,
-        has,
-        locale,
-        translations,
+        hasTranslation,
     };
 }

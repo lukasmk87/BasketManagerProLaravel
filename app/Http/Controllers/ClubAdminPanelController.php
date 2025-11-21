@@ -604,7 +604,7 @@ class ClubAdminPanelController extends Controller
         $availableRoles = [
             ['value' => 'member', 'label' => 'Mitglied'],
             ['value' => 'player', 'label' => 'Spieler'],
-            ['value' => 'coach', 'label' => 'Trainer'],
+            ['value' => 'trainer', 'label' => 'Trainer'],
             ['value' => 'assistant_coach', 'label' => 'Co-Trainer'],
             ['value' => 'team_manager', 'label' => 'Team Manager'],
             ['value' => 'scorer', 'label' => 'Anschreiber'],
@@ -639,7 +639,7 @@ class ClubAdminPanelController extends Controller
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
-            'club_role' => 'required|in:member,player,coach,assistant_coach,team_manager,scorer,volunteer',
+            'club_role' => 'required|in:member,player,trainer,assistant_coach,team_manager,scorer,volunteer',
             'is_active' => 'boolean',
             'send_credentials_email' => 'boolean',
         ]);
@@ -663,7 +663,7 @@ class ClubAdminPanelController extends Controller
 
             // Assign appropriate Spatie role based on club role
             $spatieRole = match ($validated['club_role']) {
-                'coach', 'assistant_coach' => 'trainer',
+                'trainer', 'assistant_coach' => 'trainer',
                 'player' => 'player',
                 default => 'guest', // member, team_manager, scorer, volunteer
             };

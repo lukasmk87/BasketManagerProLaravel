@@ -67,6 +67,7 @@ const submit = () => {
                                 class="mt-1 block w-full"
                                 required
                                 autofocus
+                                autocomplete="name"
                             />
                             <InputError :message="form.errors.name" class="mt-2" />
                         </div>
@@ -80,6 +81,7 @@ const submit = () => {
                                 type="email"
                                 class="mt-1 block w-full"
                                 required
+                                autocomplete="email"
                             />
                             <InputError :message="form.errors.email" class="mt-2" />
                         </div>
@@ -92,6 +94,7 @@ const submit = () => {
                                 v-model="form.phone"
                                 type="tel"
                                 class="mt-1 block w-full"
+                                autocomplete="tel"
                             />
                             <InputError :message="form.errors.phone" class="mt-2" />
                         </div>

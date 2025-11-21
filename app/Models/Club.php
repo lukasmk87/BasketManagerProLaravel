@@ -227,7 +227,7 @@ class Club extends Model implements HasMedia
      */
     public function coaches(): BelongsToMany
     {
-        return $this->users()->whereIn('role', ['coach', 'assistant_coach']);
+        return $this->users()->whereIn('role', ['trainer', 'assistant_coach']);
     }
 
     /**

@@ -53,7 +53,7 @@ class PlayerPolicyExtensionTest extends BasketballTestCase
 
         // Attach users to club
         $this->clubAdmin->clubs()->attach($this->club->id, ['role' => 'admin']);
-        $this->trainer->clubs()->attach($this->club->id, ['role' => 'coach']);
+        $this->trainer->clubs()->attach($this->club->id, ['role' => 'trainer']);
 
         // Create invitation and pending player
         $this->invitation = PlayerRegistrationInvitation::factory()->create([
