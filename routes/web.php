@@ -62,6 +62,12 @@ Route::middleware([
     // User Preferences Routes
     Route::post('/user/locale', [\App\Http\Controllers\UserPreferencesController::class, 'updateLocale'])->name('user.locale.update');
 
+    // Extended User Profile Routes
+    Route::post('/user/personal-data', [\App\Http\Controllers\UserProfileController::class, 'updatePersonalData'])->name('user.personal-data.update');
+    Route::post('/user/basketball-data', [\App\Http\Controllers\UserProfileController::class, 'updateBasketballData'])->name('user.basketball-data.update');
+    Route::post('/user/emergency-medical', [\App\Http\Controllers\UserProfileController::class, 'updateEmergencyMedical'])->name('user.emergency-medical.update');
+    Route::post('/user/preferences', [\App\Http\Controllers\UserProfileController::class, 'updatePreferences'])->name('user.preferences.update');
+
     // Basketball Clubs Routes (explicit names to avoid conflicts)
     Route::get('clubs', [\App\Http\Controllers\ClubController::class, 'index'])->name('web.clubs.index');
     Route::get('clubs/create', [\App\Http\Controllers\ClubController::class, 'create'])->name('web.clubs.create');

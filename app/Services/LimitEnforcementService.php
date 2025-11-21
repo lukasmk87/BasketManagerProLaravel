@@ -41,6 +41,11 @@ class LimitEnforcementService
      */
     public function canCreateTeam(): bool
     {
+        // Super Admins bypass all limits
+        if (auth()->user()?->hasRole('super_admin')) {
+            return true;
+        }
+
         if (!$this->tenant) {
             return false;
         }
@@ -76,6 +81,11 @@ class LimitEnforcementService
      */
     public function canCreatePlayer(): bool
     {
+        // Super Admins bypass all limits
+        if (auth()->user()?->hasRole('super_admin')) {
+            return true;
+        }
+
         if (!$this->tenant) {
             return false;
         }
@@ -111,6 +121,11 @@ class LimitEnforcementService
      */
     public function canCreateUser(): bool
     {
+        // Super Admins bypass all limits
+        if (auth()->user()?->hasRole('super_admin')) {
+            return true;
+        }
+
         if (!$this->tenant) {
             return false;
         }
@@ -146,6 +161,11 @@ class LimitEnforcementService
      */
     public function canStoreData(float $additionalGb): bool
     {
+        // Super Admins bypass all limits
+        if (auth()->user()?->hasRole('super_admin')) {
+            return true;
+        }
+
         if (!$this->tenant) {
             return false;
         }
@@ -182,6 +202,11 @@ class LimitEnforcementService
      */
     public function canCreateGame(): bool
     {
+        // Super Admins bypass all limits
+        if (auth()->user()?->hasRole('super_admin')) {
+            return true;
+        }
+
         if (!$this->tenant) {
             return false;
         }
@@ -220,6 +245,11 @@ class LimitEnforcementService
      */
     public function canCreateTrainingSession(): bool
     {
+        // Super Admins bypass all limits
+        if (auth()->user()?->hasRole('super_admin')) {
+            return true;
+        }
+
         if (!$this->tenant) {
             return false;
         }

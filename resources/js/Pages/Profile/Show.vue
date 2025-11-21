@@ -6,6 +6,10 @@ import SectionBorder from '@/Components/SectionBorder.vue';
 import TwoFactorAuthenticationForm from '@/Pages/Profile/Partials/TwoFactorAuthenticationForm.vue';
 import UpdatePasswordForm from '@/Pages/Profile/Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from '@/Pages/Profile/Partials/UpdateProfileInformationForm.vue';
+import UpdatePersonalDataForm from '@/Pages/Profile/Partials/UpdatePersonalDataForm.vue';
+import UpdateBasketballDataForm from '@/Pages/Profile/Partials/UpdateBasketballDataForm.vue';
+import UpdateEmergencyMedicalForm from '@/Pages/Profile/Partials/UpdateEmergencyMedicalForm.vue';
+import UpdatePreferencesForm from '@/Pages/Profile/Partials/UpdatePreferencesForm.vue';
 
 defineProps({
     confirmsTwoFactorAuthentication: Boolean,
@@ -34,6 +38,26 @@ defineProps({
 
                     <SectionBorder />
                 </div>
+
+                <!-- Personal Data -->
+                <UpdatePersonalDataForm :user="$page.props.auth.user" class="mt-10 sm:mt-0" />
+
+                <SectionBorder />
+
+                <!-- Basketball Data -->
+                <UpdateBasketballDataForm :user="$page.props.auth.user" class="mt-10 sm:mt-0" />
+
+                <SectionBorder />
+
+                <!-- Emergency & Medical Data -->
+                <UpdateEmergencyMedicalForm :user="$page.props.auth.user" class="mt-10 sm:mt-0" />
+
+                <SectionBorder />
+
+                <!-- Preferences -->
+                <UpdatePreferencesForm :user="$page.props.auth.user" class="mt-10 sm:mt-0" />
+
+                <SectionBorder />
 
                 <div v-if="$page.props.jetstream.canManageTwoFactorAuthentication">
                     <TwoFactorAuthenticationForm
