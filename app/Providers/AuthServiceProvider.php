@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Gate;
 use App\Models\Drill;
 use App\Policies\DrillPolicy;
 use App\Models\Team;
+use App\Models\BasketballTeam;
 use App\Policies\TeamPolicy;
 use App\Models\Player;
 use App\Policies\PlayerPolicy;
@@ -41,6 +42,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Drill::class => DrillPolicy::class,
         Team::class => TeamPolicy::class,
+        BasketballTeam::class => TeamPolicy::class,
         Player::class => PlayerPolicy::class,
         Game::class => GamePolicy::class,
         Club::class => ClubPolicy::class,

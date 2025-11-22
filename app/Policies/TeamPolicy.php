@@ -41,7 +41,7 @@ class TeamPolicy
 
         // Club admins can view teams in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            $userClubIds = $user->clubs()->pluck('id')->toArray();
             return in_array($team->club_id, $userClubIds);
         }
 
@@ -107,7 +107,7 @@ class TeamPolicy
 
         // Club admins can edit teams in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            $userClubIds = $user->clubs()->pluck('id')->toArray();
             return in_array($team->club_id, $userClubIds);
         }
 
@@ -133,7 +133,7 @@ class TeamPolicy
 
         // Club admins can delete teams in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            $userClubIds = $user->clubs()->pluck('id')->toArray();
             return in_array($team->club_id, $userClubIds);
         }
 
@@ -153,7 +153,7 @@ class TeamPolicy
 
         // Club admins can manage rosters in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            $userClubIds = $user->clubs()->pluck('id')->toArray();
             return in_array($team->club_id, $userClubIds);
         }
 
@@ -184,7 +184,7 @@ class TeamPolicy
 
         // Club admins can assign coaches in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            $userClubIds = $user->clubs()->pluck('id')->toArray();
             return in_array($team->club_id, $userClubIds);
         }
 
@@ -218,7 +218,7 @@ class TeamPolicy
 
         // Club admins can manage settings for teams in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            $userClubIds = $user->clubs()->pluck('id')->toArray();
             return in_array($team->club_id, $userClubIds);
         }
 

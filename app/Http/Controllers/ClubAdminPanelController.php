@@ -996,17 +996,20 @@ class ClubAdminPanelController extends Controller
             abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
         }
 
-        $primaryClub = $adminClubs->first();
+        // Authorization: Check if team belongs to one of the admin's clubs
+        $adminClubIds = $adminClubs->pluck('id')->toArray();
 
-        // Authorization: Check if team belongs to club
-        if ($team->club_id !== $primaryClub->id) {
-            abort(403, 'Dieses Team gehört nicht zu Ihrem Club.');
+        if (!in_array($team->club_id, $adminClubIds)) {
+            abort(403, 'Dieses Team gehört nicht zu einem Ihrer Clubs.');
         }
 
         $this->authorize('update', $team);
 
+        // Get the team's club for coaches
+        $teamClub = $team->club;
+
         // Get potential coaches (users with trainer role in the club)
-        $coaches = $primaryClub->users()
+        $coaches = $teamClub->users()
             ->whereHas('roles', function ($query) {
                 $query->where('name', 'trainer');
             })
@@ -1014,8 +1017,8 @@ class ClubAdminPanelController extends Controller
 
         return Inertia::render('ClubAdmin/Teams/Edit', [
             'club' => [
-                'id' => $primaryClub->id,
-                'name' => $primaryClub->name,
+                'id' => $teamClub->id,
+                'name' => $teamClub->name,
             ],
             'team' => [
                 'id' => $team->id,
@@ -1049,11 +1052,11 @@ class ClubAdminPanelController extends Controller
             abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
         }
 
-        $primaryClub = $adminClubs->first();
+        // Authorization: Check if team belongs to one of the admin's clubs
+        $adminClubIds = $adminClubs->pluck('id')->toArray();
 
-        // Authorization: Check if team belongs to club
-        if ($team->club_id !== $primaryClub->id) {
-            abort(403, 'Dieses Team gehört nicht zu Ihrem Club.');
+        if (!in_array($team->club_id, $adminClubIds)) {
+            abort(403, 'Dieses Team gehört nicht zu einem Ihrer Clubs.');
         }
 
         $this->authorize('update', $team);
