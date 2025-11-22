@@ -2,6 +2,15 @@
 
 return [
 
+    /*
+     * Default settings for guards and permissions
+     */
+    'defaults' => [
+        'guard' => 'web',
+        'permissions_table' => 'permissions',
+        'roles_table' => 'roles',
+    ],
+
     'models' => [
 
         /*
