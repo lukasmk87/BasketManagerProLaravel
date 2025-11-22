@@ -15,6 +15,17 @@ class TeamPolicy
      */
     public function viewAny(User $user): bool
     {
+        // Super admins and admins can view all teams
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        // Club admins can view teams in their clubs
+        if ($user->hasRole('club_admin') && $user->clubs()->exists()) {
+            return true;
+        }
+
+        // Check general permission
         return $user->can('view teams');
     }
 
@@ -23,9 +34,15 @@ class TeamPolicy
      */
     public function view(User $user, Team $team): bool
     {
-        // Check general permission
-        if ($user->can('view teams')) {
+        // Super admins and admins can view all teams
+        if ($user->hasRole(['super_admin', 'admin'])) {
             return true;
+        }
+
+        // Club admins can view teams in their clubs
+        if ($user->hasRole('club_admin')) {
+            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            return in_array($team->club_id, $userClubIds);
         }
 
         // Players can view their own team
@@ -55,7 +72,8 @@ class TeamPolicy
             return true;
         }
 
-        return false;
+        // Check general permission as fallback
+        return $user->can('view teams');
     }
 
     /**
@@ -63,6 +81,17 @@ class TeamPolicy
      */
     public function create(User $user): bool
     {
+        // Super admins and admins can create teams
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        // Club admins can create teams in their clubs
+        if ($user->hasRole('club_admin') && $user->clubs()->exists()) {
+            return true;
+        }
+
+        // Check general permission
         return $user->can('create teams');
     }
 
@@ -71,8 +100,8 @@ class TeamPolicy
      */
     public function update(User $user, Team $team): bool
     {
-        // Check general permission
-        if ($user->can('edit teams')) {
+        // Super admins and admins can edit all teams
+        if ($user->hasRole(['super_admin', 'admin'])) {
             return true;
         }
 
@@ -88,7 +117,8 @@ class TeamPolicy
             return in_array($team->id, $coachTeamIds);
         }
 
-        return false;
+        // Check general permission as fallback
+        return $user->can('edit teams');
     }
 
     /**
@@ -96,9 +126,9 @@ class TeamPolicy
      */
     public function delete(User $user, Team $team): bool
     {
-        // Only users with delete permission can delete teams
-        if (!$user->can('delete teams')) {
-            return false;
+        // Super admins and admins can delete all teams
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
         // Club admins can delete teams in their clubs
@@ -107,7 +137,8 @@ class TeamPolicy
             return in_array($team->club_id, $userClubIds);
         }
 
-        return true;
+        // Check general permission as fallback
+        return $user->can('delete teams');
     }
 
     /**
@@ -115,9 +146,9 @@ class TeamPolicy
      */
     public function manageRoster(User $user, Team $team): bool
     {
-        // Check general permission
-        if (!$user->can('manage team rosters')) {
-            return false;
+        // Super admins and admins can manage all team rosters
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
         // Club admins can manage rosters in their clubs
@@ -137,7 +168,8 @@ class TeamPolicy
             return $user->managedTeams()->where('id', $team->id)->exists();
         }
 
-        return true; // For admins and super_admins
+        // Check general permission as fallback
+        return $user->can('manage team rosters');
     }
 
     /**
@@ -145,9 +177,9 @@ class TeamPolicy
      */
     public function assignCoaches(User $user, Team $team): bool
     {
-        // Check general permission
-        if (!$user->can('assign team coaches')) {
-            return false;
+        // Super admins and admins can assign coaches to all teams
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
         // Club admins can assign coaches in their clubs
@@ -156,7 +188,8 @@ class TeamPolicy
             return in_array($team->club_id, $userClubIds);
         }
 
-        return true; // For admins and super_admins
+        // Check general permission as fallback
+        return $user->can('assign team coaches');
     }
 
     /**
@@ -178,9 +211,9 @@ class TeamPolicy
      */
     public function manageSettings(User $user, Team $team): bool
     {
-        // Check general permission
-        if (!$user->can('manage team settings')) {
-            return false;
+        // Super admins and admins can manage all team settings
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
         }
 
         // Club admins can manage settings for teams in their clubs
@@ -195,7 +228,8 @@ class TeamPolicy
             return in_array($team->id, $coachTeamIds);
         }
 
-        return true; // For admins and super_admins
+        // Check general permission as fallback
+        return $user->can('manage team settings');
     }
 
     /**

@@ -406,8 +406,8 @@ class RoleAndPermissionSeeder extends Seeder
             'view club statistics',
             
             // Team Management (club teams)
-            'view teams', 'create teams', 'edit teams', 'manage team rosters',
-            'assign team coaches', 'view team statistics', 'manage team settings',
+            'view teams', 'create teams', 'edit teams', 'delete teams',
+            'manage team rosters', 'assign team coaches', 'view team statistics', 'manage team settings',
             
             // Player Management (club players)
             'view players', 'create players', 'edit players',

@@ -118,7 +118,7 @@ const formatDate = (date) => {
                                     Anzeigen
                                 </Link>
                                 <Link
-                                    :href="route('club-admin.teams.edit', team.id)"
+                                    :href="route('club-admin.teams.edit', team.slug)"
                                     class="flex-1 inline-flex justify-center items-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     Bearbeiten
