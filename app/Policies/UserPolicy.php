@@ -405,4 +405,41 @@ class UserPolicy
         // Must have permission to handle data deletion requests
         return $user->can('handle data deletion requests');
     }
+
+    /**
+     * Determine whether the user can send password reset to another user.
+     */
+    public function sendPasswordReset(User $user, User $model): bool
+    {
+        // Users cannot send password reset to themselves
+        if ($user->id === $model->id) {
+            return false;
+        }
+
+        // Super Admins and Admins can send to anyone
+        if ($user->hasAnyRole(['super_admin', 'admin']) && $user->can('edit users')) {
+            return true;
+        }
+
+        // Club admins have restricted access
+        if ($user->hasRole('club_admin')) {
+            // Club admins CANNOT send password reset to other admins
+            if ($model->hasAnyRole(['super_admin', 'admin', 'club_admin'])) {
+                return false;
+            }
+
+            // Check if user has 'edit users' permission
+            if (!$user->can('edit users')) {
+                return false;
+            }
+
+            // Check if users share at least one club
+            $userClubIds = $user->getAdministeredClubIds();
+            $modelClubIds = $model->clubs()->pluck('clubs.id')->toArray();
+
+            return !empty(array_intersect($userClubIds, $modelClubIds));
+        }
+
+        return false;
+    }
 }

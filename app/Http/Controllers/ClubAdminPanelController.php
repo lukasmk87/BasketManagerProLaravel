@@ -8,11 +8,15 @@ use App\Models\Game;
 use App\Models\Player;
 use App\Models\User;
 use App\Services\ClubService;
+use App\Services\PlayerService;
 use App\Services\StatisticsService;
+use App\Services\TeamService;
+use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,7 +24,10 @@ class ClubAdminPanelController extends Controller
 {
     public function __construct(
         private ClubService $clubService,
-        private StatisticsService $statisticsService
+        private StatisticsService $statisticsService,
+        private UserService $userService,
+        private TeamService $teamService,
+        private PlayerService $playerService
     ) {
         // Ensure only club admins can access
         $this->middleware(['auth', 'verified', 'role:club_admin|admin|super_admin']);
@@ -694,6 +701,659 @@ class ClubAdminPanelController extends Controller
 
             return back()
                 ->with('error', 'Fehler beim Hinzufügen des Mitglieds: '.$e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Show the edit member form.
+     */
+    public function editMember(User $user): Response
+    {
+        $authUser = Auth::user();
+        $adminClubs = $authUser->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Authorization: Check if user can edit this member
+        $this->authorize('update', $user);
+
+        // Verify the user is a member of this club
+        if (! $user->clubs()->where('clubs.id', $primaryClub->id)->exists()) {
+            abort(404, 'Dieser Benutzer gehört nicht zu Ihrem Club.');
+        }
+
+        // Get user's club role
+        $clubMembership = $user->clubs()->where('clubs.id', $primaryClub->id)->first();
+
+        // Available club roles (not system roles)
+        $availableRoles = [
+            ['value' => 'member', 'label' => 'Mitglied'],
+            ['value' => 'player', 'label' => 'Spieler'],
+            ['value' => 'trainer', 'label' => 'Trainer'],
+            ['value' => 'assistant_coach', 'label' => 'Co-Trainer'],
+            ['value' => 'team_manager', 'label' => 'Team Manager'],
+            ['value' => 'scorer', 'label' => 'Anschreiber'],
+            ['value' => 'volunteer', 'label' => 'Freiwilliger'],
+        ];
+
+        return Inertia::render('ClubAdmin/Members/Edit', [
+            'club' => [
+                'id' => $primaryClub->id,
+                'name' => $primaryClub->name,
+            ],
+            'member' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'club_role' => $clubMembership->pivot->role,
+                'is_active' => $user->is_active,
+                'membership_is_active' => $clubMembership->pivot->is_active,
+                'joined_at' => $clubMembership->pivot->joined_at,
+                'roles' => $user->roles->pluck('name')->toArray(),
+            ],
+            'available_roles' => $availableRoles,
+        ]);
+    }
+
+    /**
+     * Update an existing member.
+     */
+    public function updateMember(Request $request, User $user): RedirectResponse
+    {
+        $authUser = Auth::user();
+        $adminClubs = $authUser->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Authorization: Check if user can edit this member
+        $this->authorize('update', $user);
+
+        // Verify the user is a member of this club
+        if (! $user->clubs()->where('clubs.id', $primaryClub->id)->exists()) {
+            abort(404, 'Dieser Benutzer gehört nicht zu Ihrem Club.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,'.$user->id,
+            'phone' => 'nullable|string|max:20',
+            'club_role' => 'required|in:member,player,trainer,assistant_coach,team_manager,scorer,volunteer',
+            'is_active' => 'boolean',
+            'membership_is_active' => 'boolean',
+        ]);
+
+        try {
+            // Update user details
+            $user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'is_active' => $validated['is_active'] ?? true,
+            ]);
+
+            // Update club membership
+            $user->clubs()->updateExistingPivot($primaryClub->id, [
+                'role' => $validated['club_role'],
+                'is_active' => $validated['membership_is_active'] ?? true,
+            ]);
+
+            // Update Spatie role if club role changed
+            $newSpatieRole = match ($validated['club_role']) {
+                'trainer', 'assistant_coach' => 'trainer',
+                'player' => 'player',
+                default => 'guest',
+            };
+
+            // Remove old roles and assign new one
+            $user->syncRoles([$newSpatieRole]);
+
+            Log::info('Club admin updated member', [
+                'club_admin_id' => $authUser->id,
+                'club_id' => $primaryClub->id,
+                'user_id' => $user->id,
+                'club_role' => $validated['club_role'],
+            ]);
+
+            return redirect()->route('club-admin.members')
+                ->with('success', 'Mitglied wurde erfolgreich aktualisiert.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update club member', [
+                'club_admin_id' => $authUser->id,
+                'club_id' => $primaryClub->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->with('error', 'Fehler beim Aktualisieren des Mitglieds: '.$e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Send password reset link to a member.
+     */
+    public function sendPasswordReset(User $user): RedirectResponse
+    {
+        $authUser = Auth::user();
+        $adminClubs = $authUser->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Authorization: Check if user can send password reset
+        $this->authorize('sendPasswordReset', $user);
+
+        // Verify the user is a member of this club
+        if (! $user->clubs()->where('clubs.id', $primaryClub->id)->exists()) {
+            abort(404, 'Dieser Benutzer gehört nicht zu Ihrem Club.');
+        }
+
+        try {
+            // Send password reset notification
+            $status = Password::sendResetLink(
+                ['email' => $user->email]
+            );
+
+            if ($status === Password::RESET_LINK_SENT) {
+                Log::info('Club admin sent password reset', [
+                    'club_admin_id' => $authUser->id,
+                    'club_id' => $primaryClub->id,
+                    'user_id' => $user->id,
+                ]);
+
+                return back()->with('success', 'Passwort-Reset-Link wurde erfolgreich gesendet.');
+            }
+
+            return back()->with('error', 'Fehler beim Senden des Passwort-Reset-Links.');
+        } catch (\Exception $e) {
+            Log::error('Failed to send password reset', [
+                'club_admin_id' => $authUser->id,
+                'club_id' => $primaryClub->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Fehler beim Senden des Passwort-Reset-Links: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Show the create team form.
+     */
+    public function createTeam(): Response
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Get potential coaches (users with trainer role in the club)
+        $coaches = $primaryClub->users()
+            ->whereHas('roles', function ($query) {
+                $query->where('name', 'trainer');
+            })
+            ->get(['id', 'name']);
+
+        return Inertia::render('ClubAdmin/Teams/Create', [
+            'club' => [
+                'id' => $primaryClub->id,
+                'name' => $primaryClub->name,
+            ],
+            'coaches' => $coaches,
+            'age_groups' => ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'U20', 'Senior', 'Sonstige'],
+            'genders' => [
+                ['value' => 'male', 'label' => 'Männlich'],
+                ['value' => 'female', 'label' => 'Weiblich'],
+                ['value' => 'mixed', 'label' => 'Gemischt'],
+            ],
+        ]);
+    }
+
+    /**
+     * Store a newly created team.
+     */
+    public function storeTeam(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'season' => 'required|string|max:20',
+            'league' => 'nullable|string|max:255',
+            'age_group' => 'nullable|string|max:50',
+            'gender' => 'required|in:male,female,mixed',
+            'head_coach_id' => 'nullable|exists:users,id',
+            'is_active' => 'boolean',
+        ]);
+
+        try {
+            $team = $this->teamService->createTeam(
+                club: $primaryClub,
+                name: $validated['name'],
+                season: $validated['season'],
+                league: $validated['league'] ?? null,
+                ageGroup: $validated['age_group'] ?? null,
+                gender: $validated['gender'],
+                headCoachId: $validated['head_coach_id'] ?? null,
+                isActive: $validated['is_active'] ?? true
+            );
+
+            Log::info('Club admin created team', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'team_id' => $team->id,
+            ]);
+
+            return redirect()->route('club-admin.teams')
+                ->with('success', 'Team wurde erfolgreich erstellt.');
+        } catch (\Exception $e) {
+            Log::error('Failed to create team', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->with('error', 'Fehler beim Erstellen des Teams: '.$e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Show the edit team form.
+     */
+    public function editTeam(BasketballTeam $team): Response
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Authorization: Check if team belongs to club
+        if ($team->club_id !== $primaryClub->id) {
+            abort(403, 'Dieses Team gehört nicht zu Ihrem Club.');
+        }
+
+        $this->authorize('update', $team);
+
+        // Get potential coaches (users with trainer role in the club)
+        $coaches = $primaryClub->users()
+            ->whereHas('roles', function ($query) {
+                $query->where('name', 'trainer');
+            })
+            ->get(['id', 'name']);
+
+        return Inertia::render('ClubAdmin/Teams/Edit', [
+            'club' => [
+                'id' => $primaryClub->id,
+                'name' => $primaryClub->name,
+            ],
+            'team' => [
+                'id' => $team->id,
+                'name' => $team->name,
+                'season' => $team->season,
+                'league' => $team->league,
+                'age_group' => $team->age_group,
+                'gender' => $team->gender,
+                'head_coach_id' => $team->head_coach_id,
+                'is_active' => $team->is_active,
+            ],
+            'coaches' => $coaches,
+            'age_groups' => ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'U20', 'Senior', 'Sonstige'],
+            'genders' => [
+                ['value' => 'male', 'label' => 'Männlich'],
+                ['value' => 'female', 'label' => 'Weiblich'],
+                ['value' => 'mixed', 'label' => 'Gemischt'],
+            ],
+        ]);
+    }
+
+    /**
+     * Update an existing team.
+     */
+    public function updateTeam(Request $request, BasketballTeam $team): RedirectResponse
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Authorization: Check if team belongs to club
+        if ($team->club_id !== $primaryClub->id) {
+            abort(403, 'Dieses Team gehört nicht zu Ihrem Club.');
+        }
+
+        $this->authorize('update', $team);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'season' => 'required|string|max:20',
+            'league' => 'nullable|string|max:255',
+            'age_group' => 'nullable|string|max:50',
+            'gender' => 'required|in:male,female,mixed',
+            'head_coach_id' => 'nullable|exists:users,id',
+            'is_active' => 'boolean',
+        ]);
+
+        try {
+            $team->update([
+                'name' => $validated['name'],
+                'season' => $validated['season'],
+                'league' => $validated['league'] ?? null,
+                'age_group' => $validated['age_group'] ?? null,
+                'gender' => $validated['gender'],
+                'head_coach_id' => $validated['head_coach_id'] ?? null,
+                'is_active' => $validated['is_active'] ?? true,
+            ]);
+
+            Log::info('Club admin updated team', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'team_id' => $team->id,
+            ]);
+
+            return redirect()->route('club-admin.teams')
+                ->with('success', 'Team wurde erfolgreich aktualisiert.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update team', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'team_id' => $team->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->with('error', 'Fehler beim Aktualisieren des Teams: '.$e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Show the create player form.
+     */
+    public function createPlayer(): Response
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Get club teams
+        $teams = $primaryClub->teams()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'season', 'age_group']);
+
+        return Inertia::render('ClubAdmin/Players/Create', [
+            'club' => [
+                'id' => $primaryClub->id,
+                'name' => $primaryClub->name,
+            ],
+            'teams' => $teams,
+            'positions' => ['PG', 'SG', 'SF', 'PF', 'C'],
+        ]);
+    }
+
+    /**
+     * Store a newly created player.
+     */
+    public function storePlayer(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'birth_date' => 'nullable|date',
+            'phone' => 'nullable|string|max:20',
+            'team_id' => 'nullable|exists:basketball_teams,id',
+            'jersey_number' => 'nullable|integer|min:0|max:99',
+            'primary_position' => 'nullable|in:PG,SG,SF,PF,C',
+        ]);
+
+        try {
+            // Create user for player
+            $playerUser = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => bcrypt($validated['password']),
+                'phone' => $validated['phone'] ?? null,
+                'birth_date' => $validated['birth_date'] ?? null,
+                'is_active' => true,
+            ]);
+
+            // Assign player role
+            $playerUser->assignRole('player');
+
+            // Attach to club
+            $primaryClub->users()->attach($playerUser->id, [
+                'role' => 'player',
+                'joined_at' => now(),
+                'is_active' => true,
+            ]);
+
+            // Create player profile
+            $player = $this->playerService->createPlayer(
+                user: $playerUser,
+                status: 'active'
+            );
+
+            // Assign to team if provided
+            if (! empty($validated['team_id'])) {
+                $team = BasketballTeam::find($validated['team_id']);
+                if ($team && $team->club_id === $primaryClub->id) {
+                    $player->teams()->attach($team->id, [
+                        'jersey_number' => $validated['jersey_number'] ?? null,
+                        'primary_position' => $validated['primary_position'] ?? null,
+                        'joined_at' => now(),
+                        'is_active' => true,
+                    ]);
+                }
+            }
+
+            Log::info('Club admin created player', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'player_id' => $player->id,
+                'user_id' => $playerUser->id,
+            ]);
+
+            return redirect()->route('club-admin.players')
+                ->with('success', 'Spieler wurde erfolgreich erstellt.');
+        } catch (\Exception $e) {
+            Log::error('Failed to create player', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->with('error', 'Fehler beim Erstellen des Spielers: '.$e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Show the edit player form.
+     */
+    public function editPlayer(Player $player): Response
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Authorization: Check if player belongs to club
+        $playerTeams = $player->teams()->where('club_id', $primaryClub->id)->exists();
+        if (! $playerTeams) {
+            abort(403, 'Dieser Spieler gehört nicht zu Ihrem Club.');
+        }
+
+        $this->authorize('update', $player);
+
+        // Get club teams
+        $teams = $primaryClub->teams()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'season', 'age_group']);
+
+        // Get player's current team in this club
+        $playerTeam = $player->teams()
+            ->where('club_id', $primaryClub->id)
+            ->first();
+
+        return Inertia::render('ClubAdmin/Players/Edit', [
+            'club' => [
+                'id' => $primaryClub->id,
+                'name' => $primaryClub->name,
+            ],
+            'player' => [
+                'id' => $player->id,
+                'name' => $player->user?->name ?? $player->full_name,
+                'email' => $player->user?->email,
+                'phone' => $player->user?->phone,
+                'birth_date' => $player->user?->birth_date,
+                'status' => $player->status,
+                'team_id' => $playerTeam?->id,
+                'jersey_number' => $playerTeam?->pivot->jersey_number,
+                'primary_position' => $playerTeam?->pivot->primary_position,
+            ],
+            'teams' => $teams,
+            'positions' => ['PG', 'SG', 'SF', 'PF', 'C'],
+        ]);
+    }
+
+    /**
+     * Update an existing player.
+     */
+    public function updatePlayer(Request $request, Player $player): RedirectResponse
+    {
+        $user = Auth::user();
+        $adminClubs = $user->getAdministeredClubs(false);
+
+        if ($adminClubs->isEmpty()) {
+            abort(403, 'Sie sind aktuell kein Administrator eines Clubs.');
+        }
+
+        $primaryClub = $adminClubs->first();
+
+        // Authorization: Check if player belongs to club
+        $playerTeams = $player->teams()->where('club_id', $primaryClub->id)->exists();
+        if (! $playerTeams) {
+            abort(403, 'Dieser Spieler gehört nicht zu Ihrem Club.');
+        }
+
+        $this->authorize('update', $player);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,'.$player->user_id,
+            'birth_date' => 'nullable|date',
+            'phone' => 'nullable|string|max:20',
+            'status' => 'required|in:active,inactive,injured,suspended',
+            'team_id' => 'nullable|exists:basketball_teams,id',
+            'jersey_number' => 'nullable|integer|min:0|max:99',
+            'primary_position' => 'nullable|in:PG,SG,SF,PF,C',
+        ]);
+
+        try {
+            // Update user details if player has a user account
+            if ($player->user) {
+                $player->user->update([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                    'phone' => $validated['phone'] ?? null,
+                    'birth_date' => $validated['birth_date'] ?? null,
+                ]);
+            }
+
+            // Update player status
+            $player->update([
+                'status' => $validated['status'],
+            ]);
+
+            // Update team assignment if changed
+            if (! empty($validated['team_id'])) {
+                $team = BasketballTeam::find($validated['team_id']);
+                if ($team && $team->club_id === $primaryClub->id) {
+                    // Sync to new team (removes old team assignments in this club)
+                    $player->teams()->wherePivot('club_id', $primaryClub->id)->detach();
+                    $player->teams()->attach($team->id, [
+                        'jersey_number' => $validated['jersey_number'] ?? null,
+                        'primary_position' => $validated['primary_position'] ?? null,
+                        'joined_at' => now(),
+                        'is_active' => true,
+                    ]);
+                }
+            }
+
+            Log::info('Club admin updated player', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'player_id' => $player->id,
+            ]);
+
+            return redirect()->route('club-admin.players')
+                ->with('success', 'Spieler wurde erfolgreich aktualisiert.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update player', [
+                'club_admin_id' => $user->id,
+                'club_id' => $primaryClub->id,
+                'player_id' => $player->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->with('error', 'Fehler beim Aktualisieren des Spielers: '.$e->getMessage())
                 ->withInput();
         }
     }

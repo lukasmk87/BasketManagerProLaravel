@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import ClubAdminLayout from '@/Layouts/ClubAdminLayout.vue';
 
 const props = defineProps({
@@ -36,6 +36,22 @@ const getRoleBadgeColor = (role) => {
         'member': 'bg-gray-100 text-gray-800',
     };
     return colors[role] || 'bg-gray-100 text-gray-800';
+};
+
+const sendPasswordReset = (memberId) => {
+    if (confirm('Möchten Sie diesem Mitglied wirklich einen Passwort-Reset-Link senden?')) {
+        router.post(route('club-admin.members.send-password-reset', memberId), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Success message will be shown by backend
+            },
+        });
+    }
+};
+
+const canEditMember = (member) => {
+    // Cannot edit admins
+    return !member.roles.some(role => ['super_admin', 'admin', 'club_admin'].includes(role));
 };
 </script>
 
@@ -89,6 +105,9 @@ const getRoleBadgeColor = (role) => {
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Status
                                     </th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Aktionen
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -136,6 +155,37 @@ const getRoleBadgeColor = (role) => {
                                         >
                                             {{ member.is_active ? 'Aktiv' : 'Inaktiv' }}
                                         </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <Link
+                                                v-if="canEditMember(member)"
+                                                :href="route('club-admin.members.edit', member.id)"
+                                                class="inline-flex items-center px-3 py-1.5 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                            >
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                                Bearbeiten
+                                            </Link>
+                                            <button
+                                                v-if="canEditMember(member)"
+                                                @click="sendPasswordReset(member.id)"
+                                                type="button"
+                                                class="inline-flex items-center px-3 py-1.5 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                            >
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                                </svg>
+                                                Passwort Reset
+                                            </button>
+                                            <span
+                                                v-if="!canEditMember(member)"
+                                                class="text-xs text-gray-500 italic"
+                                            >
+                                                Keine Aktionen verfügbar
+                                            </span>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>

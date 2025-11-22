@@ -36,14 +36,36 @@ Route::prefix('club-admin')
             ->name('members.create');
         Route::post('/members', [ClubAdminPanelController::class, 'storeMember'])
             ->name('members.store');
+        Route::get('/members/{user}/edit', [ClubAdminPanelController::class, 'editMember'])
+            ->name('members.edit');
+        Route::put('/members/{user}', [ClubAdminPanelController::class, 'updateMember'])
+            ->name('members.update');
+        Route::post('/members/{user}/send-password-reset', [ClubAdminPanelController::class, 'sendPasswordReset'])
+            ->name('members.send-password-reset');
 
         // Teams Management
         Route::get('/teams', [ClubAdminPanelController::class, 'teams'])
             ->name('teams');
+        Route::get('/teams/create', [ClubAdminPanelController::class, 'createTeam'])
+            ->name('teams.create');
+        Route::post('/teams', [ClubAdminPanelController::class, 'storeTeam'])
+            ->name('teams.store');
+        Route::get('/teams/{team}/edit', [ClubAdminPanelController::class, 'editTeam'])
+            ->name('teams.edit');
+        Route::put('/teams/{team}', [ClubAdminPanelController::class, 'updateTeam'])
+            ->name('teams.update');
 
         // Players Management
         Route::get('/players', [ClubAdminPanelController::class, 'players'])
             ->name('players');
+        Route::get('/players/create', [ClubAdminPanelController::class, 'createPlayer'])
+            ->name('players.create');
+        Route::post('/players', [ClubAdminPanelController::class, 'storePlayer'])
+            ->name('players.store');
+        Route::get('/players/{player}/edit', [ClubAdminPanelController::class, 'editPlayer'])
+            ->name('players.edit');
+        Route::put('/players/{player}', [ClubAdminPanelController::class, 'updatePlayer'])
+            ->name('players.update');
 
         // Financial Management
         Route::get('/financial', [ClubAdminPanelController::class, 'financial'])
