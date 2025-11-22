@@ -28,6 +28,40 @@ Diese Tabelle zeigt alle **136 Berechtigungen** und ihre Zuweisung zu den **11 S
 | **impersonate users** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **manage user roles** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
+### 🔵 Club Admin User Management - Detaillierte Einschränkungen
+
+Club Admins haben **eingeschränkten Zugriff** auf User Management mit folgenden Sicherheitsregeln:
+
+**✅ ERLAUBT:**
+- **View Users**: Benutzer anzeigen, die in ihren verwalteten Clubs sind
+- **Create Users**: Neue Benutzer für ihre Clubs erstellen
+- **Edit Users**: Benutzer in ihren Clubs bearbeiten (Basisdaten, Status, medizinische Daten, Spieler-Profile)
+- **Password Reset**: Passwort-Reset-Links an Benutzer in ihren Clubs senden
+
+**❌ NICHT ERLAUBT:**
+- Benutzer außerhalb ihrer verwalteten Clubs bearbeiten oder anzeigen
+- **Super Admins** bearbeiten oder Passwort-Reset senden
+- **Admins** bearbeiten oder Passwort-Reset senden
+- **Andere Club Admins** bearbeiten oder Passwort-Reset senden
+- Benutzerrollen ändern (keine `manage user roles` Permission)
+- Benutzer löschen (keine `delete users` Permission)
+- Benutzer impersonieren (keine `impersonate users` Permission)
+
+**🎯 Club-Scoping:**
+- Über `club_id` Request-Parameter kann der aktive Club gefiltert werden
+- Abwärtskompatibel: Ohne `club_id` werden alle Benutzer in verwalteten Clubs angezeigt
+- Policy-Layer: `UserPolicy` prüft automatisch Club-Zugehörigkeit und Admin-Rechte
+
+**🔗 API Endpoints:**
+- `POST /api/v2/users/{user}/send-password-reset` - Password Reset senden
+- `GET /api/v2/users?club_id={id}` - Benutzer nach Club filtern
+- `GET /admin/users?club_id={id}` - Web-Interface mit Club-Filter
+
+**📄 Implementierung:**
+- Policy: `app/Policies/UserPolicy.php` - Zeilen 70-116
+- Controller: `app/Http/Controllers/Api/V2/UserController.php` - Zeilen 283-317
+- Admin Panel: `app/Http/Controllers/AdminPanelController.php` - Zeilen 107-163
+
 ---
 
 ## 🏢 Club Management (7 Permissions)

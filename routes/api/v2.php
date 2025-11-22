@@ -31,7 +31,21 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     
     // User Management
     Route::apiResource('users', UserController::class);
-    
+    Route::post('users/{user}/send-password-reset', [UserController::class, 'sendPasswordReset'])
+        ->name('api.v2.users.send-password-reset');
+    Route::post('users/{user}/activate', [UserController::class, 'activate'])
+        ->name('api.v2.users.activate');
+    Route::post('users/{user}/deactivate', [UserController::class, 'deactivate'])
+        ->name('api.v2.users.deactivate');
+    Route::get('users/{user}/statistics', [UserController::class, 'statistics'])
+        ->name('api.v2.users.statistics');
+    Route::get('users/{user}/teams', [UserController::class, 'teams'])
+        ->name('api.v2.users.teams');
+    Route::get('users/{user}/activities', [UserController::class, 'activities'])
+        ->name('api.v2.users.activities');
+    Route::patch('users/{user}/locale', [UserController::class, 'updateLocale'])
+        ->name('api.v2.users.update-locale');
+
     // Club Management
     Route::apiResource('clubs', ClubController::class)->names('api.v2.clubs');
     Route::get('clubs/{club}/teams', [ClubController::class, 'teams']);

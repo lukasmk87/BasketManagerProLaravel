@@ -124,6 +124,11 @@ class AdminPanelController extends Controller
             ->when($request->status !== null, function ($query) use ($request) {
                 return $query->where('is_active', $request->status);
             })
+            ->when($request->club_id, function ($query, $clubId) {
+                return $query->whereHas('clubs', function ($q) use ($clubId) {
+                    $q->where('clubs.id', $clubId);
+                });
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->withQueryString();
@@ -135,14 +140,24 @@ class AdminPanelController extends Controller
             ->get()
             ->pluck('count', 'name');
 
+        // Get clubs for filter dropdown - for Club Admins only show their administered clubs
+        $clubs = $request->user()->hasRole('club_admin')
+            ? Club::whereIn('id', $request->user()->getAdministeredClubIds())
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get()
+            : Club::select('id', 'name')->orderBy('name')->get();
+
         return Inertia::render('Admin/Users', [
             'users' => $users,
             'roles' => Role::all(),
+            'clubs' => $clubs,
             'role_stats' => $roleStats,
             'filters' => [
                 'search' => $request->search,
                 'role' => $request->role,
                 'status' => $request->status,
+                'club_id' => $request->club_id,
             ],
         ]);
     }

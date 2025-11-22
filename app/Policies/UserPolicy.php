@@ -27,16 +27,31 @@ class UserPolicy
             return true;
         }
 
-        // Check general permission
-        if ($user->can('view users')) {
+        // Super Admins and Admins have full access
+        if ($user->hasAnyRole(['super_admin', 'admin']) && $user->can('view users')) {
             return true;
         }
 
         // Club admins can view users in their clubs
-        if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+        if ($user->hasRole('club_admin') && $user->can('view users')) {
+            // If club_id is provided in request (for active club filtering)
+            $clubId = request()->input('club_id');
+            if ($clubId) {
+                // Check if club admin manages this club
+                $administeredClubIds = $user->getAdministeredClubIds();
+                if (!in_array($clubId, $administeredClubIds)) {
+                    return false;
+                }
+
+                // Check if target user is member of this club
+                $modelClubIds = $model->clubs()->pluck('clubs.id')->toArray();
+                return in_array($clubId, $modelClubIds);
+            }
+
+            // Fallback: Check if users share at least one club
+            $userClubIds = $user->getAdministeredClubIds();
             $modelClubIds = $model->clubs()->pluck('clubs.id')->toArray();
-            
+
             return !empty(array_intersect($userClubIds, $modelClubIds));
         }
 
@@ -44,7 +59,7 @@ class UserPolicy
         if ($user->isCoach() && $model->isPlayer()) {
             $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
             $playerTeamId = $model->playerProfile?->team_id;
-            
+
             return $playerTeamId && in_array($playerTeamId, $coachTeamIds);
         }
 
@@ -74,16 +89,41 @@ class UserPolicy
             return true;
         }
 
-        // Check general permission
-        if ($user->can('edit users')) {
+        // Super Admins and Admins have full access
+        if ($user->hasAnyRole(['super_admin', 'admin']) && $user->can('edit users')) {
             return true;
         }
 
-        // Club admins can edit users in their clubs
+        // Club admins have restricted access
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            // Club admins CANNOT edit other admins (super_admin, admin, club_admin)
+            if ($model->hasAnyRole(['super_admin', 'admin', 'club_admin'])) {
+                return false;
+            }
+
+            // Check if user has 'edit users' permission
+            if (!$user->can('edit users')) {
+                return false;
+            }
+
+            // If club_id is provided in request (for active club filtering)
+            $clubId = request()->input('club_id');
+            if ($clubId) {
+                // Check if club admin manages this club
+                $administeredClubIds = $user->getAdministeredClubIds();
+                if (!in_array($clubId, $administeredClubIds)) {
+                    return false;
+                }
+
+                // Check if target user is member of this club
+                $modelClubIds = $model->clubs()->pluck('clubs.id')->toArray();
+                return in_array($clubId, $modelClubIds);
+            }
+
+            // Fallback: Check if users share at least one club (for backward compatibility)
+            $userClubIds = $user->getAdministeredClubIds();
             $modelClubIds = $model->clubs()->pluck('clubs.id')->toArray();
-            
+
             return !empty(array_intersect($userClubIds, $modelClubIds));
         }
 
@@ -215,9 +255,24 @@ class UserPolicy
 
         // Club admins can view sensitive info for users in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            // If club_id is provided in request (for active club filtering)
+            $clubId = request()->input('club_id');
+            if ($clubId) {
+                // Check if club admin manages this club
+                $administeredClubIds = $user->getAdministeredClubIds();
+                if (!in_array($clubId, $administeredClubIds)) {
+                    return false;
+                }
+
+                // Check if target user is member of this club
+                $modelClubIds = $model->clubs()->pluck('clubs.id')->toArray();
+                return in_array($clubId, $modelClubIds);
+            }
+
+            // Fallback: Check if users share at least one club
+            $userClubIds = $user->getAdministeredClubIds();
             $modelClubIds = $model->clubs()->pluck('clubs.id')->toArray();
-            
+
             return !empty(array_intersect($userClubIds, $modelClubIds));
         }
 

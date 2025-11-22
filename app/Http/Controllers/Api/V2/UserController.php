@@ -8,9 +8,11 @@ use App\Http\Requests\Api\V2\Users\StoreUserRequest;
 use App\Http\Requests\Api\V2\Users\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class UserController extends Controller
@@ -23,7 +25,7 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         $users = User::query()
-            ->with(['roles:id,name', 'playerProfile.team:id,name'])
+            ->with(['roles:id,name', 'playerProfile.team:id,name', 'clubs:id,name'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
@@ -39,6 +41,11 @@ class UserController extends Controller
             ->when($request->filled('status'), function ($query) use ($request) {
                 $active = $request->status === 'active';
                 $query->where('is_active', $active);
+            })
+            ->when($request->filled('club_id'), function ($query) use ($request) {
+                $query->whereHas('clubs', function ($q) use ($request) {
+                    $q->where('clubs.id', $request->club_id);
+                });
             })
             ->when($request->filled('team_id'), function ($query) use ($request) {
                 $query->whereHas('playerProfile', function ($q) use ($request) {
@@ -267,5 +274,50 @@ class UserController extends Controller
         return response()->json([
             'activities' => $activities,
         ]);
+    }
+
+    /**
+     * Send password reset link to user.
+     *
+     * This allows Club Admins to send password reset links to users in their clubs.
+     * Authorization is handled by the 'update' policy method, which checks:
+     * - Club admins can only send resets to users in their managed clubs
+     * - Club admins cannot send resets to other admins
+     * - club_id parameter can be used for additional club-specific filtering
+     */
+    public function sendPasswordReset(User $user): JsonResponse
+    {
+        // Authorization: Uses 'update' policy which handles club admin restrictions
+        $this->authorize('update', $user);
+
+        $userService = app(UserService::class);
+
+        try {
+            $userService->sendPasswordReset($user);
+
+            Log::info('Password reset link sent via API', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'sent_by' => auth()->id(),
+                'club_id' => request()->input('club_id'),
+            ]);
+
+            return response()->json([
+                'message' => 'Passwort-Reset-Link wurde erfolgreich an ' . $user->email . ' gesendet.',
+                'email' => $user->email,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send password reset link via API', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+                'sent_by' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'message' => 'Fehler beim Senden des Passwort-Reset-Links.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

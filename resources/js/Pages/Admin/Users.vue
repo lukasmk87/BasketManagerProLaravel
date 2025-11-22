@@ -10,6 +10,7 @@ import Pagination from '@/Components/Pagination.vue';
 const props = defineProps({
     users: Object,
     roles: Array,
+    clubs: Array,
     role_stats: Object,
     filters: Object,
 });
@@ -20,13 +21,15 @@ const page = usePage();
 const search = ref(props.filters.search || '');
 const selectedRole = ref(props.filters.role || '');
 const selectedStatus = ref(props.filters.status !== null ? props.filters.status : '');
+const selectedClub = ref(props.filters.club_id || '');
 
 // Watch for changes and update URL
-watch([search, selectedRole, selectedStatus], ([newSearch, newRole, newStatus]) => {
+watch([search, selectedRole, selectedStatus, selectedClub], ([newSearch, newRole, newStatus, newClub]) => {
     router.get(route('admin.users'), {
         search: newSearch || undefined,
         role: newRole || undefined,
         status: newStatus !== '' ? newStatus : undefined,
+        club_id: newClub || undefined,
     }, {
         preserveState: true,
         replace: true,
@@ -37,6 +40,7 @@ const clearFilters = () => {
     search.value = '';
     selectedRole.value = '';
     selectedStatus.value = '';
+    selectedClub.value = '';
 };
 
 const formatDate = (dateString) => {
@@ -245,7 +249,7 @@ const deleteUser = (user) => {
                 <!-- Filters -->
                 <div class="bg-white shadow rounded-lg mb-8">
                     <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <!-- Search -->
                             <div>
                                 <label for="search" class="block text-sm font-medium text-gray-700">Suchen</label>
@@ -281,6 +285,20 @@ const deleteUser = (user) => {
                                     <option value="">Alle Status</option>
                                     <option value="1">Aktiv</option>
                                     <option value="0">Inaktiv</option>
+                                </select>
+                            </div>
+
+                            <!-- Club Filter -->
+                            <div>
+                                <label for="club" class="block text-sm font-medium text-gray-700">Club</label>
+                                <select
+                                    id="club"
+                                    v-model="selectedClub"
+                                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                    <option value="">Alle Clubs</option>
+                                    <option v-for="club in clubs" :key="club.id" :value="club.id">
+                                        {{ club.name }}
+                                    </option>
                                 </select>
                             </div>
 
@@ -345,8 +363,19 @@ const deleteUser = (user) => {
                                             </span>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ user.clubs_count }} Club(s)
+                                    <td class="px-6 py-4 text-sm text-gray-500">
+                                        <div v-if="user.clubs && user.clubs.length > 0" class="flex flex-wrap gap-1">
+                                            <span
+                                                v-for="club in user.clubs"
+                                                :key="club.id"
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800"
+                                            >
+                                                {{ club.name }}
+                                            </span>
+                                        </div>
+                                        <span v-else class="text-gray-400 italic">
+                                            Kein Club
+                                        </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span :class="[
