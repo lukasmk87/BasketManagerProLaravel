@@ -17,7 +17,9 @@
       "Bash(dir:*)",
       "Bash(nul)",
       "Bash(npm install)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(xargs cat:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []
