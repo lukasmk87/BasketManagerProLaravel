@@ -36,7 +36,7 @@ class RedisAvailabilityService
         $cacheFile = storage_path('framework/cache/data/redis_availability');
 
         if (file_exists($cacheFile)) {
-            $cached = unserialize(file_get_contents($cacheFile));
+            $cached = json_decode(file_get_contents($cacheFile), true);
             if ($cached && isset($cached['expires_at']) && $cached['expires_at'] > time()) {
                 return $cached['available'];
             }
@@ -97,7 +97,7 @@ class RedisAvailabilityService
                 mkdir($dir, 0755, true);
             }
 
-            file_put_contents($cacheFile, serialize($data));
+            file_put_contents($cacheFile, json_encode($data));
         } catch (\Exception $e) {
             // Silently fail if caching fails - not critical
             Log::debug('Failed to cache Redis availability', ['error' => $e->getMessage()]);

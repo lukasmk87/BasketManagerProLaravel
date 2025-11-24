@@ -351,7 +351,8 @@ class ClubUsageTrackingService
     {
         $periodStart = now()->startOfMonth();
 
-        ClubUsage::updateOrCreate(
+        // ✅ SECURE: Use firstOrCreate then increment to prevent SQL injection
+        $clubUsage = ClubUsage::firstOrCreate(
             [
                 'club_id' => $club->id,
                 'tenant_id' => $club->tenant_id,
@@ -359,11 +360,25 @@ class ClubUsageTrackingService
                 'period_start' => $periodStart,
             ],
             [
-                'usage_count' => DB::raw("GREATEST(0, usage_count + {$amount})"), // Prevent negative
+                'usage_count' => 0,
                 'last_tracked_at' => now(),
                 'metadata' => $metadata ?: null,
             ]
         );
+
+        // Increment usage_count safely (prevents negative with max())
+        if ($amount > 0) {
+            $clubUsage->increment('usage_count', (int)$amount);
+        } elseif ($amount < 0) {
+            // Prevent negative values
+            $clubUsage->decrement('usage_count', min(abs((int)$amount), $clubUsage->usage_count));
+        }
+
+        // Update metadata and timestamp
+        $clubUsage->update([
+            'last_tracked_at' => now(),
+            'metadata' => $metadata ?: null,
+        ]);
     }
 
     /**

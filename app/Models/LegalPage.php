@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Stevebauman\Purify\Casts\PurifyHtmlOnGet;
 
 class LegalPage extends Model
 {
@@ -31,6 +32,7 @@ class LegalPage extends Model
      */
     protected $casts = [
         'is_published' => 'boolean',
+        'content' => PurifyHtmlOnGet::class,  // ✅ XSS Protection: Auto-sanitize on retrieval
     ];
 
     /**

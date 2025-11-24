@@ -144,7 +144,7 @@
             <!-- Page Content -->
             <article class="bg-white rounded-xl shadow-lg p-8 lg:p-12">
                 <div class="legal-content prose prose-lg max-w-none">
-                    {!! $page->content !!}
+                    {!! Purify::clean($page->content) !!}
                 </div>
             </article>
 

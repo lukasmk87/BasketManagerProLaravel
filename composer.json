@@ -24,6 +24,7 @@
         "spatie/laravel-backup": "^9.3",
         "spatie/laravel-medialibrary": "*",
         "spatie/laravel-permission": "^6.21",
+        "stevebauman/purify": "^6.3",
         "stripe/stripe-php": "^16.2",
         "tightenco/ziggy": "^2.0"
     },

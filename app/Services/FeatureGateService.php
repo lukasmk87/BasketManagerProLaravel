@@ -409,17 +409,24 @@ class FeatureGateService
     private function updateDatabaseUsage(string $metric, int $amount): void
     {
         $periodStart = now()->startOfMonth();
-        
-        TenantUsage::updateOrCreate(
+
+        // ✅ SECURE: Use firstOrCreate then increment to prevent SQL injection
+        $usage = TenantUsage::firstOrCreate(
             [
                 'tenant_id' => $this->tenant->id,
                 'metric' => $metric,
                 'period_start' => $periodStart,
             ],
             [
-                'usage_count' => \DB::raw("usage_count + {$amount}"),
+                'usage_count' => 0,
                 'last_tracked_at' => now(),
             ]
         );
+
+        // Safely increment/decrement with type casting
+        if ($amount != 0) {
+            $usage->increment('usage_count', (int)$amount);
+            $usage->update(['last_tracked_at' => now()]);
+        }
     }
 }
