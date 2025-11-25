@@ -32,7 +32,8 @@ class DashboardController extends Controller
      */
     public function index(Request $request): Response
     {
-        $user = $request->user();
+        // PERF-001: Eager load roles to prevent N+1 (used in getPrimaryRole and response)
+        $user = $request->user()->load('roles');
 
         // Determine primary role for dashboard routing
         $primaryRole = $this->getPrimaryRole($user);
@@ -156,8 +157,10 @@ class DashboardController extends Controller
                     ])
                     ->get();
             } else {
-                $adminClubs = $user->clubs()
+                // PERF-001: Added withPivot('role') to prevent N+1 when accessing pivot->role in all_clubs map
+            $adminClubs = $user->clubs()
                     ->wherePivotIn('role', ['admin', 'owner', 'manager'])
+                    ->withPivot('role')
                     ->select(['clubs.id', 'clubs.name', 'clubs.slug', 'clubs.logo_url', 'clubs.is_active', 'clubs.is_verified', 'clubs.tenant_id'])
                     ->withCount(['teams', 'users'])
                     ->with([
@@ -373,7 +376,11 @@ class DashboardController extends Controller
             }
 
             // Get the player's active team
-            $team = $player->teams()->wherePivot('is_active', true)->first();
+            // PERF-001: Eager load club and headCoach to prevent N+1 queries in team_info response
+            $team = $player->teams()
+                ->with(['club:id,name', 'headCoach:id,name'])
+                ->wherePivot('is_active', true)
+                ->first();
 
             if (! $team) {
                 return ['message' => 'Sie sind aktuell keinem Team zugeordnet.'];

@@ -75,9 +75,12 @@ class GameResource extends JsonResource
             
             // Game Actions
             'game_actions' => GameActionResource::collection($this->whenLoaded('gameActions')),
+            // PERF-003: Avoid N+1 by checking for loaded relation or withCount attribute first
             'actions_count' => $this->when(
                 $request->has('include_counts'),
-                fn() => $this->gameActions()->count()
+                fn() => $this->relationLoaded('gameActions')
+                    ? $this->gameActions->count()
+                    : ($this->game_actions_count ?? $this->gameActions()->count())
             ),
             
             // Statistics

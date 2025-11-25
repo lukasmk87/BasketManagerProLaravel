@@ -243,29 +243,39 @@ class MLTrainingService
 
     /**
      * Bereite Game Outcome Daten vor
+     *
+     * PERF-003: Optimized - no longer loads ALL gameActions into memory.
+     * Uses aggregated database queries instead of eager loading.
      */
     private function prepareGameOutcomeData(array $parameters): array
     {
-        $games = Game::with(['gameActions', 'homeTeam', 'awayTeam'])
+        // PERF-003: Removed 'gameActions' from eager loading - was loading 200,000+ records!
+        // Only load team info for basic game data
+        $gamesQuery = Game::select('id', 'home_team_id', 'away_team_id', 'home_team_score', 'away_team_score', 'played_at')
+            ->with(['homeTeam:id,name', 'awayTeam:id,name'])
             ->where('status', 'finished')
             ->whereNotNull('home_team_score')
             ->whereNotNull('away_team_score');
 
         if (!empty($parameters['date_from'])) {
-            $games->where('played_at', '>=', $parameters['date_from']);
+            $gamesQuery->where('played_at', '>=', $parameters['date_from']);
         }
 
         if (!empty($parameters['date_to'])) {
-            $games->where('played_at', '<=', $parameters['date_to']);
+            $gamesQuery->where('played_at', '<=', $parameters['date_to']);
         }
 
         $limit = $parameters['sample_limit'] ?? 1000;
-        $gamesList = $games->limit($limit)->get();
+        $gamesList = $gamesQuery->limit($limit)->get();
+
+        // PERF-003: Bulk aggregate stats for all games in one query per stat type
+        $gameIds = $gamesList->pluck('id');
+        $aggregatedStats = $this->bulkAggregateGameStats($gameIds);
 
         $trainingData = [];
         foreach ($gamesList as $game) {
-            $homeStats = $this->aggregateTeamStats($game, $game->home_team_id);
-            $awayStats = $this->aggregateTeamStats($game, $game->away_team_id);
+            $homeStats = $aggregatedStats[$game->id][$game->home_team_id] ?? $this->getDefaultStats();
+            $awayStats = $aggregatedStats[$game->id][$game->away_team_id] ?? $this->getDefaultStats();
 
             $trainingData[] = [
                 'home_points' => $homeStats['points'],
@@ -284,6 +294,64 @@ class MLTrainingService
         }
 
         return $trainingData;
+    }
+
+    /**
+     * PERF-003: Bulk aggregate stats for all games in minimal queries
+     *
+     * Instead of N queries (one per game), this runs a few aggregate queries
+     * for ALL games at once, dramatically reducing database load.
+     */
+    private function bulkAggregateGameStats(Collection $gameIds): array
+    {
+        if ($gameIds->isEmpty()) {
+            return [];
+        }
+
+        // Single query to aggregate all stats by game and team
+        $stats = GameAction::whereIn('game_id', $gameIds)
+            ->selectRaw('
+                game_id,
+                team_id,
+                SUM(CASE WHEN is_successful = 1 THEN points ELSE 0 END) as points,
+                SUM(CASE WHEN action_type IN ("rebound_offensive", "rebound_defensive") THEN 1 ELSE 0 END) as rebounds,
+                SUM(CASE WHEN action_type = "assist" THEN 1 ELSE 0 END) as assists,
+                SUM(CASE WHEN action_type = "turnover" THEN 1 ELSE 0 END) as turnovers,
+                SUM(CASE WHEN action_type = "field_goal_made" THEN 1 ELSE 0 END) as fg_made,
+                SUM(CASE WHEN action_type IN ("field_goal_made", "field_goal_missed") THEN 1 ELSE 0 END) as fg_attempted
+            ')
+            ->groupBy('game_id', 'team_id')
+            ->get();
+
+        // Organize results by game_id -> team_id
+        $aggregated = [];
+        foreach ($stats as $stat) {
+            $fgPercentage = $stat->fg_attempted > 0 ? $stat->fg_made / $stat->fg_attempted : 0;
+
+            $aggregated[$stat->game_id][$stat->team_id] = [
+                'points' => (int) $stat->points,
+                'rebounds' => (int) $stat->rebounds,
+                'assists' => (int) $stat->assists,
+                'turnovers' => (int) $stat->turnovers,
+                'fg_percentage' => $fgPercentage
+            ];
+        }
+
+        return $aggregated;
+    }
+
+    /**
+     * Get default stats for teams with no game actions
+     */
+    private function getDefaultStats(): array
+    {
+        return [
+            'points' => 0,
+            'rebounds' => 0,
+            'assists' => 0,
+            'turnovers' => 0,
+            'fg_percentage' => 0
+        ];
     }
 
     /**

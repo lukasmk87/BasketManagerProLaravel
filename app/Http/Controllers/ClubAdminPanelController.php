@@ -143,7 +143,8 @@ class ClubAdminPanelController extends Controller
                     'active_teams' => $clubStats['active_teams'] ?? 0,
                     'total_players' => $clubStats['total_players'] ?? 0,
                     'active_players' => $clubStats['active_players'] ?? 0,
-                    'total_members' => $primaryClub->users()->count(),
+                    // PERF-002: Use already loaded users collection instead of separate count() query
+                    'total_members' => $primaryClub->users->count(),
                     'upcoming_games' => $upcomingGames->count(),
                     'pending_players' => $pendingPlayersCount,
                 ],
@@ -377,8 +378,10 @@ class ClubAdminPanelController extends Controller
             ->select(['players.id', 'players.user_id', 'players.status', 'players.full_name', 'players.created_at'])
             ->with([
                 'user:id,name,email,birth_date',
+                // PERF-002: Added withPivot for jersey_number and primary_position used in map()
                 'teams' => fn($q) => $q->where('club_id', $primaryClub->id)
                     ->select(['basketball_teams.id', 'basketball_teams.name'])
+                    ->withPivot('jersey_number', 'primary_position')
             ])
             ->get()
             ->map(function ($player) {
@@ -735,13 +738,15 @@ class ClubAdminPanelController extends Controller
         // PERF-002: Eager load roles to avoid N+1 query
         $user->load('roles:id,name');
 
-        // Verify the user is a member of this club
-        if (! $user->clubs()->where('clubs.id', $primaryClub->id)->exists()) {
+        // PERF-002: Combined exists() + first() into single query
+        $clubMembership = $user->clubs()
+            ->where('clubs.id', $primaryClub->id)
+            ->withPivot('role', 'joined_at', 'is_active')
+            ->first();
+
+        if (! $clubMembership) {
             abort(404, 'Dieser Benutzer gehört nicht zu Ihrem Club.');
         }
-
-        // Get user's club role
-        $clubMembership = $user->clubs()->where('clubs.id', $primaryClub->id)->first();
 
         // Available club roles (not system roles)
         $availableRoles = [
@@ -1248,9 +1253,13 @@ class ClubAdminPanelController extends Controller
 
         $primaryClub = $adminClubs->first();
 
-        // Authorization: Check if player belongs to club
-        $playerTeams = $player->teams()->where('club_id', $primaryClub->id)->exists();
-        if (! $playerTeams) {
+        // PERF-002: Combined exists check and team fetch into single query
+        $playerTeam = $player->teams()
+            ->where('club_id', $primaryClub->id)
+            ->with('club:id,name')
+            ->first();
+
+        if (! $playerTeam) {
             abort(403, 'Dieser Spieler gehört nicht zu Ihrem Club.');
         }
 
@@ -1261,11 +1270,6 @@ class ClubAdminPanelController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'season', 'age_group']);
-
-        // Get player's current team in this club
-        $playerTeam = $player->teams()
-            ->where('club_id', $primaryClub->id)
-            ->first();
 
         return Inertia::render('ClubAdmin/Players/Edit', [
             'club' => [
@@ -1302,9 +1306,9 @@ class ClubAdminPanelController extends Controller
 
         $primaryClub = $adminClubs->first();
 
-        // Authorization: Check if player belongs to club
-        $playerTeams = $player->teams()->where('club_id', $primaryClub->id)->exists();
-        if (! $playerTeams) {
+        // PERF-002: Combined exists check into first() - we only need to verify existence
+        $playerTeam = $player->teams()->where('club_id', $primaryClub->id)->first();
+        if (! $playerTeam) {
             abort(403, 'Dieser Spieler gehört nicht zu Ihrem Club.');
         }
 

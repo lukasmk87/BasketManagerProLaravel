@@ -52,11 +52,20 @@ class StatisticsService
      */
     public function getGameStatistics(Game $game): array
     {
-        // Return basic game statistics
+        // PERF-003: Combined 3 separate count() queries into 1 aggregated query
+        $actionCounts = GameAction::where('game_id', $game->id)
+            ->selectRaw('team_id, COUNT(*) as count')
+            ->groupBy('team_id')
+            ->pluck('count', 'team_id');
+
+        $homeTeamActions = $actionCounts->get($game->home_team_id, 0);
+        $awayTeamActions = $actionCounts->get($game->away_team_id, 0);
+        $totalActions = $actionCounts->sum();
+
         return [
-            'total_actions' => $game->gameActions()->count(),
-            'home_team_actions' => $game->gameActions()->where('team_id', $game->home_team_id)->count(),
-            'away_team_actions' => $game->gameActions()->where('team_id', $game->away_team_id)->count(),
+            'total_actions' => $totalActions,
+            'home_team_actions' => $homeTeamActions,
+            'away_team_actions' => $awayTeamActions,
             'duration' => $game->duration_minutes ?? 0,
             'finished_at' => $game->finished_at,
             'actions_summary' => $this->getGameActionsSummary($game),
