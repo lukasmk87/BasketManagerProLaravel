@@ -26,8 +26,10 @@ use App\Observers\PlayerObserver;
 use App\Observers\GameObserver;
 use App\Observers\TrainingSessionObserver;
 use App\Observers\VideoFileObserver;
+use App\Observers\GameActionObserver;
 use App\Models\TrainingSession;
 use App\Models\VideoFile;
+use App\Models\GameAction;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Validator;
@@ -130,6 +132,7 @@ class BasketManagerServiceProvider extends ServiceProvider
         Game::observe(GameObserver::class);
         TrainingSession::observe(TrainingSessionObserver::class);
         VideoFile::observe(VideoFileObserver::class); // SEC-008: Storage tracking
+        GameAction::observe(GameActionObserver::class); // PERF-007: Auto cache invalidation
     }
 
     /**

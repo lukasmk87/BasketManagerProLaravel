@@ -2395,10 +2395,11 @@ Schedule::command('queue:monitor')->everyFiveMinutes();
 
 ---
 
-### 🟡 PERF-007: StatisticsService Cache-Verbesserung
+### ✅ PERF-007: StatisticsService Cache-Verbesserung [ERLEDIGT 2025-11-25]
 
 **Schweregrad:** 🟡 MITTEL
 **Aufwand:** 3-4 Stunden
+**Status:** ✅ IMPLEMENTIERT
 
 #### Problem
 
@@ -2575,21 +2576,42 @@ public function test_game_action_invalidates_cache()
 
 #### Checklist
 
-- [ ] Cache-Tags zu allen Statistics-Methoden hinzufügen
-- [ ] Dynamische TTL implementieren (live vs. finished)
-- [ ] `clearCache()` zu selektiven Methoden ändern
-- [ ] `GameActionObserver` für auto-invalidierung erstellen
-- [ ] Observer registrieren in `AppServiceProvider`
-- [ ] Tests schreiben (4+ Testfälle)
-- [ ] Redis Cache Driver verifizieren (Tags nur bei Redis/Memcached)
+- [x] ~~Cache-Tags zu allen Statistics-Methoden hinzufügen~~ → Explizite Cache-Keys (Database-Driver unterstützt keine Tags!)
+- [x] Dynamische TTL implementieren (live: 5min, finished: 1h, season: 24h)
+- [x] `clearCache()` zu selektiven Methoden ändern (`clearPlayerCache()`, `clearTeamCache()`, `clearGameCache()`)
+- [x] `GameActionObserver` für auto-invalidierung erstellen (`app/Observers/GameActionObserver.php`)
+- [x] Observer registrieren in `BasketManagerServiceProvider`
+- [x] Tests schreiben (13 Testfälle in `StatisticsCacheTest.php` und `GameActionObserverTest.php`)
+- [x] ~~Redis Cache Driver verifizieren~~ → Database-Driver verwendet, explizite `Cache::forget()` statt Tags
 - [ ] Deployment
+
+#### Implementierungsnotizen
+
+**Wichtig:** Da der Database Cache Driver verwendet wird (kein Redis), wurden Cache-Tags durch explizite Cache-Key-Verwaltung ersetzt:
+
+```php
+// Statt Cache::tags() → Explizite Cache::forget() mit buildCacheKey()
+private array $cacheKeyPatterns = [
+    'player_game' => 'basketball:stats:player:{player_id}:game:{game_id}',
+    'player_season' => 'basketball:stats:player:{player_id}:season:{season}',
+    // ...
+];
+```
+
+**Neue/Geänderte Dateien:**
+- `app/Services/StatisticsService.php` - Dynamische TTLs, selektive Cache-Invalidierung
+- `app/Observers/GameActionObserver.php` - Automatische Cache-Invalidierung
+- `app/Providers/BasketManagerServiceProvider.php` - Observer-Registrierung
+- `tests/Unit/Services/StatisticsCacheTest.php` - 8 Tests
+- `tests/Unit/Observers/GameActionObserverTest.php` - 5 Tests
 
 ---
 
-### 🟡 PERF-008: Memory-Optimierung - Chunking für große Datasets
+### ✅ PERF-008: Memory-Optimierung - Chunking für große Datasets [ERLEDIGT 2025-11-25]
 
 **Schweregrad:** 🟡 MITTEL
 **Aufwand:** 4-6 Stunden
+**Status:** ✅ IMPLEMENTIERT
 
 #### Problem
 
@@ -2721,13 +2743,53 @@ public function test_large_dataset_processing_uses_chunking()
 
 #### Checklist
 
-- [ ] StatisticsService zu `chunk()` migrieren (3 Methoden)
-- [ ] Export-Klassen `WithChunkReading` implementieren
-- [ ] Admin-Dashboards mit vielen Clubs optimieren
-- [ ] `lazy()` für Iterationen verwenden
-- [ ] Memory Tests schreiben
+- [x] StatisticsService zu `chunk()`/`chunkById()` migrieren
+  - `getPlayerSeasonStats()` - GameActions in 500er-Chunks
+  - `getTeamSeasonStats()` - Games in 50er-Chunks mit separater Action-Ladung
+- [x] Export-Klassen `FromQuery + WithMapping + WithCustomChunkSize` implementieren
+  - `PlayerGameLogSheet` - chunkSize: 100
+  - `TeamPlayerStatsSheet` - chunkSize: 50
+  - `TeamGameLogSheet` - chunkSize: 100
+- [ ] Admin-Dashboards mit vielen Clubs optimieren (optional, niedrige Priorität)
+- [x] ~~`lazy()` für Iterationen verwenden~~ → `chunkById()` verwendet (bessere Performance)
+- [x] Memory Tests schreiben (`tests/Unit/Services/ChunkingPerformanceTest.php` - 10 Tests)
 - [ ] Deployment
 - [ ] Production Memory Monitoring
+
+#### Implementierungsnotizen
+
+**Export-Klassen Pattern:**
+```php
+class PlayerGameLogSheet implements FromQuery, WithHeadings, WithTitle, WithMapping, WithCustomChunkSize
+{
+    public function query(): Builder
+    {
+        return Game::whereHas('gameActions', ...)
+            ->select(['id', 'game_id', ...])  // Nur nötige Felder
+            ->orderBy('scheduled_at', 'desc');
+    }
+
+    public function map($game): array { /* ... */ }
+    public function chunkSize(): int { return 100; }
+}
+```
+
+**StatisticsService Pattern:**
+```php
+// Statt $actions = GameAction::where(...)->get()
+GameAction::where(...)
+    ->chunkById(500, function ($actions) use (&$aggregatedStats) {
+        foreach ($actions as $action) {
+            $this->aggregateActionToStats($action, $aggregatedStats);
+        }
+    });
+```
+
+**Neue/Geänderte Dateien:**
+- `app/Services/StatisticsService.php` - Chunking für Season-Stats
+- `app/Exports/PlayerStatsExport.php` - PlayerGameLogSheet mit Chunking
+- `app/Exports/TeamStatsExport.php` - TeamPlayerStatsSheet, TeamGameLogSheet mit Chunking
+- `tests/Unit/Services/ChunkingPerformanceTest.php` - 10 Tests
 
 ---
 

@@ -13,7 +13,21 @@ use Carbon\Carbon;
 class StatisticsService
 {
     private string $cachePrefix = 'basketball:stats:';
-    private int $defaultCacheTtl = 3600; // 1 hour
+    private int $defaultCacheTtl = 3600; // 1 hour (fallback)
+
+    // PERF-007: Dynamic TTLs based on data type
+    private int $liveCacheTtl = 300;       // 5 min for live games
+    private int $finishedCacheTtl = 3600;  // 1 hour for finished games
+    private int $seasonCacheTtl = 86400;   // 24 hours for season stats
+
+    // Cache key patterns for explicit invalidation (Database cache driver compatible)
+    private array $cacheKeyPatterns = [
+        'player_game' => 'basketball:stats:player:{player_id}:game:{game_id}',
+        'player_season' => 'basketball:stats:player:{player_id}:season:{season}',
+        'team_game' => 'basketball:stats:team:{team_id}:game:{game_id}',
+        'team_season' => 'basketball:stats:team:{team_id}:season:{season}',
+        'shot_chart' => 'basketball:stats:shotchart:player:{player_id}:game:{game_id}',
+    ];
 
     /**
      * Get team statistics wrapper method (used by StatisticsController).
@@ -68,9 +82,15 @@ class StatisticsService
      */
     public function getPlayerGameStats(Player $player, Game $game): array
     {
-        $cacheKey = $this->cachePrefix . "player:{$player->id}:game:{$game->id}";
-        
-        return Cache::remember($cacheKey, $this->defaultCacheTtl, function () use ($player, $game) {
+        $cacheKey = $this->buildCacheKey('player_game', [
+            'player_id' => $player->id,
+            'game_id' => $game->id,
+        ]);
+
+        // PERF-007: Dynamic TTL based on game status
+        $ttl = $this->getCacheTtlForGame($game);
+
+        return Cache::remember($cacheKey, $ttl, function () use ($player, $game) {
             $actions = GameAction::where('game_id', $game->id)
                 ->where('player_id', $player->id)
                 ->get();
@@ -81,37 +101,53 @@ class StatisticsService
 
     /**
      * Get player statistics for a season.
+     * PERF-008: Uses chunking for memory optimization with large datasets.
      */
     public function getPlayerSeasonStats(Player $player, string $season): array
     {
-        $cacheKey = $this->cachePrefix . "player:{$player->id}:season:{$season}";
-        
-        return Cache::remember($cacheKey, $this->defaultCacheTtl, function () use ($player, $season) {
-            $actions = GameAction::whereHas('game', function ($query) use ($season) {
+        $cacheKey = $this->buildCacheKey('player_season', [
+            'player_id' => $player->id,
+            'season' => $season,
+        ]);
+
+        // PERF-007: Season stats use longer TTL (24 hours)
+        return Cache::remember($cacheKey, $this->seasonCacheTtl, function () use ($player, $season) {
+            // PERF-008: Use chunking with aggregation instead of loading all actions at once
+            $aggregatedStats = $this->initializePlayerStatsArray();
+            $gameIds = [];
+
+            // Process actions in chunks of 500
+            GameAction::whereHas('game', function ($query) use ($season) {
                     $query->where('season', $season)->where('status', 'finished');
                 })
                 ->where('player_id', $player->id)
-                ->with('game')
-                ->get();
+                ->select(['id', 'game_id', 'player_id', 'action_type', 'period', 'points'])
+                ->chunkById(500, function ($actions) use (&$aggregatedStats, &$gameIds) {
+                    foreach ($actions as $action) {
+                        $gameIds[$action->game_id] = true;
+                        $this->aggregateActionToStats($action, $aggregatedStats);
+                    }
+                });
 
-            $stats = $this->calculatePlayerStatsFromActions($actions);
-            
+            // Finalize stats calculation
+            $this->finalizePlayerStats($aggregatedStats);
+
             // Add season-specific calculations
-            $gamesPlayed = $actions->groupBy('game_id')->count();
-            $stats['games_played'] = $gamesPlayed;
-            
+            $gamesPlayed = count($gameIds);
+            $aggregatedStats['games_played'] = $gamesPlayed;
+
             // Calculate averages
             if ($gamesPlayed > 0) {
-                $stats['avg_points'] = round($stats['total_points'] / $gamesPlayed, 1);
-                $stats['avg_rebounds'] = round($stats['total_rebounds'] / $gamesPlayed, 1);
-                $stats['avg_assists'] = round($stats['assists'] / $gamesPlayed, 1);
-                $stats['avg_steals'] = round($stats['steals'] / $gamesPlayed, 1);
-                $stats['avg_blocks'] = round($stats['blocks'] / $gamesPlayed, 1);
-                $stats['avg_turnovers'] = round($stats['turnovers'] / $gamesPlayed, 1);
-                $stats['avg_fouls'] = round($stats['personal_fouls'] / $gamesPlayed, 1);
+                $aggregatedStats['avg_points'] = round($aggregatedStats['total_points'] / $gamesPlayed, 1);
+                $aggregatedStats['avg_rebounds'] = round($aggregatedStats['total_rebounds'] / $gamesPlayed, 1);
+                $aggregatedStats['avg_assists'] = round($aggregatedStats['assists'] / $gamesPlayed, 1);
+                $aggregatedStats['avg_steals'] = round($aggregatedStats['steals'] / $gamesPlayed, 1);
+                $aggregatedStats['avg_blocks'] = round($aggregatedStats['blocks'] / $gamesPlayed, 1);
+                $aggregatedStats['avg_turnovers'] = round($aggregatedStats['turnovers'] / $gamesPlayed, 1);
+                $aggregatedStats['avg_fouls'] = round($aggregatedStats['personal_fouls'] / $gamesPlayed, 1);
             }
 
-            return $stats;
+            return $aggregatedStats;
         });
     }
 
@@ -120,9 +156,15 @@ class StatisticsService
      */
     public function getTeamGameStats(Team $team, Game $game): array
     {
-        $cacheKey = $this->cachePrefix . "team:{$team->id}:game:{$game->id}";
-        
-        return Cache::remember($cacheKey, $this->defaultCacheTtl, function () use ($team, $game) {
+        $cacheKey = $this->buildCacheKey('team_game', [
+            'team_id' => $team->id,
+            'game_id' => $game->id,
+        ]);
+
+        // PERF-007: Dynamic TTL based on game status
+        $ttl = $this->getCacheTtlForGame($game);
+
+        return Cache::remember($cacheKey, $ttl, function () use ($team, $game) {
             $actions = GameAction::where('game_id', $game->id)
                 ->where('team_id', $team->id)
                 ->with('player')
@@ -143,26 +185,19 @@ class StatisticsService
 
     /**
      * Get team statistics for a season.
+     * PERF-008: Uses chunking for memory optimization with large datasets.
      */
     public function getTeamSeasonStats(Team $team, string $season): array
     {
-        $cacheKey = $this->cachePrefix . "team:{$team->id}:season:{$season}";
-        
-        return Cache::remember($cacheKey, $this->defaultCacheTtl, function () use ($team, $season) {
-            // Get all games for this team in the season
-            $games = Game::where('season', $season)
-                ->where('status', 'finished')
-                ->where(function ($query) use ($team) {
-                    $query->where('home_team_id', $team->id)
-                          ->orWhere('away_team_id', $team->id);
-                })
-                ->with(['gameActions' => function ($query) use ($team) {
-                    $query->where('team_id', $team->id);
-                }])
-                ->get();
+        $cacheKey = $this->buildCacheKey('team_season', [
+            'team_id' => $team->id,
+            'season' => $season,
+        ]);
 
+        // PERF-007: Season stats use longer TTL (24 hours)
+        return Cache::remember($cacheKey, $this->seasonCacheTtl, function () use ($team, $season) {
             $stats = [
-                'games_played' => $games->count(),
+                'games_played' => 0,
                 'wins' => 0,
                 'losses' => 0,
                 'points_for' => 0,
@@ -181,34 +216,57 @@ class StatisticsService
                 'free_throws_attempted' => 0,
             ];
 
-            foreach ($games as $game) {
-                $teamScore = $game->isHomeTeam($team) ? $game->home_team_score : $game->away_team_score;
-                $opponentScore = $game->isHomeTeam($team) ? $game->away_team_score : $game->home_team_score;
-                
-                $stats['points_for'] += $teamScore;
-                $stats['points_against'] += $opponentScore;
-                
-                if ($teamScore > $opponentScore) {
-                    $stats['wins']++;
-                } else {
-                    $stats['losses']++;
-                }
+            // PERF-008: Process games in chunks of 50 (with eager-loaded actions per game)
+            Game::where('season', $season)
+                ->where('status', 'finished')
+                ->where(function ($query) use ($team) {
+                    $query->where('home_team_id', $team->id)
+                          ->orWhere('away_team_id', $team->id);
+                })
+                ->select(['id', 'home_team_id', 'away_team_id', 'home_team_score', 'away_team_score'])
+                ->chunkById(50, function ($games) use ($team, &$stats) {
+                    // Load game actions for this chunk only
+                    $gameIds = $games->pluck('id');
+                    $allActions = GameAction::whereIn('game_id', $gameIds)
+                        ->where('team_id', $team->id)
+                        ->select(['id', 'game_id', 'action_type'])
+                        ->get()
+                        ->groupBy('game_id');
 
-                // Aggregate team stats from game actions
-                $gameStats = $this->calculateTeamStatsFromActions($game->gameActions);
-                $stats['total_rebounds'] += $gameStats['total_rebounds'];
-                $stats['assists'] += $gameStats['assists'];
-                $stats['steals'] += $gameStats['steals'];
-                $stats['blocks'] += $gameStats['blocks'];
-                $stats['turnovers'] += $gameStats['turnovers'];
-                $stats['personal_fouls'] += $gameStats['personal_fouls'];
-                $stats['field_goals_made'] += $gameStats['field_goals_made'];
-                $stats['field_goals_attempted'] += $gameStats['field_goals_attempted'];
-                $stats['three_points_made'] += $gameStats['three_points_made'];
-                $stats['three_points_attempted'] += $gameStats['three_points_attempted'];
-                $stats['free_throws_made'] += $gameStats['free_throws_made'];
-                $stats['free_throws_attempted'] += $gameStats['free_throws_attempted'];
-            }
+                    foreach ($games as $game) {
+                        $stats['games_played']++;
+
+                        $isHome = $game->home_team_id === $team->id;
+                        $teamScore = $isHome ? $game->home_team_score : $game->away_team_score;
+                        $opponentScore = $isHome ? $game->away_team_score : $game->home_team_score;
+
+                        $stats['points_for'] += $teamScore;
+                        $stats['points_against'] += $opponentScore;
+
+                        if ($teamScore > $opponentScore) {
+                            $stats['wins']++;
+                        } else {
+                            $stats['losses']++;
+                        }
+
+                        // Aggregate team stats from game actions
+                        $gameActions = $allActions->get($game->id) ?? collect();
+                        $gameStats = $this->calculateTeamStatsFromActions($gameActions);
+
+                        $stats['total_rebounds'] += $gameStats['total_rebounds'];
+                        $stats['assists'] += $gameStats['assists'];
+                        $stats['steals'] += $gameStats['steals'];
+                        $stats['blocks'] += $gameStats['blocks'];
+                        $stats['turnovers'] += $gameStats['turnovers'];
+                        $stats['personal_fouls'] += $gameStats['personal_fouls'];
+                        $stats['field_goals_made'] += $gameStats['field_goals_made'];
+                        $stats['field_goals_attempted'] += $gameStats['field_goals_attempted'];
+                        $stats['three_points_made'] += $gameStats['three_points_made'];
+                        $stats['three_points_attempted'] += $gameStats['three_points_attempted'];
+                        $stats['free_throws_made'] += $gameStats['free_throws_made'];
+                        $stats['free_throws_attempted'] += $gameStats['free_throws_attempted'];
+                    }
+                });
 
             // Calculate percentages and averages
             $stats = $this->calculateAdvancedTeamStats($stats);
@@ -515,36 +573,115 @@ class StatisticsService
         return $stats['field_goals_attempted'] + ($stats['turnovers'] * 0.8) + ($stats['free_throws_attempted'] * 0.44);
     }
 
+    // ========================================================================
+    // PERF-007: Selective cache invalidation (no more Cache::flush()!)
+    // Uses explicit Cache::forget() for Database cache driver compatibility
+    // ========================================================================
+
     /**
-     * Invalidate player statistics cache.
+     * Invalidate player statistics cache for a specific game.
      */
-    public function invalidatePlayerStats(Player $player): void
+    public function clearPlayerCache(Player $player, ?Game $game = null): void
     {
-        $pattern = $this->cachePrefix . "player:{$player->id}:*";
-        $this->deleteCacheByPattern($pattern);
-        
-        // Also invalidate team stats
-        if ($player->team) {
-            $this->invalidateTeamStats($player->team);
+        // Clear player-game stats if game is provided
+        if ($game) {
+            Cache::forget($this->buildCacheKey('player_game', [
+                'player_id' => $player->id,
+                'game_id' => $game->id,
+            ]));
+
+            Cache::forget($this->buildCacheKey('shot_chart', [
+                'player_id' => $player->id,
+                'game_id' => $game->id,
+            ]));
+        }
+
+        // Clear player season stats for current season
+        $currentSeason = $this->getCurrentSeason();
+        Cache::forget($this->buildCacheKey('player_season', [
+            'player_id' => $player->id,
+            'season' => $currentSeason,
+        ]));
+    }
+
+    /**
+     * Invalidate team statistics cache for a specific game.
+     */
+    public function clearTeamCache(Team $team, ?Game $game = null): void
+    {
+        // Clear team-game stats if game is provided
+        if ($game) {
+            Cache::forget($this->buildCacheKey('team_game', [
+                'team_id' => $team->id,
+                'game_id' => $game->id,
+            ]));
+        }
+
+        // Clear team season stats for current season
+        $currentSeason = $this->getCurrentSeason();
+        Cache::forget($this->buildCacheKey('team_season', [
+            'team_id' => $team->id,
+            'season' => $currentSeason,
+        ]));
+    }
+
+    /**
+     * Invalidate all statistics cache for a specific game.
+     * Clears player stats, team stats, and shot charts for all participants.
+     */
+    public function clearGameCache(Game $game): void
+    {
+        // Clear team caches
+        if ($game->homeTeam) {
+            $this->clearTeamCache($game->homeTeam, $game);
+        }
+        if ($game->awayTeam) {
+            $this->clearTeamCache($game->awayTeam, $game);
+        }
+
+        // Clear player caches for all players with game actions
+        $playerIds = GameAction::where('game_id', $game->id)
+            ->distinct()
+            ->pluck('player_id');
+
+        foreach ($playerIds as $playerId) {
+            $player = Player::find($playerId);
+            if ($player) {
+                $this->clearPlayerCache($player, $game);
+            }
         }
     }
 
     /**
-     * Invalidate team statistics cache.
+     * Legacy method - redirects to new clearPlayerCache for backwards compatibility.
+     * @deprecated Use clearPlayerCache() instead
      */
-    public function invalidateTeamStats(Team $team): void
+    public function invalidatePlayerStats(Player $player): void
     {
-        $pattern = $this->cachePrefix . "team:{$team->id}:*";
-        $this->deleteCacheByPattern($pattern);
+        $this->clearPlayerCache($player);
+
+        // Also invalidate team stats (legacy behavior)
+        if ($player->team) {
+            $this->clearTeamCache($player->team);
+        }
     }
 
     /**
-     * Invalidate game statistics cache.
+     * Legacy method - redirects to new clearTeamCache for backwards compatibility.
+     * @deprecated Use clearTeamCache() instead
+     */
+    public function invalidateTeamStats(Team $team): void
+    {
+        $this->clearTeamCache($team);
+    }
+
+    /**
+     * Legacy method - redirects to new clearGameCache for backwards compatibility.
+     * @deprecated Use clearGameCache() instead
      */
     public function invalidateGameStats(Game $game): void
     {
-        $pattern = $this->cachePrefix . "*:game:{$game->id}";
-        $this->deleteCacheByPattern($pattern);
+        $this->clearGameCache($game);
     }
 
     /**
@@ -552,9 +689,15 @@ class StatisticsService
      */
     public function getPlayerShotChart(Player $player, Game $game): array
     {
-        $cacheKey = $this->cachePrefix . "shotchart:player:{$player->id}:game:{$game->id}";
-        
-        return Cache::remember($cacheKey, $this->defaultCacheTtl, function () use ($player, $game) {
+        $cacheKey = $this->buildCacheKey('shot_chart', [
+            'player_id' => $player->id,
+            'game_id' => $game->id,
+        ]);
+
+        // PERF-007: Dynamic TTL based on game status
+        $ttl = $this->getCacheTtlForGame($game);
+
+        return Cache::remember($cacheKey, $ttl, function () use ($player, $game) {
             $shots = GameAction::where('game_id', $game->id)
                 ->where('player_id', $player->id)
                 ->whereIn('action_type', [
@@ -972,14 +1115,167 @@ class StatisticsService
             round($stats['free_throws_attempted'] / $fga, 2) : 0;
     }
 
+    // ========================================================================
+    // PERF-007: Helper methods for cache management (Database driver compatible)
+    // ========================================================================
+
     /**
-     * Delete cache by pattern (simplified for now).
+     * Get dynamic cache TTL based on game status.
+     * Live games use shorter TTL, finished games use longer TTL.
      */
-    private function deleteCacheByPattern(string $pattern): void
+    private function getCacheTtlForGame(Game $game): int
     {
-        // This would be implemented based on your cache driver
-        // For Redis, you could use SCAN and DEL commands
-        // For file cache, you might need a different approach
-        Cache::flush(); // Simplified for now
+        return match ($game->status) {
+            'live', 'in_progress', 'active' => $this->liveCacheTtl,
+            'finished', 'completed', 'final' => $this->finishedCacheTtl,
+            default => $this->defaultCacheTtl,
+        };
+    }
+
+    /**
+     * Build cache key from pattern and parameters.
+     * Uses explicit key building for Database cache driver compatibility.
+     */
+    private function buildCacheKey(string $patternName, array $params): string
+    {
+        $pattern = $this->cacheKeyPatterns[$patternName] ?? $patternName;
+
+        foreach ($params as $key => $value) {
+            $pattern = str_replace("{{$key}}", (string) $value, $pattern);
+        }
+
+        return $pattern;
+    }
+
+    /**
+     * Get the current season (helper for cache invalidation).
+     */
+    private function getCurrentSeason(): string
+    {
+        $now = Carbon::now();
+        $year = $now->month >= 8 ? $now->year : $now->year - 1;
+
+        return $year . '-' . substr((string) ($year + 1), -2);
+    }
+
+    // ========================================================================
+    // PERF-008: Helper methods for chunked statistics aggregation
+    // ========================================================================
+
+    /**
+     * Initialize empty player stats array for chunked aggregation.
+     * PERF-008: Used by getPlayerSeasonStats() for memory-efficient processing.
+     */
+    private function initializePlayerStatsArray(): array
+    {
+        return [
+            'total_points' => 0,
+            'field_goals_made' => 0,
+            'field_goals_attempted' => 0,
+            'three_points_made' => 0,
+            'three_points_attempted' => 0,
+            'free_throws_made' => 0,
+            'free_throws_attempted' => 0,
+            'rebounds_offensive' => 0,
+            'rebounds_defensive' => 0,
+            'total_rebounds' => 0,
+            'assists' => 0,
+            'steals' => 0,
+            'blocks' => 0,
+            'turnovers' => 0,
+            'personal_fouls' => 0,
+            'technical_fouls' => 0,
+        ];
+    }
+
+    /**
+     * Aggregate a single game action to stats array.
+     * PERF-008: Used by getPlayerSeasonStats() for chunked processing.
+     */
+    private function aggregateActionToStats(GameAction $action, array &$stats): void
+    {
+        switch ($action->action_type) {
+            case 'field_goal_made':
+                $stats['field_goals_made']++;
+                $stats['total_points'] += 2;
+                break;
+            case 'field_goal_missed':
+                $stats['field_goals_attempted']++;
+                break;
+            case 'three_point_made':
+                $stats['three_points_made']++;
+                $stats['total_points'] += 3;
+                break;
+            case 'three_point_missed':
+                $stats['three_points_attempted']++;
+                break;
+            case 'free_throw_made':
+                $stats['free_throws_made']++;
+                $stats['total_points'] += 1;
+                break;
+            case 'free_throw_missed':
+                $stats['free_throws_attempted']++;
+                break;
+            case 'rebound_offensive':
+                $stats['rebounds_offensive']++;
+                $stats['total_rebounds']++;
+                break;
+            case 'rebound_defensive':
+                $stats['rebounds_defensive']++;
+                $stats['total_rebounds']++;
+                break;
+            case 'assist':
+                $stats['assists']++;
+                break;
+            case 'steal':
+                $stats['steals']++;
+                break;
+            case 'block':
+                $stats['blocks']++;
+                break;
+            case 'turnover':
+                $stats['turnovers']++;
+                break;
+            case 'foul_personal':
+                $stats['personal_fouls']++;
+                break;
+            case 'foul_technical':
+                $stats['technical_fouls']++;
+                break;
+        }
+    }
+
+    /**
+     * Finalize player stats by calculating percentages and advanced metrics.
+     * PERF-008: Used after chunked aggregation is complete.
+     */
+    private function finalizePlayerStats(array &$stats): void
+    {
+        // Adjust attempted stats to include made shots
+        $stats['field_goals_attempted'] += $stats['field_goals_made'];
+        $stats['three_points_attempted'] += $stats['three_points_made'];
+        $stats['free_throws_attempted'] += $stats['free_throws_made'];
+
+        // Calculate shooting percentages
+        $stats['field_goal_percentage'] = $stats['field_goals_attempted'] > 0
+            ? round(($stats['field_goals_made'] / $stats['field_goals_attempted']) * 100, 1)
+            : 0;
+
+        $stats['three_point_percentage'] = $stats['three_points_attempted'] > 0
+            ? round(($stats['three_points_made'] / $stats['three_points_attempted']) * 100, 1)
+            : 0;
+
+        $stats['free_throw_percentage'] = $stats['free_throws_attempted'] > 0
+            ? round(($stats['free_throws_made'] / $stats['free_throws_attempted']) * 100, 1)
+            : 0;
+
+        // Calculate advanced stats
+        $stats['true_shooting_percentage'] = $this->calculateTrueShootingPercentage(
+            $stats['total_points'],
+            $stats['field_goals_attempted'],
+            $stats['free_throws_attempted']
+        );
+
+        $stats['player_efficiency_rating'] = $this->calculatePlayerEfficiencyRating($stats);
     }
 }

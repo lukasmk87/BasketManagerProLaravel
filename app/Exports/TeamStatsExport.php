@@ -3,12 +3,18 @@
 namespace App\Exports;
 
 use App\Models\Team;
+use App\Models\Game;
+use App\Models\Player;
 use App\Services\StatisticsService;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
 
 class TeamStatsExport implements WithMultipleSheets
 {
@@ -95,7 +101,12 @@ class TeamSeasonStatsSheet implements FromCollection, WithHeadings, WithTitle
     }
 }
 
-class TeamPlayerStatsSheet implements FromCollection, WithHeadings, WithTitle
+/**
+ * PERF-008: TeamPlayerStatsSheet with chunking for memory optimization.
+ *
+ * Uses FromQuery + WithMapping + WithCustomChunkSize to process players in batches.
+ */
+class TeamPlayerStatsSheet implements FromQuery, WithHeadings, WithTitle, WithMapping, WithCustomChunkSize
 {
     public function __construct(
         private Team $team,
@@ -103,41 +114,57 @@ class TeamPlayerStatsSheet implements FromCollection, WithHeadings, WithTitle
         private StatisticsService $statisticsService
     ) {}
 
-    public function collection()
+    /**
+     * PERF-008: Return query builder instead of collection.
+     */
+    public function query(): Builder
     {
-        return $this->team->players()
-            ->whereHas('gameActions', function($query) {
-                $query->whereHas('game', function($q) {
+        return Player::where('team_id', $this->team->id)
+            ->whereHas('gameActions', function ($query) {
+                $query->whereHas('game', function ($q) {
                     $q->where('season', $this->season)->where('status', 'finished');
                 });
             })
-            ->get()
-            ->map(function($player) {
-                $stats = $this->statisticsService->getPlayerSeasonStats($player, $this->season);
-                
-                return [
-                    'Player' => $player->name,
-                    'Jersey' => $player->jersey_number ?? '',
-                    'Position' => $player->position ?? '',
-                    'GP' => $stats['games_played'] ?? 0,
-                    'Points' => $stats['total_points'] ?? 0,
-                    'PPG' => $stats['avg_points'] ?? 0,
-                    'FG%' => ($stats['field_goal_percentage'] ?? 0) . '%',
-                    '3P%' => ($stats['three_point_percentage'] ?? 0) . '%',
-                    'FT%' => ($stats['free_throw_percentage'] ?? 0) . '%',
-                    'Reb' => $stats['total_rebounds'] ?? 0,
-                    'RPG' => $stats['avg_rebounds'] ?? 0,
-                    'Ast' => $stats['assists'] ?? 0,
-                    'APG' => $stats['avg_assists'] ?? 0,
-                    'Stl' => $stats['steals'] ?? 0,
-                    'Blk' => $stats['blocks'] ?? 0,
-                    'TO' => $stats['turnovers'] ?? 0,
-                    'Fouls' => $stats['personal_fouls'] ?? 0,
-                    'TS%' => ($stats['true_shooting_percentage'] ?? 0) . '%',
-                    'PER' => $stats['player_efficiency_rating'] ?? 0,
-                ];
-            })
-            ->sortByDesc('avg_points');
+            ->select(['id', 'name', 'jersey_number', 'position', 'team_id', 'user_id'])
+            ->orderBy('name');
+    }
+
+    /**
+     * PERF-008: Map each player to export format.
+     */
+    public function map($player): array
+    {
+        $stats = $this->statisticsService->getPlayerSeasonStats($player, $this->season);
+
+        return [
+            $player->name ?? '',
+            $player->jersey_number ?? '',
+            $player->position ?? '',
+            $stats['games_played'] ?? 0,
+            $stats['total_points'] ?? 0,
+            $stats['avg_points'] ?? 0,
+            ($stats['field_goal_percentage'] ?? 0) . '%',
+            ($stats['three_point_percentage'] ?? 0) . '%',
+            ($stats['free_throw_percentage'] ?? 0) . '%',
+            $stats['total_rebounds'] ?? 0,
+            $stats['avg_rebounds'] ?? 0,
+            $stats['assists'] ?? 0,
+            $stats['avg_assists'] ?? 0,
+            $stats['steals'] ?? 0,
+            $stats['blocks'] ?? 0,
+            $stats['turnovers'] ?? 0,
+            $stats['personal_fouls'] ?? 0,
+            ($stats['true_shooting_percentage'] ?? 0) . '%',
+            $stats['player_efficiency_rating'] ?? 0,
+        ];
+    }
+
+    /**
+     * PERF-008: Define chunk size for memory optimization.
+     */
+    public function chunkSize(): int
+    {
+        return 50; // Typically teams have 10-20 players, but chunking for safety
     }
 
     public function headings(): array
@@ -154,7 +181,12 @@ class TeamPlayerStatsSheet implements FromCollection, WithHeadings, WithTitle
     }
 }
 
-class TeamGameLogSheet implements FromCollection, WithHeadings, WithTitle
+/**
+ * PERF-008: TeamGameLogSheet with chunking for memory optimization.
+ *
+ * Uses FromQuery + WithMapping + WithCustomChunkSize to process games in batches.
+ */
+class TeamGameLogSheet implements FromQuery, WithHeadings, WithTitle, WithMapping, WithCustomChunkSize
 {
     public function __construct(
         private Team $team,
@@ -162,49 +194,63 @@ class TeamGameLogSheet implements FromCollection, WithHeadings, WithTitle
         private StatisticsService $statisticsService
     ) {}
 
-    public function collection()
+    /**
+     * PERF-008: Return query builder instead of collection.
+     */
+    public function query(): Builder
     {
-        $games = \App\Models\Game::where('season', $this->season)
+        return Game::where('season', $this->season)
             ->where('status', 'finished')
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->where('home_team_id', $this->team->id)
                       ->orWhere('away_team_id', $this->team->id);
             })
-            ->with(['homeTeam', 'awayTeam'])
-            ->orderBy('scheduled_at', 'desc')
-            ->get();
+            ->with(['homeTeam:id,name', 'awayTeam:id,name']) // Select only needed fields
+            ->orderBy('scheduled_at', 'desc');
+    }
 
-        return $games->map(function($game) {
-            $isHome = $game->home_team_id === $this->team->id;
-            $opponent = $isHome ? $game->awayTeam : $game->homeTeam;
-            $teamScore = $isHome ? $game->home_team_score : $game->away_team_score;
-            $opponentScore = $isHome ? $game->away_team_score : $game->home_team_score;
-            $result = $teamScore > $opponentScore ? 'W' : 'L';
-            $margin = $teamScore - $opponentScore;
+    /**
+     * PERF-008: Map each game to export format.
+     */
+    public function map($game): array
+    {
+        $isHome = $game->home_team_id === $this->team->id;
+        $opponent = $isHome ? $game->awayTeam : $game->homeTeam;
+        $teamScore = $isHome ? $game->home_team_score : $game->away_team_score;
+        $opponentScore = $isHome ? $game->away_team_score : $game->home_team_score;
+        $result = $teamScore > $opponentScore ? 'W' : 'L';
+        $margin = $teamScore - $opponentScore;
 
-            $stats = $this->statisticsService->getTeamGameStats($this->team, $game);
+        $stats = $this->statisticsService->getTeamGameStats($this->team, $game);
 
-            return [
-                'Date' => $game->scheduled_at->format('Y-m-d'),
-                'Opponent' => $opponent->name,
-                'H/A' => $isHome ? 'H' : 'A',
-                'Result' => $result,
-                'Score' => $teamScore . '-' . $opponentScore,
-                'Margin' => $margin > 0 ? '+' . $margin : $margin,
-                'FGM-A' => ($stats['field_goals_made'] ?? 0) . '-' . ($stats['field_goals_attempted'] ?? 0),
-                'FG%' => ($stats['field_goal_percentage'] ?? 0) . '%',
-                '3PM-A' => ($stats['three_points_made'] ?? 0) . '-' . ($stats['three_points_attempted'] ?? 0),
-                '3P%' => ($stats['three_point_percentage'] ?? 0) . '%',
-                'FTM-A' => ($stats['free_throws_made'] ?? 0) . '-' . ($stats['free_throws_attempted'] ?? 0),
-                'FT%' => ($stats['free_throw_percentage'] ?? 0) . '%',
-                'Reb' => $stats['total_rebounds'] ?? 0,
-                'Ast' => $stats['assists'] ?? 0,
-                'Stl' => $stats['steals'] ?? 0,
-                'Blk' => $stats['blocks'] ?? 0,
-                'TO' => $stats['turnovers'] ?? 0,
-                'Fouls' => $stats['personal_fouls'] ?? 0,
-            ];
-        });
+        return [
+            $game->scheduled_at?->format('Y-m-d') ?? '',
+            $opponent->name ?? 'Unknown',
+            $isHome ? 'H' : 'A',
+            $result,
+            $teamScore . '-' . $opponentScore,
+            $margin > 0 ? '+' . $margin : $margin,
+            ($stats['field_goals_made'] ?? 0) . '-' . ($stats['field_goals_attempted'] ?? 0),
+            ($stats['field_goal_percentage'] ?? 0) . '%',
+            ($stats['three_points_made'] ?? 0) . '-' . ($stats['three_points_attempted'] ?? 0),
+            ($stats['three_point_percentage'] ?? 0) . '%',
+            ($stats['free_throws_made'] ?? 0) . '-' . ($stats['free_throws_attempted'] ?? 0),
+            ($stats['free_throw_percentage'] ?? 0) . '%',
+            $stats['total_rebounds'] ?? 0,
+            $stats['assists'] ?? 0,
+            $stats['steals'] ?? 0,
+            $stats['blocks'] ?? 0,
+            $stats['turnovers'] ?? 0,
+            $stats['personal_fouls'] ?? 0,
+        ];
+    }
+
+    /**
+     * PERF-008: Define chunk size for memory optimization.
+     */
+    public function chunkSize(): int
+    {
+        return 100; // Process 100 games at a time
     }
 
     public function headings(): array
