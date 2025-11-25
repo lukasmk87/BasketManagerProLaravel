@@ -147,12 +147,22 @@ class DashboardController extends Controller
         try {
             // Get clubs where user is admin (respects role hierarchy)
             // Also include 'manager' role for club_user pivot
+            // PERF-001: Optimized - use withCount instead of loading full relations
             if ($user->hasRole(['super_admin', 'admin'])) {
-                $adminClubs = Club::with(['teams.players', 'users'])->get();
+                $adminClubs = Club::select(['id', 'name', 'slug', 'logo_url', 'is_active', 'is_verified', 'tenant_id'])
+                    ->withCount(['teams', 'users'])
+                    ->with([
+                        'teams' => fn($q) => $q->select(['id', 'name', 'club_id'])->withCount('players'),
+                    ])
+                    ->get();
             } else {
                 $adminClubs = $user->clubs()
                     ->wherePivotIn('role', ['admin', 'owner', 'manager'])
-                    ->with(['teams.players', 'users'])
+                    ->select(['clubs.id', 'clubs.name', 'clubs.slug', 'clubs.logo_url', 'clubs.is_active', 'clubs.is_verified', 'clubs.tenant_id'])
+                    ->withCount(['teams', 'users'])
+                    ->with([
+                        'teams' => fn($q) => $q->select(['id', 'name', 'club_id'])->withCount('players'),
+                    ])
                     ->get();
             }
 
@@ -171,8 +181,10 @@ class DashboardController extends Controller
                     'is_verified' => $primaryClub->is_verified,
                 ],
                 'club_statistics' => $clubStats,
+                // PERF-001: Removed 'players' from with() - only players_count is used
                 'teams_overview' => $primaryClub->teams()
-                    ->with(['headCoach:id,name', 'players'])
+                    ->select(['id', 'name', 'season', 'league', 'head_coach_id', 'is_active', 'win_percentage', 'club_id'])
+                    ->with(['headCoach:id,name'])
                     ->withCount(['players', 'homeGames', 'awayGames'])
                     ->get()
                     ->map(function ($team) {
@@ -222,13 +234,14 @@ class DashboardController extends Controller
 
                         return $game;
                     }),
+                // PERF-001: player_count calculated from teams.players_count (already loaded)
                 'all_clubs' => $adminClubs->map(function ($club) {
                     return [
                         'id' => $club->id,
                         'name' => $club->name,
-                        'role' => $club->pivot->role,
+                        'role' => $club->pivot->role ?? null,
                         'team_count' => $club->teams_count,
-                        'player_count' => $club->players_count,
+                        'player_count' => $club->teams->sum('players_count'),
                     ];
                 }),
             ];
@@ -250,17 +263,25 @@ class DashboardController extends Controller
     {
         try {
             // Get teams where user is coach
+            // PERF-001: Optimized nested relations with column selection
             $coachedTeams = $user->coachedTeams()
-                ->with(['club:id,name', 'players.user:id,name'])
+                ->with([
+                    'club:id,name',
+                    'players:id,user_id' => fn($q) => $q->with('user:id,name'),
+                ])
                 ->withCount(['players'])
                 ->get();
 
             // Get assistant coached teams (returns collection directly)
+            // PERF-001: Optimized nested relations with column selection
             $assistantCoachedTeams = collect();
             $assistantTeamIds = Team::whereJsonContains('assistant_coaches', $user->id)->pluck('id');
             if ($assistantTeamIds->isNotEmpty()) {
                 $assistantCoachedTeams = Team::whereIn('id', $assistantTeamIds)
-                    ->with(['club:id,name', 'players.user:id,name'])
+                    ->with([
+                        'club:id,name',
+                        'players:id,user_id' => fn($q) => $q->with('user:id,name'),
+                    ])
                     ->withCount(['players'])
                     ->get();
             }

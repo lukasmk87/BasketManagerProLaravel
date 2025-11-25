@@ -251,9 +251,11 @@ class ResolveTenantMiddleware
             return;
         }
 
-        // This would typically be handled by a global scope on models
-        // For now, we'll store the tenant ID in a way models can access it
-        app('db')->connection()->getPdo()->exec("SET @tenant_id = '{$tenant->id}'");
+        // SEC-007: Use prepared statement to prevent SQL injection
+        // Previously used string interpolation which was vulnerable
+        $pdo = app('db')->connection()->getPdo();
+        $stmt = $pdo->prepare("SET @tenant_id = ?");
+        $stmt->execute([$tenant->id]);
     }
 
     /**

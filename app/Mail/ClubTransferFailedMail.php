@@ -5,14 +5,19 @@ namespace App\Mail;
 use App\Models\ClubTransfer;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ClubTransferFailedMail extends Mailable
+// PERF-006: Implements ShouldQueue for async mail sending
+class ClubTransferFailedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
+
+    public int $tries = 3;
+    public int $backoff = 60;
 
     /**
      * Create a new message instance.

@@ -1,29 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php artisan:*)",
-      "Bash(mysql:*)",
-      "Bash(php -r:*)",
-      "Bash(php -l:*)",
-      "Bash(test:*)",
-      "Bash(cat:*)",
-      "Bash(findstr:*)",
-      "Bash(npm run build:*)",
-      "Bash(find:*)",
-      "Bash(if [ -f storage/installed ])",
-      "Bash(then echo \"installed marker exists\")",
-      "Bash(else echo \"installed marker MISSING\")",
-      "Bash(fi)",
-      "Bash(dir:*)",
-      "Bash(nul)",
-      "Bash(npm install)",
-      "Bash(git log:*)",
-      "Bash(xargs cat:*)",
-      "Bash(xargs:*)",
-      "Bash(composer outdated:*)",
-      "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs",
-      "Bash(composer require:*)"
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

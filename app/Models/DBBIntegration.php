@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,9 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * DBB Integration Model
- * 
+ *
  * Tracks DBB (Deutscher Basketball Bund) integration data and sync status
- * 
+ *
  * @property string $id
  * @property string $tenant_id
  * @property string $entity_type (player, team, game, etc.)
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class DBBIntegration extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, BelongsToTenant;
 
     protected $table = 'dbb_integrations';
 

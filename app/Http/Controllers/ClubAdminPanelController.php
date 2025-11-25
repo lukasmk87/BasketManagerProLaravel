@@ -66,8 +66,10 @@ class ClubAdminPanelController extends Controller
             $clubStats = $this->clubService->getClubStatistics($primaryClub);
 
             // Get teams overview
+            // PERF-002: Removed 'players' from with() - only players_count is used
             $teams = $primaryClub->teams()
-                ->with(['headCoach:id,name', 'players'])
+                ->select(['id', 'name', 'season', 'league', 'age_group', 'gender', 'head_coach_id', 'is_active', 'win_percentage', 'club_id'])
+                ->with(['headCoach:id,name'])
                 ->withCount(['players', 'homeGames', 'awayGames'])
                 ->get()
                 ->map(function ($team) {
@@ -272,9 +274,11 @@ class ClubAdminPanelController extends Controller
 
         $primaryClub = $adminClubs->first();
 
+        // PERF-002: Added column selection to roles to avoid N+1 queries
         $members = $primaryClub->users()
+            ->select(['users.id', 'users.name', 'users.email', 'users.is_active'])
             ->withPivot('role', 'joined_at', 'is_active')
-            ->with('roles')
+            ->with('roles:id,name')
             ->orderBy('pivot_joined_at', 'desc')
             ->get()
             ->map(function ($member) {
@@ -314,8 +318,10 @@ class ClubAdminPanelController extends Controller
 
         $primaryClub = $adminClubs->first();
 
+        // PERF-002: Removed 'players' from with() - only players_count is used
         $teams = BasketballTeam::where('club_id', $primaryClub->id)
-            ->with(['headCoach:id,name', 'players'])
+            ->select(['id', 'slug', 'name', 'season', 'league', 'age_group', 'gender', 'head_coach_id', 'is_active', 'created_at', 'club_id'])
+            ->with(['headCoach:id,name'])
             ->withCount(['players', 'homeGames', 'awayGames'])
             ->orderBy('is_active', 'desc')
             ->orderBy('name')
@@ -364,12 +370,16 @@ class ClubAdminPanelController extends Controller
         $primaryClub = $adminClubs->first();
 
         // Get all players from club teams
+        // PERF-002: Optimized with column selection and pivot-only data
         $players = Player::whereHas('teams', function ($query) use ($primaryClub) {
             $query->where('club_id', $primaryClub->id);
         })
-            ->with(['user:id,name,email', 'teams' => function ($query) use ($primaryClub) {
-                $query->where('club_id', $primaryClub->id);
-            }])
+            ->select(['players.id', 'players.user_id', 'players.status', 'players.full_name', 'players.created_at'])
+            ->with([
+                'user:id,name,email,birth_date',
+                'teams' => fn($q) => $q->where('club_id', $primaryClub->id)
+                    ->select(['basketball_teams.id', 'basketball_teams.name'])
+            ])
             ->get()
             ->map(function ($player) {
                 return [
@@ -721,6 +731,9 @@ class ClubAdminPanelController extends Controller
 
         // Authorization: Check if user can edit this member
         $this->authorize('update', $user);
+
+        // PERF-002: Eager load roles to avoid N+1 query
+        $user->load('roles:id,name');
 
         // Verify the user is a member of this club
         if (! $user->clubs()->where('clubs.id', $primaryClub->id)->exists()) {

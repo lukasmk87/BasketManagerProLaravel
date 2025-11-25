@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,10 +10,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * FIBA Integration Model
- * 
+ *
  * Tracks FIBA Europe integration data and sync status for international
  * basketball players, competitions, and clubs
- * 
+ *
  * @property string $id
  * @property string $tenant_id
  * @property string $entity_type (player, team, club, competition, etc.)
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class FIBAIntegration extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, BelongsToTenant;
 
     protected $table = 'fiba_integrations';
 

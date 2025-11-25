@@ -681,13 +681,33 @@ class Club extends Model implements HasMedia
     }
 
     /**
-     * Calculate storage usage in GB (placeholder - implement based on your needs).
+     * Calculate storage usage in GB.
+     * SEC-008: Implemented actual storage calculation for subscription limits.
      */
     protected function calculateStorageUsage(): float
     {
-        // TODO: Implement actual storage calculation
-        // This could sum up media file sizes, etc.
-        return 0.0;
+        $totalBytes = 0;
+
+        // Video Files (largest contributor)
+        $totalBytes += \App\Models\VideoFile::whereHas('team', fn($q) =>
+            $q->where('club_id', $this->id)
+        )->sum('file_size');
+
+        // Club Logo
+        if ($this->logo_url && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->logo_url)) {
+            $totalBytes += \Illuminate\Support\Facades\Storage::disk('public')->size($this->logo_url);
+        }
+
+        // Team Logos
+        $totalBytes += $this->teams()
+            ->whereNotNull('logo')
+            ->get()
+            ->sum(fn($team) => \Illuminate\Support\Facades\Storage::disk('public')->exists($team->logo)
+                ? \Illuminate\Support\Facades\Storage::disk('public')->size($team->logo)
+                : 0);
+
+        // Convert bytes to GB with 3 decimal precision
+        return round($totalBytes / (1024 * 1024 * 1024), 3);
     }
 
     /**

@@ -31,6 +31,12 @@ use App\Models\ClubTransfer;
 use App\Policies\ClubTransferPolicy;
 use App\Models\Season;
 use App\Policies\SeasonPolicy;
+use App\Models\GameRegistration;
+use App\Policies\GameRegistrationPolicy;
+use App\Models\TrainingRegistration;
+use App\Policies\TrainingRegistrationPolicy;
+use App\Models\TournamentAward;
+use App\Policies\TournamentAwardPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -54,6 +60,9 @@ class AuthServiceProvider extends ServiceProvider
         Role::class => RolePolicy::class,
         ClubTransfer::class => ClubTransferPolicy::class,
         Season::class => SeasonPolicy::class,
+        GameRegistration::class => GameRegistrationPolicy::class,
+        TrainingRegistration::class => TrainingRegistrationPolicy::class,
+        TournamentAward::class => TournamentAwardPolicy::class,
     ];
 
     /**

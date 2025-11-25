@@ -100,12 +100,28 @@ class VideoFileController extends Controller
     {
         try {
             $validated = $request->validated();
-            
+
             // Handle file upload
             if ($request->hasFile('video_file')) {
                 $file = $request->file('video_file');
+
+                // SEC-008: Check storage limit before uploading
+                $team = \App\Models\BasketballTeam::find($validated['team_id']);
+                if ($team && $team->club) {
+                    $fileSizeGB = $file->getSize() / (1024 * 1024 * 1024);
+                    if (!$team->club->canUse('max_storage_gb', $fileSizeGB)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Speicher-Limit erreicht. Bitte upgraden Sie Ihr Abo.',
+                            'current_usage_gb' => $team->club->getCurrentUsage('max_storage_gb'),
+                            'limit_gb' => $team->club->getLimit('max_storage_gb'),
+                            'file_size_gb' => round($fileSizeGB, 3),
+                        ], 422);
+                    }
+                }
+
                 $filePath = $file->store('videos/' . now()->format('Y/m'), 'private');
-                
+
                 $validated['file_path'] = $filePath;
                 $validated['file_name'] = $file->getClientOriginalName();
                 $validated['file_size'] = $file->getSize();

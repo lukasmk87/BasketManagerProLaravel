@@ -23,6 +23,81 @@ class ClubSubscriptionWebhookController extends Controller
     ) {}
 
     /**
+     * Validate tenant ownership and find club with proper security checks.
+     *
+     * SEC-004: This method ensures cross-tenant webhook attacks are prevented.
+     *
+     * @param string|int|null $clubId
+     * @param string|int|null $tenantId
+     * @param string|null $stripeSubscriptionId
+     * @param string|null $stripeCustomerId
+     * @return Club|null
+     */
+    protected function validateAndFindClub(
+        string|int|null $clubId,
+        string|int|null $tenantId,
+        ?string $stripeSubscriptionId = null,
+        ?string $stripeCustomerId = null
+    ): ?Club {
+        // Reject if basic metadata is missing
+        if (!$clubId || !$tenantId) {
+            Log::warning('Webhook tenant validation failed: missing metadata', [
+                'club_id' => $clubId,
+                'tenant_id' => $tenantId,
+            ]);
+            return null;
+        }
+
+        $query = Club::where('id', $clubId)
+            ->where('tenant_id', $tenantId);
+
+        // Add optional Stripe cross-checks for stronger validation
+        if ($stripeSubscriptionId) {
+            $query->where('stripe_subscription_id', $stripeSubscriptionId);
+        }
+
+        if ($stripeCustomerId) {
+            $query->where('stripe_customer_id', $stripeCustomerId);
+        }
+
+        $club = $query->first();
+
+        if (!$club) {
+            Log::error('Webhook tenant validation failed: club not found or tenant mismatch', [
+                'club_id' => $clubId,
+                'claimed_tenant_id' => $tenantId,
+                'stripe_subscription_id' => $stripeSubscriptionId,
+                'stripe_customer_id' => $stripeCustomerId,
+                'reason' => 'tenant_mismatch_or_not_found',
+            ]);
+        }
+
+        return $club;
+    }
+
+    /**
+     * Extract tenant_id from subscription or session metadata.
+     *
+     * @param object $stripeObject Stripe subscription, session, or invoice
+     * @return string|int|null
+     */
+    protected function extractTenantIdFromMetadata(object $stripeObject): string|int|null
+    {
+        return $stripeObject->metadata->tenant_id ?? null;
+    }
+
+    /**
+     * Extract club_id from subscription or session metadata.
+     *
+     * @param object $stripeObject Stripe subscription, session, or invoice
+     * @return string|int|null
+     */
+    protected function extractClubIdFromMetadata(object $stripeObject): string|int|null
+    {
+        return $stripeObject->metadata->club_id ?? null;
+    }
+
+    /**
      * Handle incoming Stripe webhooks for club subscriptions.
      */
     public function handleWebhook(Request $request): JsonResponse
@@ -92,10 +167,13 @@ class ClubSubscriptionWebhookController extends Controller
 
     /**
      * Handle checkout.session.completed event.
+     *
+     * SEC-004: Validates tenant ownership before updating club.
      */
     protected function handleCheckoutCompleted($session): void
     {
-        $clubId = $session->metadata->club_id ?? null;
+        $clubId = $this->extractClubIdFromMetadata($session);
+        $tenantId = $this->extractTenantIdFromMetadata($session);
         $planId = $session->metadata->club_subscription_plan_id ?? null;
 
         if (! $clubId || ! $planId) {
@@ -107,10 +185,34 @@ class ClubSubscriptionWebhookController extends Controller
             return;
         }
 
-        $club = Club::find($clubId);
+        // SEC-004: Validate tenant ownership
+        $club = $this->validateAndFindClub(
+            $clubId,
+            $tenantId,
+            null, // No subscription ID yet
+            $session->customer // Cross-check with customer ID if already set
+        );
+
         if (! $club) {
-            Log::error('Club not found for checkout session', [
+            Log::error('Club checkout tenant validation failed', [
                 'club_id' => $clubId,
+                'tenant_id' => $tenantId,
+                'session_id' => $session->id,
+            ]);
+
+            return;
+        }
+
+        // SEC-004: Verify plan belongs to same tenant
+        $plan = ClubSubscriptionPlan::where('id', $planId)
+            ->where('tenant_id', $club->tenant_id)
+            ->first();
+
+        if (! $plan) {
+            Log::error('Plan tenant mismatch in checkout', [
+                'club_id' => $clubId,
+                'club_tenant_id' => $club->tenant_id,
+                'plan_id' => $planId,
                 'session_id' => $session->id,
             ]);
 
@@ -127,7 +229,6 @@ class ClubSubscriptionWebhookController extends Controller
         ]);
 
         // Track subscription creation event for analytics
-        $plan = ClubSubscriptionPlan::find($planId);
         $this->trackSubscriptionEvent($club, ClubSubscriptionEvent::TYPE_SUBSCRIPTION_CREATED, [
             'stripe_subscription_id' => $session->subscription,
             'stripe_event_id' => null, // Checkout session doesn't have event_id
@@ -170,10 +271,14 @@ class ClubSubscriptionWebhookController extends Controller
 
     /**
      * Handle customer.subscription.created event.
+     *
+     * SEC-004: Validates tenant ownership before updating club.
      */
     protected function handleSubscriptionCreated($subscription): void
     {
-        $clubId = $subscription->metadata->club_id ?? null;
+        $clubId = $this->extractClubIdFromMetadata($subscription);
+        $tenantId = $this->extractTenantIdFromMetadata($subscription);
+
         if (! $clubId) {
             Log::debug('Subscription created without club_id metadata', [
                 'subscription_id' => $subscription->id,
@@ -182,10 +287,18 @@ class ClubSubscriptionWebhookController extends Controller
             return;
         }
 
-        $club = Club::find($clubId);
+        // SEC-004: Validate tenant ownership
+        $club = $this->validateAndFindClub(
+            $clubId,
+            $tenantId,
+            null, // Subscription ID will be set by this event
+            $subscription->customer
+        );
+
         if (! $club) {
-            Log::warning('Club not found for subscription created event', [
+            Log::warning('Subscription created tenant validation failed', [
                 'club_id' => $clubId,
+                'tenant_id' => $tenantId,
                 'subscription_id' => $subscription->id,
             ]);
 
@@ -242,12 +355,26 @@ class ClubSubscriptionWebhookController extends Controller
 
     /**
      * Handle customer.subscription.updated event.
+     *
+     * SEC-004: Validates tenant ownership before updating club.
      */
     protected function handleSubscriptionUpdated($subscription): void
     {
-        $club = Club::where('stripe_subscription_id', $subscription->id)->first();
+        $clubId = $this->extractClubIdFromMetadata($subscription);
+        $tenantId = $this->extractTenantIdFromMetadata($subscription);
+
+        // SEC-004: Validate tenant ownership with full cross-check
+        $club = $this->validateAndFindClub(
+            $clubId,
+            $tenantId,
+            $subscription->id, // Must match existing subscription ID
+            $subscription->customer
+        );
+
         if (! $club) {
-            Log::debug('Club not found for subscription update', [
+            Log::warning('Subscription update tenant validation failed', [
+                'club_id' => $clubId,
+                'tenant_id' => $tenantId,
                 'subscription_id' => $subscription->id,
             ]);
 
@@ -293,12 +420,26 @@ class ClubSubscriptionWebhookController extends Controller
 
     /**
      * Handle customer.subscription.deleted event.
+     *
+     * SEC-004: Validates tenant ownership before updating club.
      */
     protected function handleSubscriptionDeleted($subscription): void
     {
-        $club = Club::where('stripe_subscription_id', $subscription->id)->first();
+        $clubId = $this->extractClubIdFromMetadata($subscription);
+        $tenantId = $this->extractTenantIdFromMetadata($subscription);
+
+        // SEC-004: Validate tenant ownership with full cross-check
+        $club = $this->validateAndFindClub(
+            $clubId,
+            $tenantId,
+            $subscription->id, // Must match existing subscription ID
+            $subscription->customer
+        );
+
         if (! $club) {
-            Log::debug('Club not found for subscription deletion', [
+            Log::warning('Subscription deletion tenant validation failed', [
+                'club_id' => $clubId,
+                'tenant_id' => $tenantId,
                 'subscription_id' => $subscription->id,
             ]);
 

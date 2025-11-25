@@ -556,12 +556,13 @@ class CacheManagementCommand extends Command
         $this->line('• Implement cache warming during off-peak hours');
     }
 
+    /**
+     * Clear terminal screen using ANSI escape codes.
+     * SEC-007: Replaced system('cls')/system('clear') with safe ANSI codes.
+     */
     private function clearTerminal(): void
     {
-        if (PHP_OS_FAMILY === 'Windows') {
-            system('cls');
-        } else {
-            system('clear');
-        }
+        // ANSI escape sequence: \033[2J clears screen, \033[H moves cursor to top-left
+        $this->output->write("\033[2J\033[H");
     }
 }

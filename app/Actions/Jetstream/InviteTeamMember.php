@@ -34,7 +34,8 @@ class InviteTeamMember implements InvitesTeamMembers
             'role' => $role,
         ]);
 
-        Mail::to($email)->send(new TeamInvitation($invitation));
+        // PERF-006: Use queue() instead of send() for async mail
+        Mail::to($email)->queue(new TeamInvitation($invitation));
     }
 
     /**

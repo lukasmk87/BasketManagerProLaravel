@@ -106,12 +106,19 @@ class GameController extends Controller
     {
         $this->authorize('view', $game);
 
+        // PERF-003: Removed gameActions from eager load - use limited query instead
         $game->load([
             'homeTeam.club',
             'awayTeam.club',
-            'gameActions.player',
             'liveGame',
         ]);
+
+        // PERF-003: Load only recent game actions (not all 100-500+)
+        $recentGameActions = $game->gameActions()
+            ->with(['player:id,name', 'assistedByPlayer:id,name'])
+            ->latest()
+            ->limit(20)
+            ->get();
 
         $gameStats = null;
         if ($game->status === 'finished') {
@@ -125,6 +132,7 @@ class GameController extends Controller
         return response()->json([
             'success' => true,
             'data' => $game,
+            'recent_actions' => $recentGameActions,
             'statistics' => $gameStats,
         ]);
     }

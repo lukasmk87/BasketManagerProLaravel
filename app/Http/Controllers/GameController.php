@@ -149,13 +149,20 @@ class GameController extends Controller
     {
         $this->authorize('view', $game);
 
+        // PERF-003: Removed gameActions from eager load - use limited query instead
         $game->load([
             'homeTeam.club',
             'awayTeam.club',
-            'gameActions.player',
             'liveGame',
-            'registrations.player',
+            'registrations.player:id,name,user_id',
         ]);
+
+        // PERF-003: Load only recent game actions (not all 100-500+)
+        $recentGameActions = $game->gameActions()
+            ->with(['player:id,name', 'assistedByPlayer:id,name'])
+            ->latest()
+            ->limit(20)
+            ->get();
 
         $gameStats = null;
         if ($game->status === 'finished') {
@@ -176,6 +183,7 @@ class GameController extends Controller
 
         return Inertia::render('Games/Show', [
             'game' => $game,
+            'recentGameActions' => $recentGameActions,
             'statistics' => $gameStats,
             'currentPlayerRegistration' => $currentPlayerRegistration,
             'can' => [

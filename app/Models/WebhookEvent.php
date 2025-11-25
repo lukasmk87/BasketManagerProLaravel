@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * WebhookEvent Model
- * 
+ *
  * Tracks Stripe webhook events for audit trail and processing status
- * 
+ *
  * @property int $id
  * @property string $stripe_event_id
  * @property string $event_type
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class WebhookEvent extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'stripe_event_id',
@@ -64,15 +65,7 @@ class WebhookEvent extends Model
     public const STATUS_PROCESSED = 'processed';
     public const STATUS_FAILED = 'failed';
 
-    /**
-     * Get the tenant associated with this webhook event
-     *
-     * @return BelongsTo
-     */
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
-    }
+    // Note: tenant() relationship is provided by BelongsToTenant trait
 
     /**
      * Scope to filter by event type
