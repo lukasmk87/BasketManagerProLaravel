@@ -8,6 +8,7 @@ use App\Models\Game;
 use App\Models\Player;
 use App\Models\User;
 use App\Services\ClubService;
+use App\Services\ClubUsageTrackingService;
 use App\Services\PlayerService;
 use App\Services\StatisticsService;
 use App\Services\TeamService;
@@ -27,7 +28,8 @@ class ClubAdminPanelController extends Controller
         private StatisticsService $statisticsService,
         private UserService $userService,
         private TeamService $teamService,
-        private PlayerService $playerService
+        private PlayerService $playerService,
+        private ClubUsageTrackingService $usageTrackingService
     ) {
         // Ensure only club admins can access
         $this->middleware(['auth', 'verified', 'role:club_admin|admin|super_admin']);
@@ -129,6 +131,9 @@ class ClubAdminPanelController extends Controller
                 })
                 ->count();
 
+            // SEC-008: Get storage usage data for dashboard display
+            $storageUsage = $this->getClubStorageUsage($primaryClub);
+
             return Inertia::render('ClubAdmin/Dashboard', [
                 'club' => [
                     'id' => $primaryClub->id,
@@ -156,6 +161,8 @@ class ClubAdminPanelController extends Controller
                     'name' => $club->name,
                     'logo_url' => $club->logo_url,
                 ]),
+                // SEC-008: Storage usage data for dashboard
+                'storage_usage' => $storageUsage,
             ]);
 
         } catch (\Exception $e) {
@@ -1376,5 +1383,74 @@ class ClubAdminPanelController extends Controller
                 ->with('error', 'Fehler beim Aktualisieren des Spielers: '.$e->getMessage())
                 ->withInput();
         }
+    }
+
+    /**
+     * SEC-008: Get storage usage data for a club.
+     *
+     * Returns storage usage metrics for dashboard display including
+     * current usage, limit, percentage, and formatted strings.
+     *
+     * @param Club $club The club to get storage data for
+     * @return array Storage usage data
+     */
+    private function getClubStorageUsage(Club $club): array
+    {
+        try {
+            // Calculate current storage usage
+            $usedGB = $club->calculateStorageUsage();
+
+            // Get storage limit from subscription plan (default 5GB for free tier)
+            $limitGB = $club->getLimit('max_storage_gb') ?? 5;
+
+            // Calculate percentage
+            $percentage = $limitGB > 0 ? min(100, round(($usedGB / $limitGB) * 100, 1)) : 0;
+
+            return [
+                'used' => round($usedGB, 2),
+                'limit' => $limitGB,
+                'percentage' => $percentage,
+                'formatted_used' => $this->formatStorageSize($usedGB),
+                'formatted_limit' => $this->formatStorageSize($limitGB),
+                'is_near_limit' => $percentage >= 80,
+                'is_over_limit' => $percentage >= 100,
+            ];
+        } catch (\Exception $e) {
+            Log::warning('Failed to calculate storage usage', [
+                'club_id' => $club->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Return safe defaults on error
+            return [
+                'used' => 0,
+                'limit' => 5,
+                'percentage' => 0,
+                'formatted_used' => '0 GB',
+                'formatted_limit' => '5 GB',
+                'is_near_limit' => false,
+                'is_over_limit' => false,
+            ];
+        }
+    }
+
+    /**
+     * SEC-008: Format storage size for display.
+     *
+     * @param float $sizeGB Size in gigabytes
+     * @return string Formatted size string
+     */
+    private function formatStorageSize(float $sizeGB): string
+    {
+        if ($sizeGB < 0.001) {
+            return '0 MB';
+        }
+
+        if ($sizeGB < 1) {
+            $sizeMB = $sizeGB * 1024;
+            return round($sizeMB, 1) . ' MB';
+        }
+
+        return round($sizeGB, 2) . ' GB';
     }
 }

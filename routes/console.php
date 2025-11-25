@@ -68,3 +68,13 @@ app(Schedule::class)->call(function () {
     ->at('05:00')
     ->name('club-transfer-cleanup-old-records')
     ->description('Permanently delete old club transfer records (>90 days)');
+
+// SEC-008: Daily storage sync for all clubs
+// Runs at 06:00 after other maintenance tasks to sync calculated storage usage
+app(Schedule::class)->command('club:sync-storage')
+    ->dailyAt('06:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onOneServer()
+    ->name('club-storage-sync')
+    ->description('Sync storage usage calculations for all clubs');

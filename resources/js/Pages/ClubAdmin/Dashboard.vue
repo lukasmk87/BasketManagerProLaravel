@@ -28,6 +28,19 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    // SEC-008: Storage usage data
+    storage_usage: {
+        type: Object,
+        default: () => ({
+            used: 0,
+            limit: 5,
+            percentage: 0,
+            formatted_used: '0 GB',
+            formatted_limit: '5 GB',
+            is_near_limit: false,
+            is_over_limit: false,
+        }),
+    },
     error: {
         type: String,
         default: null,
@@ -51,6 +64,25 @@ const formatJoinDate = (date) => {
         year: 'numeric',
     });
 };
+
+// SEC-008: Computed properties for storage display
+const storageProgressColor = computed(() => {
+    if (props.storage_usage.percentage >= 90) return 'bg-red-500';
+    if (props.storage_usage.percentage >= 75) return 'bg-yellow-500';
+    return 'bg-green-500';
+});
+
+const storageIconColor = computed(() => {
+    if (props.storage_usage.percentage >= 90) return 'bg-red-500';
+    if (props.storage_usage.percentage >= 75) return 'bg-yellow-500';
+    return 'bg-cyan-500';
+});
+
+const storageLinkColor = computed(() => {
+    if (props.storage_usage.percentage >= 90) return 'text-red-600 hover:text-red-800';
+    if (props.storage_usage.percentage >= 75) return 'text-yellow-600 hover:text-yellow-800';
+    return 'text-cyan-600 hover:text-cyan-800';
+});
 </script>
 
 <template>
@@ -104,7 +136,7 @@ const formatJoinDate = (date) => {
                 <!-- Dashboard Content (only shown when club is available) -->
                 <template v-if="club">
                 <!-- Statistics Cards -->
-                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
                     <!-- Total Teams -->
                     <div class="bg-white overflow-hidden shadow-lg rounded-lg hover:shadow-xl transition-shadow">
                         <div class="p-5">
@@ -227,6 +259,52 @@ const formatJoinDate = (date) => {
                         <div class="bg-gray-50 px-5 py-3">
                             <Link :href="route('club-admin.members')" class="text-sm font-medium text-purple-600 hover:text-purple-800">
                                 Mitglieder verwalten →
+                            </Link>
+                        </div>
+                    </div>
+
+                    <!-- SEC-008: Storage Usage -->
+                    <div class="bg-white overflow-hidden shadow-lg rounded-lg hover:shadow-xl transition-shadow">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div :class="[storageIconColor, 'flex-shrink-0 rounded-md p-3']">
+                                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">
+                                            Speicher
+                                        </dt>
+                                        <dd>
+                                            <div class="text-lg font-semibold text-gray-900">
+                                                {{ storage_usage.formatted_used }} / {{ storage_usage.formatted_limit }}
+                                            </div>
+                                            <!-- Progress Bar -->
+                                            <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                                                <div
+                                                    :class="[storageProgressColor, 'h-2 rounded-full transition-all duration-300']"
+                                                    :style="{ width: Math.min(storage_usage.percentage, 100) + '%' }"
+                                                ></div>
+                                            </div>
+                                            <div class="flex items-center mt-1">
+                                                <span class="text-xs text-gray-500">{{ storage_usage.percentage }}% belegt</span>
+                                                <span v-if="storage_usage.is_over_limit" class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                    Limit erreicht!
+                                                </span>
+                                                <span v-else-if="storage_usage.is_near_limit" class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                    Fast voll
+                                                </span>
+                                            </div>
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-5 py-3">
+                            <Link :href="route('club-admin.settings')" :class="['text-sm font-medium', storageLinkColor]">
+                                Speicher verwalten →
                             </Link>
                         </div>
                     </div>

@@ -406,29 +406,34 @@ class MLTrainingService
 
     /**
      * Führe Python Training Script aus
+     *
+     * SEC-007: All parameters are validated/sanitized before being passed to Process::run()
      */
     private function executePythonTraining(string $taskType, array $trainingData, array $parameters): array
     {
         // Temporäre CSV-Datei erstellen
         $tempFile = tempnam(sys_get_temp_dir(), 'basketball_training_');
         $csvFile = $tempFile . '.csv';
-        
+
         // Daten als CSV speichern
         $this->saveDataAsCsv($trainingData, $csvFile);
 
         try {
-            // Python-Script Parameter
+            // SEC-007: Validate and sanitize all parameters before passing to shell
+            $validatedParams = $this->validateTrainingParameters($parameters);
+
+            // Python-Script Parameter (all values are now validated)
             $pythonParams = [
                 '--data_file' => $csvFile,
-                '--task_type' => $taskType,
-                '--model_type' => $parameters['model_type'] ?? 'auto',
-                '--use_auto_features' => $parameters['use_auto_features'] ?? 'true',
-                '--use_hyperopt' => $parameters['use_hyperopt'] ?? 'true',
-                '--cv_folds' => $parameters['cv_folds'] ?? 5,
+                '--task_type' => $taskType, // Already validated in prepareTrainingData() switch
+                '--model_type' => $validatedParams['model_type'],
+                '--use_auto_features' => $validatedParams['use_auto_features'],
+                '--use_hyperopt' => $validatedParams['use_hyperopt'],
+                '--cv_folds' => $validatedParams['cv_folds'],
                 '--output_format' => 'json'
             ];
 
-            // Python Command erstellen
+            // Python Command erstellen (array form is safer than string concatenation)
             $command = [
                 $this->pythonPath,
                 $this->scriptsPath . '/ml_trainer.py',
@@ -436,12 +441,12 @@ class MLTrainingService
 
             foreach ($pythonParams as $key => $value) {
                 $command[] = $key;
-                $command[] = $value;
+                $command[] = (string) $value; // Ensure string type
             }
 
             Log::info("Führe Python ML Training aus", ['command' => implode(' ', $command)]);
 
-            // Python Process ausführen
+            // Python Process ausführen (array form prevents shell injection)
             $result = Process::run($command);
 
             if ($result->failed()) {
@@ -558,6 +563,53 @@ class MLTrainingService
     }
 
     // Helper Methods
+
+    /**
+     * SEC-007: Validate and sanitize training parameters to prevent command injection
+     *
+     * All parameters that will be passed to external processes must be
+     * validated against whitelists or type-cast to safe values.
+     */
+    private function validateTrainingParameters(array $parameters): array
+    {
+        // Whitelist of allowed model types
+        $validModelTypes = [
+            'auto',
+            'random_forest',
+            'gradient_boosting',
+            'xgboost',
+            'lightgbm',
+            'neural_network',
+            'logistic_regression',
+            'svm',
+            'decision_tree',
+        ];
+
+        // Validate model_type against whitelist
+        $modelType = $parameters['model_type'] ?? 'auto';
+        if (!in_array($modelType, $validModelTypes, true)) {
+            Log::warning('SEC-007: Invalid model_type rejected', [
+                'attempted' => $modelType,
+                'allowed' => $validModelTypes,
+            ]);
+            $modelType = 'auto';
+        }
+
+        // Validate boolean parameters (strict 'true'/'false' strings)
+        $useAutoFeatures = ($parameters['use_auto_features'] ?? 'true') === 'true' ? 'true' : 'false';
+        $useHyperopt = ($parameters['use_hyperopt'] ?? 'true') === 'true' ? 'true' : 'false';
+
+        // Validate cv_folds as integer in safe range (2-20)
+        $cvFolds = (int) ($parameters['cv_folds'] ?? 5);
+        $cvFolds = max(2, min(20, $cvFolds));
+
+        return [
+            'model_type' => $modelType,
+            'use_auto_features' => $useAutoFeatures,
+            'use_hyperopt' => $useHyperopt,
+            'cv_folds' => $cvFolds,
+        ];
+    }
 
     private function calculateScoreDifference(Game $game, int $teamId): int
     {

@@ -312,18 +312,25 @@ class QueryOptimizationService
             return Cache::get($cacheKey);
         }
 
+        // SEC-007: Whitelist of valid metrics with their SQL expressions
+        // Only keys from this array can be used as column aliases
         $validMetrics = [
             'points' => 'AVG(pgs.points)',
-            'rebounds' => 'AVG(pgs.rebounds)', 
+            'rebounds' => 'AVG(pgs.rebounds)',
             'assists' => 'AVG(pgs.assists)',
             'steals' => 'AVG(pgs.steals)',
             'blocks' => 'AVG(pgs.blocks)',
             'field_goal_percentage' => 'CASE WHEN SUM(pgs.field_goal_attempts) > 0 THEN SUM(pgs.field_goal_made) * 100.0 / SUM(pgs.field_goal_attempts) ELSE 0 END'
         ];
 
+        // SEC-007: Strict validation - metric must be in whitelist
         if (!isset($validMetrics[$metric])) {
             $metric = 'points';
         }
+
+        // SEC-007: Additional sanitization of alias name (defense in depth)
+        // Even though metric is whitelisted, we ensure the alias is safe
+        $safeAlias = preg_replace('/[^a-z_]/', '', $metric);
 
         $topPerformers = DB::table('player_game_statistics as pgs')
             ->join('players as p', 'pgs.player_id', '=', 'p.id')
@@ -335,14 +342,15 @@ class QueryOptimizationService
                 'p.position',
                 't.name as team_name',
                 DB::raw('COUNT(pgs.game_id) as games_played'),
-                DB::raw("ROUND({$validMetrics[$metric]}, 2) as {$metric}")
+                // SEC-007: Use sanitized alias name in SQL
+                DB::raw("ROUND({$validMetrics[$metric]}, 2) as " . $safeAlias)
             ])
             ->when($season, function($query, $season) {
                 return $query->where('pgs.season', $season);
             })
             ->groupBy(['p.id', 'p.first_name', 'p.last_name', 'p.position', 't.name'])
             ->having('games_played', '>=', 5) // Minimum games threshold
-            ->orderBy($metric, 'desc')
+            ->orderBy($safeAlias, 'desc') // SEC-007: Use sanitized alias
             ->limit($limit)
             ->get();
 

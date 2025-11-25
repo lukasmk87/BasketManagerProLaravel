@@ -426,11 +426,48 @@ class AIVideoAnalysisService
         return ['timestamps' => $timestamps, 'strategy' => $strategy];
     }
 
+    /**
+     * Extract a single frame from a video at a specific timestamp.
+     *
+     * SEC-007: Validates video path is within allowed storage directory
+     * and sanitizes timestamp parameter before passing to ffmpeg.
+     */
     private function extractSingleFrame(string $videoPath, int $timestamp, string $outputPath): bool
     {
+        // SEC-007: Validate video path is within allowed storage directory
+        $allowedBasePath = realpath(storage_path('app'));
+        $realVideoPath = realpath($videoPath);
+
+        // If realpath returns false, the file doesn't exist or path is invalid
+        if ($realVideoPath === false) {
+            Log::warning('SEC-007: Video file does not exist', ['path' => $videoPath]);
+            return false;
+        }
+
+        // Ensure path is within allowed storage directory (prevent path traversal)
+        if (!str_starts_with($realVideoPath, $allowedBasePath)) {
+            Log::warning('SEC-007: Attempted path traversal in video extraction', [
+                'attempted_path' => $videoPath,
+                'real_path' => $realVideoPath,
+                'allowed_base' => $allowedBasePath,
+            ]);
+            return false;
+        }
+
+        // SEC-007: Validate timestamp is within safe range (0 to 24 hours max)
+        $timestamp = max(0, min(86400, $timestamp));
+
+        // SEC-007: Validate output path is within temp directory
+        $allowedOutputBase = realpath(storage_path('app/temp'));
+        $outputDir = dirname($outputPath);
+        if (!str_starts_with(realpath($outputDir) ?: '', $allowedOutputBase ?: storage_path('app/temp'))) {
+            Log::warning('SEC-007: Invalid output path for frame extraction', ['path' => $outputPath]);
+            return false;
+        }
+
         $command = [
             'ffmpeg',
-            '-i', $videoPath,
+            '-i', $realVideoPath, // Use validated real path
             '-ss', (string) $timestamp,
             '-vframes', '1',
             '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease',
@@ -438,9 +475,9 @@ class AIVideoAnalysisService
             '-y',
             $outputPath
         ];
-        
+
         $result = Process::run($command);
-        
+
         return $result->successful() && file_exists($outputPath);
     }
 

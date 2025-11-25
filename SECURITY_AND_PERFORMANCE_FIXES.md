@@ -1087,10 +1087,10 @@ public function test_coach_can_update_team_game_registrations()
 
 ---
 
-### 🟡 SEC-007: Command Injection Risiko
+### ✅ SEC-007: Command Injection Risiko **[BEHOBEN]**
 
 **Schweregrad:** 🟡 MITTEL
-**Aufwand:** 0.5 Stunden
+**Aufwand:** 0.5 Stunden (+ 2 Stunden für zusätzliche Vulnerabilities)
 
 #### Problem
 
@@ -1141,12 +1141,15 @@ $this->output->write(str_repeat("\n", $terminal->getHeight()));
 - [x] ✅ `system('cls')` und `system('clear')` ersetzen - **Fixed 2025-11-25** (ANSI escape codes)
 - [x] ✅ Alle `system()`, `exec()`, `shell_exec()` Calls finden - **Analysiert 2025-11-25**
 - [x] ✅ SQL Injection in ResolveTenantMiddleware.php gefixt - **Fixed 2025-11-25** (prepared statement)
-- [ ] Code Review für Command Injection Risks
+- [x] ✅ Code Review für Command Injection Risks - **Fixed 2025-11-25** (3 additional vulnerabilities found and fixed)
+- [x] ✅ MLTrainingService.php - Parameter Validation für Process::run() - **Fixed 2025-11-25** (whitelist validation)
+- [x] ✅ AIVideoAnalysisService.php - Path Traversal Prevention - **Fixed 2025-11-25** (realpath validation)
+- [x] ✅ QueryOptimizationService.php - SQL Alias Sanitization - **Fixed 2025-11-25** (preg_replace filter)
 - [ ] Deployment
 
 ---
 
-### 🟡 SEC-008: Missing Storage Calculation
+### ✅ SEC-008: Missing Storage Calculation **[BEHOBEN]**
 
 **Schweregrad:** 🟡 MITTEL (aber Billing-relevant!)
 **Aufwand:** 6-8 Stunden
@@ -1317,9 +1320,12 @@ public function test_club_storage_calculation_includes_videos()
 - [x] ✅ Artisan Command `club:sync-storage` erstellen - **Fixed 2025-11-25**
 - [x] ✅ Limit-Enforcement in Upload-Controllern - **Fixed 2025-11-25**
 - [x] ✅ Tests schreiben (6 Testfälle) - **Fixed 2025-11-25**
-- [ ] `storage_used_mb` Spalte zu `clubs` Tabelle (Migration) - NICHT BENÖTIGT (ClubUsage Tabelle nutzt 'max_storage_gb' Metric)
-- [ ] Cron Job für täglichen Sync: `php artisan club:sync-storage`
-- [ ] Dashboard-Anzeige für Storage Usage
+- [x] ✅ `storage_used_mb` Spalte - NICHT BENÖTIGT (ClubUsage Tabelle nutzt 'max_storage_gb' Metric)
+- [x] ✅ ClubUsageTrackingService.php - setStorageUsage() & getStorageUsageGB() Methoden - **Fixed 2025-11-25**
+- [x] ✅ SyncClubStorageCommand.php Bug (falsche Methodensignatur) - **Fixed 2025-11-25**
+- [x] ✅ Cron Job für täglichen Sync in `routes/console.php` - **Fixed 2025-11-25** (täglich 06:00)
+- [x] ✅ ClubAdminPanelController.php - Storage Usage Data Provider - **Fixed 2025-11-25**
+- [x] ✅ Dashboard.vue - Storage Progress-Bar mit Farbkodierung - **Fixed 2025-11-25**
 - [ ] Deployment
 
 ---

@@ -47,7 +47,8 @@ class SyncClubStorageCommand extends Command
 
         foreach ($clubs as $club) {
             $calculatedGB = $club->calculateStorageUsage();
-            $currentTracked = $usageService->getCurrentUsage($club, 'max_storage_gb');
+            // SEC-008: Use getStorageUsageGB for proper conversion from internal format
+            $currentTracked = $usageService->getStorageUsageGB($club, 'max_storage_gb');
 
             if ($this->option('dry-run')) {
                 $this->newLine();
@@ -56,8 +57,8 @@ class SyncClubStorageCommand extends Command
                 $this->line("      Currently tracked: {$currentTracked} GB");
                 $this->line("      Difference: " . round($calculatedGB - $currentTracked, 3) . " GB");
             } else {
-                // Sync the calculated usage
-                $usageService->syncClubUsage($club, 'max_storage_gb', $calculatedGB);
+                // SEC-008: Use setStorageUsage with correct method signature
+                $usageService->setStorageUsage($club, 'max_storage_gb', $calculatedGB);
             }
 
             $totalStorage += $calculatedGB;

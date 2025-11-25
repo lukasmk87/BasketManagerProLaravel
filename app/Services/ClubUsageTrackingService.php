@@ -110,6 +110,52 @@ class ClubUsageTrackingService
     }
 
     /**
+     * SEC-008: Set storage usage directly with a specific value.
+     *
+     * This method is used by the storage sync command to set the calculated
+     * storage usage value directly, bypassing the automatic calculation.
+     *
+     * @param Club $club The club to update
+     * @param string $metric The storage metric (e.g., 'max_storage_gb')
+     * @param float|int $value The storage value (in GB for storage metrics)
+     * @return void
+     */
+    public function setStorageUsage(Club $club, string $metric, float|int $value): void
+    {
+        // Convert to integer (usage_count is stored as int, GB with 3 decimal precision)
+        // We store as millibytes (value * 1000) to preserve precision
+        $storageValue = (int) round($value * 1000);
+
+        // Update Redis cache
+        $cacheKey = $this->getCacheKey($club->id, $metric);
+        Redis::setex($cacheKey, 86400 * 31, $storageValue);
+
+        // Update database
+        $this->setDatabaseUsage($club, $metric, $storageValue);
+
+        Log::debug('Storage usage set directly', [
+            'club_id' => $club->id,
+            'metric' => $metric,
+            'value_gb' => $value,
+            'stored_value' => $storageValue,
+        ]);
+    }
+
+    /**
+     * SEC-008: Get storage usage in GB (converts from internal representation).
+     *
+     * @param Club $club The club
+     * @param string $metric The storage metric
+     * @return float Storage usage in GB
+     */
+    public function getStorageUsageGB(Club $club, string $metric = 'max_storage_gb'): float
+    {
+        $rawValue = $this->getCurrentUsage($club, $metric);
+        // Convert from millibytes back to GB
+        return $rawValue / 1000;
+    }
+
+    /**
      * Check if club can use a resource (respects limits).
      *
      * @param Club $club The club to check
