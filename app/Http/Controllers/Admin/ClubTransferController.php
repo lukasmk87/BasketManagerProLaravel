@@ -65,8 +65,9 @@ class ClubTransferController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Get all club subscription plans grouped by tenant
-        $clubPlans = ClubSubscriptionPlan::where('is_active', true)
+        // Get all club subscription plans grouped by tenant (bypass TenantScope for super admin)
+        $clubPlans = ClubSubscriptionPlan::withoutGlobalScopes()
+            ->where('is_active', true)
             ->orderBy('tenant_id')
             ->orderBy('sort_order')
             ->get()
@@ -303,9 +304,10 @@ class ClubTransferController extends Controller
             'club_subscription_plan_id' => 'nullable|uuid|exists:club_subscription_plans,id',
         ]);
 
-        // Validate plan belongs to same tenant
+        // Validate plan belongs to same tenant (bypass TenantScope for super admin)
         if ($request->club_subscription_plan_id) {
-            $plan = ClubSubscriptionPlan::find($request->club_subscription_plan_id);
+            $plan = ClubSubscriptionPlan::withoutGlobalScopes()
+                ->find($request->club_subscription_plan_id);
             if ($plan && $plan->tenant_id !== $club->tenant_id) {
                 return response()->json([
                     'success' => false,
