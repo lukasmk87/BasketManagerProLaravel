@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Club;
+use App\Models\ClubSubscriptionPlan;
 use App\Models\ClubTransfer;
 use App\Models\Tenant;
 use App\Services\ClubTransferService;
@@ -57,10 +58,26 @@ class ClubTransferController extends Controller
 
         $transfers = $query->paginate(20);
 
+        // Get all clubs with their tenant, subscription plan, and counts
+        $clubs = Club::withoutGlobalScopes()
+            ->with(['tenant', 'subscriptionPlan'])
+            ->withCount(['teams', 'users'])
+            ->orderBy('name')
+            ->get();
+
+        // Get all club subscription plans grouped by tenant
+        $clubPlans = ClubSubscriptionPlan::where('is_active', true)
+            ->orderBy('tenant_id')
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy('tenant_id');
+
         return Inertia::render('Admin/ClubTransfer/Index', [
             'transfers' => $transfers,
+            'clubs' => $clubs,
+            'clubPlans' => $clubPlans,
             'filters' => $request->only(['status', 'source_tenant_id', 'target_tenant_id', 'search']),
-            'tenants' => Tenant::where('status', 'active')->orderBy('name')->get(),
+            'tenants' => Tenant::where('is_active', true)->where('is_suspended', false)->orderBy('name')->get(),
         ]);
     }
 
@@ -272,6 +289,45 @@ class ClubTransferController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Transfer-Datensatz wurde gelöscht',
+        ]);
+    }
+
+    /**
+     * Update club subscription plan.
+     */
+    public function updatePlan(Request $request, Club $club)
+    {
+        Gate::authorize('create', ClubTransfer::class); // Super admin only
+
+        $request->validate([
+            'club_subscription_plan_id' => 'nullable|uuid|exists:club_subscription_plans,id',
+        ]);
+
+        // Validate plan belongs to same tenant
+        if ($request->club_subscription_plan_id) {
+            $plan = ClubSubscriptionPlan::find($request->club_subscription_plan_id);
+            if ($plan && $plan->tenant_id !== $club->tenant_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Plan gehört nicht zum selben Tenant',
+                ], 422);
+            }
+        }
+
+        $club->update([
+            'club_subscription_plan_id' => $request->club_subscription_plan_id,
+        ]);
+
+        // Load the updated plan for the response
+        $club->load('subscriptionPlan');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Plan erfolgreich aktualisiert',
+            'data' => [
+                'club_id' => $club->id,
+                'plan' => $club->subscriptionPlan,
+            ],
         ]);
     }
 }

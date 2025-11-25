@@ -56,4 +56,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('clubs/batch-transfer', [ClubTransferController::class, 'batchStore'])->name('clubs.batch-transfer');
     Route::post('club-transfers/{transfer}/rollback', [ClubTransferController::class, 'rollback'])->name('club-transfers.rollback');
     Route::delete('club-transfers/{transfer}', [ClubTransferController::class, 'destroy'])->name('club-transfers.destroy');
+
+    // Club Plan Assignment
+    Route::put('clubs/{club}/plan', [ClubTransferController::class, 'updatePlan'])->name('clubs.plan.update');
 });
