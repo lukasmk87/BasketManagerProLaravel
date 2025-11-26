@@ -21,9 +21,17 @@ class ClubSubscriptionPlanSeeder extends Seeder
     public function run(): void
     {
         $defaultPlans = config('club_plans.default_plans');
-        $syncStripe = $this->command->option('sync-stripe') ?? false;
-        $tenantId = $this->command->option('tenant-id');
-        $skipExisting = $this->command->option('skip-existing') ?? false;
+
+        // Safely get options (may not exist when running via db:seed)
+        $syncStripe = false;
+        $tenantId = null;
+        $skipExisting = false;
+
+        if ($this->command && method_exists($this->command, 'hasOption')) {
+            $syncStripe = $this->command->hasOption('sync-stripe') ? $this->command->option('sync-stripe') : false;
+            $tenantId = $this->command->hasOption('tenant-id') ? $this->command->option('tenant-id') : null;
+            $skipExisting = $this->command->hasOption('skip-existing') ? $this->command->option('skip-existing') : false;
+        }
 
         // Get tenants to seed
         $tenantsQuery = Tenant::where('is_active', true);

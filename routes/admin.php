@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\TenantSubscriptionController;
 use App\Http\Controllers\Admin\UsageLimitsController;
 use App\Http\Controllers\Admin\ClubTransferController;
+use App\Http\Controllers\Admin\ClubSubscriptionPlanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,4 +60,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Club Plan Assignment
     Route::put('clubs/{club}/plan', [ClubTransferController::class, 'updatePlan'])->name('clubs.plan.update');
+
+    // Club Subscription Plans Management
+    Route::resource('club-plans', ClubSubscriptionPlanController::class)->parameters(['club-plans' => 'plan']);
+    Route::post('club-plans/{plan}/clone', [ClubSubscriptionPlanController::class, 'clone'])->name('club-plans.clone');
 });
