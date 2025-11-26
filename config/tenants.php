@@ -38,6 +38,7 @@ return [
                 'users' => 10,
                 'teams' => 2,
                 'players' => 30,
+                'clubs' => 1,
                 'storage_gb' => 5,
                 'api_calls_per_hour' => 100,
                 'games_per_month' => 20,
@@ -67,6 +68,7 @@ return [
                 'users' => 50,
                 'teams' => 5,
                 'players' => 100,
+                'clubs' => 3,
                 'storage_gb' => 20,
                 'api_calls_per_hour' => 1000,
                 'games_per_month' => 100,
@@ -105,6 +107,7 @@ return [
                 'users' => 200,
                 'teams' => 20,
                 'players' => 500,
+                'clubs' => 10,
                 'storage_gb' => 100,
                 'api_calls_per_hour' => 5000,
                 'games_per_month' => 500,
@@ -155,6 +158,7 @@ return [
                 'users' => -1, // Unlimited
                 'teams' => -1,
                 'players' => -1,
+                'clubs' => -1, // Unlimited
                 'storage_gb' => 1000,
                 'api_calls_per_hour' => -1,
                 'games_per_month' => -1,

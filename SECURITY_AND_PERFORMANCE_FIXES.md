@@ -3,7 +3,7 @@
 > **Kritische und dringende Probleme, die sofort oder kurzfristig behoben werden müssen**
 
 **Erstellt:** 2025-01-24
-**Letztes Update:** 2025-11-26 (PERF-005, PERF-006)
+**Letztes Update:** 2025-11-26 (TEST-002: ClubTransferServiceTest)
 **Status:** 🟢 **Sprint 1+2 ABGESCHLOSSEN** - Security + Performance Optimierungen
 **Geschätzter Gesamtaufwand:** 72-88 Stunden (2-2.5 Wochen)
 **Bereits investiert:** ~38 Stunden (Sprint 1 + Sprint 2 Performance)
@@ -16,8 +16,8 @@
 |-----------|--------|----------|------|--------|-----------|
 | **Security Issues** | 8 | 4 | 2 | 2 | **8** 🎉 |
 | **Performance Issues** | 8 | 3 | 3 | 2 | **8** 🎉 |
-| **Fehlende Tests** | 5 | 5 | 0 | 0 | **0** |
-| **Gesamt** | **21** | **12** | **5** | **4** | **16/21** |
+| **Fehlende Tests** | 5 | 5 | 0 | 0 | **2** |
+| **Gesamt** | **21** | **12** | **5** | **4** | **18/21** |
 
 ### 🎯 Sprint 1 Fortschritt
 
@@ -2972,12 +2972,13 @@ GameAction::where(...)
 
 ## 🧪 FEHLENDE TESTS (PRIORITY 1)
 
-### TEST-001: Season Management Tests fehlen
+### ✅ TEST-001: Season Management Tests **[BEHOBEN]**
 
 **Schweregrad:** 🔴 KRITISCH
 **Aufwand:** 6-8 Stunden
+**Status:** ✅ **BEHOBEN am 2025-11-26**
 
-Season Management ist ein Major Feature ohne Tests!
+Season Management ist ein Major Feature - jetzt mit vollständiger Testabdeckung!
 
 #### Zu erstellende Tests
 
@@ -3096,21 +3097,55 @@ class SeasonServiceTest extends TestCase
 
 #### Checklist
 
-- [ ] `SeasonServiceTest.php` erstellen (20 Tests)
-- [ ] CRUD-Tests (create, read, update, delete)
-- [ ] Lifecycle-Tests (activate, deactivate, complete)
-- [ ] Statistics-Tests (season stats berechnung)
-- [ ] Edge Cases (overlapping seasons, etc.)
-- [ ] 80%+ Coverage erreichen
+- [x] `SeasonServiceTest.php` erstellen (25 Tests) ✅
+- [x] CRUD-Tests (create, read, update, delete) ✅
+- [x] Lifecycle-Tests (activate, deactivate, complete) ✅
+- [x] Statistics-Tests (season stats berechnung) ✅
+- [x] Edge Cases (overlapping seasons, etc.) ✅
+- [x] 80%+ Coverage erreichen ✅
+
+#### Implementierte Lösung (2025-11-26)
+
+**25 Tests erstellt (74 Assertions):**
+
+| Gruppe | Tests | Status |
+|--------|-------|--------|
+| CRUD-Tests | 5 | ✅ |
+| Lifecycle-Tests | 6 | ✅ |
+| Rollover-Tests | 5 | ✅ |
+| Statistics-Tests | 4 | ✅ |
+| Edge Cases | 5 | ✅ |
+
+**Nebenprodukt-Fixes:**
+- ✅ `PlayerFactory` - Schema-Mismatch behoben (non-existent columns entfernt)
+- ✅ `BasketballTeamFactory` - Fehlende Spalten hinzugefügt (tenant_id, user_id, personal_team)
+- ✅ `SeasonFactory` - Unique Names für Tests
+- ✅ `SeasonService::copyTeamToNewSeason()` - Bug behoben: Neue UUID/Slug generieren
 
 ---
 
-### TEST-002 bis TEST-005
+### TEST-002: ClubTransferServiceTest **[BEHOBEN]** ✅
+
+**Status:** ✅ **BEHOBEN am 2025-11-26**
+**Tests:** 27 Tests, 77 Assertions
+**Duration:** ~174s
+**Dateien:**
+- ✅ `database/factories/ClubTransferFactory.php` - Erstellt mit 10 States
+- ✅ `tests/Unit/Services/ClubTransferServiceTest.php` - 27 Tests in 6 Gruppen
+- ✅ `app/Services/ClubTransferService.php` - 3 Bugs gefixt
+- ✅ `app/Models/Club.php` - subscriptionEvents() Relationship hinzugefügt
+- ✅ `config/tenants.php` - max_clubs Limits für alle Tiers hinzugefügt
+
+**Bugs behoben während Implementierung:**
+1. ✅ **getTenantLimits Bug** - Verwendete nicht-existentes `subscription_plan_limits` Attribut, gefixt zu config-basiert
+2. ✅ **Club Model Bug** - Fehlende `subscriptionEvents()` Relationship
+3. ✅ **Datetime Rollback Bug** - ISO 8601 Format nicht MySQL-kompatibel, `processDatetimeFields()` Helper hinzugefügt
+
+### TEST-003 bis TEST-005
 
 *Aus Platzgründen verkürzt - siehe vollständige Dokumentation in CODE_QUALITY_ROADMAP.md*
 
 **Fehlende Tests:**
-- `ClubTransferServiceTest` (25 Tests) - Rollback, Stripe Migration, etc.
 - `LiveScoringServiceTest` (15 Tests) - Real-time Broadcasting
 - `TournamentServiceTest` (20 Tests) - Bracket Generation, Progression
 - `FederationIntegrationTest` (10 Tests) - DBB/FIBA APIs
@@ -3167,11 +3202,11 @@ class SeasonServiceTest extends TestCase
 
 ---
 
-### Sprint 3: Test Coverage (7-10 Tage)
+### Sprint 3: Test Coverage (7-10 Tage) - 🟡 IN PROGRESS
 
 **Aufgaben:**
-- [ ] TEST-001: SeasonServiceTest (6-8h)
-- [ ] TEST-002: ClubTransferServiceTest (8-10h)
+- [x] ✅ TEST-001: SeasonServiceTest (6-8h) - **BEHOBEN 2025-11-26**
+- [x] ✅ TEST-002: ClubTransferServiceTest (8-10h) - **BEHOBEN 2025-11-26** (27 Tests, +3 Bugfixes)
 - [ ] TEST-003: LiveScoringServiceTest (4-6h)
 - [ ] TEST-004: TournamentServiceTest (6-8h)
 - [ ] TEST-005: Federation Integration Tests (4-6h)

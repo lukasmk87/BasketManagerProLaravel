@@ -293,6 +293,14 @@ class Club extends Model implements HasMedia
         return $this->belongsTo(Tenant::class, 'tenant_id');
     }
 
+    /**
+     * Get subscription events for this club.
+     */
+    public function subscriptionEvents(): HasMany
+    {
+        return $this->hasMany(ClubSubscriptionEvent::class);
+    }
+
     // ============================
     // SCOPES
     // ============================

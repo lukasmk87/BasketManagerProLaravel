@@ -15,6 +15,7 @@ use App\Models\ClubTransferRollbackData;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Stripe\ClubSubscriptionService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -311,14 +312,16 @@ class ClubTransferService
 
             // Restore updates (reverse changes)
             foreach ($updates as $snapshot) {
+                $data = $this->processDatetimeFields($snapshot->record_data, $snapshot->table_name);
                 DB::table($snapshot->table_name)
                     ->where('id', $snapshot->record_id)
-                    ->update($snapshot->record_data);
+                    ->update($data);
             }
 
             // Restore deletes (recreate records)
             foreach ($deletes as $snapshot) {
-                DB::table($snapshot->table_name)->insert($snapshot->record_data);
+                $data = $this->processDatetimeFields($snapshot->record_data, $snapshot->table_name);
+                DB::table($snapshot->table_name)->insert($data);
             }
 
             // Clear caches for both tenants
@@ -406,7 +409,7 @@ class ClubTransferService
         }
 
         // Check target tenant exists and is active
-        if (!$targetTenant->exists || $targetTenant->status !== 'active') {
+        if (!$targetTenant->exists || !$targetTenant->is_active) {
             throw new \Exception('Target tenant does not exist or is not active');
         }
 
@@ -641,15 +644,59 @@ class ClubTransferService
     }
 
     /**
-     * Get tenant limits.
+     * Get tenant limits from subscription tier configuration.
      */
     private function getTenantLimits(Tenant $tenant): array
     {
-        // This would integrate with your existing tenant limits system
+        $tier = $tenant->subscription_tier ?? 'free';
+        $limits = config("tenants.tiers.{$tier}.limits", []);
+
+        // -1 means unlimited (return null for unlimited)
+        $maxClubs = $limits['clubs'] ?? null;
+        $maxUsers = $limits['users'] ?? null;
+
         return [
-            'max_clubs' => $tenant->subscription_plan_limits['max_clubs'] ?? null,
-            'max_users' => $tenant->subscription_plan_limits['max_users'] ?? null,
+            'max_clubs' => ($maxClubs === -1) ? null : $maxClubs,
+            'max_users' => ($maxUsers === -1) ? null : $maxUsers,
         ];
+    }
+
+    /**
+     * Process datetime fields in record data for database insertion.
+     * Converts ISO 8601 strings to MySQL datetime format.
+     */
+    private function processDatetimeFields(array $data, string $tableName): array
+    {
+        // Common datetime column names
+        $dateColumns = [
+            'created_at', 'updated_at', 'deleted_at', 'email_verified_at',
+            'founded_at', 'verified_at', 'privacy_policy_updated_at', 'terms_updated_at',
+            'subscription_started_at', 'subscription_trial_ends_at', 'subscription_ends_at',
+            'subscription_current_period_start', 'subscription_current_period_end',
+            'last_billing_date', 'joined_at', 'trial_ends_at', 'last_login_at',
+            'last_activity_at', 'gdpr_accepted_at', 'terms_accepted_at', 'onboarded_at',
+            'started_at', 'completed_at', 'failed_at', 'rolled_back_at', 'rollback_expires_at',
+        ];
+
+        foreach ($data as $key => $value) {
+            if ($value === null) {
+                continue;
+            }
+
+            // Check if this is a known datetime column or ends with _at
+            $isDateColumn = in_array($key, $dateColumns) || str_ends_with($key, '_at');
+
+            if ($isDateColumn && is_string($value)) {
+                // Try to parse ISO 8601 format and convert to MySQL format
+                try {
+                    $data[$key] = Carbon::parse($value)->format('Y-m-d H:i:s');
+                } catch (\Exception $e) {
+                    // Keep original value if parsing fails
+                }
+            }
+        }
+
+        return $data;
     }
 
     /**
