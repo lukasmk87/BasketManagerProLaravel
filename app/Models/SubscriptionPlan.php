@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -141,16 +140,6 @@ class SubscriptionPlan extends Model
             'quarterly' => 'pro Quartal',
             default => $this->billing_period,
         };
-    }
-
-    /**
-     * Get limits - ensures limits is always an array, never null.
-     */
-    protected function limits(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value) => is_array($value) ? $value : [],
-        );
     }
 
     // ============================
