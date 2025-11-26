@@ -43,53 +43,42 @@ class TeamFactory extends Factory
 
         return [
             'uuid' => $this->faker->uuid(),
+            'tenant_id' => null,
+            'user_id' => User::factory(),
+            'personal_team' => false,
             'club_id' => Club::factory(),
             'name' => $fullName,
             'short_name' => strtoupper(substr($name, 0, 3)),
-            'slug' => Str::slug($fullName . '-' . $season),
+            'slug' => Str::slug($fullName . '-' . $season . '-' . $this->faker->unique()->randomNumber(6)),
             'description' => $this->faker->optional(0.7)->paragraph(2),
             'logo_path' => null,
-            
+
             // Team classification
             'gender' => $gender,
             'age_group' => $ageGroup,
             'division' => $this->faker->optional(0.6)->randomElement(['A', 'B', 'C']),
             'league' => $this->faker->randomElement([
-                'Bundesliga', 'Regionalliga', 'Landesliga', 
+                'Bundesliga', 'Regionalliga', 'Landesliga',
                 'Bezirksliga', 'Kreisliga', 'Jugendliga'
             ]),
-            
+
             // Season information
             'season' => $season,
+            'season_id' => null,
             'season_start' => $this->faker->dateTimeBetween('now', '+2 months'),
             'season_end' => $this->faker->dateTimeBetween('+8 months', '+10 months'),
-            
+
             // Team colors
             'primary_color' => $this->faker->hexColor(),
             'secondary_color' => $this->faker->hexColor(),
             'jersey_home_color' => $this->faker->hexColor(),
             'jersey_away_color' => $this->faker->hexColor(),
-            
+
             // Team settings
             'max_players' => $this->faker->numberBetween(12, 20),
             'min_players' => $this->faker->numberBetween(8, 12),
-            
-            // Training schedule
-            'training_schedule' => json_encode([
-                [
-                    'day' => 'tuesday',
-                    'start_time' => '18:00',
-                    'end_time' => '20:00',
-                    'venue' => 'Sporthalle 1',
-                ],
-                [
-                    'day' => 'thursday',
-                    'start_time' => '18:00',
-                    'end_time' => '20:00',
-                    'venue' => 'Sporthalle 1',
-                ],
-            ]),
-            
+
+            // Practice times (training_schedule column does not exist)
             'practice_times' => json_encode([
                 'warmup_duration' => 15,
                 'skills_duration' => 30,

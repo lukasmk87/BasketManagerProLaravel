@@ -223,7 +223,9 @@ class LiveScoringService
             
             // Check if game should end or go to next period
             if ($this->shouldEndGame($liveGame)) {
-                return $this->finishGame($game);
+                $this->finishGame($game);
+                $liveGame->refresh();
+                return $liveGame;
             } else {
                 // Advance to next period
                 $liveGame->update([

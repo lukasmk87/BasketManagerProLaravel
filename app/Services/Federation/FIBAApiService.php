@@ -541,21 +541,17 @@ class FIBAApiService
             'has_data' => !empty($data),
         ]);
         
-        return Http::withHeaders($headers)
+        $http = Http::withHeaders($headers)
             ->timeout($this->timeout)
-            ->retry($this->retries, 1000)
-            ->when($method === 'GET', function ($http) use ($url, $data) {
-                return $http->get($url, $data);
-            })
-            ->when($method === 'POST', function ($http) use ($url, $data) {
-                return $http->post($url, $data);
-            })
-            ->when($method === 'PUT', function ($http) use ($url, $data) {
-                return $http->put($url, $data);
-            })
-            ->when($method === 'DELETE', function ($http) use ($url) {
-                return $http->delete($url);
-            });
+            ->retry($this->retries, 1000);
+
+        return match ($method) {
+            'GET' => $http->get($url, $data),
+            'POST' => $http->post($url, $data),
+            'PUT' => $http->put($url, $data),
+            'DELETE' => $http->delete($url),
+            default => $http->get($url, $data),
+        };
     }
 
     /**
