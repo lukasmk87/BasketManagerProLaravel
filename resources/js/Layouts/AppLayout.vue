@@ -24,7 +24,11 @@ const switchToTeam = (team) => {
 };
 
 const logout = () => {
-    router.post(route('logout'));
+    router.post(route('logout'), {}, {
+        onSuccess: () => {
+            window.location.href = '/';
+        }
+    });
 };
 
 const switchLanguage = (locale) => {
