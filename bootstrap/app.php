@@ -107,6 +107,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\LocalizationMiddleware::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\EnsureOnboardingComplete::class,
         ]);
 
         // API Middleware - Only apply to /api/* routes

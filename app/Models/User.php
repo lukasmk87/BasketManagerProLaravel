@@ -105,6 +105,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'referee_certifications',
         'background_check_completed',
         'background_check_date',
+        'onboarding_completed_at',
     ];
 
     /**
@@ -151,6 +152,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'api_access_enabled' => 'boolean',
             'api_key_last_used_at' => 'datetime',
             'rate_limit_cache' => 'array',
+            'onboarding_completed_at' => 'datetime',
         ];
     }
 
@@ -414,6 +416,22 @@ class User extends Authenticatable implements MustVerifyEmail
     // ============================
     // HELPER METHODS
     // ============================
+
+    /**
+     * Check if the user has completed the onboarding wizard.
+     */
+    public function hasCompletedOnboarding(): bool
+    {
+        return $this->onboarding_completed_at !== null;
+    }
+
+    /**
+     * Mark the onboarding as completed.
+     */
+    public function markOnboardingComplete(): void
+    {
+        $this->update(['onboarding_completed_at' => now()]);
+    }
 
     /**
      * Check if the user is a coach.

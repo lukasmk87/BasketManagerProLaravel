@@ -9,7 +9,10 @@
       "Bash(node:*)",
       "Bash(php artisan test:*)",
       "Bash(php artisan db:show:*)",
-      "Bash(php artisan tinker:*)"
+      "Bash(php artisan tinker:*)",
+      "Bash(php artisan:*)",
+      "Bash(cat:*)",
+      "Bash(xargs ls:*)"
     ],
     "deny": [],
     "ask": []
