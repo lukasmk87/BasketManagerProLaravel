@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, defineAsyncComponent } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -7,7 +7,10 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
-import RichTextEditor from '@/Components/RichTextEditor.vue';
+// PERF-005: Lazy load Tiptap editor (~30 KB savings)
+const RichTextEditor = defineAsyncComponent(() =>
+    import('@/Components/RichTextEditor.vue')
+);
 import LandingPageLocaleSwitcher from '@/Components/Landing/LandingPageLocaleSwitcher.vue';
 import FaqEditor from './Editors/FaqEditor.vue';
 import FeaturesEditor from './Editors/FeaturesEditor.vue';

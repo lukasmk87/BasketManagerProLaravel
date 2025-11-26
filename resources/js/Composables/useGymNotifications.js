@@ -1,7 +1,9 @@
 import { ref, onMounted, onUnmounted } from 'vue'
-import Echo from '@/echo'
+import { getEcho } from '@/echo'
 
 export function useGymNotifications() {
+    // Echo instance - loaded lazily
+    let echoInstance = null
     const notifications = ref([])
     const channels = ref(new Map())
     const subscriptions = ref(new Set())
@@ -18,14 +20,15 @@ export function useGymNotifications() {
     }
 
     // Subscribe to gym updates for a specific club
-    const subscribeToGymUpdates = (clubId, callbacks = {}) => {
+    const subscribeToGymUpdates = async (clubId, callbacks = {}) => {
         const channelName = `club.${clubId}.gym`
-        
+
         if (channels.value.has(channelName)) {
             return channels.value.get(channelName)
         }
 
-        const channel = Echo.channel(channelName)
+        echoInstance = await getEcho()
+        const channel = echoInstance.channel(channelName)
             .listen('GymTimeReleased', (e) => {
                 handleNotification(NOTIFICATION_TYPES.GYM_TIME_RELEASED, e.data, callbacks.onTimeReleased)
             })
@@ -49,14 +52,15 @@ export function useGymNotifications() {
     }
 
     // Subscribe to gym updates for a specific hall
-    const subscribeToGymHallUpdates = (hallId, callbacks = {}) => {
+    const subscribeToGymHallUpdates = async (hallId, callbacks = {}) => {
         const channelName = `gym-hall.${hallId}`
-        
+
         if (channels.value.has(channelName)) {
             return channels.value.get(channelName)
         }
 
-        const channel = Echo.channel(channelName)
+        echoInstance = await getEcho()
+        const channel = echoInstance.channel(channelName)
             .listen('TimeSlotReleased', (e) => {
                 handleNotification(NOTIFICATION_TYPES.GYM_TIME_RELEASED, e.data, callbacks.onTimeSlotReleased)
             })
@@ -74,14 +78,15 @@ export function useGymNotifications() {
     }
 
     // Subscribe to team-specific gym notifications
-    const subscribeToTeamGymUpdates = (teamId, callbacks = {}) => {
+    const subscribeToTeamGymUpdates = async (teamId, callbacks = {}) => {
         const channelName = `team.${teamId}.gym`
-        
+
         if (channels.value.has(channelName)) {
             return channels.value.get(channelName)
         }
 
-        const channel = Echo.channel(channelName)
+        echoInstance = await getEcho()
+        const channel = echoInstance.channel(channelName)
             .listen('BookingReleased', (e) => {
                 handleNotification(NOTIFICATION_TYPES.GYM_TIME_RELEASED, e.data, callbacks.onBookingReleased)
             })
@@ -336,10 +341,13 @@ export function useGymNotifications() {
     }
 
     // Cleanup subscriptions
-    const cleanup = () => {
+    const cleanup = async () => {
+        if (!echoInstance) {
+            echoInstance = await getEcho()
+        }
         subscriptions.value.forEach(channelName => {
             if (channels.value.has(channelName)) {
-                Echo.leaveChannel(channelName)
+                echoInstance.leaveChannel(channelName)
                 channels.value.delete(channelName)
             }
         })

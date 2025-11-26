@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
     plugins: [
@@ -16,40 +17,59 @@ export default defineConfig({
                 },
             },
         }),
+        // PERF-005: Bundle-Visualizer für Analyse
+        visualizer({
+            filename: 'bundle-stats.html',
+            open: false,
+            gzipSize: true,
+            brotliSize: true,
+        }),
     ],
     // PERF-005: Code-Splitting for smaller initial bundle
     build: {
         rollupOptions: {
             output: {
-                manualChunks: {
+                manualChunks(id) {
+                    // Video/ML Components - Only loaded on analysis pages (~60 KB savings)
+                    if (id.includes('/components/ml/') || id.includes('/components/video/')) {
+                        return 'video-ml';
+                    }
+
                     // Charts (only on Stats pages)
-                    'chart': ['chart.js'],
+                    if (id.includes('node_modules/chart.js')) {
+                        return 'chart';
+                    }
 
                     // Rich Text Editor (only on Editor pages)
-                    'editor': [
-                        '@tiptap/starter-kit',
-                        '@tiptap/vue-3',
-                        '@tiptap/extension-link',
-                        '@tiptap/extension-image',
-                        '@tiptap/extension-placeholder',
-                        '@tiptap/extension-text-align',
-                        '@tiptap/extension-underline',
-                        '@tiptap/extension-character-count',
-                    ],
+                    if (id.includes('node_modules/@tiptap/')) {
+                        return 'editor';
+                    }
 
                     // Stripe (only on Checkout pages)
-                    'stripe': ['@stripe/stripe-js'],
+                    if (id.includes('node_modules/@stripe/')) {
+                        return 'stripe';
+                    }
 
-                    // Real-time (only for Live features)
-                    'realtime': ['laravel-echo', 'pusher-js'],
+                    // Real-time (only for Live features) - now lazy loaded in echo.js
+                    if (id.includes('node_modules/laravel-echo') || id.includes('node_modules/pusher-js')) {
+                        return 'realtime';
+                    }
 
                     // Drag & Drop (only Team Management)
-                    'dragdrop': ['sortablejs', 'vue-draggable-plus'],
+                    if (id.includes('node_modules/sortablejs') || id.includes('node_modules/vue-draggable-plus')) {
+                        return 'dragdrop';
+                    }
 
                     // Vendor Core
-                    'vendor': ['vue', '@inertiajs/vue3', 'axios'],
+                    if (id.includes('node_modules/vue') ||
+                        id.includes('node_modules/@inertiajs') ||
+                        id.includes('node_modules/axios')) {
+                        return 'vendor';
+                    }
                 },
             },
         },
+        // Increase chunk size warning for better awareness
+        chunkSizeWarningLimit: 500,
     },
 });

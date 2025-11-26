@@ -302,13 +302,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import { usePage, Link } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import GymHallCalendar from '@/Components/Gym/GymHallCalendar.vue'
 import GymBookingModal from '@/Components/Gym/GymBookingModal.vue'
 import GymTimeSlotModal from '@/Components/Gym/GymTimeSlotModal.vue'
-import GymHallModal from '@/Components/Gym/GymHallModal.vue'
+// PERF-005: Lazy load heavy modal component (~40 KB savings)
+const GymHallModal = defineAsyncComponent(() =>
+    import('@/Components/Gym/GymHallModal.vue')
+)
 import GymRequestList from '@/Components/Gym/GymRequestList.vue'
 import {
     BuildingStorefrontIcon,

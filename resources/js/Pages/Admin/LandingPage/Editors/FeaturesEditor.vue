@@ -1,11 +1,14 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 import DraggableList from '@/Components/Landing/DraggableList.vue';
 import IconPicker from '@/Components/Landing/IconPicker.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
-import RichTextEditor from '@/Components/RichTextEditor.vue';
+// PERF-005: Lazy load Tiptap editor (~30 KB savings)
+const RichTextEditor = defineAsyncComponent(() =>
+    import('@/Components/RichTextEditor.vue')
+);
 
 const props = defineProps({
     modelValue: {
