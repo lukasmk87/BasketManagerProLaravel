@@ -34,6 +34,27 @@ class RequirementChecker
     ];
 
     /**
+     * Required Composer packages with their main classes
+     */
+    protected array $composerPackages = [
+        'stevebauman/purify' => [
+            'name' => 'HTML Purify (XSS Protection)',
+            'class' => \Stevebauman\Purify\Facades\Purify::class,
+            'required' => true,
+        ],
+        'spatie/laravel-permission' => [
+            'name' => 'Laravel Permission (RBAC)',
+            'class' => \Spatie\Permission\PermissionRegistrar::class,
+            'required' => true,
+        ],
+        'spatie/laravel-activitylog' => [
+            'name' => 'Activity Log (Audit Trail)',
+            'class' => \Spatie\Activitylog\ActivitylogServiceProvider::class,
+            'required' => true,
+        ],
+    ];
+
+    /**
      * Check all server requirements
      *
      * @return array{satisfied: bool, requirements: array}
@@ -46,6 +67,7 @@ class RequirementChecker
             'functions' => $this->checkFunctions(),
             'memory_limit' => $this->checkMemoryLimit(),
             'upload_max_filesize' => $this->checkUploadMaxFilesize(),
+            'composer_packages' => $this->checkComposerPackages(),
         ];
 
         $satisfied = collect($results)->every(function ($category) {
@@ -187,5 +209,28 @@ class RequirementChecker
             'k' => $value * 1024,
             default => $value,
         };
+    }
+
+    /**
+     * Check required Composer packages
+     */
+    protected function checkComposerPackages(): array
+    {
+        $results = [];
+
+        foreach ($this->composerPackages as $package => $config) {
+            $installed = class_exists($config['class']);
+            $status = $installed ? 'success' : ($config['required'] ? 'error' : 'warning');
+
+            $results[$package] = [
+                'name' => $config['name'],
+                'status' => $status,
+                'message' => $installed
+                    ? "{$config['name']} is installed"
+                    : "{$config['name']} is not installed. Run: composer install",
+            ];
+        }
+
+        return $results;
     }
 }

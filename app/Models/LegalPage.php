@@ -4,9 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
-use Stevebauman\Purify\Casts\PurifyHtmlOnGet;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class LegalPage extends Model
 {
@@ -26,19 +25,25 @@ class LegalPage extends Model
     ];
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
+     * Get the attributes that should be cast.
+     * Uses PurifyHtmlOnGet for XSS protection if the package is available.
      */
-    protected $casts = [
-        'is_published' => 'boolean',
-        'content' => PurifyHtmlOnGet::class,  // ✅ XSS Protection: Auto-sanitize on retrieval
-    ];
+    protected function casts(): array
+    {
+        $casts = [
+            'is_published' => 'boolean',
+        ];
+
+        // Conditional cast: Only use PurifyHtmlOnGet if the package is installed
+        if (class_exists(\Stevebauman\Purify\Casts\PurifyHtmlOnGet::class)) {
+            $casts['content'] = \Stevebauman\Purify\Casts\PurifyHtmlOnGet::class;
+        }
+
+        return $casts;
+    }
 
     /**
      * Get the route key for the model.
-     *
-     * @return string
      */
     public function getRouteKeyName(): string
     {
@@ -77,6 +82,7 @@ class LegalPage extends Model
         ];
 
         $localizedSlug = $slugMap[$this->slug] ?? $this->slug;
+
         return route('legal.show', $localizedSlug);
     }
 
