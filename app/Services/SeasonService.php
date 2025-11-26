@@ -191,6 +191,8 @@ class SeasonService
     public function copyTeamToNewSeason(BasketballTeam $team, Season $newSeason): BasketballTeam
     {
         $newTeam = $team->replicate();
+        $newTeam->uuid = (string) \Illuminate\Support\Str::uuid(); // Generate new UUID
+        $newTeam->slug = \Illuminate\Support\Str::slug($team->name . '-' . $newSeason->name); // Generate new slug
         $newTeam->season_id = $newSeason->id;
         $newTeam->season = $newSeason->name; // Für Rückwärtskompatibilität
         $newTeam->season_start = $newSeason->start_date;

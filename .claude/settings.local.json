@@ -6,7 +6,10 @@
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
       "Bash(chmod:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(php artisan test:*)",
+      "Bash(php artisan db:show:*)",
+      "Bash(php artisan tinker:*)"
     ],
     "deny": [],
     "ask": []

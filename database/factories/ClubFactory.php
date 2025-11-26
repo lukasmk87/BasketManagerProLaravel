@@ -46,7 +46,7 @@ class ClubFactory extends Factory
             'address_country' => 'Deutschland',
             
             // Club details
-            'founded_at' => $this->faker->optional(0.8)->dateTimeBetween('-70 years', '-5 years'),
+            'founded_at' => $this->faker->optional(0.8)->dateTimeBetween('-40 years', '-5 years'),
             'primary_color' => $this->faker->hexColor(),
             'secondary_color' => $this->faker->hexColor(),
             'accent_color' => $this->faker->optional(0.5)->hexColor(),
@@ -68,11 +68,6 @@ class ClubFactory extends Factory
                 'instagram' => $this->faker->optional(0.5)->userName(),
                 'twitter' => $this->faker->optional(0.3)->userName(),
             ]),
-            
-            // League information
-            'league' => $this->faker->randomElement(['Regionalliga', 'Landesliga', 'Bezirksliga', 'Kreisliga']),
-            'division' => $this->faker->optional(0.7)->randomElement(['A', 'B', 'C']),
-            'season' => '2024-25',
             
             // Settings
             'settings' => json_encode([
@@ -97,19 +92,29 @@ class ClubFactory extends Factory
             // Language settings
             'default_language' => 'de',
             'supported_languages' => json_encode(['de', 'en']),
-            
+
             // Currency
             'currency' => 'EUR',
-            
+
             // Emergency contact (single contact instead of array)
             'emergency_contact_name' => $this->faker->name(),
             'emergency_contact_phone' => $this->faker->phoneNumber(),
             'emergency_contact_email' => $this->faker->email(),
-            
+
             // GDPR compliance
             'gdpr_compliant' => $this->faker->boolean(95),
             'privacy_policy_updated_at' => $this->faker->optional(0.8)->dateTimeBetween('-1 year', 'now'),
             'terms_updated_at' => $this->faker->optional(0.8)->dateTimeBetween('-1 year', 'now'),
+
+            // Contact person
+            'contact_person_name' => $this->faker->optional(0.7)->name(),
+            'contact_person_phone' => $this->faker->optional(0.7)->phoneNumber(),
+            'contact_person_email' => $this->faker->optional(0.7)->email(),
+
+            // Court information
+            'has_indoor_courts' => $this->faker->boolean(80),
+            'has_outdoor_courts' => $this->faker->boolean(40),
+            'court_count' => $this->faker->numberBetween(1, 4),
         ];
     }
 
@@ -153,14 +158,9 @@ class ClubFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'membership_fee' => $this->faker->randomFloat(2, 30, 150),
-            'facilities' => json_encode([
-                'courts' => 1,
-                'gym' => false,
-                'locker_rooms' => true,
-                'parking' => $this->faker->boolean(50),
-            ]),
-            'league' => 'Kreisliga',
-            'division' => null,
+            'court_count' => 1,
+            'has_indoor_courts' => true,
+            'has_outdoor_courts' => false,
         ]);
     }
 
@@ -171,16 +171,9 @@ class ClubFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'membership_fee' => $this->faker->randomFloat(2, 200, 800),
-            'facilities' => json_encode([
-                'courts' => $this->faker->numberBetween(2, 6),
-                'gym' => true,
-                'locker_rooms' => true,
-                'parking' => true,
-                'restaurant' => true,
-                'pro_shop' => true,
-            ]),
-            'league' => $this->faker->randomElement(['Bundesliga', 'Regionalliga']),
-            'division' => $this->faker->randomElement(['A', 'B']),
+            'court_count' => $this->faker->numberBetween(2, 6),
+            'has_indoor_courts' => true,
+            'has_outdoor_courts' => true,
             'is_verified' => true,
             'verified_at' => $this->faker->dateTimeBetween('-2 years', '-6 months'),
         ]);
