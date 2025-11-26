@@ -78,7 +78,14 @@ class ResolveTenantMiddleware
                         return $next($request);
                     }
                 } else {
-                    return $this->handleTenantNotFound($request);
+                    // Try to resolve default tenant before returning error
+                    $defaultTenant = Tenant::resolveDefaultTenant($request->getHost());
+                    if ($defaultTenant) {
+                        $tenant = $defaultTenant;
+                        // Continue with tenant context setup below
+                    } else {
+                        return $this->handleTenantNotFound($request);
+                    }
                 }
             }
 

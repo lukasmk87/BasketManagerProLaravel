@@ -214,6 +214,8 @@ return [
         'methods' => ['domain', 'subdomain', 'header', 'session'],
         'header_name' => 'X-Tenant-ID',
         'session_key' => 'tenant_id',
+        'default_tenant_domain' => env('DEFAULT_TENANT_DOMAIN', null),
+        'fallback_to_first_active' => env('TENANT_FALLBACK_TO_FIRST_ACTIVE', true),
     ],
 
     /*

@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\Team;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -29,10 +30,15 @@ class CreateNewUser implements CreatesNewUsers
         ])->validate();
 
         return DB::transaction(function () use ($input) {
+            // Resolve default tenant for automatic assignment
+            $currentDomain = request()->getHost();
+            $tenant = Tenant::resolveDefaultTenant($currentDomain);
+
             return tap(User::create([
                 'name' => $input['name'],
                 'email' => $input['email'],
                 'password' => Hash::make($input['password']),
+                'tenant_id' => $tenant?->id,
             ]), function (User $user) {
                 $this->createTeam($user);
             });

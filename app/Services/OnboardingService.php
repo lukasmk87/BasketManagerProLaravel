@@ -228,29 +228,46 @@ class OnboardingService
 
     /**
      * Resolve tenant ID for new club creation.
+     * Uses domain-based resolution with fallback to first active tenant.
      */
     private function resolveTenantId(User $user): string
     {
-        // If user already has a tenant, use it
+        // 1. If user already has a tenant, use it
         if ($user->tenant_id) {
             return $user->tenant_id;
         }
 
-        // Try to get from app container
+        // 2. Try to get from app container (set by middleware)
         $tenant = app()->bound('tenant') ? app('tenant') : null;
         if ($tenant) {
+            // Assign tenant to user
+            $user->update(['tenant_id' => $tenant->id]);
             return $tenant->id;
         }
 
-        // Fallback: Get first active tenant or create default
-        $tenant = Tenant::where('is_active', true)->first();
+        // 3. Domain-based resolution with fallback
+        $currentDomain = request()->getHost();
+        $tenant = Tenant::resolveDefaultTenant($currentDomain);
 
         if (!$tenant) {
-            throw new \RuntimeException('No active tenant found. Please complete the installation first.');
+            Log::error('OnboardingService: No tenant found', [
+                'user_id' => $user->id,
+                'domain' => $currentDomain,
+            ]);
+            throw new \RuntimeException(
+                'Kein aktiver Mandant gefunden. Bitte stellen Sie sicher, dass die Installation abgeschlossen ist ' .
+                'oder konfigurieren Sie einen Standard-Mandanten in der .env Datei (DEFAULT_TENANT_DOMAIN).'
+            );
         }
 
         // Assign tenant to user
         $user->update(['tenant_id' => $tenant->id]);
+
+        Log::info('OnboardingService: User assigned to tenant via domain resolution', [
+            'user_id' => $user->id,
+            'tenant_id' => $tenant->id,
+            'domain' => $currentDomain,
+        ]);
 
         return $tenant->id;
     }

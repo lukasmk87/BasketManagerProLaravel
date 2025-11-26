@@ -267,6 +267,41 @@ class Tenant extends Model
     }
 
     /**
+     * Resolve the default tenant based on configuration.
+     * Priority: 1) Domain from request, 2) Config default domain, 3) First active tenant
+     */
+    public static function resolveDefaultTenant(?string $currentDomain = null): ?self
+    {
+        // 1. Try to resolve from current domain
+        if ($currentDomain) {
+            $tenant = static::resolveFromDomain($currentDomain);
+            if ($tenant) {
+                return $tenant;
+            }
+        }
+
+        // 2. Try configured default domain
+        $defaultDomain = config('tenants.resolution.default_tenant_domain');
+        if ($defaultDomain) {
+            $tenant = static::resolveFromDomain($defaultDomain);
+            if ($tenant) {
+                return $tenant;
+            }
+        }
+
+        // 3. Fallback: First active tenant
+        if (config('tenants.resolution.fallback_to_first_active', true)) {
+            return Cache::remember(
+                'tenant:default:first_active',
+                3600,
+                fn() => static::where('is_active', true)->first()
+            );
+        }
+
+        return null;
+    }
+
+    /**
      * Check if tenant has a specific feature.
      */
     public function hasFeature(string $feature): bool
