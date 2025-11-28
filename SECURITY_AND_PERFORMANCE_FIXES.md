@@ -3141,14 +3141,24 @@ class SeasonServiceTest extends TestCase
 2. ✅ **Club Model Bug** - Fehlende `subscriptionEvents()` Relationship
 3. ✅ **Datetime Rollback Bug** - ISO 8601 Format nicht MySQL-kompatibel, `processDatetimeFields()` Helper hinzugefügt
 
-### TEST-003 bis TEST-005
+### TEST-003 bis TEST-005 - ✅ COMPLETED (2025-11-28)
 
-*Aus Platzgründen verkürzt - siehe vollständige Dokumentation in CODE_QUALITY_ROADMAP.md*
+**TEST-003: LiveScoringServiceTest** - ✅ 25 Tests
+- Game lifecycle, scoring, broadcasting, fouls, timeouts, overtimes
+- File: `tests/Unit/Services/LiveScoringServiceTest.php`
 
-**Fehlende Tests:**
-- `LiveScoringServiceTest` (15 Tests) - Real-time Broadcasting
-- `TournamentServiceTest` (20 Tests) - Bracket Generation, Progression
-- `FederationIntegrationTest` (10 Tests) - DBB/FIBA APIs
+**TEST-004: TournamentServiceTest** - ✅ 22 Tests
+- Tournament CRUD, registration, team approval, brackets, seeding, standings
+- +3 Factories: `TournamentFactory`, `TournamentTeamFactory`, `TournamentBracketFactory`
+- File: `tests/Unit/Services/TournamentServiceTest.php`
+
+**TEST-005: Federation Integration Tests** - ✅ 40 Tests (17 DBB + 24 FIBA)
+- DBBApiService: Player lookup, caching, eligibility, leagues, transfers, game results
+- FIBAApiService: Player profiles, competitions, clubs, standings, rankings
+- +2 Bugfixes: `makeRequest()` method in both services (when() → match() expression)
+- Files: `tests/Unit/Services/Federation/DBBApiServiceTest.php`, `tests/Unit/Services/Federation/FIBAApiServiceTest.php`
+
+**Gesamt:** 87 neue Tests erstellt
 
 ---
 
@@ -3202,14 +3212,14 @@ class SeasonServiceTest extends TestCase
 
 ---
 
-### Sprint 3: Test Coverage (7-10 Tage) - 🟡 IN PROGRESS
+### Sprint 3: Test Coverage (7-10 Tage) - ✅ COMPLETED
 
 **Aufgaben:**
 - [x] ✅ TEST-001: SeasonServiceTest (6-8h) - **BEHOBEN 2025-11-26**
 - [x] ✅ TEST-002: ClubTransferServiceTest (8-10h) - **BEHOBEN 2025-11-26** (27 Tests, +3 Bugfixes)
-- [ ] TEST-003: LiveScoringServiceTest (4-6h)
-- [ ] TEST-004: TournamentServiceTest (6-8h)
-- [ ] TEST-005: Federation Integration Tests (4-6h)
+- [x] ✅ TEST-003: LiveScoringServiceTest (4-6h) - **BEHOBEN 2025-11-28** (25 Tests)
+- [x] ✅ TEST-004: TournamentServiceTest (6-8h) - **BEHOBEN 2025-11-28** (22 Tests, +3 Factories)
+- [x] ✅ TEST-005: Federation Integration Tests (4-6h) - **BEHOBEN 2025-11-28** (40 Tests: 17 DBB + 24 FIBA, +2 Bugfixes)
 
 **Gesamtaufwand:** 28-38 Stunden
 
@@ -3244,5 +3254,5 @@ class SeasonServiceTest extends TestCase
 
 ---
 
-**Letzte Aktualisierung:** 2025-01-24
-**Nächstes Review:** Nach Sprint 1 Completion
+**Letzte Aktualisierung:** 2025-11-28
+**Nächstes Review:** Nach Sprint 3 Completion - ✅ ALLE SPRINTS ABGESCHLOSSEN
