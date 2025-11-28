@@ -46,8 +46,9 @@ class GameRegistrationController extends Controller
                 'notes' => 'nullable|string|max:500',
             ]);
 
-            // TODO: Add authorization check - user can only register their own players
-            
+            // SEC-006: Authorization check
+            $this->authorize('create', [GameRegistration::class, $game]);
+
             $registration = $this->bookingService->registerForGame(
                 $game->id,
                 $validated['player_id'],
@@ -80,7 +81,11 @@ class GameRegistrationController extends Controller
                 'reason' => 'nullable|string|max:500',
             ]);
 
-            // TODO: Add authorization check - user can only update their own players
+            // SEC-006: Authorization check - find registration and authorize update
+            $registration = GameRegistration::where('game_id', $game->id)
+                ->where('player_id', $validated['player_id'])
+                ->firstOrFail();
+            $this->authorize('update', $registration);
 
             $success = $this->bookingService->updateGameAvailability(
                 $game->id,
@@ -120,7 +125,8 @@ class GameRegistrationController extends Controller
                 'players.*.notes' => 'nullable|string|max:500',
             ]);
 
-            // TODO: Add authorization check - only trainers/admins
+            // SEC-006: Authorization check - only trainers/admins can bulk register
+            $this->authorize('bulkRegister', [GameRegistration::class, $game]);
 
             $results = $this->bookingService->bulkRegisterForGame(
                 $game->id,
@@ -151,7 +157,9 @@ class GameRegistrationController extends Controller
                 'notes' => 'nullable|string|max:500',
             ]);
 
-            // TODO: Add authorization check - only coaches
+            // SEC-006: Authorization check - only coaches can confirm
+            $registration = GameRegistration::findOrFail($validated['registration_id']);
+            $this->authorize('confirm', $registration);
 
             $success = $this->bookingService->confirmGameRegistration(
                 $validated['registration_id'],
@@ -209,7 +217,16 @@ class GameRegistrationController extends Controller
                 'playing_position' => 'nullable|in:PG,SG,SF,PF,C,G,F,UTIL',
             ]);
 
-            // TODO: Add authorization check - only coaches
+            // SEC-006: Authorization check - only coaches can manage roster
+            $registration = GameRegistration::where('game_id', $game->id)
+                ->where('player_id', $validated['player_id'])
+                ->first();
+            if ($registration) {
+                $this->authorize('manageRoster', $registration);
+            } else {
+                // If no registration yet, check if user can create one
+                $this->authorize('create', [GameRegistration::class, $game]);
+            }
 
             $participation = $this->bookingService->addPlayerToGameRoster(
                 $game->id,
@@ -242,7 +259,11 @@ class GameRegistrationController extends Controller
                 'player_id' => 'required|exists:players,id',
             ]);
 
-            // TODO: Add authorization check - only coaches
+            // SEC-006: Authorization check - only coaches can manage roster
+            $registration = GameRegistration::where('game_id', $game->id)
+                ->where('player_id', $validated['player_id'])
+                ->firstOrFail();
+            $this->authorize('manageRoster', $registration);
 
             $success = $this->bookingService->removePlayerFromGameRoster(
                 $game->id,
@@ -280,7 +301,11 @@ class GameRegistrationController extends Controller
                 'playing_position' => 'nullable|in:PG,SG,SF,PF,C,G,F,UTIL',
             ]);
 
-            // TODO: Add authorization check - only coaches
+            // SEC-006: Authorization check - only coaches can manage roster
+            $registration = GameRegistration::where('game_id', $game->id)
+                ->where('player_id', $validated['player_id'])
+                ->firstOrFail();
+            $this->authorize('manageRoster', $registration);
 
             $participation = $game->getPlayerParticipation($validated['player_id']);
             
@@ -323,7 +348,8 @@ class GameRegistrationController extends Controller
                 'days_ahead' => 'nullable|integer|min:1|max:30',
             ]);
 
-            // TODO: Add authorization check - user can only view their own players
+            // SEC-006: Authorization check - user can only view their own or team's registrations
+            $this->authorize('viewAny', GameRegistration::class);
 
             $daysAhead = $validated['days_ahead'] ?? 14;
             $endDate = now()->addDays($daysAhead);

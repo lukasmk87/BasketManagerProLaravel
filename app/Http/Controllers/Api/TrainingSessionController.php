@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\TrainingRegistration;
 use App\Models\TrainingSession;
 use App\Services\TrainingService;
 use App\Services\BookingService;
@@ -466,8 +467,9 @@ class TrainingSessionController extends Controller
                 'notes' => 'nullable|string|max:500',
             ]);
 
-            // TODO: Add authorization check - user can only register their own players
-            
+            // SEC-006: Authorization check
+            $this->authorize('create', [TrainingRegistration::class, $trainingSession]);
+
             $registration = $this->bookingService->registerForTraining(
                 $trainingSession->id,
                 $validated['player_id'],
@@ -498,7 +500,11 @@ class TrainingSessionController extends Controller
                 'reason' => 'nullable|string|max:500',
             ]);
 
-            // TODO: Add authorization check - user can only cancel their own registrations
+            // SEC-006: Authorization check - find registration and authorize cancel
+            $registration = TrainingRegistration::where('training_session_id', $trainingSession->id)
+                ->where('player_id', $validated['player_id'])
+                ->firstOrFail();
+            $this->authorize('delete', $registration);
 
             $success = $this->bookingService->cancelTrainingRegistration(
                 $trainingSession->id,
@@ -536,7 +542,8 @@ class TrainingSessionController extends Controller
                 'notes' => 'nullable|string|max:500',
             ]);
 
-            // TODO: Add authorization check - only trainers/admins
+            // SEC-006: Authorization check - only trainers/admins can bulk register
+            $this->authorize('bulkRegister', [TrainingRegistration::class, $trainingSession]);
 
             $results = $this->bookingService->bulkRegisterForTraining(
                 $trainingSession->id,
@@ -568,7 +575,9 @@ class TrainingSessionController extends Controller
                 'notes' => 'nullable|string|max:500',
             ]);
 
-            // TODO: Add authorization check - only trainers
+            // SEC-006: Authorization check - only trainers can confirm
+            $registration = TrainingRegistration::findOrFail($validated['registration_id']);
+            $this->authorize('confirm', $registration);
 
             $success = $this->bookingService->confirmTrainingRegistration(
                 $validated['registration_id'],
@@ -604,7 +613,9 @@ class TrainingSessionController extends Controller
                 'reason' => 'nullable|string|max:500',
             ]);
 
-            // TODO: Add authorization check - only trainers
+            // SEC-006: Authorization check - only trainers can decline
+            $registration = TrainingRegistration::findOrFail($validated['registration_id']);
+            $this->authorize('decline', $registration);
 
             $success = $this->bookingService->declineTrainingRegistration(
                 $validated['registration_id'],
@@ -640,7 +651,8 @@ class TrainingSessionController extends Controller
                 'days_ahead' => 'nullable|integer|min:1|max:30',
             ]);
 
-            // TODO: Add authorization check - user can only view their own players
+            // SEC-006: Authorization check - user can only view their own or team's registrations
+            $this->authorize('viewAny', TrainingRegistration::class);
 
             $daysAhead = $validated['days_ahead'] ?? 14;
             $endDate = now()->addDays($daysAhead);
