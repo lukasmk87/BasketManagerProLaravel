@@ -14,7 +14,13 @@ use App\Policies\PlayerPolicy;
 use App\Policies\ClubPolicy;
 use App\Policies\GamePolicy;
 use App\Policies\EmergencyContactPolicy;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
+use App\Services\Statistics\StatisticsCacheManager;
+use App\Services\Statistics\AdvancedMetricsService;
+use App\Services\Statistics\ShotChartService;
+use App\Services\Statistics\PlayerStatisticsService;
+use App\Services\Statistics\TeamStatisticsService;
+use App\Services\Statistics\GameStatisticsService;
 use App\Services\TeamService;
 use App\Services\PlayerService;
 use App\Services\EmergencyContactService;
@@ -52,14 +58,10 @@ class BasketManagerServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Register Core Services
-        $this->app->singleton(StatisticsService::class, function ($app) {
-            return new StatisticsService(
-                $app->make('cache'),
-                $app->make('db')
-            );
-        });
+        // Register Statistics Services (REFACTOR-002)
+        $this->registerStatisticsServices();
 
+        // Register Core Services
         $this->app->singleton(TeamService::class);
         $this->app->singleton(PlayerService::class);
         $this->app->singleton(EmergencyContactService::class);
@@ -138,6 +140,65 @@ class BasketManagerServiceProvider extends ServiceProvider
 
         // Backward compatibility alias for existing code using AIVideoAnalysisService
         $this->app->alias(VideoAnalysisService::class, AIVideoAnalysisService::class);
+    }
+
+    /**
+     * Register Statistics Services.
+     *
+     * REFACTOR-002: Extracted from StatisticsService into smaller,
+     * focused services following Single Responsibility Principle.
+     */
+    protected function registerStatisticsServices(): void
+    {
+        // Register leaf services as singletons (no dependencies on other statistics services)
+        $this->app->singleton(StatisticsCacheManager::class);
+        $this->app->singleton(AdvancedMetricsService::class);
+
+        // Register ShotChartService (depends on StatisticsCacheManager)
+        $this->app->singleton(ShotChartService::class, function ($app) {
+            return new ShotChartService(
+                $app->make(StatisticsCacheManager::class)
+            );
+        });
+
+        // Register PlayerStatisticsService (depends on AdvancedMetricsService, StatisticsCacheManager)
+        $this->app->singleton(PlayerStatisticsService::class, function ($app) {
+            return new PlayerStatisticsService(
+                $app->make(AdvancedMetricsService::class),
+                $app->make(StatisticsCacheManager::class)
+            );
+        });
+
+        // Register TeamStatisticsService (depends on AdvancedMetricsService, StatisticsCacheManager)
+        $this->app->singleton(TeamStatisticsService::class, function ($app) {
+            return new TeamStatisticsService(
+                $app->make(AdvancedMetricsService::class),
+                $app->make(StatisticsCacheManager::class)
+            );
+        });
+
+        // Register GameStatisticsService (depends on TeamStatisticsService, StatisticsCacheManager)
+        $this->app->singleton(GameStatisticsService::class, function ($app) {
+            return new GameStatisticsService(
+                $app->make(TeamStatisticsService::class),
+                $app->make(StatisticsCacheManager::class)
+            );
+        });
+
+        // Register main orchestrator service with dependency injection
+        $this->app->singleton(StatisticsService::class, function ($app) {
+            return new StatisticsService(
+                $app->make(PlayerStatisticsService::class),
+                $app->make(TeamStatisticsService::class),
+                $app->make(GameStatisticsService::class),
+                $app->make(ShotChartService::class),
+                $app->make(AdvancedMetricsService::class),
+                $app->make(StatisticsCacheManager::class)
+            );
+        });
+
+        // Backward compatibility alias for code using old namespace
+        $this->app->alias(StatisticsService::class, \App\Services\StatisticsService::class);
     }
 
     /**
@@ -442,7 +503,15 @@ class BasketManagerServiceProvider extends ServiceProvider
     public function provides(): array
     {
         return [
+            // Statistics Services (REFACTOR-002)
             StatisticsService::class,
+            StatisticsCacheManager::class,
+            AdvancedMetricsService::class,
+            ShotChartService::class,
+            PlayerStatisticsService::class,
+            TeamStatisticsService::class,
+            GameStatisticsService::class,
+            // Core Services
             TeamService::class,
             PlayerService::class,
             EmergencyContactService::class,

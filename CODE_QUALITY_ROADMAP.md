@@ -12,13 +12,13 @@
 
 | Kategorie | Anzahl | Sprint | Aufwand | Fortschritt |
 |-----------|--------|--------|---------|-------------|
-| **God Services Refactoring** | 5 | Sprint 4 | 40-60h | 1/5 ✅ |
+| **God Services Refactoring** | 5 | Sprint 4 | 40-60h | 2/5 ✅ |
 | **God Controllers Refactoring** | 5 | Sprint 4 | 20-30h | 0/5 |
 | **Architektur-Verbesserungen** | 10 | Sprint 5 | 30-40h | 0/10 |
 | **Fehlende Features** | 8 | Sprint 6 | 20-30h | 0/8 |
 | **Dependency Updates** | 6 | Sprint 7 | 12-18h | 0/6 |
 | **Dokumentation** | 5 | Sprint 8 | 8-12h | 0/5 |
-| **Gesamt** | **39** | **5 Sprints** | **130-190h** | **1/39** |
+| **Gesamt** | **39** | **5 Sprints** | **130-190h** | **2/39** |
 
 ---
 
@@ -432,12 +432,12 @@ app/Services/ML/VideoAnalysis/
 
 ---
 
-### REFACTOR-002: StatisticsService splitten
+### REFACTOR-002: StatisticsService splitten ✅ ERLEDIGT
 
 **Schweregrad:** 🟠 HOCH
-**Aktuelle Größe:** 984 Zeilen
-**Ziel:** 4 Services (~200-250 Zeilen je)
-**Aufwand:** 10-14 Stunden
+**Ursprüngliche Größe:** 1,289 Zeilen
+**Ergebnis:** 7 fokussierte Services (~80-250 Zeilen je)
+**Aufwand:** Abgeschlossen am 2025-01-28
 
 #### Problem
 
@@ -445,17 +445,19 @@ Service vermischt Player-, Team-, Game- und Season-Statistiken mit viel Code-Dup
 
 **Betroffene Datei:** `app/Services/StatisticsService.php`
 
-#### Lösung: Service-Splitting nach Domain
+#### Lösung: Service-Splitting nach Verantwortung (7 Services)
 
-**Neue Struktur:**
+**Implementierte Struktur:**
 
 ```
 app/Services/Statistics/
-├── PlayerStatisticsCalculator.php  (~250 LOC)
-├── TeamStatisticsCalculator.php    (~250 LOC)
-├── GameStatisticsCalculator.php    (~200 LOC)
-├── SeasonStatisticsCalculator.php  (~200 LOC)
-└── StatisticsFacade.php            (~100 LOC)
+├── StatisticsService.php              # Facade/Orchestrator (~120 LOC)
+├── PlayerStatisticsService.php        # Spieler-Stats (~270 LOC)
+├── TeamStatisticsService.php          # Team-Stats (~280 LOC)
+├── GameStatisticsService.php          # Game-Level Stats (~80 LOC)
+├── AdvancedMetricsService.php         # Advanced Calculations (~200 LOC)
+├── ShotChartService.php               # Shot Chart & Zones (~120 LOC)
+└── StatisticsCacheManager.php         # Cache-Strategie (~130 LOC)
 ```
 
 **1. PlayerStatisticsCalculator.php**
@@ -2454,6 +2456,17 @@ public function test_stripe_sdk_works_after_update()
 ## 📝 CHANGELOG
 
 ### 2025-01-28
+- ✅ **REFACTOR-002 abgeschlossen**: StatisticsService (1,289 LOC) in 7 Services aufgeteilt
+  - Neue Services in `app/Services/Statistics/`
+  - StatisticsCacheManager: Cache-Strategie & Invalidierung
+  - AdvancedMetricsService: Komplexe Basketball-Metriken (TS%, PER, ORtg, DRtg)
+  - ShotChartService: Shot Chart & Zone-Analyse
+  - PlayerStatisticsService: Spieler-Stats mit Chunking
+  - TeamStatisticsService: Team-Stats & Analytics
+  - GameStatisticsService: Game-Level Stats
+  - StatisticsService: Facade/Orchestrator für Rückwärtskompatibilität
+  - Cache-Strategie (PERF-007, PERF-008) beibehalten
+
 - ✅ **REFACTOR-001 abgeschlossen**: AIVideoAnalysisService (1,077 LOC) in 7 Services aufgeteilt
   - Neue Services in `app/Services/ML/VideoAnalysis/`
   - Konfiguration extrahiert nach `config/video_analysis.php`
