@@ -12,6 +12,31 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Exception;
 
+/**
+ * DEPRECATED: AI Video Analysis Service (God Service)
+ *
+ * This class has been refactored as part of REFACTOR-001 in CODE_QUALITY_ROADMAP.md.
+ * It has been split into smaller, focused services following Single Responsibility Principle.
+ *
+ * NEW SERVICE STRUCTURE (app/Services/ML/VideoAnalysis/):
+ * - VideoAnalysisService.php        - Main facade/orchestrator (use this instead)
+ * - VideoAnalysisConfigService.php  - Configuration and validation
+ * - PythonScriptExecutorService.php - Python script execution
+ * - VideoFrameExtractionService.php - Frame extraction
+ * - VideoAnalysisResultProcessor.php - Result processing
+ * - VideoAnnotationGeneratorService.php - Annotation generation
+ * - VideoAnalysisReportService.php  - Report generation
+ *
+ * MIGRATION GUIDE:
+ * Replace: App\Services\AIVideoAnalysisService
+ * With:    App\Services\ML\VideoAnalysis\VideoAnalysisService
+ *
+ * The new VideoAnalysisService maintains the same public API for backward compatibility.
+ * An alias is registered in BasketManagerServiceProvider to ensure existing code continues to work.
+ *
+ * @deprecated since REFACTOR-001. Use \App\Services\ML\VideoAnalysis\VideoAnalysisService instead.
+ * @see \App\Services\ML\VideoAnalysis\VideoAnalysisService
+ */
 class AIVideoAnalysisService
 {
     /**

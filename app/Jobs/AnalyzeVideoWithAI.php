@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\VideoFile;
-use App\Services\AIVideoAnalysisService;
+use App\Services\ML\VideoAnalysis\VideoAnalysisService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -37,13 +37,13 @@ class AnalyzeVideoWithAI implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(AIVideoAnalysisService $aiVideoAnalysisService): void
+    public function handle(VideoAnalysisService $videoAnalysisService): void
     {
         Log::info("Starting AI video analysis job for video {$this->videoFile->id}");
-        
+
         try {
             // Perform AI analysis
-            $results = $aiVideoAnalysisService->analyzeVideo($this->videoFile, $this->analysisOptions);
+            $results = $videoAnalysisService->analyzeVideo($this->videoFile, $this->analysisOptions);
             
             Log::info("AI video analysis completed successfully for video {$this->videoFile->id}", [
                 'overall_confidence' => $results['overall_confidence'] ?? 'unknown',

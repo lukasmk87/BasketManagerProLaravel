@@ -20,6 +20,14 @@ use App\Services\PlayerService;
 use App\Services\EmergencyContactService;
 use App\Services\TwoFactorAuthService;
 use App\Services\LocalizationService;
+use App\Services\AIVideoAnalysisService;
+use App\Services\ML\VideoAnalysis\VideoAnalysisService;
+use App\Services\ML\VideoAnalysis\VideoAnalysisConfigService;
+use App\Services\ML\VideoAnalysis\PythonScriptExecutorService;
+use App\Services\ML\VideoAnalysis\VideoFrameExtractionService;
+use App\Services\ML\VideoAnalysis\VideoAnalysisResultProcessor;
+use App\Services\ML\VideoAnalysis\VideoAnnotationGeneratorService;
+use App\Services\ML\VideoAnalysis\VideoAnalysisReportService;
 use App\Observers\UserObserver;
 use App\Observers\TeamObserver;
 use App\Observers\PlayerObserver;
@@ -58,6 +66,9 @@ class BasketManagerServiceProvider extends ServiceProvider
         $this->app->singleton(TwoFactorAuthService::class);
         $this->app->singleton(LocalizationService::class);
 
+        // Register Video Analysis Services (REFACTOR-001)
+        $this->registerVideoAnalysisServices();
+
         // Register Repository Interfaces and Implementations
         $this->registerRepositories();
     }
@@ -95,6 +106,38 @@ class BasketManagerServiceProvider extends ServiceProvider
 
         // Register Event Listeners
         $this->registerEventListeners();
+    }
+
+    /**
+     * Register Video Analysis Services.
+     *
+     * REFACTOR-001: Extracted from AIVideoAnalysisService into smaller,
+     * focused services following Single Responsibility Principle.
+     */
+    protected function registerVideoAnalysisServices(): void
+    {
+        // Register sub-services as singletons
+        $this->app->singleton(VideoAnalysisConfigService::class);
+        $this->app->singleton(PythonScriptExecutorService::class);
+        $this->app->singleton(VideoFrameExtractionService::class);
+        $this->app->singleton(VideoAnalysisResultProcessor::class);
+        $this->app->singleton(VideoAnnotationGeneratorService::class);
+        $this->app->singleton(VideoAnalysisReportService::class);
+
+        // Register main orchestrator service with dependency injection
+        $this->app->singleton(VideoAnalysisService::class, function ($app) {
+            return new VideoAnalysisService(
+                $app->make(VideoFrameExtractionService::class),
+                $app->make(PythonScriptExecutorService::class),
+                $app->make(VideoAnalysisResultProcessor::class),
+                $app->make(VideoAnnotationGeneratorService::class),
+                $app->make(VideoAnalysisReportService::class),
+                $app->make(VideoAnalysisConfigService::class)
+            );
+        });
+
+        // Backward compatibility alias for existing code using AIVideoAnalysisService
+        $this->app->alias(VideoAnalysisService::class, AIVideoAnalysisService::class);
     }
 
     /**
@@ -405,6 +448,14 @@ class BasketManagerServiceProvider extends ServiceProvider
             EmergencyContactService::class,
             TwoFactorAuthService::class,
             LocalizationService::class,
+            // Video Analysis Services (REFACTOR-001)
+            VideoAnalysisService::class,
+            VideoAnalysisConfigService::class,
+            PythonScriptExecutorService::class,
+            VideoFrameExtractionService::class,
+            VideoAnalysisResultProcessor::class,
+            VideoAnnotationGeneratorService::class,
+            VideoAnalysisReportService::class,
         ];
     }
 }

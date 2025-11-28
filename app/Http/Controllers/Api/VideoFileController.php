@@ -9,7 +9,7 @@ use App\Http\Requests\UpdateVideoFileRequest;
 use App\Http\Resources\VideoFileResource;
 use App\Http\Resources\VideoFileCollection;
 use App\Services\VideoProcessingService;
-use App\Services\AIVideoAnalysisService;
+use App\Services\ML\VideoAnalysis\VideoAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +22,7 @@ class VideoFileController extends Controller
 {
     public function __construct(
         private VideoProcessingService $videoProcessingService,
-        private AIVideoAnalysisService $aiVideoAnalysisService
+        private VideoAnalysisService $videoAnalysisService
     ) {}
 
     /**
@@ -363,7 +363,7 @@ class VideoFileController extends Controller
                 'capabilities.shot_analysis' => 'array',
             ]);
 
-            $this->aiVideoAnalysisService->queueAnalysis($videoFile, $analysisOptions);
+            $this->videoAnalysisService->queueAnalysis($videoFile, $analysisOptions);
 
             activity()
                 ->causedBy(Auth::user())
@@ -406,7 +406,7 @@ class VideoFileController extends Controller
         }
 
         try {
-            $report = $this->aiVideoAnalysisService->generateAnalysisReport($videoFile);
+            $report = $this->videoAnalysisService->generateAnalysisReport($videoFile);
 
             return response()->json([
                 'data' => $report
@@ -490,7 +490,7 @@ class VideoFileController extends Controller
                     case 'start_ai_analysis':
                         if ($video->processing_status === 'completed' && 
                             $video->ai_analysis_status !== 'in_progress') {
-                            $this->aiVideoAnalysisService->queueAnalysis($video, $options);
+                            $this->videoAnalysisService->queueAnalysis($video, $options);
                             $results['success']++;
                         } else {
                             $results['errors'][] = "Video {$video->id}: Nicht bereit für AI-Analyse";
