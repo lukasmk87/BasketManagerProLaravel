@@ -13,12 +13,12 @@
 | Kategorie | Anzahl | Sprint | Aufwand | Fortschritt |
 |-----------|--------|--------|---------|-------------|
 | **God Services Refactoring** | 5 | Sprint 4 | 40-60h | 5/5 ✅ |
-| **God Controllers Refactoring** | 5 | Sprint 4 | 20-30h | 0/5 |
+| **God Controllers Refactoring** | 5 | Sprint 4 | 20-30h | 3/5 |
 | **Architektur-Verbesserungen** | 10 | Sprint 5 | 30-40h | 0/10 |
-| **Fehlende Features** | 8 | Sprint 6 | 20-30h | 0/8 |
+| **Fehlende Features** | 8 | Sprint 6 | 20-30h | 1/8 |
 | **Dependency Updates** | 6 | Sprint 7 | 12-18h | 0/6 |
 | **Dokumentation** | 5 | Sprint 8 | 8-12h | 0/5 |
-| **Gesamt** | **39** | **5 Sprints** | **130-190h** | **5/39** |
+| **Gesamt** | **39** | **5 Sprints** | **130-190h** | **9/39** |
 
 ---
 
@@ -1391,15 +1391,105 @@ Route::middleware(['auth', 'verified'])->prefix('gym')->group(function () {
 
 ---
 
-### REFACTOR-007 bis REFACTOR-010
+### REFACTOR-007: ClubAdminPanelController splitten ✅ ERLEDIGT
+
+**Status:** ✅ Erledigt am 2025-11-28
+**Schweregrad:** 🟠 HOCH
+**Ursprüngliche Größe:** 1,456 Zeilen
+**Ergebnis:** 8 fokussierte Controller + Financial Tracking Feature
+**Aufwand:** ~6 Stunden
+
+#### Problem
+
+God Controller mit zu vielen Verantwortlichkeiten:
+- Dashboard & Statistiken
+- Settings Management
+- Members CRUD
+- Teams CRUD
+- Players CRUD
+- Financial Management (TODO)
+- Reports & Statistics
+- Subscriptions Management
+
+**Betroffene Datei:** `app/Http/Controllers/ClubAdminPanelController.php`
+
+#### Lösung: Controller-Splitting (8 Controller) + Financial Feature
+
+**Implementierte Struktur:**
+
+```
+app/Http/Controllers/ClubAdmin/
+├── ClubAdminDashboardController.php        (~230 LOC) - Single Action __invoke()
+├── ClubSettingsController.php              (~90 LOC) - index, update
+├── ClubMemberController.php                (~280 LOC) - index, create, store, edit, update, sendPasswordReset
+├── ClubTeamAdminController.php             (~240 LOC) - index, create, store, edit, update
+├── ClubPlayerAdminController.php           (~280 LOC) - index, create, store, edit, update
+├── ClubFinancialController.php             (~300 LOC) - index, create, store, show, destroy, export, yearlyReport
+├── ClubReportsController.php               (~60 LOC) - Single Action __invoke()
+└── ClubSubscriptionAdminController.php     (~110 LOC) - index, update
+```
+
+**Zusätzlich implementiert (Financial Tracking Feature):**
+
+```
+app/Models/ClubTransaction.php              (~150 LOC) - Model mit Scopes & Helpers
+app/Services/Club/ClubFinancialService.php  (~200 LOC) - Service für Transaktionen
+database/migrations/..._create_club_transactions_table.php
+
+app/Http/Requests/ClubAdmin/
+├── UpdateClubSettingsRequest.php
+├── StoreClubMemberRequest.php
+├── UpdateClubMemberRequest.php
+├── StoreClubTeamRequest.php
+├── UpdateClubTeamRequest.php
+├── StoreClubPlayerRequest.php
+├── UpdateClubPlayerRequest.php
+├── StoreClubTransactionRequest.php
+└── UpdateClubSubscriptionRequest.php
+
+resources/js/Pages/ClubAdmin/Financial/
+├── Index.vue                               - Vollständige Finanzübersicht
+├── Create.vue                              - Neue Transaktion erstellen
+├── Show.vue                                - Transaktionsdetails
+└── YearlyReport.vue                        - Jahresbericht
+```
+
+**Routes aktualisiert:** `routes/club_admin.php`
+- Modulare Struktur mit Prefix-Gruppen
+- Backward-Kompatibilitäts-Aliase für alte Route-Namen
+
+**Controller-Verantwortlichkeiten:**
+
+1. **ClubAdminDashboardController**: Dashboard mit Storage-Usage, Teams, Upcoming Games, Recent Members
+2. **ClubSettingsController**: Club-Einstellungen anzeigen und aktualisieren
+3. **ClubMemberController**: Mitglieder CRUD + Password Reset
+4. **ClubTeamAdminController**: Teams CRUD mit Coach-Zuweisung
+5. **ClubPlayerAdminController**: Spieler CRUD mit Team-Zuweisung
+6. **ClubFinancialController**: **NEU** - Vollständige Finanzverwaltung mit Transaktionen, Reports, Export
+7. **ClubReportsController**: Club-Statistiken und Reports
+8. **ClubSubscriptionAdminController**: Subscription Plan Management
+
+#### Checklist
+
+- [x] 8 neue Controller erstellt (6 ursprünglich geplant + 2 zusätzliche)
+- [x] 9 Form Request Klassen erstellt
+- [x] Routes in club_admin.php aktualisiert
+- [x] Backward-Kompatibilitäts-Aliase hinzugefügt
+- [x] Financial Tracking Feature implementiert (war TODO)
+- [x] ClubTransaction Model erstellt
+- [x] ClubFinancialService erstellt
+- [x] Migration für club_transactions Tabelle
+- [x] 4 Vue Components für Financial Module
+- [x] Alter ClubAdminPanelController gelöscht
+- [x] Bug in updateTeam() behoben ($primaryClub undefiniert)
+- [x] Unit Tests erstellt (33 Tests: ClubFinancialServiceTest 16 Tests, ClubTransactionTest 17 Tests)
+- [x] ClubTransactionFactory erstellt
+
+---
+
+### REFACTOR-008 bis REFACTOR-010
 
 *Weitere God Controllers (verkürzt):*
-
-**REFACTOR-007: ClubAdminPanelController** (1,363 LOC → 4 Controller)
-- `ClubAdminDashboardController`
-- `ClubMembershipController`
-- `ClubFinancialsController`
-- `ClubReportsController`
 
 **REFACTOR-008: PWAController** (877 LOC → 3 Controller)
 - `PWAManifestController`
@@ -2454,7 +2544,7 @@ public function test_stripe_sdk_works_after_update()
 - [x] REFACTOR-003: SubscriptionAnalyticsService splitten (8-12h) ✅ Erledigt 2025-11-28
 - [x] REFACTOR-004: GymScheduleService splitten (6-10h) ✅ Erledigt 2025-11-28
 - [x] REFACTOR-006: GymManagementController splitten (6-8h) ✅ Erledigt 2025-11-28
-- [ ] REFACTOR-007: ClubAdminPanelController splitten (8-10h)
+- [x] REFACTOR-007: ClubAdminPanelController splitten (8-10h) ✅ Erledigt 2025-11-28
 - [ ] REFACTOR-009: Fat Models reduzieren (10-14h)
 
 **Definition of Done:**
@@ -2614,6 +2704,26 @@ public function test_stripe_sdk_works_after_update()
 ---
 
 ## 📝 CHANGELOG
+
+### 2025-11-28 (Fortsetzung)
+- ✅ **REFACTOR-007 abgeschlossen**: ClubAdminPanelController (1,456 LOC) in 8 Controller aufgeteilt
+  - Neue Controller in `app/Http/Controllers/ClubAdmin/`
+  - ClubAdminDashboardController: Single Action Dashboard mit Storage-Usage (~230 LOC)
+  - ClubSettingsController: Settings CRUD (~90 LOC)
+  - ClubMemberController: Members CRUD + Password Reset (~280 LOC)
+  - ClubTeamAdminController: Teams CRUD (~240 LOC)
+  - ClubPlayerAdminController: Players CRUD (~280 LOC)
+  - ClubFinancialController: **NEU** - Vollständige Finanzverwaltung (~300 LOC)
+  - ClubReportsController: Single Action Reports (~60 LOC)
+  - ClubSubscriptionAdminController: Subscriptions Management (~110 LOC)
+  - 9 Form Request Klassen erstellt
+  - Financial Tracking Feature komplett implementiert (FEATURE-003)
+  - ClubTransaction Model + ClubFinancialService + Migration
+  - 4 Vue Components für Financial Module
+  - Routes aktualisiert mit Backward-Kompatibilitäts-Aliase
+  - Alter ClubAdminPanelController gelöscht
+  - Unit Tests erstellt: 33 Tests (ClubFinancialServiceTest 16 Tests, ClubTransactionTest 17 Tests)
+  - ClubTransactionFactory erstellt
 
 ### 2025-11-28
 - ✅ **REFACTOR-005 abgeschlossen**: ClubService (829 LOC) in 4 Services aufgeteilt

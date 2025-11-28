@@ -1,6 +1,13 @@
 <?php
 
-use App\Http\Controllers\ClubAdminPanelController;
+use App\Http\Controllers\ClubAdmin\ClubAdminDashboardController;
+use App\Http\Controllers\ClubAdmin\ClubFinancialController;
+use App\Http\Controllers\ClubAdmin\ClubMemberController;
+use App\Http\Controllers\ClubAdmin\ClubPlayerAdminController;
+use App\Http\Controllers\ClubAdmin\ClubReportsController;
+use App\Http\Controllers\ClubAdmin\ClubSettingsController;
+use App\Http\Controllers\ClubAdmin\ClubSubscriptionAdminController;
+use App\Http\Controllers\ClubAdmin\ClubTeamAdminController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -12,6 +19,9 @@ use Illuminate\Support\Facades\Route;
 | and club-related resources. All routes require authentication and
 | club_admin role.
 |
+| REFACTOR-007: Split from single ClubAdminPanelController into 8
+| focused controllers for better maintainability and single responsibility.
+|
 */
 
 Route::prefix('club-admin')
@@ -19,68 +29,103 @@ Route::prefix('club-admin')
     ->middleware(['auth', 'verified', 'role:club_admin|admin|super_admin'])
     ->group(function () {
 
-        // Dashboard
-        Route::get('/', [ClubAdminPanelController::class, 'dashboard'])
+        // Dashboard (Single Action Controller)
+        Route::get('/', ClubAdminDashboardController::class)
             ->name('dashboard');
 
         // Settings
-        Route::get('/settings', [ClubAdminPanelController::class, 'settings'])
+        Route::get('/settings', [ClubSettingsController::class, 'index'])
             ->name('settings');
-        Route::put('/settings', [ClubAdminPanelController::class, 'updateSettings'])
+        Route::put('/settings', [ClubSettingsController::class, 'update'])
             ->name('settings.update');
 
         // Members Management
-        Route::get('/members', [ClubAdminPanelController::class, 'members'])
-            ->name('members');
-        Route::get('/members/create', [ClubAdminPanelController::class, 'createMember'])
-            ->name('members.create');
-        Route::post('/members', [ClubAdminPanelController::class, 'storeMember'])
-            ->name('members.store');
-        Route::get('/members/{user}/edit', [ClubAdminPanelController::class, 'editMember'])
-            ->name('members.edit');
-        Route::put('/members/{user}', [ClubAdminPanelController::class, 'updateMember'])
-            ->name('members.update');
-        Route::post('/members/{user}/send-password-reset', [ClubAdminPanelController::class, 'sendPasswordReset'])
-            ->name('members.send-password-reset');
+        Route::prefix('members')->name('members.')->group(function () {
+            Route::get('/', [ClubMemberController::class, 'index'])
+                ->name('index');
+            Route::get('/create', [ClubMemberController::class, 'create'])
+                ->name('create');
+            Route::post('/', [ClubMemberController::class, 'store'])
+                ->name('store');
+            Route::get('/{member}/edit', [ClubMemberController::class, 'edit'])
+                ->name('edit');
+            Route::put('/{member}', [ClubMemberController::class, 'update'])
+                ->name('update');
+            Route::post('/{member}/send-password-reset', [ClubMemberController::class, 'sendPasswordReset'])
+                ->name('send-password-reset');
+        });
 
         // Teams Management
-        Route::get('/teams', [ClubAdminPanelController::class, 'teams'])
-            ->name('teams');
-        Route::get('/teams/create', [ClubAdminPanelController::class, 'createTeam'])
-            ->name('teams.create');
-        Route::post('/teams', [ClubAdminPanelController::class, 'storeTeam'])
-            ->name('teams.store');
-        Route::get('/teams/{team}/edit', [ClubAdminPanelController::class, 'editTeam'])
-            ->name('teams.edit');
-        Route::put('/teams/{team}', [ClubAdminPanelController::class, 'updateTeam'])
-            ->name('teams.update');
+        Route::prefix('teams')->name('teams.')->group(function () {
+            Route::get('/', [ClubTeamAdminController::class, 'index'])
+                ->name('index');
+            Route::get('/create', [ClubTeamAdminController::class, 'create'])
+                ->name('create');
+            Route::post('/', [ClubTeamAdminController::class, 'store'])
+                ->name('store');
+            Route::get('/{team}/edit', [ClubTeamAdminController::class, 'edit'])
+                ->name('edit');
+            Route::put('/{team}', [ClubTeamAdminController::class, 'update'])
+                ->name('update');
+        });
 
         // Players Management
-        Route::get('/players', [ClubAdminPanelController::class, 'players'])
-            ->name('players');
-        Route::get('/players/create', [ClubAdminPanelController::class, 'createPlayer'])
-            ->name('players.create');
-        Route::post('/players', [ClubAdminPanelController::class, 'storePlayer'])
-            ->name('players.store');
-        Route::get('/players/{player}/edit', [ClubAdminPanelController::class, 'editPlayer'])
-            ->name('players.edit');
-        Route::put('/players/{player}', [ClubAdminPanelController::class, 'updatePlayer'])
-            ->name('players.update');
+        Route::prefix('players')->name('players.')->group(function () {
+            Route::get('/', [ClubPlayerAdminController::class, 'index'])
+                ->name('index');
+            Route::get('/create', [ClubPlayerAdminController::class, 'create'])
+                ->name('create');
+            Route::post('/', [ClubPlayerAdminController::class, 'store'])
+                ->name('store');
+            Route::get('/{player}/edit', [ClubPlayerAdminController::class, 'edit'])
+                ->name('edit');
+            Route::put('/{player}', [ClubPlayerAdminController::class, 'update'])
+                ->name('update');
+        });
 
         // Financial Management
-        Route::get('/financial', [ClubAdminPanelController::class, 'financial'])
-            ->name('financial');
+        Route::prefix('financial')->name('financial.')->group(function () {
+            Route::get('/', [ClubFinancialController::class, 'index'])
+                ->name('index');
+            Route::get('/create', [ClubFinancialController::class, 'create'])
+                ->name('create');
+            Route::post('/', [ClubFinancialController::class, 'store'])
+                ->name('store');
+            Route::get('/export', [ClubFinancialController::class, 'export'])
+                ->name('export');
+            Route::get('/yearly-report', [ClubFinancialController::class, 'yearlyReport'])
+                ->name('yearly-report');
+            Route::get('/{transaction}', [ClubFinancialController::class, 'show'])
+                ->name('show');
+            Route::delete('/{transaction}', [ClubFinancialController::class, 'destroy'])
+                ->name('destroy');
+        });
 
-        // Reports & Statistics
-        Route::get('/reports', [ClubAdminPanelController::class, 'reports'])
+        // Reports & Statistics (Single Action Controller)
+        Route::get('/reports', ClubReportsController::class)
             ->name('reports');
 
         // Subscriptions
-        Route::get('/subscriptions', [ClubAdminPanelController::class, 'subscriptions'])
-            ->name('subscriptions');
-        Route::put('/subscriptions', [ClubAdminPanelController::class, 'updateSubscription'])
-            ->name('subscriptions.update');
+        Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
+            Route::get('/', [ClubSubscriptionAdminController::class, 'index'])
+                ->name('index');
+            Route::put('/', [ClubSubscriptionAdminController::class, 'update'])
+                ->name('update');
+        });
 
         // Note: Pending Players routes are already defined in routes/player_registration.php
         // They are accessible via 'club-admin.pending-players.*' route names
+
+        // Backward compatibility aliases for old route names (REFACTOR-007)
+        // These can be removed after updating all Vue components
+        Route::get('/members', [ClubMemberController::class, 'index'])
+            ->name('members');
+        Route::get('/teams', [ClubTeamAdminController::class, 'index'])
+            ->name('teams');
+        Route::get('/players', [ClubPlayerAdminController::class, 'index'])
+            ->name('players');
+        Route::get('/financial', [ClubFinancialController::class, 'index'])
+            ->name('financial');
+        Route::get('/subscriptions', [ClubSubscriptionAdminController::class, 'index'])
+            ->name('subscriptions');
     });
