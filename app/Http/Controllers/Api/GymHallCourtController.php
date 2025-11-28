@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\GymHall;
 use App\Models\GymHallCourt;
-use App\Services\GymScheduleService;
+use App\Services\Gym\GymScheduleOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
@@ -13,12 +13,9 @@ use Carbon\Carbon;
 
 class GymHallCourtController extends Controller
 {
-    protected GymScheduleService $gymScheduleService;
-
-    public function __construct(GymScheduleService $gymScheduleService)
-    {
-        $this->gymScheduleService = $gymScheduleService;
-    }
+    public function __construct(
+        protected GymScheduleOptimizer $optimizer
+    ) {}
 
     /**
      * Display a listing of courts for a gym hall.
@@ -293,7 +290,7 @@ class GymHallCourtController extends Controller
             ], 400);
         }
 
-        $schedule = $this->gymScheduleService->getCourtSchedule($gymHall, $startDate, $endDate);
+        $schedule = $this->optimizer->getCourtSchedule($gymHall, $startDate, $endDate);
 
         return response()->json([
             'success' => true,
@@ -326,7 +323,7 @@ class GymHallCourtController extends Controller
         $date = Carbon::parse($validated['date']);
         $slotDuration = $validated['slot_duration'] ?? 30;
 
-        $timeGrid = $this->gymScheduleService->generateDailyTimeGrid($gymHall, $date, $slotDuration);
+        $timeGrid = $this->optimizer->generateDailyTimeGrid($gymHall, $date, $slotDuration);
 
         return response()->json([
             'success' => true,
@@ -361,7 +358,7 @@ class GymHallCourtController extends Controller
         $duration = $validated['duration'] ?? 30;
         $teamCount = $validated['team_count'] ?? 1;
 
-        $availableSlots = $this->gymScheduleService->findAvailableSlots($gymHall, $date, $duration, $teamCount);
+        $availableSlots = $this->optimizer->findAvailableSlots($gymHall, $date, $duration, $teamCount);
 
         return response()->json([
             'success' => true,

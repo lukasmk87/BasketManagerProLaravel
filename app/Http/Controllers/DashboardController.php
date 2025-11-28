@@ -7,7 +7,7 @@ use App\Models\Game;
 use App\Models\Player;
 use App\Models\Team;
 use App\Models\User;
-use App\Services\ClubService;
+use App\Services\Club\ClubStatisticsService;
 use App\Services\PlayerService;
 use App\Services\StatisticsService;
 use App\Services\TeamService;
@@ -23,7 +23,7 @@ class DashboardController extends Controller
         private UserService $userService,
         private TeamService $teamService,
         private PlayerService $playerService,
-        private ClubService $clubService,
+        private ClubStatisticsService $clubStatisticsService,
         private StatisticsService $statisticsService
     ) {}
 
@@ -174,7 +174,7 @@ class DashboardController extends Controller
             }
 
             $primaryClub = $adminClubs->first();
-            $clubStats = $this->clubService->getClubStatistics($primaryClub);
+            $clubStats = $this->clubStatisticsService->getClubStatistics($primaryClub);
 
             return [
                 'primary_club' => [

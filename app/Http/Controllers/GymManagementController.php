@@ -8,7 +8,6 @@ use App\Models\GymBookingRequest;
 use App\Models\GymTimeSlot;
 use App\Models\GymTimeSlotTeamAssignment;
 use App\Models\Team;
-use App\Services\GymScheduleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
@@ -19,9 +18,6 @@ use Inertia\Response;
 
 class GymManagementController extends Controller
 {
-    public function __construct(
-        private GymScheduleService $gymScheduleService
-    ) {}
 
     /**
      * Display the gym management dashboard.

@@ -12,13 +12,13 @@
 
 | Kategorie | Anzahl | Sprint | Aufwand | Fortschritt |
 |-----------|--------|--------|---------|-------------|
-| **God Services Refactoring** | 5 | Sprint 4 | 40-60h | 2/5 ✅ |
+| **God Services Refactoring** | 5 | Sprint 4 | 40-60h | 5/5 ✅ |
 | **God Controllers Refactoring** | 5 | Sprint 4 | 20-30h | 0/5 |
 | **Architektur-Verbesserungen** | 10 | Sprint 5 | 30-40h | 0/10 |
 | **Fehlende Features** | 8 | Sprint 6 | 20-30h | 0/8 |
 | **Dependency Updates** | 6 | Sprint 7 | 12-18h | 0/6 |
 | **Dokumentation** | 5 | Sprint 8 | 8-12h | 0/5 |
-| **Gesamt** | **39** | **5 Sprints** | **130-190h** | **2/39** |
+| **Gesamt** | **39** | **5 Sprints** | **130-190h** | **5/39** |
 
 ---
 
@@ -827,25 +827,181 @@ $stats = app('statistics')->getPlayerStats($player, season: $season);
 
 ---
 
-### REFACTOR-003 bis REFACTOR-005
+### REFACTOR-003: SubscriptionAnalyticsService splitten ✅ ERLEDIGT
 
-*Weitere God Services (verkürzt):*
+**Schweregrad:** 🟠 HOCH
+**Ursprüngliche Größe:** 851 Zeilen
+**Ergebnis:** 6 fokussierte Services (~80-220 Zeilen je)
+**Aufwand:** Abgeschlossen am 2025-11-28
 
-**REFACTOR-003: SubscriptionAnalyticsService** (851 LOC → 3 Services)
-- `MRRCalculator.php` (300 LOC)
-- `ChurnAnalyzer.php` (280 LOC)
-- `CohortAnalyticsService.php` (250 LOC)
+#### Problem
 
-**REFACTOR-004: GymScheduleService** (756 LOC → 3 Services)
-- `GymBookingService.php`
-- `GymConflictDetector.php`
-- `GymScheduleOptimizer.php`
+God Service mit zu vielen Verantwortlichkeiten:
+- MRR-Berechnung (Club & Tenant-Level)
+- Churn-Analyse (Customer & Revenue Churn)
+- LTV-Berechnung (Lifetime Value & Cohort)
+- Health-Metriken (Trial Conversion, Upgrades)
+- Cache-Management
 
-**REFACTOR-005: ClubService** (829 LOC → 4 Services)
-- `ClubManager.php` (CRUD)
-- `ClubMembershipService.php`
-- `ClubStatisticsService.php`
-- `ClubUsageService.php`
+**Betroffene Datei:** `app/Services/Stripe/SubscriptionAnalyticsService.php`
+
+#### Lösung: Service-Splitting nach Verantwortung (6 Services)
+
+**Implementierte Struktur:**
+
+```
+app/Services/Stripe/Analytics/
+├── SubscriptionAnalyticsService.php       # Facade/Orchestrator (~120 LOC)
+├── AnalyticsCacheManager.php              # Cache-Strategie (~80 LOC)
+├── MRRCalculatorService.php               # MRR-Berechnungen (~220 LOC)
+├── ChurnAnalyzerService.php               # Churn-Analyse (~180 LOC)
+├── LTVCalculatorService.php               # LTV & Cohorts (~200 LOC)
+└── SubscriptionHealthMetricsService.php   # Health-Metriken (~130 LOC)
+```
+
+**Service-Verantwortlichkeiten:**
+
+1. **AnalyticsCacheManager**: Cache-Keys, TTLs, Invalidierung
+2. **MRRCalculatorService**: calculateClubMRR, calculateTenantMRR, getHistoricalMRR, getMRRGrowthRate, getMRRByPlan
+3. **ChurnAnalyzerService**: calculateMonthlyChurnRate, getChurnByPlan, getChurnReasons, calculateRevenueChurn
+4. **LTVCalculatorService**: calculateAverageLTV, getLTVByPlan, getCohortAnalysis, getCustomerLifetimeStats
+5. **SubscriptionHealthMetricsService**: getActiveSubscriptionsCount, getTrialConversionRate, getAverageSubscriptionDuration, getUpgradeDowngradeRates, getHealthScore
+6. **SubscriptionAnalyticsService**: Facade mit rückwärtskompatibler API
+
+#### Checklist
+
+- [x] 6 neue Service-Klassen erstellt
+- [x] `SubscriptionAnalyticsService` als Orchestrator (Facade)
+- [x] Bestehende Logik migriert
+- [x] AppServiceProvider.php aktualisiert (Singleton-Bindings & Alias)
+- [x] Alte Klasse als deprecated markiert (extends neue Facade)
+- [x] Rückwärtskompatibilität über Alias gewährleistet
+- [ ] Unit Tests (ausstehend - existierende Tests sollten weiterhin funktionieren)
+- [ ] Nach 4 Wochen alte Klasse löschen
+
+---
+
+### REFACTOR-004: GymScheduleService splitten ✅ ERLEDIGT
+
+**Schweregrad:** 🟠 HOCH
+**Ursprüngliche Größe:** 756 Zeilen
+**Ergebnis:** 4 fokussierte Services (~100-280 Zeilen je)
+**Aufwand:** Abgeschlossen am 2025-11-28
+
+#### Problem
+
+God Service mit zu vielen Verantwortlichkeiten:
+- Buchungs-Lifecycle (release, request, approve, reject, cancel)
+- Konflikt-Erkennung & Validierung
+- TimeSlot-Verwaltung & Slot-Optimierung
+- Statistiken & Reports
+
+**Betroffene Datei:** `app/Services/GymScheduleService.php`
+
+#### Lösung: Service-Splitting nach Verantwortung (4 Services)
+
+**Implementierte Struktur:**
+
+```
+app/Services/Gym/
+├── GymConflictDetector.php         (~120 LOC) - Konflikt-Erkennung & Validierung
+├── GymBookingService.php           (~180 LOC) - Buchungs-Lifecycle & Anfragen
+├── GymScheduleOptimizer.php        (~280 LOC) - Slot-Optimierung & Generierung
+└── GymStatisticsService.php        (~100 LOC) - Statistiken & Reports
+```
+
+**Service-Verantwortlichkeiten:**
+
+1. **GymConflictDetector**: getTimeSlotConflicts, validateTimeSlot, validateFlexibleBookingTime, validateCourtSelection
+2. **GymBookingService**: releaseBooking, requestBooking, approveBookingRequest, rejectBookingRequest, cancelBooking, getAvailableTimeSlotsForTeam, getPendingRequestsForTeam, getRequestsByTeam, canUserReleaseBooking, canUserCancelBooking, processExpiredRequests
+3. **GymScheduleOptimizer**: createTimeSlot, assignTimeSlotToTeam, generateBookingsForTimeSlot, generateDailyTimeGrid, findAvailableSlots, createMultiCourtBooking, getCourtSchedule, getOptimalCourtAssignments, generateFlexibleBookings
+4. **GymStatisticsService**: getClubWeeklySchedule, getClubUtilizationStats, processPastBookings, getTeamBookingStats
+
+**Controller-Migration:**
+- `GymManagementController.php` - Ungenutzte Dependency entfernt
+- `GymHallController.php` - Verwendet jetzt `GymScheduleOptimizer`
+- `GymHallCourtController.php` - Verwendet jetzt `GymScheduleOptimizer`
+
+**Unit Tests erstellt:**
+```
+tests/Unit/Services/Gym/
+├── GymConflictDetectorTest.php
+├── GymBookingServiceTest.php
+├── GymScheduleOptimizerTest.php
+└── GymStatisticsServiceTest.php
+```
+
+#### Checklist
+
+- [x] 4 neue Service-Klassen erstellt
+- [x] `GymScheduleOptimizer` injiziert `GymConflictDetector`
+- [x] Controller auf neue Services migriert
+- [x] Alte `GymScheduleService` gelöscht
+- [x] Unit Tests erstellt (4 Test-Dateien)
+- [x] Rückwärtskompatibilität durch direkte Migration
+
+---
+
+### REFACTOR-005: ClubService splitten ✅ ERLEDIGT
+
+**Schweregrad:** 🟠 HOCH
+**Ursprüngliche Größe:** 829 Zeilen
+**Ergebnis:** 4 fokussierte Services (~90-280 Zeilen je)
+**Aufwand:** Abgeschlossen am 2025-11-28
+
+#### Problem
+
+God Service mit zu vielen Verantwortlichkeiten:
+- CRUD-Operationen (createClub, updateClub, deleteClub)
+- Mitgliederverwaltung (addMemberToClub, removeMemberFromClub)
+- Statistiken & Reports (getClubStatistics, generateClubReport)
+- Subscription-Plan-Management
+- Logo-Upload/Delete
+
+**Betroffene Datei:** `app/Services/ClubService.php`
+
+#### Lösung: Service-Splitting nach Verantwortung (4 Services)
+
+**Implementierte Struktur:**
+
+```
+app/Services/Club/
+├── ClubCrudService.php               (~250 LOC) - CRUD + Logo-Operationen
+├── ClubMembershipService.php         (~110 LOC) - Mitgliederverwaltung
+├── ClubStatisticsService.php         (~280 LOC) - Statistiken & Reports
+└── ClubSubscriptionPlanService.php   (~90 LOC) - Plan-Management
+```
+
+**Service-Verantwortlichkeiten:**
+
+1. **ClubCrudService**: createClub, updateClub, deleteClub, uploadClubLogo, deleteClubLogo, generateUniqueSlug
+2. **ClubMembershipService**: addMemberToClub, removeMemberFromClub
+3. **ClubStatisticsService**: getClubStatistics, generateClubReport, getClubSeasons, verifyClub, generateEmergencyQRData
+4. **ClubSubscriptionPlanService**: createClubPlan, updateClubPlan, assignPlanToClub, getClubsWithoutPlan, getClubUsageStats
+
+**Controller-Migration:**
+- `ClubController.php` - Verwendet ClubCrudService + ClubStatisticsService
+- `ClubAdminPanelController.php` - Verwendet ClubStatisticsService
+- `DashboardController.php` - Verwendet ClubStatisticsService
+- `Api/V2/ClubController.php` - Verwendet ClubCrudService
+- `OnboardingService.php` - Verwendet ClubCrudService
+
+**Unit Tests erstellt:**
+```
+tests/Unit/Services/Club/
+├── ClubCrudServiceTest.php
+├── ClubMembershipServiceTest.php
+├── ClubStatisticsServiceTest.php
+└── ClubSubscriptionPlanServiceTest.php
+```
+
+#### Checklist
+
+- [x] 4 neue Service-Klassen erstellt
+- [x] Controller direkt auf neue Services migriert (keine Facade)
+- [x] AppServiceProvider.php mit Singleton-Bindings aktualisiert
+- [x] Alte `ClubService.php` gelöscht
+- [x] Unit Tests erstellt (4 Test-Dateien)
 
 ---
 
@@ -2291,8 +2447,9 @@ public function test_stripe_sdk_works_after_update()
 
 **Aufgaben:**
 - [x] REFACTOR-001: AIVideoAnalysisService splitten (12-16h) ✅ Erledigt 2025-01-28
-- [ ] REFACTOR-002: StatisticsService splitten (10-14h)
-- [ ] REFACTOR-003: SubscriptionAnalyticsService splitten (8-12h)
+- [x] REFACTOR-002: StatisticsService splitten (10-14h) ✅ Erledigt 2025-01-28
+- [x] REFACTOR-003: SubscriptionAnalyticsService splitten (8-12h) ✅ Erledigt 2025-11-28
+- [x] REFACTOR-004: GymScheduleService splitten (6-10h) ✅ Erledigt 2025-11-28
 - [ ] REFACTOR-006: GymManagementController splitten (6-8h)
 - [ ] REFACTOR-007: ClubAdminPanelController splitten (8-10h)
 - [ ] REFACTOR-009: Fat Models reduzieren (10-14h)
@@ -2385,7 +2542,7 @@ public function test_stripe_sdk_works_after_update()
 ### Code Quality KPIs
 
 **Vorher:**
-- ❌ 5 God Services (>800 LOC) → **4 verbleibend** (AIVideoAnalysisService refactored ✅)
+- ❌ 5 God Services (>800 LOC) → **1 verbleibend** (AIVideoAnalysisService, StatisticsService, SubscriptionAnalyticsService, GymScheduleService refactored ✅)
 - ❌ 5 God Controllers (>800 LOC)
 - ❌ 20+ Service Locator Aufrufe
 - ❌ 1 Interface nur
@@ -2447,13 +2604,46 @@ public function test_stripe_sdk_works_after_update()
 
 ---
 
-**Letzte Aktualisierung:** 2025-01-28
+**Letzte Aktualisierung:** 2025-11-28
 **Nächstes Review:** Nach Sprint 4 Completion
 **Maintainer:** Development Team
 
 ---
 
 ## 📝 CHANGELOG
+
+### 2025-11-28
+- ✅ **REFACTOR-005 abgeschlossen**: ClubService (829 LOC) in 4 Services aufgeteilt
+  - Neue Services in `app/Services/Club/`
+  - ClubCrudService: CRUD-Operationen, Logo-Management, Slug-Generierung (6 Methoden)
+  - ClubMembershipService: Mitgliederverwaltung, Rollen-Zuweisung (2 Methoden)
+  - ClubStatisticsService: Statistiken, Reports, QR-Daten, Verifizierung (6 Methoden)
+  - ClubSubscriptionPlanService: Abo-Pläne, Club-Zuweisungen, Usage-Stats (5 Methoden)
+  - Controller migriert: ClubController, ClubAdminPanelController, DashboardController, Api/V2/ClubController
+  - Services migriert: OnboardingService
+  - Alte ClubService gelöscht (keine Facade - direkte Migration)
+  - Unit Tests erstellt (4 Test-Dateien)
+
+- ✅ **REFACTOR-004 abgeschlossen**: GymScheduleService (756 LOC) in 4 Services aufgeteilt
+  - Neue Services in `app/Services/Gym/`
+  - GymConflictDetector: Konflikt-Erkennung & Validierung (4 Methoden)
+  - GymBookingService: Buchungs-Lifecycle & Anfragen (11 Methoden)
+  - GymScheduleOptimizer: Slot-Optimierung & Generierung (9 Methoden)
+  - GymStatisticsService: Statistiken & Reports (4 Methoden)
+  - Controller migriert: GymManagementController, GymHallController, GymHallCourtController
+  - Alte GymScheduleService gelöscht (keine Facade - direkte Migration)
+  - Unit Tests erstellt (4 Test-Dateien)
+
+- ✅ **REFACTOR-003 abgeschlossen**: SubscriptionAnalyticsService (851 LOC) in 6 Services aufgeteilt
+  - Neue Services in `app/Services/Stripe/Analytics/`
+  - AnalyticsCacheManager: Cache-Keys, TTLs, Invalidierung
+  - MRRCalculatorService: MRR-Berechnungen (Club & Tenant-Level)
+  - ChurnAnalyzerService: Churn-Analyse (Customer & Revenue)
+  - LTVCalculatorService: LTV & Cohort-Analysen
+  - SubscriptionHealthMetricsService: Health-Metriken (Trial, Upgrades)
+  - SubscriptionAnalyticsService: Facade/Orchestrator für Rückwärtskompatibilität
+  - AppServiceProvider mit Singleton-Bindings und Alias aktualisiert
+  - Alte Klasse als deprecated markiert (extends neue Facade)
 
 ### 2025-01-28
 - ✅ **REFACTOR-002 abgeschlossen**: StatisticsService (1,289 LOC) in 7 Services aufgeteilt

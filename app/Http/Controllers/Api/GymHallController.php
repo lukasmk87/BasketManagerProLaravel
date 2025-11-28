@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
+use App\Services\Gym\GymScheduleOptimizer;
 
 class GymHallController extends Controller
 {
@@ -741,8 +742,8 @@ class GymHallController extends Controller
             ], 400);
         }
 
-        $gymScheduleService = app(\App\Services\GymScheduleService::class);
-        $schedule = $gymScheduleService->getCourtSchedule($gymHall, $startDate, $endDate);
+        $optimizer = app(GymScheduleOptimizer::class);
+        $schedule = $optimizer->getCourtSchedule($gymHall, $startDate, $endDate);
 
         return response()->json([
             'success' => true,

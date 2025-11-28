@@ -9,11 +9,12 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\Club\ClubCrudService;
 
 class OnboardingService
 {
     public function __construct(
-        private ClubService $clubService,
+        private ClubCrudService $clubCrudService,
         private TeamService $teamService
     ) {}
 
@@ -94,7 +95,7 @@ class OnboardingService
             'add_current_user_as_admin' => true, // User becomes club admin
         ];
 
-        $club = $this->clubService->createClub($clubData);
+        $club = $this->clubCrudService->createClub($clubData);
 
         // Assign the club_admin role to the user
         if (!$user->hasRole('club_admin')) {

@@ -8,7 +8,7 @@ use App\Http\Requests\Api\V2\Clubs\UpdateClubRequest;
 use App\Http\Requests\Api\V2\Clubs\IndexClubsRequest;
 use App\Http\Resources\ClubResource;
 use App\Models\Club;
-use App\Services\ClubService;
+use App\Services\Club\ClubCrudService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -18,7 +18,7 @@ class ClubController extends Controller
      * Create a new controller instance.
      */
     public function __construct(
-        protected ClubService $clubService
+        protected ClubCrudService $clubCrudService
     ) {}
     /**
      * Display a listing of clubs.
@@ -81,7 +81,7 @@ class ClubController extends Controller
         $clubData = $request->validated();
 
         // Use ClubService to properly handle tenant_id and club creation
-        $club = $this->clubService->createClub($clubData);
+        $club = $this->clubCrudService->createClub($clubData);
 
         return new ClubResource($club->load(['teams', 'users']));
     }

@@ -22,16 +22,53 @@ class AppServiceProvider extends ServiceProvider
         // Register API versioning services
         $this->app->singleton(\App\Services\Api\RouteVersionResolver::class);
 
-        // Register Subscription Analytics Service
-        $this->app->singleton(\App\Services\Stripe\SubscriptionAnalyticsService::class, function ($app) {
-            return new \App\Services\Stripe\SubscriptionAnalyticsService(
-                $app->make(\App\Services\Stripe\StripeClientManager::class),
-                $app->make(\App\Services\ClubUsageTrackingService::class)
-            );
-        });
+        // ========================================================================
+        // Subscription Analytics Services (Refactored - REFACTOR-003)
+        // ========================================================================
+
+        // Register Analytics Cache Manager (shared across all analytics services)
+        $this->app->singleton(\App\Services\Stripe\Analytics\AnalyticsCacheManager::class);
+
+        // Register MRR Calculator Service
+        $this->app->singleton(\App\Services\Stripe\Analytics\MRRCalculatorService::class);
+
+        // Register Churn Analyzer Service
+        $this->app->singleton(\App\Services\Stripe\Analytics\ChurnAnalyzerService::class);
+
+        // Register LTV Calculator Service
+        $this->app->singleton(\App\Services\Stripe\Analytics\LTVCalculatorService::class);
+
+        // Register Subscription Health Metrics Service
+        $this->app->singleton(\App\Services\Stripe\Analytics\SubscriptionHealthMetricsService::class);
+
+        // Register new Subscription Analytics Service (Facade/Orchestrator)
+        $this->app->singleton(\App\Services\Stripe\Analytics\SubscriptionAnalyticsService::class);
+
+        // Backward compatibility alias: Old namespace → New namespace
+        // This allows existing code using the old namespace to continue working
+        $this->app->alias(
+            \App\Services\Stripe\Analytics\SubscriptionAnalyticsService::class,
+            \App\Services\Stripe\SubscriptionAnalyticsService::class
+        );
 
         // Register Club Subscription Notification Service
         $this->app->singleton(\App\Services\ClubSubscriptionNotificationService::class);
+
+        // ========================================================================
+        // Club Services (Refactored - REFACTOR-005)
+        // ========================================================================
+
+        // Register Club Membership Service (no dependencies)
+        $this->app->singleton(\App\Services\Club\ClubMembershipService::class);
+
+        // Register Club CRUD Service (depends on ClubMembershipService)
+        $this->app->singleton(\App\Services\Club\ClubCrudService::class);
+
+        // Register Club Statistics Service (no dependencies)
+        $this->app->singleton(\App\Services\Club\ClubStatisticsService::class);
+
+        // Register Club Subscription Plan Service (no dependencies)
+        $this->app->singleton(\App\Services\Club\ClubSubscriptionPlanService::class);
 
         // Register Redis Availability Service
         $this->app->singleton(\App\Services\RedisAvailabilityService::class);

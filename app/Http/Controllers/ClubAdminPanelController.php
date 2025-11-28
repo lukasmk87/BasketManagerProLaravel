@@ -7,7 +7,7 @@ use App\Models\Club;
 use App\Models\Game;
 use App\Models\Player;
 use App\Models\User;
-use App\Services\ClubService;
+use App\Services\Club\ClubStatisticsService;
 use App\Services\ClubUsageTrackingService;
 use App\Services\PlayerService;
 use App\Services\StatisticsService;
@@ -24,7 +24,7 @@ use Inertia\Response;
 class ClubAdminPanelController extends Controller
 {
     public function __construct(
-        private ClubService $clubService,
+        private ClubStatisticsService $clubStatisticsService,
         private StatisticsService $statisticsService,
         private UserService $userService,
         private TeamService $teamService,
@@ -65,7 +65,7 @@ class ClubAdminPanelController extends Controller
 
         try {
             // Get club statistics
-            $clubStats = $this->clubService->getClubStatistics($primaryClub);
+            $clubStats = $this->clubStatisticsService->getClubStatistics($primaryClub);
 
             // Get teams overview
             // PERF-002: Removed 'players' from with() - only players_count is used
@@ -471,7 +471,7 @@ class ClubAdminPanelController extends Controller
         $primaryClub = $adminClubs->first();
 
         try {
-            $clubStats = $this->clubService->getClubStatistics($primaryClub);
+            $clubStats = $this->clubStatisticsService->getClubStatistics($primaryClub);
 
             return Inertia::render('ClubAdmin/Reports/Index', [
                 'club' => [

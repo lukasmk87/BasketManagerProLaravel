@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Club;
 use App\Models\ClubSubscriptionPlan;
-use App\Services\ClubService;
+use App\Services\Club\ClubCrudService;
+use App\Services\Club\ClubStatisticsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -12,7 +13,8 @@ use Inertia\Response;
 class ClubController extends Controller
 {
     public function __construct(
-        private ClubService $clubService
+        private ClubCrudService $clubCrudService,
+        private ClubStatisticsService $clubStatisticsService
     ) {}
 
     /**
@@ -146,11 +148,11 @@ class ClubController extends Controller
             }
         }
 
-        $club = $this->clubService->createClub($validated);
+        $club = $this->clubCrudService->createClub($validated);
 
         // Handle logo upload if provided
         if ($request->hasFile('logo')) {
-            $this->clubService->uploadClubLogo($club, $request->file('logo'));
+            $this->clubCrudService->uploadClubLogo($club, $request->file('logo'));
         }
 
         return redirect()->route('web.clubs.show', $club)
@@ -172,7 +174,7 @@ class ClubController extends Controller
             'subscriptionPlan',
         ]);
 
-        $clubStats = $this->clubService->getClubStatistics($club);
+        $clubStats = $this->clubStatisticsService->getClubStatistics($club);
 
         return Inertia::render('Clubs/Show', [
             'club' => $club,
@@ -283,7 +285,7 @@ class ClubController extends Controller
             'preferences' => 'nullable|json',
         ]);
 
-        $this->clubService->updateClub($club, $validated);
+        $this->clubCrudService->updateClub($club, $validated);
 
         return redirect()->route('web.clubs.show', $club)
             ->with('success', 'Club wurde erfolgreich aktualisiert.');
@@ -296,7 +298,7 @@ class ClubController extends Controller
     {
         $this->authorize('delete', $club);
 
-        $this->clubService->deleteClub($club);
+        $this->clubCrudService->deleteClub($club);
 
         return redirect()->route('web.clubs.index')
             ->with('success', 'Club wurde erfolgreich gelöscht.');
@@ -314,7 +316,7 @@ class ClubController extends Controller
         ]);
 
         try {
-            $this->clubService->uploadClubLogo($club, $request->file('logo'));
+            $this->clubCrudService->uploadClubLogo($club, $request->file('logo'));
 
             return redirect()->back()
                 ->with('success', 'Club-Logo wurde erfolgreich hochgeladen.');
@@ -337,7 +339,7 @@ class ClubController extends Controller
     {
         $this->authorize('update', $club);
 
-        $this->clubService->deleteClubLogo($club);
+        $this->clubCrudService->deleteClubLogo($club);
 
         return redirect()->back()
             ->with('success', 'Club-Logo wurde erfolgreich entfernt.');
