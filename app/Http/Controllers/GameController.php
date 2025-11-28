@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Game;
 use App\Models\Team;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;

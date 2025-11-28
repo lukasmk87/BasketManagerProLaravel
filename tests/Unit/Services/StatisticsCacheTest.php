@@ -8,7 +8,7 @@ use App\Models\Player;
 use App\Models\Team;
 use App\Models\Club;
 use App\Models\User;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;

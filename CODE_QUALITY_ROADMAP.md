@@ -1005,29 +1005,32 @@ tests/Unit/Services/Club/
 
 ---
 
-### REFACTOR-006: GymManagementController splitten
+### REFACTOR-006: GymManagementController splitten ✅ ERLEDIGT
 
+**Status:** ✅ Erledigt am 2025-11-28
 **Schweregrad:** 🟠 HOCH
-**Aktuelle Größe:** 1,412 Zeilen
-**Ziel:** 3 Controller (~400-500 Zeilen je)
-**Aufwand:** 6-8 Stunden
+**Ursprüngliche Größe:** 1,412 Zeilen
+**Aufwand:** ~4 Stunden
 
-#### Problem
-
-Controller vermischt CRUD, Statistics, Booking, Conflicts und Analytics.
-
-**Betroffene Datei:** `app/Http/Controllers/GymManagementController.php`
-
-#### Lösung: Controller-Splitting
+#### Lösung: Controller-Splitting (Implementiert)
 
 **Neue Controller-Struktur:**
 
 ```
 app/Http/Controllers/Gym/
-├── GymHallController.php          (~400 LOC) - CRUD
-├── GymBookingController.php       (~450 LOC) - Booking Management
-└── GymAnalyticsController.php     (~350 LOC) - Statistics & Reports
+├── GymDashboardController.php     (~230 LOC) - Dashboard & Views
+├── GymTimeSlotController.php      (~750 LOC) - TimeSlot & Team-Zuordnungen
+└── GymCourtController.php         (~190 LOC) - Court-Management
 ```
+
+**Migrierte Methoden:**
+- `GymDashboardController`: index, halls, bookings, requests, create, getGymStatistics
+- `GymTimeSlotController`: getHallTimeSlots, updateHallTimeSlots, updateTimeSlotCustomTimes, getAvailableTeams, assignTeamToTimeSlot, removeTeamFromTimeSlot, getTeamTimeSlots, getTimeSlotSegments, assignTeamToSegment, removeTeamSegmentAssignment, getTimeSlotTeamAssignments
+- `GymCourtController`: getTeams, getHallCourts, updateCourt, createCourt
+
+**Aktualisierte Routes:**
+- `routes/web.php` (gym-management.* routes)
+- `routes/api/v2.php` (TimeSlot API routes)
 
 **1. GymHallController.php (CRUD Only)**
 
@@ -2450,7 +2453,7 @@ public function test_stripe_sdk_works_after_update()
 - [x] REFACTOR-002: StatisticsService splitten (10-14h) ✅ Erledigt 2025-01-28
 - [x] REFACTOR-003: SubscriptionAnalyticsService splitten (8-12h) ✅ Erledigt 2025-11-28
 - [x] REFACTOR-004: GymScheduleService splitten (6-10h) ✅ Erledigt 2025-11-28
-- [ ] REFACTOR-006: GymManagementController splitten (6-8h)
+- [x] REFACTOR-006: GymManagementController splitten (6-8h) ✅ Erledigt 2025-11-28
 - [ ] REFACTOR-007: ClubAdminPanelController splitten (8-10h)
 - [ ] REFACTOR-009: Fat Models reduzieren (10-14h)
 

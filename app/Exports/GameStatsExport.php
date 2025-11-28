@@ -3,7 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Game;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;

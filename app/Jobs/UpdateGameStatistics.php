@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Game;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use App\Events\StatisticsUpdated;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;

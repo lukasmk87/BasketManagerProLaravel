@@ -5,7 +5,7 @@ namespace App\Exports;
 use App\Models\Team;
 use App\Models\Game;
 use App\Models\Player;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;

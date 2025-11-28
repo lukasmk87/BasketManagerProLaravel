@@ -9,7 +9,7 @@ use App\Models\Season;
 use App\Models\SeasonStatistic;
 use App\Services\PlayerService;
 use App\Services\SeasonService;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use App\Services\TeamService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;

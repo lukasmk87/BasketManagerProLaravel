@@ -259,16 +259,16 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('gym-halls/{gymHall}/time-grid', [\App\Http\Controllers\Api\GymHallController::class, 'getTimeGrid']);
     Route::put('gym-halls/{gymHall}/court-settings', [\App\Http\Controllers\Api\GymHallController::class, 'updateCourtSettings']);
     
-    // Hall Time Slots Management (Custom Times)
-    Route::get('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\GymManagementController::class, 'getHallTimeSlots']);
-    Route::put('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\GymManagementController::class, 'updateHallTimeSlots']);
-    Route::put('time-slots/{slotId}/custom-times', [\App\Http\Controllers\GymManagementController::class, 'updateTimeSlotCustomTimes']);
-    
-    // Team Segment Assignments (30-min slots)
-    Route::get('time-slots/{timeSlotId}/segments', [\App\Http\Controllers\GymManagementController::class, 'getTimeSlotSegments']);
-    Route::post('time-slots/assign-team-segment', [\App\Http\Controllers\GymManagementController::class, 'assignTeamToSegment']);
-    Route::delete('team-assignments/{assignmentId}', [\App\Http\Controllers\GymManagementController::class, 'removeTeamSegmentAssignment']);
-    Route::get('time-slots/{timeSlotId}/team-assignments', [\App\Http\Controllers\GymManagementController::class, 'getTimeSlotTeamAssignments']);
+    // Hall Time Slots Management (Custom Times) → GymTimeSlotController (REFACTOR-006)
+    Route::get('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'getHallTimeSlots']);
+    Route::put('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'updateHallTimeSlots']);
+    Route::put('time-slots/{slotId}/custom-times', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'updateTimeSlotCustomTimes']);
+
+    // Team Segment Assignments (30-min slots) → GymTimeSlotController (REFACTOR-006)
+    Route::get('time-slots/{timeSlotId}/segments', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'getTimeSlotSegments']);
+    Route::post('time-slots/assign-team-segment', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'assignTeamToSegment']);
+    Route::delete('team-assignments/{assignmentId}', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'removeTeamSegmentAssignment']);
+    Route::get('time-slots/{timeSlotId}/team-assignments', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'getTimeSlotTeamAssignments']);
 
     // Time Slot Management
     // TODO: Implement GymTimeSlotController

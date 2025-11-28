@@ -4,7 +4,7 @@ namespace Tests\Unit\Services;
 
 use Tests\BasketballTestCase;
 use App\Services\PlayerService;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use App\Models\Player;
 use App\Models\User;
 use App\Models\Team;

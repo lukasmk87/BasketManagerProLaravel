@@ -3,7 +3,7 @@
 namespace App\Observers;
 
 use App\Models\GameAction;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use App\Services\BasketballCacheService;
 use Illuminate\Support\Facades\Log;
 

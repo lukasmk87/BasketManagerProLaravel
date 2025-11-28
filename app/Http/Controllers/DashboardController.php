@@ -9,7 +9,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Services\Club\ClubStatisticsService;
 use App\Services\PlayerService;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use App\Services\TeamService;
 use App\Services\UserService;
 use Illuminate\Http\Request;

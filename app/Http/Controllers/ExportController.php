@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Game;
 use App\Models\Player;
 use App\Models\Team;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\GameStatsExport;

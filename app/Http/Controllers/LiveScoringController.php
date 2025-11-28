@@ -18,7 +18,7 @@ use App\Jobs\UpdateGameStatistics;
 use App\Models\Game;
 use App\Models\GameAction;
 use App\Services\LiveScoringService;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

@@ -6,15 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\ClubSubscriptionPlan;
 use App\Models\Club;
-use App\Services\ClubService;
+use App\Services\Club\ClubSubscriptionPlanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ClubSubscriptionPlanController extends Controller
 {
-    protected ClubService $clubService;
+    protected ClubSubscriptionPlanService $clubService;
 
-    public function __construct(ClubService $clubService)
+    public function __construct(ClubSubscriptionPlanService $clubService)
     {
         $this->clubService = $clubService;
         $this->middleware('auth:sanctum');

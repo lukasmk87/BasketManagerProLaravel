@@ -295,34 +295,31 @@ Route::middleware([
         });
     });
     
-    // Gym Management Routes
+    // Gym Management Routes (REFACTOR-006: Split into 3 controllers)
     Route::prefix('gym-management')->name('gym.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\GymManagementController::class, 'index'])->name('index');
-        Route::get('/halls', [\App\Http\Controllers\GymManagementController::class, 'halls'])->name('halls');
-        Route::get('/bookings', [\App\Http\Controllers\GymManagementController::class, 'bookings'])->name('bookings');
-        Route::get('/requests', [\App\Http\Controllers\GymManagementController::class, 'requests'])->name('requests');
-        Route::get('/create-hall', [\App\Http\Controllers\GymManagementController::class, 'create'])->name('create-hall');
-        
-        // Time Slot Management API Routes
-        Route::get('/halls/{hall}/time-slots', [\App\Http\Controllers\GymManagementController::class, 'getHallTimeSlots'])->name('hall-time-slots');
-        Route::put('/halls/{hall}/time-slots', [\App\Http\Controllers\GymManagementController::class, 'updateHallTimeSlots'])->name('update-hall-time-slots');
-        
-        // Team Assignment API Routes
-        Route::get('/available-teams', [\App\Http\Controllers\GymManagementController::class, 'getAvailableTeams'])->name('available-teams');
-        Route::post('/time-slots/{timeSlot}/assign-team', [\App\Http\Controllers\GymManagementController::class, 'assignTeamToTimeSlot'])->name('assign-team');
-        Route::delete('/time-slots/{timeSlot}/remove-team', [\App\Http\Controllers\GymManagementController::class, 'removeTeamFromTimeSlot'])->name('remove-team');
-        Route::get('/teams/{team}/time-slots', [\App\Http\Controllers\GymManagementController::class, 'getTeamTimeSlots'])->name('team-time-slots');
-        
-        // Custom Times API Routes
-        Route::put('/time-slots/{timeSlot}/custom-times', [\App\Http\Controllers\GymManagementController::class, 'updateTimeSlotCustomTimes'])->name('update-custom-times');
-        
-        // Teams API Route
-        Route::get('/teams', [\App\Http\Controllers\GymManagementController::class, 'getTeams'])->name('teams');
-        
-        // Court Management API Routes
-        Route::get('/halls/{hall}/courts', [\App\Http\Controllers\GymManagementController::class, 'getHallCourts'])->name('hall-courts');
-        Route::post('/halls/{hall}/courts', [\App\Http\Controllers\GymManagementController::class, 'createCourt'])->name('create-court');
-        Route::put('/courts/{court}', [\App\Http\Controllers\GymManagementController::class, 'updateCourt'])->name('update-court');
+        // Dashboard & Views → GymDashboardController
+        Route::get('/', [\App\Http\Controllers\Gym\GymDashboardController::class, 'index'])->name('index');
+        Route::get('/halls', [\App\Http\Controllers\Gym\GymDashboardController::class, 'halls'])->name('halls');
+        Route::get('/bookings', [\App\Http\Controllers\Gym\GymDashboardController::class, 'bookings'])->name('bookings');
+        Route::get('/requests', [\App\Http\Controllers\Gym\GymDashboardController::class, 'requests'])->name('requests');
+        Route::get('/create-hall', [\App\Http\Controllers\Gym\GymDashboardController::class, 'create'])->name('create-hall');
+
+        // Time Slot Management → GymTimeSlotController
+        Route::get('/halls/{hall}/time-slots', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'getHallTimeSlots'])->name('hall-time-slots');
+        Route::put('/halls/{hall}/time-slots', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'updateHallTimeSlots'])->name('update-hall-time-slots');
+        Route::put('/time-slots/{timeSlot}/custom-times', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'updateTimeSlotCustomTimes'])->name('update-custom-times');
+
+        // Team Assignment → GymTimeSlotController
+        Route::get('/available-teams', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'getAvailableTeams'])->name('available-teams');
+        Route::post('/time-slots/{timeSlot}/assign-team', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'assignTeamToTimeSlot'])->name('assign-team');
+        Route::delete('/time-slots/{timeSlot}/remove-team', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'removeTeamFromTimeSlot'])->name('remove-team');
+        Route::get('/teams/{team}/time-slots', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'getTeamTimeSlots'])->name('team-time-slots');
+
+        // Court & Teams Management → GymCourtController
+        Route::get('/teams', [\App\Http\Controllers\Gym\GymCourtController::class, 'getTeams'])->name('teams');
+        Route::get('/halls/{hall}/courts', [\App\Http\Controllers\Gym\GymCourtController::class, 'getHallCourts'])->name('hall-courts');
+        Route::post('/halls/{hall}/courts', [\App\Http\Controllers\Gym\GymCourtController::class, 'createCourt'])->name('create-court');
+        Route::put('/courts/{court}', [\App\Http\Controllers\Gym\GymCourtController::class, 'updateCourt'])->name('update-court');
     });
     
     // Export Routes

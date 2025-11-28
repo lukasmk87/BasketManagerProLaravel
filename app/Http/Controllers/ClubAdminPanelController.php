@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Services\Club\ClubStatisticsService;
 use App\Services\ClubUsageTrackingService;
 use App\Services\PlayerService;
-use App\Services\StatisticsService;
+use App\Services\Statistics\StatisticsService;
 use App\Services\TeamService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
