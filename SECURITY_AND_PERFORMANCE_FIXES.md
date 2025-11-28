@@ -3,8 +3,8 @@
 > **Kritische und dringende Probleme, die sofort oder kurzfristig behoben werden müssen**
 
 **Erstellt:** 2025-01-24
-**Letztes Update:** 2025-11-26 (TEST-002: ClubTransferServiceTest)
-**Status:** 🟢 **Sprint 1+2 ABGESCHLOSSEN** - Security + Performance Optimierungen
+**Letztes Update:** 2025-11-28 (SEC-006: Authorization Checks + Security Tests)
+**Status:** 🟢 **Sprint 1+2+3 ABGESCHLOSSEN** - Security + Performance + Tests
 **Geschätzter Gesamtaufwand:** 72-88 Stunden (2-2.5 Wochen)
 **Bereits investiert:** ~38 Stunden (Sprint 1 + Sprint 2 Performance)
 
@@ -16,8 +16,8 @@
 |-----------|--------|----------|------|--------|-----------|
 | **Security Issues** | 8 | 4 | 2 | 2 | **8** 🎉 |
 | **Performance Issues** | 8 | 3 | 3 | 2 | **8** 🎉 |
-| **Fehlende Tests** | 5 | 5 | 0 | 0 | **2** |
-| **Gesamt** | **21** | **12** | **5** | **4** | **18/21** |
+| **Fehlende Tests** | 5 | 5 | 0 | 0 | **5** 🎉 |
+| **Gesamt** | **21** | **12** | **5** | **4** | **21/21** 🎉 |
 
 ### 🎯 Sprint 1 Fortschritt
 
@@ -30,8 +30,16 @@
 - ✅ SEC-003: Tenant Isolation - BelongsToTenant auf 10 Models implementiert
 - ✅ SEC-004: Webhook Tenant Validation - validateAndFindClub() Helper + alle Handlers gesichert
 
-✅ **Phase 3 Complete** (Authorization) - **2025-11-25**
-- ✅ SEC-006: 3 neue Policies erstellt (GameRegistration, TrainingRegistration, TournamentAward)
+✅ **Phase 3 Complete** (Authorization) - **2025-11-28**
+- ✅ SEC-006: 3 neue Policies + 19 Authorization Checks in Controllern integriert
+  - GameRegistrationController: 8 Methoden (store, updateAvailability, bulkRegister, confirm, addToRoster, removeFromRoster, updateRole, getPlayerRegistrations)
+  - TrainingRegistrationController: 5 Methoden (store, updateStatus, bulkRegister, confirm, getPlayerRegistrations)
+  - TrainingSessionController: 6 Methoden (register, cancelRegistration, bulkRegister, confirmRegistration, declineRegistration, getPlayerRegistrations)
+
+✅ **Phase 4 Complete** (Security Tests) - **2025-11-28**
+- ✅ SEC-001 Test: LegalPageSecurityTest (10 Tests) - XSS Prevention mit Purifier
+- ✅ SEC-002 Test: RedisAvailabilityServiceTest (9 Tests) - Deserialization Security
+- ✅ SEC-005 Test: SQLInjectionPreventionTest (11 Tests) - SQL Injection via (int) Cast
 
 ✅ **Performance Optimierungen** - **2025-11-25**
 - ✅ PERF-001: N+1 Queries in DashboardController (withPivot, eager loading)

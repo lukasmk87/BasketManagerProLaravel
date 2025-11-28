@@ -12,7 +12,9 @@
       "Bash(php artisan tinker:*)",
       "Bash(php artisan:*)",
       "Bash(cat:*)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(composer show:*)",
+      "Bash(composer require:*)"
     ],
     "deny": [],
     "ask": []
