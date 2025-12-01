@@ -1,0 +1,65 @@
+0000000000000000000000000000000000000000 115d2bf4c13b9cb0260d7cd75199db04fd0e48df Lukas <lukas@kotowicz.info> 1761591611 +0100	clone: from https://github.com/lukasmk87/BasketManagerProLaravel.git
+115d2bf4c13b9cb0260d7cd75199db04fd0e48df 45f11f86eb58eadd191c26259b9575cd9473ea45 Lukas <lukas@kotowicz.info> 1761592083 +0100	commit: Multi Plan 1.5
+45f11f86eb58eadd191c26259b9575cd9473ea45 c4d7808ad29f8dcff39a238595ae1c888f757531 Lukas <lukas@kotowicz.info> 1761595235 +0100	commit: Multi Plan Finish
+c4d7808ad29f8dcff39a238595ae1c888f757531 45fdb0d144ed1ddac60015b3d830c5f12ec5da82 Lukas <lukas@kotowicz.info> 1761597658 +0100	commit: Phase 2 Finish
+45fdb0d144ed1ddac60015b3d830c5f12ec5da82 389aa6cf1597c30ee04e1c9c5613d7fa8a4d5b4e Lukas <lukas@kotowicz.info> 1761599182 +0100	commit: Phase 3.4
+389aa6cf1597c30ee04e1c9c5613d7fa8a4d5b4e cbf7ff0f1bb159ea5d27e162c5e5de6330121bb7 Lukas <lukas@kotowicz.info> 1761600988 +0100	commit: Phase 3.6
+cbf7ff0f1bb159ea5d27e162c5e5de6330121bb7 50d5c52b006486db8b9cd03a523b2ec3a77d8180 Lukas <lukas@kotowicz.info> 1761601802 +0100	commit: Phase 3.7
+50d5c52b006486db8b9cd03a523b2ec3a77d8180 56af84530d15050d3ec367c16bde110b5f84def4 Lukas <lukas@kotowicz.info> 1761602415 +0100	commit: Phase 3.7
+56af84530d15050d3ec367c16bde110b5f84def4 688f5349317a060d15aa64a9c948dadcb6f07b46 Lukas <lukas@kotowicz.info> 1761602537 +0100	commit: Phase 3.7
+688f5349317a060d15aa64a9c948dadcb6f07b46 08df3fe0d35ba162e770ebaa1f727fa28da51b10 Lukas <lukas@kotowicz.info> 1761723164 +0100	pull origin main: Fast-forward
+08df3fe0d35ba162e770ebaa1f727fa28da51b10 c07e7afbde8171630facb282cd9b2c71737913b1 Lukas <lukas@kotowicz.info> 1761724854 +0100	commit: Phase 4.4.x
+c07e7afbde8171630facb282cd9b2c71737913b1 b350af9299f2bdd679820c55b5309e8d164b8d14 Lukas <lukas@kotowicz.info> 1761754129 +0100	commit: Phase 4.4.4
+b350af9299f2bdd679820c55b5309e8d164b8d14 0227c3eacf46057d8b259df604571ffd39c66593 Lukas <lukas@kotowicz.info> 1761770806 +0100	commit: Tests
+0227c3eacf46057d8b259df604571ffd39c66593 3971f2bcc0d3ed3f197d72bb53dc04867a43e1a2 Lukas <lukas@kotowicz.info> 1762159402 +0100	pull origin main: Fast-forward
+3971f2bcc0d3ed3f197d72bb53dc04867a43e1a2 a94262a961ae739a174c003c85a28640520c9cde Lukas <lukas@kotowicz.info> 1762166257 +0100	commit: Phase 6-7
+a94262a961ae739a174c003c85a28640520c9cde 1387fbf82cd4808486083609d03a2980394691d1 Lukas <lukas@kotowicz.info> 1762169985 +0100	commit: Multi Beendent
+1387fbf82cd4808486083609d03a2980394691d1 f183f09e4f21fb6e61cb26ed62da1852e95caf7c Lukas <lukas@kotowicz.info> 1762179916 +0100	commit: Produktion
+f183f09e4f21fb6e61cb26ed62da1852e95caf7c 024876476ac378433ec19dd4a0a2565d38222724 Lukas <lukas@kotowicz.info> 1762181745 +0100	commit: App Name
+024876476ac378433ec19dd4a0a2565d38222724 388a802f1b6a8277639a8b1dbc76f894cfbd94ff Lukas <lukas@kotowicz.info> 1762184450 +0100	commit: install wizard
+388a802f1b6a8277639a8b1dbc76f894cfbd94ff a9e0391d9dd1f8e56efa5bd8033393b6d4926a8c Lukas <lukas@kotowicz.info> 1762185041 +0100	commit: install wizard
+a9e0391d9dd1f8e56efa5bd8033393b6d4926a8c 9b3152fb9cf9dd3516cae898dc8d5e1c555742b9 Lukas <lukas@kotowicz.info> 1762185788 +0100	commit: install wizard
+9b3152fb9cf9dd3516cae898dc8d5e1c555742b9 79bdcff8e18668d90c61f5910db68efb0142ede0 Lukas <lukas@kotowicz.info> 1762186589 +0100	commit: Fix installation wizard: Remove tenant_user pivot table INSERT
+79bdcff8e18668d90c61f5910db68efb0142ede0 30b13ddad3b18f0db3ebd49409573379e672916b Lukas <lukas@kotowicz.info> 1762192885 +0100	commit: Fix InstallController return type errors (PHP 8+ TypeError)
+30b13ddad3b18f0db3ebd49409573379e672916b 0267041f36dd743be915beb2279d6d43b6551ded Lukas <lukas@kotowicz.info> 1762194468 +0100	commit: Wizard
+0267041f36dd743be915beb2279d6d43b6551ded 173216ba7cf374771ca4ca7dc58cdaa2c2131710 Lukas <lukas@kotowicz.info> 1762197873 +0100	commit: Wizard
+173216ba7cf374771ca4ca7dc58cdaa2c2131710 59fca7ebc7fe52b1ac455d3e556e3aa3b4d8b729 Lukas <lukas@kotowicz.info> 1762245737 +0100	commit: Wizard Fix
+59fca7ebc7fe52b1ac455d3e556e3aa3b4d8b729 1f374f9768ff8ba101177a6946d3621398c093ee Lukas <lukas@kotowicz.info> 1762248938 +0100	commit: Wizard Fix
+1f374f9768ff8ba101177a6946d3621398c093ee e515725663958a5970b6a949d0da86ed3270eeb8 Lukas <lukas@kotowicz.info> 1762250438 +0100	commit: Seeder
+e515725663958a5970b6a949d0da86ed3270eeb8 d1b713e40bff6f331b79f9564d8c32de59cc4cd9 Lukas <lukas@kotowicz.info> 1762251878 +0100	commit: Wizard
+d1b713e40bff6f331b79f9564d8c32de59cc4cd9 c311a8866c2cec718fb55396acae19827fef1430 Lukas <lukas@kotowicz.info> 1762255691 +0100	commit: Wizard
+c311a8866c2cec718fb55396acae19827fef1430 56d9fdcf12bcf676a155261605b3a61daddf2d0c Lukas <lukas@kotowicz.info> 1762256078 +0100	commit: Wizard Fix
+56d9fdcf12bcf676a155261605b3a61daddf2d0c 9a4484870e5434976c6c6c7de8627903c5a0f7c7 Lukas <lukas@kotowicz.info> 1762257064 +0100	commit: verify Mail
+9a4484870e5434976c6c6c7de8627903c5a0f7c7 c4a71795fc5d0a2e1296765fb2b717778dd71750 Lukas <lukas@kotowicz.info> 1762857666 +0100	pull origin main: Fast-forward
+c4a71795fc5d0a2e1296765fb2b717778dd71750 711b019360b266589447f3f1699ccaae84fc746c Lukas <lukas@kotowicz.info> 1762870934 +0100	commit: Install Service
+711b019360b266589447f3f1699ccaae84fc746c 7242cbcf0524e636c327444ca83a9972e79a83a8 Lukas <lukas@kotowicz.info> 1763372413 +0100	pull origin main: Fast-forward
+7242cbcf0524e636c327444ca83a9972e79a83a8 dce17204e85a327cc01ecdcbb9b282ca68992e57 Lukas <lukas@kotowicz.info> 1763566455 +0100	commit: Phase 2 Ende
+dce17204e85a327cc01ecdcbb9b282ca68992e57 a1f9980fb6c98fa099e5a1e552bd9f7b1f9ca917 Lukas <lukas@kotowicz.info> 1763625330 +0100	commit: Saisonverwaltung+
+a1f9980fb6c98fa099e5a1e552bd9f7b1f9ca917 4e076676464747a3fe4eba8e6fa56d4fb2437fbf Lukas <lukas@kotowicz.info> 1763977845 +0100	pull origin main: Fast-forward
+4e076676464747a3fe4eba8e6fa56d4fb2437fbf c5e9ca9532b7fe0c452911aa5b67e73a917fab24 Lukas <lukas@kotowicz.info> 1763986139 +0100	commit: Claude
+c5e9ca9532b7fe0c452911aa5b67e73a917fab24 b677d58bc4438088544f364c096f3a411870c869 Lukas <lukas@kotowicz.info> 1764019654 +0100	pull origin main: Fast-forward
+b677d58bc4438088544f364c096f3a411870c869 0c5bf43aa751a31b9113c727966ce9505036b75e Lukas <lukas@kotowicz.info> 1764144803 +0100	pull origin main: Fast-forward
+0c5bf43aa751a31b9113c727966ce9505036b75e a1786238c305eaa3b870279dcb9aa52692f4f2f3 Lukas <lukas@kotowicz.info> 1764148432 +0100	commit: Perf Fixes
+a1786238c305eaa3b870279dcb9aa52692f4f2f3 97c05663086ba2eb6c6d4bced28b9c60fcde66f8 Lukas <lukas@kotowicz.info> 1764151704 +0100	commit: Tests
+97c05663086ba2eb6c6d4bced28b9c60fcde66f8 6eac7b0c2763ff25b4947f2318283903d2d3305b Lukas <lukas@kotowicz.info> 1764153512 +0100	commit: Tests
+6eac7b0c2763ff25b4947f2318283903d2d3305b 355db33d9c95259f0fc284f22289ab9e31f4b0b8 Lukas <lukas@kotowicz.info> 1764154299 +0100	commit: Fix: Allow registration without club_id for personal teams
+355db33d9c95259f0fc284f22289ab9e31f4b0b8 cdebd47b3c8764ca3db56dafd7af2c2451619834 Lukas <lukas@kotowicz.info> 1764154556 +0100	commit: Fix: Make season nullable for personal teams
+cdebd47b3c8764ca3db56dafd7af2c2451619834 914b1be64f22817bead0e4d6a1cced9245b60c98 Lukas <lukas@kotowicz.info> 1764156380 +0100	commit: Onboarding
+914b1be64f22817bead0e4d6a1cced9245b60c98 41135dd3f1c09821c01421a6e856a815c3fa0f7b Lukas <lukas@kotowicz.info> 1764157427 +0100	commit: Onboarding
+41135dd3f1c09821c01421a6e856a815c3fa0f7b 9f95d113f3db55cf1cd696c94381901904d36502 Lukas <lukas@kotowicz.info> 1764158116 +0100	commit: Fix: Super-Admin login with tenant_id = NULL
+9f95d113f3db55cf1cd696c94381901904d36502 533a6c18630228eb67e3698e92194a7c1f068adc Lukas <lukas@kotowicz.info> 1764163732 +0100	commit: Bugfix Legal
+533a6c18630228eb67e3698e92194a7c1f068adc e362fb46649b0693cafb02876250c4f9596fea10 Lukas <lukas@kotowicz.info> 1764164693 +0100	commit: Subscription Plan
+e362fb46649b0693cafb02876250c4f9596fea10 3ddbb863e805470daaed6737fdcbe15f579cbe10 Lukas <lukas@kotowicz.info> 1764165911 +0100	commit: Subscription Plan
+3ddbb863e805470daaed6737fdcbe15f579cbe10 2cac085b24319c33a6adbf22e44894a1648d5fbd Lukas <lukas@kotowicz.info> 1764166424 +0100	commit: Subscription Plan
+2cac085b24319c33a6adbf22e44894a1648d5fbd 3bcfa37567760865fbc15ae8e93265b796f0fa93 Lukas <lukas@kotowicz.info> 1764167055 +0100	commit: App
+3bcfa37567760865fbc15ae8e93265b796f0fa93 f326f0804827c4f9437fc0bf8137ee7eb986b262 Lukas <lukas@kotowicz.info> 1764170981 +0100	commit: Tests
+f326f0804827c4f9437fc0bf8137ee7eb986b262 ec2d6ed9dca474ca72dc7215b17e2c29d3d948f4 Lukas <lukas@kotowicz.info> 1764319965 +0100	commit: Tests
+ec2d6ed9dca474ca72dc7215b17e2c29d3d948f4 563798da7cac983b3bf63044615d2e66aecbeadb Lukas <lukas@kotowicz.info> 1764323209 +0100	commit: Tests
+563798da7cac983b3bf63044615d2e66aecbeadb 81f85bad835fef09d729eb32bc09836528c69aeb Lukas <lukas@kotowicz.info> 1764323626 +0100	commit (merge): Merge branch 'main' of https://github.com/lukasmk87/BasketManagerProLaravel
+81f85bad835fef09d729eb32bc09836528c69aeb 67c45988ae30136ba23761647b506911f5cd5813 Lukas <lukas@kotowicz.info> 1764323652 +0100	pull origin main: Merge made by the 'ort' strategy.
+67c45988ae30136ba23761647b506911f5cd5813 6d90105d9675930ba8e0a2150bb38234a74eff8d Lukas <lukas@kotowicz.info> 1764324924 +0100	commit: Refactor
+6d90105d9675930ba8e0a2150bb38234a74eff8d 64b3d9ffd78158b0c63c2a65e6ec2c3566c9e1bf Lukas <lukas@kotowicz.info> 1764331804 +0100	commit: Refactor
+64b3d9ffd78158b0c63c2a65e6ec2c3566c9e1bf 56bb6b142d8a8d11c0ca5bc459b7a7fea8e08e91 Lukas <lukas@kotowicz.info> 1764341703 +0100	commit: Refactor
+56bb6b142d8a8d11c0ca5bc459b7a7fea8e08e91 aa07596888acff59276d280ec84e5479ee0ed220 Lukas <lukas@kotowicz.info> 1764344150 +0100	commit: Refactor
+aa07596888acff59276d280ec84e5479ee0ed220 180ca3277537de1dcc88a4cdb71813099bb88e25 Lukas <lukas@kotowicz.info> 1764346105 +0100	commit: Refactor 007
+                                                                                                                                                    

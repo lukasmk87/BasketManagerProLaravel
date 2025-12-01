@@ -13,22 +13,27 @@
 
 BasketManager Pro ist eine vollständig ausgestattete Basketball-Vereinsverwaltungs-Anwendung, die mit Laravel 12.x entwickelt wurde. Das System bietet umfassende Funktionen für Vereinsverwaltung, Teammanagement, Live-Scoring, Spielerstatistiken, Subscription-Management und Emergency-Services.
 
-### 🆕 Recent Updates (Stand: Oktober 2025)
+### 🆕 Recent Updates (Stand: Dezember 2025)
 
-**Phase 4.4.x - Subscription Analytics (75% Complete)**
+**Phase 4.5.x - Code Quality & Financial Tracking**
+- ✅ **REFACTOR-007**: ClubAdminPanelController (1,456 LOC) in 8 fokussierte Controller aufgeteilt
+- ✅ **Financial Tracking System**: Komplettes Club-Finanzmanagement mit Transaktionen, Reports, Export
+- ✅ **33 neue Unit Tests**: ClubFinancialService (16 Tests), ClubTransaction Model (17 Tests)
+- ✅ **Code Quality Sprint 4**: 6/6 God Services/Controllers erfolgreich refactored
+
+**Phase 4.4.x - Subscription Analytics (Abgeschlossen)**
 - ✅ **13 Stripe Services** - Vollständige Club-Level Subscription Integration
 - ✅ **Multi-Club Subscriptions** - Mehrere Clubs pro Tenant mit individuellen Plans
 - ✅ **Billing & Payment Management** - Invoice Management, Payment Methods (SEPA, Sofort, Giropay)
 - ✅ **Frontend UI** - Vollständiges Subscription Dashboard mit Stripe.js Integration
-- 🔄 **Subscription Analytics** - MRR/ARR-Tracking, Churn-Analyse, Cohort Analysis (Backend fertig)
-- 📊 **Chart.js Integration** - Analytics-Dashboards in Entwicklung
+- ✅ **Subscription Analytics** - MRR/ARR-Tracking, Churn-Analyse, Cohort Analysis
 
 **Technologie-Updates:**
 - ⬆️ Laravel 11.x → **12.x**
 - ⬆️ Vite 5.x → **7.0.4**
 - ⬆️ Tailwind CSS 3.x → **4.0** (mit @tailwindcss/vite)
-- 📈 **63+ Test-Dateien** (↑ von 37+)
-- 🏗️ **69 Models**, **53 Services**, **68 Controllers**
+- 📈 **109 Test-Dateien** (↑ von 63+)
+- 🏗️ **77 Models**, **102 Services**, **87 Controllers**
 
 ### 🎯 Hauptfunktionen
 
@@ -40,6 +45,7 @@ BasketManager Pro ist eine vollständig ausgestattete Basketball-Vereinsverwaltu
 - **🔒 GDPR-Compliance**: Vollständige DSGVO-konforme Datenverwaltung
 - **💳 Stripe Integration**: Multi-Club Subscription Management (13 Services)
 - **💰 Subscription Analytics**: MRR/ARR-Tracking, Churn-Analyse, Cohorts
+- **💵 Financial Tracking**: Club-Finanzverwaltung mit Transaktionen, Reports, Export
 - **📱 PWA**: Progressive Web App mit Offline-Funktionalität
 
 ---
@@ -214,13 +220,13 @@ php artisan tenant:usage:reset     # Tenant Usage zurücksetzen
 
 ### 🧪 Testing
 
-Das Projekt verfügt über **71+ Test-Dateien** mit umfassender Coverage:
+Das Projekt verfügt über **109 Test-Dateien** mit umfassender Coverage:
 
 **Projektstatistiken:**
-- **69 Models** - Umfassende Basketball-Domain-Modelle
-- **53 Services** - Service-orientierte Architektur
-- **68 Controllers** - API & Web Controllers
-- **71 Test-Dateien** - Feature, Unit & Integration Tests
+- **77 Models** - Umfassende Basketball-Domain-Modelle
+- **102 Services** - Service-orientierte Architektur
+- **87 Controllers** - API & Web Controllers (inkl. 8 ClubAdmin Controller)
+- **109 Test-Dateien** - Feature, Unit & Integration Tests
 
 ```bash
 # Alle Tests ausführen
@@ -374,7 +380,7 @@ if ($club->canUse('max_teams', 5)) {
 
 ---
 
-## 💰 Subscription Analytics (Phase 4.4.x - 75%)
+## 💰 Subscription Analytics (Phase 4.4.x - Abgeschlossen)
 
 ### Business Metrics Tracking
 
@@ -427,12 +433,64 @@ $events = ClubSubscriptionEvent::where('tenant_id', $tenant->id)
 - **ClubSubscriptionEvent** - Subscription Lifecycle Events
 - **ClubSubscriptionCohort** - Kohortenanalyse-Daten
 
-### Visualisierung (in Arbeit)
+### Visualisierung
 
 - 📊 **MRR/ARR Charts** mit Chart.js
 - 📈 **Churn Dashboards** mit Trend-Analysen
 - 🎯 **Cohort Retention Heatmaps**
 - 💹 **Revenue Forecasting** mit ML-Integration
+
+---
+
+## 💵 Financial Tracking System (NEU - Phase 4.5.x)
+
+### Club-Finanzverwaltung für Administratoren
+
+**Features:**
+- Einnahmen & Ausgaben Tracking mit vollständigem CRUD
+- 9 Kategorien: Mitgliedsbeiträge, Ausrüstung, Hallenmiete, Events, Sponsoring, Reisekosten, Gehälter, Versicherungen, Sonstiges
+- Monats- und Jahresberichte mit Trend-Analyse
+- CSV-Export für Buchhaltung
+- Aktivitäts-Audit-Log via Spatie ActivityLog
+
+**Technische Komponenten:**
+- `ClubTransaction` Model mit Scopes & Helpers
+- `ClubFinancialService` für Business Logic (6 Methoden)
+- `ClubFinancialController` mit CRUD-Operationen
+- 4 Vue Components (Index, Create, Show, YearlyReport)
+
+```php
+// Beispiel: Finanzübersicht abrufen
+$summary = $financialService->getFinancialSummary($club);
+// Returns: total_income, total_expenses, balance, transaction_count
+
+// Transaktionen mit Filtern
+$transactions = $financialService->getTransactions($club, [
+    'type' => 'income',
+    'category' => 'membership_fee',
+    'start_date' => '2025-01-01',
+]);
+```
+
+---
+
+## 🏢 Club Administration (8 Controller - REFACTOR-007)
+
+Nach REFACTOR-007 aufgeteilte Controller in `app/Http/Controllers/ClubAdmin/`:
+
+| Controller | Beschreibung | LOC |
+|------------|-------------|-----|
+| `ClubAdminDashboardController` | Dashboard mit Storage-Usage | ~230 |
+| `ClubSettingsController` | Club-Einstellungen | ~90 |
+| `ClubMemberController` | Mitgliederverwaltung + Password Reset | ~280 |
+| `ClubTeamAdminController` | Team-Administration | ~240 |
+| `ClubPlayerAdminController` | Spieler-Management | ~280 |
+| `ClubFinancialController` | **NEU** Finanzverwaltung | ~300 |
+| `ClubReportsController` | Reports & Statistiken | ~60 |
+| `ClubSubscriptionAdminController` | Abo-Management | ~110 |
+
+**Vorher:** 1 God Controller mit 1,456 LOC
+**Nachher:** 8 fokussierte Controller mit ~1,590 LOC (bessere Wartbarkeit)
 
 ---
 
@@ -520,22 +578,24 @@ Dieses Projekt ist unter der **MIT License** lizenziert. Siehe [LICENSE](LICENSE
 
 ## 🎯 Roadmap
 
-### ⏳ In Arbeit (Aktuell)
-- 🔄 **Phase 4.4.x**: Subscription Analytics (75% Complete)
+### ✅ Kürzlich Abgeschlossen (Dezember 2025)
+- ✅ **Phase 4.5.x**: Code Quality & Financial Tracking
+  - [x] REFACTOR-007: ClubAdminPanelController in 8 Controller aufgeteilt
+  - [x] Financial Tracking System implementiert
+  - [x] 33 neue Unit Tests (ClubFinancialService, ClubTransaction)
+  - [x] Code Quality Sprint 4 abgeschlossen (6/6 Refactorings)
+- ✅ **Phase 4.4.x**: Subscription Analytics (100% Complete)
   - [x] SubscriptionAnalyticsService Backend
   - [x] Analytics Models (MRRSnapshot, Events, Cohorts)
   - [x] Revenue & Churn Calculation
-  - [ ] Frontend Analytics Dashboard
-  - [ ] Chart.js Visualizations
-  - [ ] Cohort Retention Heatmaps
+  - [x] Chart.js Visualizations
 
-### Kurzfristig (Q1 2025)
-- [ ] **Phase 4.4.x Abschluss**: Analytics Dashboard UI
+### Kurzfristig (Q1 2026)
 - [ ] Shot Charts & Heat Maps UI für Basketball
 - [ ] Performance Optimierung (Caching, Query-Optimierung)
 - [ ] Enhanced Testing Coverage (80%+ Ziel)
 
-### Mittelfristig (Q2-Q3 2025)
+### Mittelfristig (Q2-Q3 2026)
 - [ ] **Mobile App** (React Native) Entwicklung
 - [ ] Federation API **Live-Integration** (DBB, FIBA)
 - [ ] Video Analysis UI Vervollständigung
@@ -543,7 +603,7 @@ Dieses Projekt ist unter der **MIT License** lizenziert. Siehe [LICENSE](LICENSE
 - [ ] Advanced Tournament Brackets UI
 - [ ] Social Features Integration (Team-Chat, Player-Feed)
 
-### Langfristig (Q4 2025+)
+### Langfristig (Q4 2026+)
 - [ ] Multi-Language Expansion
 - [ ] International Federation Support
 - [ ] Advanced AI Coaching Features
@@ -556,15 +616,16 @@ Dieses Projekt ist unter der **MIT License** lizenziert. Siehe [LICENSE](LICENSE
 **BasketManager Pro Laravel** ist eine **Production-Ready** Basketball-Vereinsverwaltung mit:
 
 - ✅ **Phase 1-3**: Vollständig abgeschlossen (Core, Game System, Training & Advanced Features)
-- 🔄 **Phase 4**: 95% Complete (nur Analytics Dashboard UI ausstehend)
+- ✅ **Phase 4**: Vollständig abgeschlossen (Subscription, Analytics, Code Quality)
 - ✅ **Phase 5**: Vollständig abgeschlossen (Emergency & Compliance)
 
 **Technische Exzellenz:**
-- 🏗️ **69 Models** - Vollständige Basketball-Domain
-- 🔧 **53 Services** - Service-orientierte Clean Architecture
-- 🎮 **68 Controllers** - REST API & Web
-- ✅ **63+ Tests** - Umfassende Test-Coverage
+- 🏗️ **77 Models** - Vollständige Basketball-Domain
+- 🔧 **102 Services** - Service-orientierte Clean Architecture
+- 🎮 **87 Controllers** - REST API & Web (inkl. 8 ClubAdmin Controller)
+- ✅ **109 Tests** - Umfassende Test-Coverage
 - 💳 **13 Stripe Services** - Enterprise Subscription Management
+- 💵 **Financial Tracking** - Club-Finanzverwaltung (NEU)
 
 **Enterprise-Features:**
 - Multi-Tenant Architecture mit Row-Level Security
@@ -572,10 +633,11 @@ Dieses Projekt ist unter der **MIT License** lizenziert. Siehe [LICENSE](LICENSE
 - Real-time Broadcasting für Live-Games
 - Progressive Web App (PWA) mit Offline-Support
 - Subscription Analytics (MRR/ARR/Churn)
+- Financial Tracking mit Transaktionen & Reports
 
 ---
 
 **🏀 BasketManager Pro Laravel - Die Zukunft der Basketball-Vereinsverwaltung**
 
 *Entwickelt mit ❤️ für die Basketball-Community*
-*Stand: Oktober 2025 - Version 4.4.x*
+*Stand: Dezember 2025 - Version 4.5.x*
