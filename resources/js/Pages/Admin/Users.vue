@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { router, Link, usePage } from '@inertiajs/vue3';
+import { router, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -13,9 +13,8 @@ const props = defineProps({
     clubs: Array,
     role_stats: Object,
     filters: Object,
+    currentUser: Object,
 });
-
-const page = usePage();
 
 // Search and filter state
 const search = ref(props.filters.search || '');
@@ -67,29 +66,29 @@ const sendPasswordReset = (user) => {
 };
 
 const canDeleteUser = (user) => {
-    // Get current authenticated user
-    const currentUser = page.props.auth?.user;
-    if (!currentUser) return false;
+    // Get current authenticated user from props (passed directly from controller)
+    const authUser = props.currentUser;
+
+    if (!authUser) return false;
 
     // User can't delete themselves
-    if (user.id === currentUser.id) {
+    if (user.id === authUser.id) {
         return false;
     }
 
     // Super admins can delete anyone (except themselves)
-    // Note: currentUser.roles is a string array ['super_admin', 'admin']
-    if (currentUser.roles?.includes('super_admin')) {
+    if (authUser.roles?.includes('super_admin')) {
         return true;
     }
 
     // Regular admins can't delete super admins
     // Note: user.roles is an object array [{name: 'super_admin'}]
-    if (currentUser.roles?.includes('admin')) {
+    if (authUser.roles?.includes('admin')) {
         return !user.roles?.some(role => role.name === 'super_admin');
     }
 
     // Club admins can't delete admins or super admins
-    if (currentUser.roles?.includes('club_admin')) {
+    if (authUser.roles?.includes('club_admin')) {
         return !user.roles?.some(role => ['super_admin', 'admin', 'club_admin'].includes(role.name));
     }
 

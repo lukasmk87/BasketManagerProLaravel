@@ -159,6 +159,10 @@ class AdminPanelController extends Controller
                 'status' => $request->status,
                 'club_id' => $request->club_id,
             ],
+            'currentUser' => [
+                'id' => $request->user()->id,
+                'roles' => $request->user()->getRoleNames()->toArray(),
+            ],
         ]);
     }
 
