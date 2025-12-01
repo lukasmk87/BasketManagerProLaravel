@@ -298,22 +298,25 @@ class TeamController extends Controller
         })->toArray();
 
         // Add coaches data from NEW team_coaches table with system roles
-        $teamData['coaches'] = $team->teamCoaches->map(function($teamCoach) {
-            return [
-                'id' => $teamCoach->user->id,
-                'name' => $teamCoach->user->name,
-                'email' => $teamCoach->user->email,
-                'role' => $teamCoach->role, // head_coach or assistant_coach
-                'coaching_license' => $teamCoach->coaching_license,
-                'coaching_certifications' => $teamCoach->coaching_certifications ?? [],
-                'coaching_specialties' => $teamCoach->coaching_specialties,
-                'joined_at' => $teamCoach->joined_at,
-                'is_active' => $teamCoach->is_active,
-                // NEW: System roles for multi-role support
-                'system_roles' => $teamCoach->user->roles->pluck('name')->toArray(),
-                'system_role_labels' => $this->getRoleLabels($teamCoach->user->roles),
-            ];
-        })->toArray();
+        // Filter out coaches with deleted users to prevent null pointer errors
+        $teamData['coaches'] = $team->teamCoaches
+            ->filter(fn($teamCoach) => $teamCoach->user !== null)
+            ->map(function($teamCoach) {
+                return [
+                    'id' => $teamCoach->user->id,
+                    'name' => $teamCoach->user->name,
+                    'email' => $teamCoach->user->email,
+                    'role' => $teamCoach->role, // head_coach or assistant_coach
+                    'coaching_license' => $teamCoach->coaching_license,
+                    'coaching_certifications' => $teamCoach->coaching_certifications ?? [],
+                    'coaching_specialties' => $teamCoach->coaching_specialties,
+                    'joined_at' => $teamCoach->joined_at,
+                    'is_active' => $teamCoach->is_active,
+                    // NEW: System roles for multi-role support
+                    'system_roles' => $teamCoach->user->roles->pluck('name')->toArray(),
+                    'system_role_labels' => $this->getRoleLabels($teamCoach->user->roles),
+                ];
+            })->values()->toArray();
 
         return Inertia::render('Teams/Edit', [
             'team' => $teamData,

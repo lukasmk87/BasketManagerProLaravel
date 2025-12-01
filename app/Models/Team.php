@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Laravel\Jetstream\Events\TeamCreated;
@@ -162,8 +163,39 @@ class Team extends JetstreamTeam implements HasMedia
         if (!$this->assistant_coaches) {
             return collect();
         }
-        
+
         return User::whereIn('id', $this->assistant_coaches)->get();
+    }
+
+    /**
+     * Get all coaches from the dedicated team_coaches table.
+     *
+     * This relationship supports multi-role users
+     * (e.g., a player-coach can be both a player and a coach).
+     */
+    public function teamCoaches(): HasMany
+    {
+        return $this->hasMany(TeamCoach::class, 'team_id');
+    }
+
+    /**
+     * Get the head coach from the team_coaches table.
+     */
+    public function teamHeadCoach(): HasOne
+    {
+        return $this->hasOne(TeamCoach::class, 'team_id')
+            ->where('role', 'head_coach')
+            ->where('is_active', true);
+    }
+
+    /**
+     * Get assistant coaches from the team_coaches table.
+     */
+    public function teamAssistantCoaches(): HasMany
+    {
+        return $this->hasMany(TeamCoach::class, 'team_id')
+            ->where('role', 'assistant_coach')
+            ->where('is_active', true);
     }
 
     /**
