@@ -2,6 +2,16 @@
 
 namespace App\Models;
 
+use App\ValueObjects\Game\GameClock;
+use App\ValueObjects\Game\GameFouls;
+use App\ValueObjects\Game\GameMediaSettings;
+use App\ValueObjects\Game\GameOfficials;
+use App\ValueObjects\Game\GameRegistrationSettings;
+use App\ValueObjects\Game\GameRules;
+use App\ValueObjects\Game\GameSchedule;
+use App\ValueObjects\Game\GameScore;
+use App\ValueObjects\Game\GameStatistics;
+use App\ValueObjects\Game\GameVenue;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -542,6 +552,90 @@ class Game extends Model implements HasMedia
         }
 
         return round(($this->attendance / $this->capacity) * 100, 1);
+    }
+
+    // ============================
+    // VALUE OBJECT ACCESSORS
+    // ============================
+
+    /**
+     * Get the game score as a Value Object.
+     */
+    public function score(): GameScore
+    {
+        return GameScore::fromArray($this->attributes);
+    }
+
+    /**
+     * Get the game clock as a Value Object.
+     */
+    public function clock(): GameClock
+    {
+        return GameClock::fromArray($this->attributes);
+    }
+
+    /**
+     * Get the game venue as a Value Object.
+     */
+    public function venueInfo(): GameVenue
+    {
+        return GameVenue::fromArray($this->attributes);
+    }
+
+    /**
+     * Get the game schedule as a Value Object.
+     */
+    public function schedule(): GameSchedule
+    {
+        return GameSchedule::fromArray($this->attributes);
+    }
+
+    /**
+     * Get the game officials as a Value Object.
+     */
+    public function officials(): GameOfficials
+    {
+        return GameOfficials::fromArray($this->attributes);
+    }
+
+    /**
+     * Get the game rules as a Value Object.
+     */
+    public function rules(): GameRules
+    {
+        return GameRules::fromArray($this->attributes);
+    }
+
+    /**
+     * Get the game statistics as a Value Object.
+     */
+    public function statistics(): GameStatistics
+    {
+        return GameStatistics::fromArray($this->attributes);
+    }
+
+    /**
+     * Get the game fouls as a Value Object.
+     */
+    public function fouls(): GameFouls
+    {
+        return GameFouls::fromArray($this->attributes);
+    }
+
+    /**
+     * Get the registration settings as a Value Object.
+     */
+    public function registrationSettings(): GameRegistrationSettings
+    {
+        return GameRegistrationSettings::fromArray($this->attributes);
+    }
+
+    /**
+     * Get the media settings as a Value Object.
+     */
+    public function mediaSettings(): GameMediaSettings
+    {
+        return GameMediaSettings::fromArray($this->attributes);
     }
 
     // ============================

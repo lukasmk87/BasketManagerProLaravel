@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Services\Gym\GymConflictDetector;
+use App\Services\Gym\GymScheduleOptimizer;
+use App\Services\Gym\GymTimeSlotAssignmentService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -281,30 +284,24 @@ class GymTimeSlot extends Model
         return $days[$this->day_of_week] ?? 0;
     }
 
-    public function assignToTeam(Team $team, User $assignedBy, string $reason = null): void
+    /**
+     * Assign this time slot to a team.
+     *
+     * @deprecated Use GymTimeSlotAssignmentService::assignToTeam() instead
+     */
+    public function assignToTeam(Team $team, User $assignedBy, string $reason = null): bool
     {
-        $this->update([
-            'team_id' => $team->id,
-            'assigned_by' => $assignedBy->id,
-            'assigned_at' => now(),
-            'metadata' => array_merge($this->metadata ?? [], [
-                'assignment_reason' => $reason,
-                'assigned_by_name' => $assignedBy->name,
-            ])
-        ]);
+        return app(GymTimeSlotAssignmentService::class)->assignToTeam($this, $team, $assignedBy, $reason);
     }
 
-    public function unassignFromTeam(User $unassignedBy, string $reason = null): void
+    /**
+     * Unassign this time slot from a team.
+     *
+     * @deprecated Use GymTimeSlotAssignmentService::unassignFromTeam() instead
+     */
+    public function unassignFromTeam(User $unassignedBy, string $reason = null): bool
     {
-        $this->update([
-            'team_id' => null,
-            'metadata' => array_merge($this->metadata ?? [], [
-                'last_unassigned_at' => now(),
-                'unassignment_reason' => $reason,
-                'unassigned_by' => $unassignedBy->id,
-                'unassigned_by_name' => $unassignedBy->name,
-            ])
-        ]);
+        return app(GymTimeSlotAssignmentService::class)->unassignFromTeam($this, $unassignedBy, $reason);
     }
 
     public function isAvailableForDate(Carbon $date): bool
@@ -799,162 +796,33 @@ class GymTimeSlot extends Model
     // ============================
 
     /**
-     * Check for overlapping time slots in the same hall
+     * Check for overlapping time slots in the same hall.
+     *
+     * @deprecated Use GymConflictDetector::hasOverlappingSlots() instead
      */
     public static function hasOverlappingSlots(int $gymHallId, array $customTimes, $excludeSlotIds = null): array
     {
-        $conflicts = [];
-        
-        $existingSlots = static::where('gym_hall_id', $gymHallId)
-            ->when($excludeSlotIds, function ($query, $excludeSlotIds) {
-                // Handle both single ID and array of IDs
-                if (is_array($excludeSlotIds)) {
-                    $query->whereNotIn('id', $excludeSlotIds);
-                } else {
-                    $query->where('id', '!=', $excludeSlotIds);
-                }
-            })
-            ->get();
-
-        foreach ($customTimes as $day => $newTimes) {
-            if (!isset($newTimes['start_time']) || !isset($newTimes['end_time'])) {
-                continue;
-            }
-
-            $newStart = Carbon::createFromTimeString($newTimes['start_time']);
-            $newEnd = Carbon::createFromTimeString($newTimes['end_time']);
-
-            foreach ($existingSlots as $existingSlot) {
-                $existingTimes = $existingSlot->getTimesForDay($day);
-                
-                if (!$existingTimes || !$existingTimes['start_time'] || !$existingTimes['end_time']) {
-                    continue;
-                }
-
-                $existingStart = Carbon::createFromTimeString($existingTimes['start_time']);
-                $existingEnd = Carbon::createFromTimeString($existingTimes['end_time']);
-
-                // Check for overlap
-                if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
-                    $conflicts[] = [
-                        'day' => $day,
-                        'new_time' => $newTimes['start_time'] . ' - ' . $newTimes['end_time'],
-                        'existing_time' => $existingTimes['start_time'] . ' - ' . $existingTimes['end_time'],
-                        'existing_slot_id' => $existingSlot->id,
-                        'existing_slot_title' => $existingSlot->title,
-                    ];
-                }
-            }
-        }
-
-        return $conflicts;
+        return app(GymConflictDetector::class)->hasOverlappingSlots($gymHallId, $customTimes, $excludeSlotIds);
     }
 
     /**
-     * Validate custom times structure and ranges
+     * Validate custom times structure and ranges.
+     *
+     * @deprecated Use GymConflictDetector::validateCustomTimes() instead
      */
     public static function validateCustomTimes(array $customTimes): array
     {
-        $errors = [];
-        $validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-        foreach ($customTimes as $day => $times) {
-            if (!in_array($day, $validDays)) {
-                $errors[] = "Ungültiger Wochentag: {$day}";
-                continue;
-            }
-
-            if (!is_array($times) || !isset($times['start_time']) || !isset($times['end_time'])) {
-                $errors[] = "Ungültige Zeitstruktur für {$day}";
-                continue;
-            }
-
-            // Validate time format
-            if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $times['start_time'])) {
-                $errors[] = "Ungültiges Startzeit-Format für {$day}: {$times['start_time']}";
-            }
-
-            if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $times['end_time'])) {
-                $errors[] = "Ungültiges Endzeit-Format für {$day}: {$times['end_time']}";
-            }
-
-            // Check if start time is before end time
-            try {
-                $start = Carbon::createFromTimeString($times['start_time']);
-                $end = Carbon::createFromTimeString($times['end_time']);
-
-                if ($start->gte($end)) {
-                    $errors[] = "Startzeit muss vor Endzeit liegen für {$day}";
-                }
-
-                // Check for reasonable opening hours (not longer than 18 hours)
-                if ($start->diffInHours($end) > 18) {
-                    $errors[] = "Öffnungszeiten für {$day} sind zu lang (maximal 18 Stunden)";
-                }
-
-                // Check for minimum duration (at least 30 minutes)
-                if ($start->diffInMinutes($end) < 30) {
-                    $errors[] = "Mindestöffnungszeit von 30 Minuten für {$day} unterschritten";
-                }
-                
-            } catch (\Exception $e) {
-                $errors[] = "Fehler beim Validieren der Zeiten für {$day}: " . $e->getMessage();
-            }
-        }
-
-        return $errors;
+        return app(GymConflictDetector::class)->validateCustomTimes($customTimes);
     }
 
     /**
-     * Get conflicting bookings for new time slots
+     * Get conflicting bookings for new time slots.
+     *
+     * @deprecated Use GymConflictDetector::getConflictingBookings() instead
      */
     public function getConflictingBookings(array $newCustomTimes): array
     {
-        $conflicts = [];
-        
-        foreach ($newCustomTimes as $day => $times) {
-            if (!isset($times['start_time']) || !isset($times['end_time'])) {
-                continue;
-            }
-
-            $newStart = $times['start_time'];
-            $newEnd = $times['end_time'];
-            
-            // Get current times for this day
-            $currentTimes = $this->getTimesForDay($day);
-            
-            // Only check if times are being restricted (new times are more restrictive)
-            if ($currentTimes && 
-                ($newStart > $currentTimes['start_time'] || $newEnd < $currentTimes['end_time'])) {
-                
-                $dayNumber = $this->getDayNumberForName($day);
-                
-                // Find bookings that would be outside new time range
-                $conflictingBookings = $this->bookings()
-                    ->whereRaw('DAYOFWEEK(booking_date) - 1 = ?', [$dayNumber])
-                    ->where(function ($query) use ($newStart, $newEnd) {
-                        $query->where('start_time', '<', $newStart)
-                              ->orWhere('end_time', '>', $newEnd);
-                    })
-                    ->whereIn('status', ['reserved', 'confirmed'])
-                    ->with(['team'])
-                    ->get();
-
-                if ($conflictingBookings->count() > 0) {
-                    $conflicts[$day] = $conflictingBookings->map(function ($booking) {
-                        return [
-                            'id' => $booking->id,
-                            'date' => $booking->booking_date,
-                            'time' => $booking->start_time . ' - ' . $booking->end_time,
-                            'team' => $booking->team->name ?? 'Unbekannt',
-                            'status' => $booking->status,
-                        ];
-                    })->toArray();
-                }
-            }
-        }
-
-        return $conflicts;
+        return app(GymConflictDetector::class)->getConflictingBookings($this, $newCustomTimes);
     }
 
     /**
@@ -979,27 +847,21 @@ class GymTimeSlot extends Model
     // SEGMENT-BASED TEAM ASSIGNMENT METHODS
     // ============================
 
+    /**
+     * Get team assignments for a specific day.
+     *
+     * @deprecated Use GymTimeSlotAssignmentService::getTeamAssignmentsForDay() instead
+     */
     public function getTeamAssignmentsForDay(string $dayOfWeek): array
     {
-        return $this->activeTeamAssignments()
-            ->where('day_of_week', $dayOfWeek)
-            ->with(['team'])
-            ->orderBy('start_time')
-            ->get()
-            ->map(function ($assignment) {
-                return [
-                    'id' => $assignment->id,
-                    'team_id' => $assignment->team_id,
-                    'team_name' => $assignment->team->name,
-                    'start_time' => $assignment->start_time->format('H:i'),
-                    'end_time' => $assignment->end_time->format('H:i'),
-                    'duration_minutes' => $assignment->duration_minutes,
-                    'notes' => $assignment->notes,
-                ];
-            })
-            ->toArray();
+        return app(GymTimeSlotAssignmentService::class)->getTeamAssignmentsForDay($this, $dayOfWeek);
     }
 
+    /**
+     * Assign a team to a specific time segment within this time slot.
+     *
+     * @deprecated Use GymTimeSlotAssignmentService::assignTeamToSegment() instead
+     */
     public function assignTeamToSegment(
         Team $team,
         string $dayOfWeek,
@@ -1009,99 +871,53 @@ class GymTimeSlot extends Model
         string $notes = null,
         GymCourt $gymCourt = null
     ): GymTimeSlotTeamAssignment {
-        $startCarbon = Carbon::createFromTimeString($startTime);
-        $endCarbon = Carbon::createFromTimeString($endTime);
-        $duration = $startCarbon->diffInMinutes($endCarbon);
-
-        return $this->teamAssignments()->create([
-            'uuid' => Str::uuid(),
-            'gym_time_slot_id' => $this->id,
-            'team_id' => $team->id,
-            'gym_court_id' => $gymCourt?->id,
-            'day_of_week' => $dayOfWeek,
-            'start_time' => $startTime,
-            'end_time' => $endTime,
-            'duration_minutes' => $duration,
-            'status' => 'active',
-            'notes' => $notes,
-            'assigned_by' => $assignedBy->id,
-            'assigned_at' => now(),
-            'valid_from' => now()->toDateString(),
-        ]);
+        return app(GymTimeSlotAssignmentService::class)->assignTeamToSegment(
+            $this,
+            $team,
+            $dayOfWeek,
+            $startTime,
+            $endTime,
+            $assignedBy,
+            $notes,
+            $gymCourt
+        );
     }
 
+    /**
+     * Remove a team assignment from this time slot.
+     *
+     * @deprecated Use GymTimeSlotAssignmentService::removeTeamAssignment() instead
+     */
     public function removeTeamAssignment(int $assignmentId): bool
     {
-        $assignment = $this->teamAssignments()->find($assignmentId);
-        
-        if ($assignment) {
-            return $assignment->delete();
-        }
-        
-        return false;
+        return app(GymTimeSlotAssignmentService::class)->removeTeamAssignment($this, $assignmentId);
     }
 
+    /**
+     * Get available segments for a specific day with team assignment information.
+     *
+     * @deprecated Use GymTimeSlotAssignmentService::getAvailableSegmentsForDay() instead
+     */
     public function getAvailableSegmentsForDay(string $dayOfWeek, int $incrementMinutes = 30): array
     {
-        $times = $this->getTimesForDay($dayOfWeek);
-        
-        if (!$times || !$times['start_time'] || !$times['end_time']) {
-            return [];
-        }
-
-        $startTime = Carbon::createFromTimeString($times['start_time']);
-        $endTime = Carbon::createFromTimeString($times['end_time']);
-        
-        $segments = [];
-        $current = $startTime->copy();
-
-        while ($current->copy()->addMinutes($incrementMinutes)->lte($endTime)) {
-            $segmentStart = $current->copy();
-            $segmentEnd = $current->copy()->addMinutes($incrementMinutes);
-            
-            $assignedTeams = $this->getTeamsAssignedToSegment(
-                $dayOfWeek,
-                $segmentStart->format('H:i'),
-                $segmentEnd->format('H:i')
-            );
-            
-            $segments[] = [
-                'start_time' => $segmentStart->format('H:i'),
-                'end_time' => $segmentEnd->format('H:i'),
-                'duration_minutes' => $incrementMinutes,
-                'segment_id' => $segmentStart->format('Hi') . '-' . $segmentEnd->format('Hi'),
-                'is_available' => empty($assignedTeams),
-                'assigned_teams' => $assignedTeams,
-            ];
-            
-            $current->addMinutes($incrementMinutes);
-        }
-
-        return $segments;
+        return app(GymTimeSlotAssignmentService::class)->getAvailableSegmentsForDay($this, $dayOfWeek, $incrementMinutes);
     }
 
+    /**
+     * Get teams assigned to a specific time segment.
+     *
+     * @deprecated Use GymTimeSlotAssignmentService::getTeamsAssignedToSegment() instead
+     */
     public function getTeamsAssignedToSegment(string $dayOfWeek, string $startTime, string $endTime): array
     {
-        return $this->activeTeamAssignments()
-            ->where('day_of_week', $dayOfWeek)
-            ->where(function($q) use ($startTime, $endTime) {
-                $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
-            })
-            ->with(['team'])
-            ->get()
-            ->map(function ($assignment) {
-                return [
-                    'id' => $assignment->id,
-                    'team_id' => $assignment->team_id,
-                    'team_name' => $assignment->team->name,
-                    'start_time' => $assignment->start_time->format('H:i'),
-                    'end_time' => $assignment->end_time->format('H:i'),
-                ];
-            })
-            ->toArray();
+        return app(GymTimeSlotAssignmentService::class)->getTeamsAssignedToSegment($this, $dayOfWeek, $startTime, $endTime);
     }
 
+    /**
+     * Check if a team can be assigned to a segment.
+     *
+     * @deprecated Use GymConflictDetector::canAssignTeamToSegment() instead
+     */
     public function canAssignTeamToSegment(
         int $teamId,
         string $dayOfWeek,
@@ -1109,146 +925,14 @@ class GymTimeSlot extends Model
         string $endTime,
         int $gymCourtId = null
     ): array {
-        $errors = [];
-
-        if (GymTimeSlotTeamAssignment::hasConflictForTeam(
-            $this->id,
+        return app(GymConflictDetector::class)->canAssignTeamToSegment(
+            $this,
             $teamId,
             $dayOfWeek,
             $startTime,
-            $endTime
-        )) {
-            $errors[] = 'Team hat bereits eine Zuordnung zu dieser Zeit.';
-        }
-
-        $times = $this->getTimesForDay($dayOfWeek);
-        if (!$times) {
-            $errors[] = 'Keine Öffnungszeiten für diesen Tag definiert.';
-        } else {
-            // Convert times to Carbon instances for proper comparison
-            try {
-                $slotStart = Carbon::createFromTimeString($times['start_time']);
-                $slotEnd = Carbon::createFromTimeString($times['end_time']);
-                $requestStart = Carbon::createFromTimeString($startTime);
-                $requestEnd = Carbon::createFromTimeString($endTime);
-                
-                if ($requestStart->lt($slotStart) || $requestEnd->gt($slotEnd)) {
-                    $errors[] = "Zeitfenster liegt außerhalb der Öffnungszeiten ({$times['start_time']} - {$times['end_time']}).";
-                }
-            } catch (\Exception $e) {
-                $errors[] = 'Ungültiges Zeitformat.';
-            }
-        }
-
-        // Validate time format and duration
-        try {
-            $startCarbon = Carbon::createFromTimeString($startTime);
-            $endCarbon = Carbon::createFromTimeString($endTime);
-            $duration = $startCarbon->diffInMinutes($endCarbon);
-
-            if ($duration < 30) {
-                $errors[] = 'Minimale Buchungsdauer von 30 Minuten unterschritten.';
-            }
-
-            if ($duration % 30 !== 0) {
-                $errors[] = 'Buchungsdauer muss in 30-Minuten-Schritten erfolgen.';
-            }
-        } catch (\Exception $e) {
-            $errors[] = 'Ungültiges Zeitformat für Start- oder Endzeit.';
-            return $errors; // Return early if time format is invalid
-        }
-
-        // Check parallel bookings restrictions considering main court logic
-        $gymHall = $this->gymHall;
-        
-        if (!$gymHall) {
-            $errors[] = 'Zugehörige Sporthalle nicht gefunden.';
-            return $errors;
-        }
-        
-        // Check if we're trying to book the main court
-        $mainCourt = $gymHall->getMainCourt();
-        $isBookingMainCourt = $mainCourt && $gymCourtId == $mainCourt->id;
-        
-        // Check if main court is already booked during this time
-        $mainCourtIsBooked = $gymHall->hasMainCourtBooking($dayOfWeek, $startTime, $endTime);
-        
-        // Get effective parallel booking rules (considering main court)
-        $effectiveParallelBookingsAllowed = $gymHall->allowsParallelBookingsForTime($dayOfWeek, $startTime, $endTime);
-        
-        if ($isBookingMainCourt) {
-            // If trying to book main court, check if any other courts are occupied
-            $otherCourtAssignments = $this->activeTeamAssignments()
-                ->where('day_of_week', $dayOfWeek)
-                ->where('team_id', '!=', $teamId)
-                ->where('gym_court_id', '!=', $mainCourt->id)
-                ->whereNotNull('gym_court_id')
-                ->where(function($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
-                ->with(['team', 'gymCourt'])
-                ->get();
-
-            if ($otherCourtAssignments->count() > 0) {
-                $occupiedCourts = $otherCourtAssignments->map(function($assignment) {
-                    return $assignment->team->name . ' (' . $assignment->gymCourt->name . ')';
-                })->join(', ');
-                $errors[] = "Hauptplatz kann nicht gebucht werden - andere Felder sind bereits belegt: {$occupiedCourts}";
-            }
-        } elseif ($mainCourtIsBooked) {
-            // If main court is booked, no other bookings allowed
-            $errors[] = "Keine weiteren Buchungen möglich - der Hauptplatz ist zu dieser Zeit belegt.";
-        } elseif (!$effectiveParallelBookingsAllowed) {
-            // Standard parallel booking rules
-            $existingAssignments = $this->activeTeamAssignments()
-                ->where('day_of_week', $dayOfWeek)
-                ->where('team_id', '!=', $teamId)
-                ->where(function($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
-                ->with(['team'])
-                ->get();
-
-            if ($existingAssignments->count() > 0) {
-                $teamNames = $existingAssignments->pluck('team.name')->join(', ');
-                $errors[] = "Für diesen Tag sind keine Parallel-Buchungen erlaubt. Bereits belegt von: {$teamNames}";
-            }
-        } else {
-            // Parallel bookings allowed - check effective capacity
-            $effectiveMaxTeams = $gymHall->getEffectiveMaxParallelTeams($dayOfWeek, $startTime, $endTime);
-            
-            $overlappingAssignments = $this->activeTeamAssignments()
-                ->where('day_of_week', $dayOfWeek)
-                ->where('team_id', '!=', $teamId)
-                ->where(function($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
-                ->count();
-
-            if ($overlappingAssignments >= $effectiveMaxTeams) {
-                $errors[] = "Maximale Anzahl paralleler Teams ({$effectiveMaxTeams}) für diesen Tag bereits erreicht.";
-            }
-
-            // If a court is specified, check for court conflicts
-            if ($gymCourtId) {
-                $courtConflict = GymTimeSlotTeamAssignment::hasConflictForCourt(
-                    $this->id,
-                    $gymCourtId,
-                    $dayOfWeek,
-                    $startTime,
-                    $endTime
-                );
-                
-                if ($courtConflict) {
-                    $errors[] = 'Das ausgewählte Feld ist zu dieser Zeit bereits belegt.';
-                }
-            }
-        }
-
-        return $errors;
+            $endTime,
+            $gymCourtId
+        );
     }
 
     // ============================

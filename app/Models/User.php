@@ -22,6 +22,8 @@ use Laravel\Cashier\Billable;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Services\User\UserRoleService;
+use App\Services\User\UserApiService;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -435,148 +437,105 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Check if the user is a coach.
+     *
+     * @deprecated Use UserRoleService::isCoach() instead
      */
     public function isCoach(): bool
     {
-        return $this->hasAnyRole(['trainer', 'club_admin', 'admin']);
+        return app(UserRoleService::class)->isCoach($this);
     }
 
     /**
      * Check if the user is a player.
+     *
+     * @deprecated Use UserRoleService::isPlayer() instead
      */
     public function isPlayer(): bool
     {
-        return $this->player_profile_active && $this->playerProfile()->exists();
+        return app(UserRoleService::class)->isPlayer($this);
     }
 
     /**
      * Check if the user is an admin.
+     *
+     * @deprecated Use UserRoleService::isAdmin() instead
      */
     public function isAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return app(UserRoleService::class)->isAdmin($this);
     }
 
     /**
      * Check if the user is a club admin.
+     *
+     * @deprecated Use UserRoleService::isClubAdmin() instead
      */
     public function isClubAdmin(): bool
     {
-        return $this->hasRole('club_admin');
+        return app(UserRoleService::class)->isClubAdmin($this);
     }
 
     /**
      * Get clubs administered by this user.
-     * Returns clubs based on role hierarchy:
-     * - Super Admin / Admin: All clubs
-     * - Club Admin: Clubs where user has pivot role 'admin' or 'owner'
      *
+     * @deprecated Use UserRoleService::getAdministeredClubs() instead
      * @param bool $asQuery If true, returns query builder. If false, returns collection.
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany|\Illuminate\Database\Eloquent\Collection
      */
     public function getAdministeredClubs(bool $asQuery = true)
     {
-        // Super Admin and Admin have access to all clubs
-        if ($this->hasRole(['super_admin', 'admin'])) {
-            if ($asQuery) {
-                return \App\Models\Club::query();
-            }
-            return \App\Models\Club::all();
-        }
-
-        // Club Admin has access to clubs where they have pivot role 'admin' or 'owner'
-        $query = $this->clubs()->wherePivotIn('role', ['admin', 'owner']);
-
-        if ($asQuery) {
-            return $query;
-        }
-
-        return $query->get();
+        return app(UserRoleService::class)->getAdministeredClubs($this, $asQuery);
     }
 
     /**
      * Get IDs of clubs administered by this user.
-     * Returns club IDs based on role hierarchy:
-     * - Super Admin / Admin: All club IDs
-     * - Club Admin: IDs of clubs where user has pivot role 'admin' or 'owner'
      *
+     * @deprecated Use UserRoleService::getAdministeredClubIds() instead
      * @return array
      */
     public function getAdministeredClubIds(): array
     {
-        // Super Admin and Admin have access to all clubs
-        if ($this->hasRole(['super_admin', 'admin'])) {
-            return \App\Models\Club::pluck('id')->toArray();
-        }
-
-        // Club Admin has access to clubs where they have pivot role 'admin' or 'owner'
-        return $this->clubs()
-            ->wherePivotIn('role', ['admin', 'owner'])
-            ->pluck('clubs.id')
-            ->toArray();
+        return app(UserRoleService::class)->getAdministeredClubIds($this);
     }
 
     /**
      * Check if the user is a parent.
+     *
+     * @deprecated Use UserRoleService::isParent() instead
      */
     public function isParent(): bool
     {
-        // Check if user has the parent role OR has children
-        return $this->hasRole('parent') || $this->children()->exists();
+        return app(UserRoleService::class)->isParent($this);
     }
 
     /**
      * Check if the user has access to a specific team.
+     *
+     * @deprecated Use UserRoleService::hasTeamAccess() instead
      */
     public function hasTeamAccess(Team $team, array $permissions = []): bool
     {
-        // Admin has access to everything
-        if ($this->hasRole('admin')) {
-            return true;
-        }
-
-        // Club admin has access to all teams in their clubs
-        if ($this->hasRole('club_admin')) {
-            return $this->clubs()->where('clubs.id', $team->club_id)->exists();
-        }
-
-        // Coach has access to their teams
-        if ($team->head_coach_id === $this->id || in_array($this->id, $team->assistant_coaches ?? [])) {
-            return true;
-        }
-
-        // Player has access to their own team
-        if ($this->playerProfile && $this->playerProfile->team_id === $team->id) {
-            return true;
-        }
-
-        return false;
+        return app(UserRoleService::class)->hasTeamAccess($this, $team, $permissions);
     }
 
     /**
      * Check if the user can coach a specific team.
+     *
+     * @deprecated Use UserRoleService::canCoachTeam() instead
      */
     public function canCoachTeam(Team $team): bool
     {
-        return $this->isCoach() && $this->hasTeamAccess($team);
+        return app(UserRoleService::class)->canCoachTeam($this, $team);
     }
 
     /**
      * Get the user's primary team (as player or coach).
+     *
+     * @deprecated Use UserRoleService::getPrimaryTeam() instead
      */
     public function getPrimaryTeam(): ?Team
     {
-        // If user is a player, return their team
-        if ($this->isPlayer()) {
-            return $this->playerProfile->team;
-        }
-
-        // If user is a coach, return their first coached team
-        if ($this->isCoach()) {
-            return $this->coachedTeams()->first() ?? $this->assistantCoachedTeams()->first();
-        }
-
-        return null;
+        return app(UserRoleService::class)->getPrimaryTeam($this);
     }
 
     /**
@@ -656,198 +615,152 @@ class User extends Authenticatable implements MustVerifyEmail
     // ============================
 
     /**
-     * Get user's current subscription or create a free one
+     * Get user's current subscription or create a free one.
+     *
+     * @deprecated Use UserApiService::getSubscription() instead
      */
     public function getSubscription(): Subscription
     {
-        $subscription = $this->subscription;
-        
-        if (!$subscription) {
-            $subscription = $this->subscription()->create([
-                'tier' => 'free',
-                'plan_name' => 'Free Plan',
-                'status' => 'active',
-                'api_requests_limit' => 1000,
-                'burst_limit' => 100,
-                'concurrent_requests_limit' => 10,
-            ]);
-        }
-        
-        return $subscription;
+        return app(UserApiService::class)->getSubscription($this);
     }
 
     /**
-     * Get effective API rate limits for this user
+     * Get effective API rate limits for this user.
+     *
+     * @deprecated Use UserApiService::getApiLimits() instead
      */
     public function getApiLimits(): array
     {
-        $subscription = $this->getSubscription();
-        $baseLimits = $subscription->getApiLimits();
-        
-        // Check for active rate limit exceptions
-        $exceptions = RateLimitException::findActiveFor('user', $this->id);
-        
-        foreach ($exceptions as $exception) {
-            $baseLimits = $exception->getEffectiveLimits($baseLimits);
-        }
-        
-        return $baseLimits;
+        return app(UserApiService::class)->getApiLimits($this);
     }
 
     /**
-     * Check if user has exceeded their API quota
+     * Check if user has exceeded their API quota.
+     *
+     * @deprecated Use UserApiService::hasExceededApiQuota() instead
      */
     public function hasExceededApiQuota(): bool
     {
-        $limits = $this->getApiLimits();
-        $usage = $this->getCurrentApiUsage();
-        
-        return $usage['total_requests'] >= $limits['requests_per_hour'];
+        return app(UserApiService::class)->hasExceededApiQuota($this);
     }
 
     /**
-     * Get current API usage for the user
+     * Get current API usage for the user.
+     *
+     * @deprecated Use UserApiService::getCurrentApiUsage() instead
      */
     public function getCurrentApiUsage(): array
     {
-        return ApiUsageTracking::getCurrentWindowUsage($this->id, null, 'hourly');
+        return app(UserApiService::class)->getCurrentApiUsage($this);
     }
 
     /**
-     * Reset API quota (called hourly)
+     * Reset API quota (called hourly).
+     *
+     * @deprecated Use UserApiService::resetApiQuota() instead
      */
     public function resetApiQuota(): void
     {
-        $this->current_api_usage = 0;
-        $this->api_quota_reset_at = now()->addHour();
-        $this->save();
+        app(UserApiService::class)->resetApiQuota($this);
     }
 
     /**
-     * Generate API key for user
+     * Generate API key for user.
+     *
+     * @deprecated Use UserApiService::generateApiKey() instead
      */
     public function generateApiKey(): string
     {
-        $apiKey = 'bmp_' . bin2hex(random_bytes(20)); // BasketManager Pro prefix
-        $this->api_key_hash = hash('sha256', $apiKey);
-        $this->api_access_enabled = true;
-        $this->save();
-        
-        return $apiKey;
+        return app(UserApiService::class)->generateApiKey($this);
     }
 
     /**
-     * Verify API key
+     * Verify API key.
+     *
+     * @deprecated Use UserApiService::verifyApiKey() instead
      */
     public function verifyApiKey(string $apiKey): bool
     {
-        if (!$this->api_access_enabled) {
-            return false;
-        }
-        
-        $hashedKey = hash('sha256', $apiKey);
-        return $this->api_key_hash === $hashedKey;
+        return app(UserApiService::class)->verifyApiKey($this, $apiKey);
     }
 
     /**
-     * Update API key last used timestamp
+     * Update API key last used timestamp.
+     *
+     * @deprecated Use UserApiService::updateApiKeyUsage() instead
      */
     public function updateApiKeyUsage(): void
     {
-        $this->api_key_last_used_at = now();
-        $this->save();
+        app(UserApiService::class)->updateApiKeyUsage($this);
     }
 
     /**
-     * Revoke API key
+     * Revoke API key.
+     *
+     * @deprecated Use UserApiService::revokeApiKey() instead
      */
     public function revokeApiKey(): void
     {
-        $this->api_key_hash = null;
-        $this->api_access_enabled = false;
-        $this->api_key_last_used_at = null;
-        $this->save();
+        app(UserApiService::class)->revokeApiKey($this);
     }
 
     /**
-     * Get user's API usage statistics
+     * Get user's API usage statistics.
+     *
+     * @deprecated Use UserApiService::getApiUsageStats() instead
      */
     public function getApiUsageStats(string $period = 'last_30_days'): array
     {
-        $start = match($period) {
-            'today' => now()->startOfDay(),
-            'yesterday' => now()->subDay()->startOfDay(),
-            'last_7_days' => now()->subDays(7),
-            'last_30_days' => now()->subDays(30),
-            'current_month' => now()->startOfMonth(),
-            'last_month' => now()->subMonth()->startOfMonth(),
-            default => now()->subDays(30),
-        };
-        
-        $end = match($period) {
-            'yesterday' => now()->subDay()->endOfDay(),
-            'last_month' => now()->subMonth()->endOfMonth(),
-            default => now(),
-        };
-        
-        return ApiUsageTracking::getUserUsageSummary($this->id, $start, $end);
+        return app(UserApiService::class)->getApiUsageStats($this, $period);
     }
 
     /**
-     * Check if user can access a specific API feature
+     * Check if user can access a specific API feature.
+     *
+     * @deprecated Use UserApiService::canAccessApiFeature() instead
      */
     public function canAccessApiFeature(string $feature): bool
     {
-        $subscription = $this->getSubscription();
-        return $subscription->hasFeature($feature);
+        return app(UserApiService::class)->canAccessApiFeature($this, $feature);
     }
 
     /**
-     * Get subscription tier display name
+     * Get subscription tier display name.
+     *
+     * @deprecated Use UserApiService::getSubscriptionTierName() instead
      */
     public function getSubscriptionTierName(): string
     {
-        return match($this->subscription_tier) {
-            'free' => 'Free',
-            'basic' => 'Basic',
-            'premium' => 'Premium', 
-            'enterprise' => 'Enterprise',
-            'unlimited' => 'Unlimited',
-            default => 'Free',
-        };
+        return app(UserApiService::class)->getSubscriptionTierName($this);
     }
 
     /**
-     * Check if user is on premium tier or higher
+     * Check if user is on premium tier or higher.
+     *
+     * @deprecated Use UserApiService::isPremiumUser() instead
      */
     public function isPremiumUser(): bool
     {
-        return in_array($this->subscription_tier, ['premium', 'enterprise', 'unlimited']);
+        return app(UserApiService::class)->isPremiumUser($this);
     }
 
     /**
-     * Check if user is on enterprise tier or higher
+     * Check if user is on enterprise tier or higher.
+     *
+     * @deprecated Use UserApiService::isEnterpriseUser() instead
      */
     public function isEnterpriseUser(): bool
     {
-        return in_array($this->subscription_tier, ['enterprise', 'unlimited']);
+        return app(UserApiService::class)->isEnterpriseUser($this);
     }
 
     /**
-     * Calculate overage costs for current usage
+     * Calculate overage costs for current usage.
+     *
+     * @deprecated Use UserApiService::calculateOverageCosts() instead
      */
     public function calculateOverageCosts(): float
     {
-        $limits = $this->getApiLimits();
-        $usage = $this->getCurrentApiUsage();
-        
-        $excessRequests = max(0, $usage['total_requests'] - $limits['requests_per_hour']);
-        
-        if ($excessRequests > 0) {
-            $subscription = $this->getSubscription();
-            return $subscription->calculateOverageCost($excessRequests);
-        }
-        
-        return 0.0;
+        return app(UserApiService::class)->calculateOverageCosts($this);
     }
 }

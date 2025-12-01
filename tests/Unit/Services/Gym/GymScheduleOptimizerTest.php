@@ -3,9 +3,11 @@
 namespace Tests\Unit\Services\Gym;
 
 use App\Models\Club;
+use App\Models\GymBooking;
 use App\Models\GymHall;
 use App\Models\GymHallCourt;
 use App\Models\GymTimeSlot;
+use App\Models\GymTimeSlotTeamAssignment;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\Gym\GymConflictDetector;
@@ -216,5 +218,333 @@ class GymScheduleOptimizerTest extends TestCase
         $assignments = $this->optimizer->getOptimalCourtAssignments($gymHall, $date, 30);
 
         $this->assertIsArray($assignments);
+    }
+
+    // ============================
+    // getAvailableSegmentsForTimeSlot Tests (NEW - extracted from model)
+    // ============================
+
+    public function test_get_available_segments_for_time_slot_returns_segments(): void
+    {
+        $gymHall = GymHall::factory()->create();
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'day_of_week' => 'monday',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'booking_increment_minutes' => 30,
+            'uses_custom_times' => false,
+        ]);
+
+        $date = Carbon::parse('next monday');
+        $segments = $this->optimizer->getAvailableSegmentsForTimeSlot($timeSlot, $date);
+
+        $this->assertCount(4, $segments); // 2 hours / 30 min = 4 segments
+        $this->assertEquals('10:00', $segments[0]['start_time']);
+        $this->assertEquals('10:30', $segments[0]['end_time']);
+        $this->assertEquals(30, $segments[0]['duration_minutes']);
+        $this->assertArrayHasKey('is_available', $segments[0]);
+    }
+
+    public function test_get_available_segments_returns_empty_for_wrong_day(): void
+    {
+        $gymHall = GymHall::factory()->create();
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'day_of_week' => 'monday',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'uses_custom_times' => false,
+        ]);
+
+        // Query for a Tuesday
+        $date = Carbon::parse('next tuesday');
+        $segments = $this->optimizer->getAvailableSegmentsForTimeSlot($timeSlot, $date);
+
+        $this->assertEmpty($segments);
+    }
+
+    public function test_get_available_segments_marks_booked_as_unavailable(): void
+    {
+        $club = Club::factory()->create();
+        $team = Team::factory()->create(['club_id' => $club->id]);
+        $user = User::factory()->create();
+        $gymHall = GymHall::factory()->create(['club_id' => $club->id]);
+
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'day_of_week' => 'monday',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'booking_increment_minutes' => 30,
+            'uses_custom_times' => false,
+        ]);
+
+        $date = Carbon::parse('next monday');
+
+        // Create a booking for the first segment
+        GymBooking::factory()->create([
+            'gym_time_slot_id' => $timeSlot->id,
+            'team_id' => $team->id,
+            'booked_by_user_id' => $user->id,
+            'booking_date' => $date,
+            'start_time' => '10:00',
+            'end_time' => '10:30',
+            'status' => 'confirmed',
+        ]);
+
+        $segments = $this->optimizer->getAvailableSegmentsForTimeSlot($timeSlot, $date);
+
+        // First segment should be unavailable
+        $this->assertFalse($segments[0]['is_available']);
+        // Second segment should be available
+        $this->assertTrue($segments[1]['is_available']);
+    }
+
+    // ============================
+    // getAvailableSegmentsForDay Tests (NEW - extracted from model)
+    // ============================
+
+    public function test_get_available_segments_for_day_returns_segments_with_team_assignments(): void
+    {
+        $gymHall = GymHall::factory()->create();
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'day_of_week' => 'monday',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'uses_custom_times' => false,
+        ]);
+
+        $segments = $this->optimizer->getAvailableSegmentsForDay($timeSlot, 'monday', 30);
+
+        $this->assertCount(4, $segments);
+        $this->assertArrayHasKey('assigned_teams', $segments[0]);
+        $this->assertArrayHasKey('is_available', $segments[0]);
+    }
+
+    public function test_get_available_segments_for_day_returns_empty_for_invalid_day(): void
+    {
+        $gymHall = GymHall::factory()->create();
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'day_of_week' => 'monday',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'uses_custom_times' => false,
+        ]);
+
+        $segments = $this->optimizer->getAvailableSegmentsForDay($timeSlot, 'tuesday', 30);
+
+        $this->assertEmpty($segments);
+    }
+
+    // ============================
+    // getTimeGridForTimeSlot Tests (NEW - extracted from model)
+    // ============================
+
+    public function test_get_time_grid_for_time_slot_returns_grid(): void
+    {
+        $gymHall = GymHall::factory()->create();
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'day_of_week' => 'monday',
+            'start_time' => '09:00',
+            'end_time' => '11:00',
+            'booking_increment_minutes' => 30,
+            'uses_custom_times' => false,
+        ]);
+
+        $grid = $this->optimizer->getTimeGridForTimeSlot($timeSlot, 'monday');
+
+        $this->assertCount(4, $grid); // 2 hours / 30 min = 4 slots
+        $this->assertEquals('09:00', $grid[0]['start_time']);
+        $this->assertEquals('09:30', $grid[0]['end_time']);
+        $this->assertEquals('0900', $grid[0]['time_key']);
+    }
+
+    public function test_get_time_grid_returns_empty_for_wrong_day(): void
+    {
+        $gymHall = GymHall::factory()->create();
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'day_of_week' => 'monday',
+            'start_time' => '09:00',
+            'end_time' => '11:00',
+            'uses_custom_times' => false,
+        ]);
+
+        $grid = $this->optimizer->getTimeGridForTimeSlot($timeSlot, 'wednesday');
+
+        $this->assertEmpty($grid);
+    }
+
+    // ============================
+    // getTeamsAssignedToSegment Tests (NEW - extracted from model)
+    // ============================
+
+    public function test_get_teams_assigned_to_segment_returns_empty_without_assignments(): void
+    {
+        $gymHall = GymHall::factory()->create();
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+        ]);
+
+        $teams = $this->optimizer->getTeamsAssignedToSegment(
+            $timeSlot,
+            'monday',
+            '10:00',
+            '10:30'
+        );
+
+        $this->assertEmpty($teams);
+    }
+
+    // ============================
+    // createBookingForTimeSlot Tests (NEW - extracted from model)
+    // ============================
+
+    public function test_create_booking_for_time_slot_creates_booking(): void
+    {
+        $club = Club::factory()->create();
+        $team = Team::factory()->create(['club_id' => $club->id]);
+        $user = User::factory()->create();
+        $gymHall = GymHall::factory()->create(['club_id' => $club->id]);
+
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'start_time' => '14:00',
+            'end_time' => '16:00',
+            'duration_minutes' => 120,
+        ]);
+
+        $date = Carbon::tomorrow();
+        $booking = $this->optimizer->createBookingForTimeSlot($timeSlot, $date, $team, $user);
+
+        $this->assertInstanceOf(GymBooking::class, $booking);
+        $this->assertEquals($team->id, $booking->team_id);
+        $this->assertEquals($user->id, $booking->booked_by_user_id);
+        $this->assertEquals($date->toDateString(), $booking->booking_date->toDateString());
+        $this->assertEquals('reserved', $booking->status);
+    }
+
+    // ============================
+    // createFlexibleBooking Tests (NEW - extracted from model)
+    // ============================
+
+    public function test_create_flexible_booking_creates_with_custom_times(): void
+    {
+        $club = Club::factory()->create();
+        $team = Team::factory()->create(['club_id' => $club->id]);
+        $user = User::factory()->create();
+        $gymHall = GymHall::factory()->create([
+            'club_id' => $club->id,
+            'court_count' => 2,
+        ]);
+
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'start_time' => '10:00',
+            'end_time' => '18:00',
+        ]);
+
+        $date = Carbon::tomorrow();
+        $booking = $this->optimizer->createFlexibleBooking(
+            $timeSlot,
+            $date,
+            $team,
+            $user,
+            '14:00',
+            60, // 1 hour
+            []
+        );
+
+        $this->assertInstanceOf(GymBooking::class, $booking);
+        $this->assertEquals('14:00', Carbon::parse($booking->start_time)->format('H:i'));
+        $this->assertEquals('15:00', Carbon::parse($booking->end_time)->format('H:i'));
+        $this->assertEquals(60, $booking->duration_minutes);
+    }
+
+    public function test_create_flexible_booking_with_court_selection(): void
+    {
+        $club = Club::factory()->create();
+        $team = Team::factory()->create(['club_id' => $club->id]);
+        $user = User::factory()->create();
+        $gymHall = GymHall::factory()->create([
+            'club_id' => $club->id,
+            'court_count' => 2,
+        ]);
+
+        $court = GymHallCourt::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'is_active' => true,
+        ]);
+
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'start_time' => '10:00',
+            'end_time' => '18:00',
+        ]);
+
+        $date = Carbon::tomorrow();
+        $booking = $this->optimizer->createFlexibleBooking(
+            $timeSlot,
+            $date,
+            $team,
+            $user,
+            '11:00',
+            90,
+            [$court->id]
+        );
+
+        $this->assertInstanceOf(GymBooking::class, $booking);
+        $this->assertTrue($booking->is_partial_court);
+        $this->assertCount(1, $booking->courts);
+    }
+
+    // ============================
+    // generateRecurringBookingsForPeriod Tests (NEW - extracted from model)
+    // ============================
+
+    public function test_generate_recurring_bookings_returns_zero_for_non_recurring(): void
+    {
+        $club = Club::factory()->create();
+        $team = Team::factory()->create(['club_id' => $club->id]);
+        $gymHall = GymHall::factory()->create(['club_id' => $club->id]);
+
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'team_id' => $team->id,
+            'is_recurring' => false,
+        ]);
+
+        $count = $this->optimizer->generateRecurringBookingsForPeriod(
+            $timeSlot,
+            Carbon::now(),
+            Carbon::now()->addMonth()
+        );
+
+        $this->assertEquals(0, $count);
+    }
+
+    public function test_generate_recurring_bookings_returns_zero_without_team(): void
+    {
+        $gymHall = GymHall::factory()->create();
+
+        $timeSlot = GymTimeSlot::factory()->create([
+            'gym_hall_id' => $gymHall->id,
+            'team_id' => null,
+            'is_recurring' => true,
+        ]);
+
+        $count = $this->optimizer->generateRecurringBookingsForPeriod(
+            $timeSlot,
+            Carbon::now(),
+            Carbon::now()->addMonth()
+        );
+
+        $this->assertEquals(0, $count);
     }
 }

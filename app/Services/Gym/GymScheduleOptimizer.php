@@ -10,6 +10,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Service für Slot-Optimierung und Buchungs-Generierung.
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\Log;
  * - Multi-Court Buchungen erstellen
  * - Optimale Court-Zuweisungen berechnen
  * - Automatische Buchungsgenerierung
+ * - Segment-Management und Zeitraster-Generierung (extracted from GymTimeSlot)
+ * - Booking-Erstellung für Zeitfenster (extracted from GymTimeSlot)
  */
 class GymScheduleOptimizer
 {
@@ -371,6 +374,286 @@ class GymScheduleOptimizer
             }
 
             $current->addDay();
+        }
+
+        return $created;
+    }
+
+    // ============================
+    // SEGMENT MANAGEMENT METHODS (extracted from GymTimeSlot model)
+    // ============================
+
+    /**
+     * Get available time segments for a specific date.
+     *
+     * @return array<int, array{start_time: string, end_time: string, duration_minutes: int, segment_id: string, is_available: bool}>
+     */
+    public function getAvailableSegmentsForTimeSlot(GymTimeSlot $timeSlot, Carbon $date): array
+    {
+        $dayOfWeek = strtolower($date->format('l'));
+
+        // Get times for this specific day (either custom or default)
+        $times = $timeSlot->getTimesForDay($dayOfWeek);
+
+        if (! $times || ! $times['start_time'] || ! $times['end_time']) {
+            return [];
+        }
+
+        $startTime = Carbon::createFromTimeString($times['start_time']);
+        $endTime = Carbon::createFromTimeString($times['end_time']);
+        $increment = $timeSlot->booking_increment_minutes ?: 30;
+
+        $segments = [];
+        $current = $startTime->copy();
+
+        while ($current->copy()->addMinutes($increment)->lte($endTime)) {
+            $segmentStart = $current->copy();
+            $segmentEnd = $current->copy()->addMinutes($increment);
+
+            $segments[] = [
+                'start_time' => $segmentStart->format('H:i'),
+                'end_time' => $segmentEnd->format('H:i'),
+                'duration_minutes' => $increment,
+                'segment_id' => $segmentStart->format('Hi').'-'.$segmentEnd->format('Hi'),
+                'is_available' => $this->isSegmentAvailable($timeSlot, $date, $segmentStart->format('H:i'), $increment),
+            ];
+
+            $current->addMinutes($increment);
+        }
+
+        return $segments;
+    }
+
+    /**
+     * Get available segments for a specific day with team assignments.
+     *
+     * @return array<int, array{start_time: string, end_time: string, duration_minutes: int, segment_id: string, is_available: bool, assigned_teams: array}>
+     */
+    public function getAvailableSegmentsForDay(GymTimeSlot $timeSlot, string $dayOfWeek, int $incrementMinutes = 30): array
+    {
+        $times = $timeSlot->getTimesForDay($dayOfWeek);
+
+        if (! $times || ! $times['start_time'] || ! $times['end_time']) {
+            return [];
+        }
+
+        $startTime = Carbon::createFromTimeString($times['start_time']);
+        $endTime = Carbon::createFromTimeString($times['end_time']);
+
+        $segments = [];
+        $current = $startTime->copy();
+
+        while ($current->copy()->addMinutes($incrementMinutes)->lte($endTime)) {
+            $segmentStart = $current->copy();
+            $segmentEnd = $current->copy()->addMinutes($incrementMinutes);
+
+            $assignedTeams = $this->getTeamsAssignedToSegment(
+                $timeSlot,
+                $dayOfWeek,
+                $segmentStart->format('H:i'),
+                $segmentEnd->format('H:i')
+            );
+
+            $segments[] = [
+                'start_time' => $segmentStart->format('H:i'),
+                'end_time' => $segmentEnd->format('H:i'),
+                'duration_minutes' => $incrementMinutes,
+                'segment_id' => $segmentStart->format('Hi').'-'.$segmentEnd->format('Hi'),
+                'is_available' => empty($assignedTeams),
+                'assigned_teams' => $assignedTeams,
+            ];
+
+            $current->addMinutes($incrementMinutes);
+        }
+
+        return $segments;
+    }
+
+    /**
+     * Get time grid for a day from time slot.
+     *
+     * @return array<int, array{start_time: string, end_time: string, duration_minutes: int, time_key: string}>
+     */
+    public function getTimeGridForTimeSlot(GymTimeSlot $timeSlot, string $dayOfWeek): array
+    {
+        $times = $timeSlot->getTimesForDay($dayOfWeek);
+
+        if (! $times || ! $times['start_time'] || ! $times['end_time']) {
+            return [];
+        }
+
+        $startTime = Carbon::createFromTimeString($times['start_time']);
+        $endTime = Carbon::createFromTimeString($times['end_time']);
+        $increment = $timeSlot->booking_increment_minutes ?: 30;
+
+        $grid = [];
+        $current = $startTime->copy();
+
+        while ($current->copy()->addMinutes($increment)->lte($endTime)) {
+            $grid[] = [
+                'start_time' => $current->format('H:i'),
+                'end_time' => $current->copy()->addMinutes($increment)->format('H:i'),
+                'duration_minutes' => $increment,
+                'time_key' => $current->format('Hi'),
+            ];
+
+            $current->addMinutes($increment);
+        }
+
+        return $grid;
+    }
+
+    /**
+     * Get teams assigned to a specific segment.
+     *
+     * @return array<int, array{id: int, team_id: int, team_name: string, start_time: string, end_time: string}>
+     */
+    public function getTeamsAssignedToSegment(
+        GymTimeSlot $timeSlot,
+        string $dayOfWeek,
+        string $startTime,
+        string $endTime
+    ): array {
+        return $timeSlot->activeTeamAssignments()
+            ->where('day_of_week', $dayOfWeek)
+            ->where(function ($q) use ($startTime, $endTime) {
+                $q->where('start_time', '<', $endTime)
+                    ->where('end_time', '>', $startTime);
+            })
+            ->with(['team'])
+            ->get()
+            ->map(function ($assignment) {
+                return [
+                    'id' => $assignment->id,
+                    'team_id' => $assignment->team_id,
+                    'team_name' => $assignment->team->name,
+                    'start_time' => $assignment->start_time->format('H:i'),
+                    'end_time' => $assignment->end_time->format('H:i'),
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Check if a segment is available (no conflicting bookings).
+     */
+    private function isSegmentAvailable(GymTimeSlot $timeSlot, Carbon $date, string $startTime, int $duration): bool
+    {
+        $dateTimeString = $date->toDateString().' '.$startTime;
+        $segmentDateTime = Carbon::createFromFormat('Y-m-d H:i', $dateTimeString);
+
+        // Check if segment conflicts with existing bookings
+        $conflictingBookings = $timeSlot->bookings()
+            ->whereDate('booking_date', $date)
+            ->where(function ($query) use ($segmentDateTime, $duration) {
+                $segmentEnd = $segmentDateTime->copy()->addMinutes($duration);
+                $query->where(function ($q) use ($segmentDateTime, $segmentEnd) {
+                    $q->where('start_time', '<', $segmentEnd->format('H:i:s'))
+                        ->where('end_time', '>', $segmentDateTime->format('H:i:s'));
+                });
+            })
+            ->whereIn('status', ['reserved', 'confirmed'])
+            ->exists();
+
+        return ! $conflictingBookings;
+    }
+
+    // ============================
+    // BOOKING CREATION METHODS (extracted from GymTimeSlot model)
+    // ============================
+
+    /**
+     * Create a booking for a specific date.
+     */
+    public function createBookingForTimeSlot(GymTimeSlot $timeSlot, Carbon $date, Team $team, User $bookedBy): GymBooking
+    {
+        return $timeSlot->bookings()->create([
+            'uuid' => Str::uuid(),
+            'team_id' => $team->id,
+            'booked_by_user_id' => $bookedBy->id,
+            'booking_date' => $date,
+            'start_time' => $timeSlot->start_time,
+            'end_time' => $timeSlot->end_time,
+            'duration_minutes' => $timeSlot->duration_minutes,
+            'status' => 'reserved',
+            'booking_type' => 'regular',
+        ]);
+    }
+
+    /**
+     * Create a flexible booking with custom times and optional court selection.
+     *
+     * @param  array<int>  $courtIds
+     */
+    public function createFlexibleBooking(
+        GymTimeSlot $timeSlot,
+        Carbon $date,
+        Team $team,
+        User $bookedBy,
+        string $startTime,
+        int $durationMinutes,
+        array $courtIds = []
+    ): GymBooking {
+        $endTime = Carbon::createFromTimeString($startTime)->addMinutes($durationMinutes);
+
+        $bookingData = [
+            'uuid' => Str::uuid(),
+            'team_id' => $team->id,
+            'booked_by_user_id' => $bookedBy->id,
+            'booking_date' => $date,
+            'start_time' => $startTime,
+            'end_time' => $endTime->format('H:i'),
+            'duration_minutes' => $durationMinutes,
+            'status' => 'reserved',
+            'booking_type' => 'regular',
+            'court_ids' => $courtIds,
+            'is_partial_court' => count($courtIds) < $timeSlot->gymHall->court_count,
+        ];
+
+        $booking = $timeSlot->bookings()->create($bookingData);
+
+        // Attach courts if specified
+        if (! empty($courtIds)) {
+            $booking->courts()->attach($courtIds);
+        }
+
+        return $booking;
+    }
+
+    /**
+     * Generate recurring bookings for a time slot.
+     */
+    public function generateRecurringBookingsForPeriod(
+        GymTimeSlot $timeSlot,
+        Carbon $startDate,
+        Carbon $endDate
+    ): int {
+        if (! $timeSlot->is_recurring || ! $timeSlot->team_id) {
+            return 0;
+        }
+
+        $created = 0;
+        $current = $startDate->copy();
+
+        while ($current->lte($endDate)) {
+            if ($timeSlot->isAvailableForDate($current) && ! $timeSlot->hasBookingForDate($current)) {
+                $this->createBookingForTimeSlot($current, $timeSlot->team, $timeSlot->assignedByUser);
+                $created++;
+            }
+
+            switch ($timeSlot->recurrence_type) {
+                case 'weekly':
+                    $current->addWeek();
+                    break;
+                case 'biweekly':
+                    $current->addWeeks(2);
+                    break;
+                case 'monthly':
+                    $current->addMonth();
+                    break;
+                default:
+                    break 2; // Exit the while loop
+            }
         }
 
         return $created;
