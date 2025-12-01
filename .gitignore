@@ -23,3 +23,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 bundle-stats.html
+
+# Windows reserved device names
+nul
+NUL

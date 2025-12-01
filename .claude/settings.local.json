@@ -15,7 +15,9 @@
       "Bash(xargs ls:*)",
       "Bash(composer show:*)",
       "Bash(composer require:*)",
-      "Bash(php -l:*)"
+      "Bash(php -l:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []
