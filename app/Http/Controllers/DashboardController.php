@@ -150,7 +150,7 @@ class DashboardController extends Controller
             // Also include 'manager' role for club_user pivot
             // PERF-001: Optimized - use withCount instead of loading full relations
             if ($user->hasRole(['super_admin', 'admin'])) {
-                $adminClubs = Club::select(['id', 'name', 'slug', 'logo_url', 'is_active', 'is_verified', 'tenant_id'])
+                $adminClubs = Club::select(['id', 'name', 'slug', 'logo_path', 'is_active', 'is_verified', 'tenant_id'])
                     ->withCount(['teams', 'users'])
                     ->with([
                         'teams' => fn($q) => $q->select(['id', 'name', 'club_id'])->withCount('players'),
@@ -161,7 +161,7 @@ class DashboardController extends Controller
             $adminClubs = $user->clubs()
                     ->wherePivotIn('role', ['admin', 'owner', 'manager'])
                     ->withPivot('role')
-                    ->select(['clubs.id', 'clubs.name', 'clubs.slug', 'clubs.logo_url', 'clubs.is_active', 'clubs.is_verified', 'clubs.tenant_id'])
+                    ->select(['clubs.id', 'clubs.name', 'clubs.slug', 'clubs.logo_path', 'clubs.is_active', 'clubs.is_verified', 'clubs.tenant_id'])
                     ->withCount(['teams', 'users'])
                     ->with([
                         'teams' => fn($q) => $q->select(['id', 'name', 'club_id'])->withCount('players'),
@@ -186,7 +186,7 @@ class DashboardController extends Controller
                 'club_statistics' => $clubStats,
                 // PERF-001: Removed 'players' from with() - only players_count is used
                 'teams_overview' => $primaryClub->teams()
-                    ->select(['id', 'name', 'season', 'league', 'head_coach_id', 'is_active', 'win_percentage', 'club_id'])
+                    ->select(['id', 'name', 'season', 'league', 'head_coach_id', 'is_active', 'club_id'])
                     ->with(['headCoach:id,name'])
                     ->withCount(['players', 'homeGames', 'awayGames'])
                     ->get()
@@ -253,9 +253,50 @@ class DashboardController extends Controller
             Log::error('Failed to load club admin dashboard', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
 
-            return ['error' => 'Dashboard-Daten konnten nicht geladen werden.'];
+            // Vollständige Fallback-Struktur zurückgeben
+            return [
+                'error' => 'Dashboard-Daten konnten nicht geladen werden: ' . $e->getMessage(),
+                'primary_club' => null,
+                'club_statistics' => [
+                    'basic_stats' => [
+                        'total_teams' => 0,
+                        'active_teams' => 0,
+                        'total_players' => 0,
+                        'active_players' => 0,
+                        'total_members' => 0,
+                        'active_members' => 0,
+                        'seasons_active' => 0,
+                        'leagues_participated' => 0,
+                        'avg_player_age' => 0,
+                    ],
+                    'game_stats' => [
+                        'total_games' => 0,
+                        'total_wins' => 0,
+                        'total_losses' => 0,
+                        'win_percentage' => 0,
+                        'avg_points_scored' => 0,
+                        'avg_points_allowed' => 0,
+                    ],
+                    'financial_stats' => [
+                        'total_annual_revenue' => 0,
+                        'membership_fee_annual' => null,
+                        'membership_fee_monthly' => null,
+                    ],
+                    'recent_activity' => [
+                        'teams_created_this_month' => 0,
+                        'players_joined_this_month' => 0,
+                        'games_this_month' => 0,
+                    ],
+                ],
+                'teams_overview' => [],
+                'recent_member_activity' => [],
+                'upcoming_games' => [],
+                'all_clubs' => [],
+            ];
         }
     }
 

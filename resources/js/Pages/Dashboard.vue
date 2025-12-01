@@ -176,8 +176,9 @@ const welcomeMessage = computed(() => {
                     </div>
                 </div>
 
-                <!-- Role-specific Dashboard Component -->
-                <component :is="dashboardComponent" 
+                <!-- Role-specific Dashboard Component (nur wenn kein Fehler) -->
+                <component v-if="!dashboard_data.error"
+                          :is="dashboardComponent"
                           :dashboard-data="dashboard_data"
                           :user="user"
                           :recent-activities="recent_activities" />

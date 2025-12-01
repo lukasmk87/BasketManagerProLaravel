@@ -11,17 +11,43 @@ const props = defineProps({
     recentActivities: Array,
 });
 
-const primaryClub = computed(() => props.dashboardData.primary_club || {});
-const clubStatistics = computed(() => props.dashboardData.club_statistics || {});
-const teamsOverview = computed(() => props.dashboardData.teams_overview || []);
-const recentMemberActivity = computed(() => props.dashboardData.recent_member_activity || []);
-const upcomingGames = computed(() => props.dashboardData.upcoming_games || []);
-const allClubs = computed(() => props.dashboardData.all_clubs || []);
+const primaryClub = computed(() => props.dashboardData?.primary_club || {});
+const clubStatistics = computed(() => props.dashboardData?.club_statistics || {});
+const teamsOverview = computed(() => props.dashboardData?.teams_overview || []);
+const recentMemberActivity = computed(() => props.dashboardData?.recent_member_activity || []);
+const upcomingGames = computed(() => props.dashboardData?.upcoming_games || []);
+const allClubs = computed(() => props.dashboardData?.all_clubs || []);
 
-const basicStats = computed(() => clubStatistics.value.basic_stats || {});
-const gameStats = computed(() => clubStatistics.value.game_stats || {});
-const financialStats = computed(() => clubStatistics.value.financial_stats || {});
-const recentActivity = computed(() => clubStatistics.value.recent_activity || {});
+// Defensive Null-Checks mit vollständigen Fallback-Objekten
+const basicStats = computed(() => {
+    const stats = clubStatistics.value?.basic_stats;
+    return {
+        total_teams: stats?.total_teams ?? 0,
+        active_teams: stats?.active_teams ?? 0,
+        total_players: stats?.total_players ?? 0,
+        active_players: stats?.active_players ?? 0,
+        total_members: stats?.total_members ?? 0,
+        active_members: stats?.active_members ?? 0,
+        seasons_active: stats?.seasons_active ?? 0,
+        leagues_participated: stats?.leagues_participated ?? 0,
+        avg_player_age: stats?.avg_player_age ?? 0,
+    };
+});
+
+const gameStats = computed(() => {
+    const stats = clubStatistics.value?.game_stats;
+    return {
+        total_games: stats?.total_games ?? 0,
+        total_wins: stats?.total_wins ?? 0,
+        total_losses: stats?.total_losses ?? 0,
+        win_percentage: stats?.win_percentage ?? 0,
+        avg_points_scored: stats?.avg_points_scored ?? 0,
+        avg_points_allowed: stats?.avg_points_allowed ?? 0,
+    };
+});
+
+const financialStats = computed(() => clubStatistics.value?.financial_stats || {});
+const recentActivity = computed(() => clubStatistics.value?.recent_activity || {});
 
 const hasMultipleClubs = computed(() => allClubs.value.length > 1);
 

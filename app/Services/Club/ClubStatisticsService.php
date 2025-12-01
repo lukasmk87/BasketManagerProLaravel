@@ -46,8 +46,8 @@ class ClubStatisticsService
                 ->where('club_id', $club->id)
                 ->first();
 
-            // Game statistics
-            $gameStats = $club->teams()
+            // Game statistics - ensure safe defaults even if no games exist
+            $gameStatsQuery = $club->teams()
                 ->join('games', function ($join) {
                     $join->on('teams.id', '=', 'games.home_team_id')
                         ->orOn('teams.id', '=', 'games.away_team_id');
@@ -66,6 +66,12 @@ class ClubStatisticsService
                         WHEN teams.id = games.home_team_id THEN games.away_team_score
                         ELSE games.home_team_score END) as avg_points_allowed
                 ')->first();
+
+            // Safe extraction of game stats with null handling
+            $totalGames = $gameStatsQuery->total_games ?? 0;
+            $totalWins = $gameStatsQuery->total_wins ?? 0;
+            $avgPointsScored = $gameStatsQuery->avg_points_scored ?? 0;
+            $avgPointsAllowed = $gameStatsQuery->avg_points_allowed ?? 0;
 
             // Financial overview
             $financialStats = [
@@ -113,12 +119,12 @@ class ClubStatisticsService
                     'avg_player_age' => round($playerStats->avg_player_age ?? 0, 1),
                 ],
                 'game_stats' => [
-                    'total_games' => $gameStats->total_games ?? 0,
-                    'total_wins' => $gameStats->total_wins ?? 0,
-                    'total_losses' => ($gameStats->total_games ?? 0) - ($gameStats->total_wins ?? 0),
-                    'win_percentage' => $gameStats->total_games > 0 ? round(($gameStats->total_wins / $gameStats->total_games) * 100, 1) : 0,
-                    'avg_points_scored' => round($gameStats->avg_points_scored ?? 0, 1),
-                    'avg_points_allowed' => round($gameStats->avg_points_allowed ?? 0, 1),
+                    'total_games' => $totalGames,
+                    'total_wins' => $totalWins,
+                    'total_losses' => $totalGames - $totalWins,
+                    'win_percentage' => $totalGames > 0 ? round(($totalWins / $totalGames) * 100, 1) : 0,
+                    'avg_points_scored' => round($avgPointsScored, 1),
+                    'avg_points_allowed' => round($avgPointsAllowed, 1),
                 ],
                 'financial_stats' => $financialStats,
                 'recent_activity' => $recentActivity,

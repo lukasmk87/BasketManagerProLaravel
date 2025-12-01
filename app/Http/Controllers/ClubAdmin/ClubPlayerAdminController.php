@@ -40,7 +40,7 @@ class ClubPlayerAdminController extends Controller
         $players = Player::whereHas('teams', function ($query) use ($primaryClub) {
             $query->where('club_id', $primaryClub->id);
         })
-            ->select(['players.id', 'players.user_id', 'players.status', 'players.full_name', 'players.created_at'])
+            ->select(['players.id', 'players.user_id', 'players.status', 'players.created_at'])
             ->with([
                 'user:id,name,email,birth_date',
                 'teams' => fn ($q) => $q->where('club_id', $primaryClub->id)

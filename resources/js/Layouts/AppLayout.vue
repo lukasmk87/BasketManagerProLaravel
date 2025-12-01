@@ -121,12 +121,19 @@ const switchLanguage = (locale) => {
                                 </NavLink>
                                 
                                 <!-- Hallenverwaltung (für berechtigte Benutzer) -->
-                                <NavLink v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin') || $page.props.auth.user.roles.includes('club_admin') || $page.props.auth.user.roles.includes('trainer'))" 
-                                         :href="route('gym.index')" 
+                                <NavLink v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin') || $page.props.auth.user.roles.includes('club_admin') || $page.props.auth.user.roles.includes('trainer'))"
+                                         :href="route('gym.index')"
                                          :active="route().current('gym.*')">
                                     Hallenverwaltung
                                 </NavLink>
-                                
+
+                                <!-- Club Admin (nur für club_admin Rolle) -->
+                                <NavLink v-if="$page.props.auth.user?.roles && $page.props.auth.user.roles.includes('club_admin')"
+                                         :href="route('club-admin.dashboard')"
+                                         :active="route().current('club-admin.*')">
+                                    Club Admin
+                                </NavLink>
+
                                 <!-- Admin Dropdown (nur für Admins) -->
                                 <div v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin'))" class="relative">
                                     <Dropdown align="bottom" width="48">
@@ -496,12 +503,19 @@ const switchLanguage = (locale) => {
                         </ResponsiveNavLink>
                         
                         <!-- Hallenverwaltung (für berechtigte Benutzer) -->
-                        <ResponsiveNavLink v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin') || $page.props.auth.user.roles.includes('club_admin') || $page.props.auth.user.roles.includes('trainer'))" 
-                                           :href="route('gym.index')" 
+                        <ResponsiveNavLink v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin') || $page.props.auth.user.roles.includes('club_admin') || $page.props.auth.user.roles.includes('trainer'))"
+                                           :href="route('gym.index')"
                                            :active="route().current('gym.*')">
                             Hallenverwaltung
                         </ResponsiveNavLink>
-                        
+
+                        <!-- Club Admin (nur für club_admin Rolle) -->
+                        <ResponsiveNavLink v-if="$page.props.auth.user?.roles && $page.props.auth.user.roles.includes('club_admin')"
+                                           :href="route('club-admin.dashboard')"
+                                           :active="route().current('club-admin.*')">
+                            Club Admin
+                        </ResponsiveNavLink>
+
                         <!-- Admin Links (nur für Admins) -->
                         <template v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin'))">
                             <div class="border-t border-gray-200 my-2"></div>
