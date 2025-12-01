@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Gym;
 
 use App\Http\Controllers\Controller;
+use App\Models\Club;
 use App\Models\GymHall;
 use App\Models\GymBooking;
 use App\Models\GymBookingRequest;
@@ -19,13 +20,28 @@ class GymDashboardController extends Controller
     public function index(Request $request): Response
     {
         $user = Auth::user();
+        $isAdmin = $user->hasAnyRole(['admin', 'super_admin']);
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+
+        // For admins, load all clubs for selection
+        $availableClubs = [];
+        if ($isAdmin) {
+            $availableClubs = Club::orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn($club) => ['id' => $club->id, 'name' => $club->name])
+                ->toArray();
+        }
 
         // Get gym halls for the user's club
         $gymHalls = collect();
         if ($userClub) {
             $gymHalls = GymHall::where('club_id', $userClub->id)
                 ->with(['timeSlots', 'bookings.team'])
+                ->orderBy('name')
+                ->get();
+        } elseif ($isAdmin) {
+            // Super Admin without club: Load all halls from all clubs
+            $gymHalls = GymHall::with(['timeSlots', 'bookings.team', 'club:id,name'])
                 ->orderBy('name')
                 ->get();
         }
@@ -61,6 +77,7 @@ class GymDashboardController extends Controller
                 'id' => $userClub->id,
                 'name' => $userClub->name,
             ] : null,
+            'availableClubs' => $availableClubs,
         ]);
     }
 
@@ -72,13 +89,24 @@ class GymDashboardController extends Controller
         $this->authorize('create', GymHall::class);
 
         $user = Auth::user();
+        $isAdmin = $user->hasAnyRole(['admin', 'super_admin']);
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
+
+        // For admins, load all clubs for selection
+        $availableClubs = [];
+        if ($isAdmin) {
+            $availableClubs = Club::orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn($club) => ['id' => $club->id, 'name' => $club->name])
+                ->toArray();
+        }
 
         return Inertia::render('Gym/CreateHall', [
             'currentClub' => $userClub ? [
                 'id' => $userClub->id,
                 'name' => $userClub->name,
             ] : null,
+            'availableClubs' => $availableClubs,
         ]);
     }
 
@@ -90,10 +118,52 @@ class GymDashboardController extends Controller
         $this->authorize('viewAny', GymHall::class);
 
         $user = Auth::user();
+        $isAdmin = $user->hasAnyRole(['admin', 'super_admin']);
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
+        // For admins without a club, load all gym halls grouped by club
         $gymHalls = collect();
-        if ($userClub) {
+        $availableClubs = [];
+
+        if ($isAdmin) {
+            // Admin/Superadmin: Load all clubs for dropdown
+            $availableClubs = Club::orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn($club) => ['id' => $club->id, 'name' => $club->name])
+                ->toArray();
+
+            // Load gym halls for current club (if any) or all halls for super_admin
+            if ($userClub) {
+                $gymHalls = GymHall::where('club_id', $userClub->id)
+                    ->withCount(['timeSlots', 'bookings'])
+                    ->with([
+                        'timeSlots' => function ($query) {
+                            $query->orderBy('day_of_week')->orderBy('start_time');
+                        },
+                        'courts' => function ($query) {
+                            $query->active()->orderBy('sort_order');
+                        },
+                        'club:id,name'
+                    ])
+                    ->orderBy('name')
+                    ->get();
+            } else {
+                // Super Admin without club: Load all halls from all clubs
+                $gymHalls = GymHall::withCount(['timeSlots', 'bookings'])
+                    ->with([
+                        'timeSlots' => function ($query) {
+                            $query->orderBy('day_of_week')->orderBy('start_time');
+                        },
+                        'courts' => function ($query) {
+                            $query->active()->orderBy('sort_order');
+                        },
+                        'club:id,name'
+                    ])
+                    ->orderBy('name')
+                    ->get();
+            }
+        } elseif ($userClub) {
+            // Regular user with club
             $gymHalls = GymHall::where('club_id', $userClub->id)
                 ->withCount(['timeSlots', 'bookings'])
                 ->with([
@@ -114,6 +184,7 @@ class GymDashboardController extends Controller
                 'id' => $userClub->id,
                 'name' => $userClub->name,
             ] : null,
+            'availableClubs' => $availableClubs,
         ]);
     }
 

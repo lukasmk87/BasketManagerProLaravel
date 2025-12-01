@@ -118,6 +118,7 @@
             :show="showHallModal"
             :gym-hall="selectedHall"
             :current-club="currentClub"
+            :available-clubs="availableClubs"
             @close="closeHallModal"
             @updated="refreshData"
         />
@@ -260,6 +261,10 @@ import {
 const props = defineProps({
     gymHalls: Array,
     currentClub: Object,
+    availableClubs: {
+        type: Array,
+        default: () => []
+    }
 })
 
 // Modal state

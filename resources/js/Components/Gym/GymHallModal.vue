@@ -58,6 +58,36 @@
             <div v-if="activeTab === 'details'">
                 <form @submit.prevent="submitForm">
                     <div class="space-y-6">
+                    <!-- Club Selection (Admin/Superadmin only) -->
+                    <div v-if="showClubSelector" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 class="font-medium text-blue-900 mb-3">
+                            <svg class="inline-block h-5 w-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h6m-6 4h6m-6 4h6" />
+                            </svg>
+                            Verein auswählen
+                        </h4>
+                        <div>
+                            <label class="block text-sm font-medium text-blue-800 mb-1">Verein *</label>
+                            <select
+                                v-model="selectedClubId"
+                                class="w-full border border-blue-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+                                required
+                            >
+                                <option :value="null" disabled>-- Bitte Verein auswählen --</option>
+                                <option
+                                    v-for="club in availableClubs"
+                                    :key="club.id"
+                                    :value="club.id"
+                                >
+                                    {{ club.name }}
+                                </option>
+                            </select>
+                            <p class="mt-1 text-xs text-blue-600">
+                                Als Administrator können Sie die Sporthalle einem beliebigen Verein zuordnen.
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Basic Information -->
                     <div>
                         <h4 class="font-medium text-gray-900 mb-4">Grundinformationen</h4>
@@ -553,7 +583,11 @@ import GymTimeSlotManager from '@/Components/Gym/GymTimeSlotManager.vue'
 const props = defineProps({
     show: Boolean,
     gymHall: Object,
-    currentClub: Object
+    currentClub: Object,
+    availableClubs: {
+        type: Array,
+        default: () => []
+    }
 })
 
 const emit = defineEmits(['close', 'updated'])
@@ -606,6 +640,16 @@ const errors = ref([])
 const activeTab = ref('details')
 const hallTimeSlots = ref([])
 const initializingCourts = ref(false)
+const selectedClubId = ref(null)
+
+// Check if user is Admin/Superadmin and should see club selector
+const showClubSelector = computed(() => {
+    const user = page.props.auth?.user
+    // Check if user has admin or super_admin role
+    const hasAdminRole = user?.roles?.some(r => ['admin', 'super_admin'].includes(r.name))
+    // Show selector if admin AND (creating new hall OR editing and has available clubs)
+    return hasAdminRole && props.availableClubs.length > 0
+})
 
 // Computed
 const facilitiesArray = computed(() => {
@@ -638,9 +682,13 @@ const submitForm = async () => {
         
         // Get club_id from multiple possible sources
         let clubId = null
-        
+
+        // 0. If admin/superadmin with club selector, use selected club
+        if (showClubSelector.value && selectedClubId.value) {
+            clubId = selectedClubId.value
+        }
         // 1. If editing existing hall, use its club_id
-        if (props.gymHall?.club_id) {
+        else if (props.gymHall?.club_id) {
             clubId = props.gymHall.club_id
         }
         // 2. Try current club from props (if passed)
@@ -655,7 +703,13 @@ const submitForm = async () => {
         else if (page.props.user?.current_team?.club_id) {
             clubId = page.props.user.current_team.club_id
         }
-        
+
+        // Special error message for admins who haven't selected a club
+        if (!clubId && showClubSelector.value) {
+            errors.value = ['Bitte wählen Sie einen Verein aus der Liste aus.']
+            return
+        }
+
         if (!clubId) {
             errors.value = ['Vereins-ID konnte nicht ermittelt werden. Bitte wenden Sie sich an den Administrator.']
             return
@@ -896,6 +950,7 @@ const resetForm = () => {
     errors.value = []
     activeTab.value = 'details'
     hallTimeSlots.value = []
+    selectedClubId.value = null
 }
 
 // Watch for gymHall changes to populate form
@@ -942,6 +997,11 @@ watch(() => props.gymHall, (newGymHall) => {
             scoreboard: equipment.includes('scoreboard'),
             shot_clock: equipment.includes('shot_clock'),
             sound_system: equipment.includes('sound_system')
+        }
+
+        // Set selected club for admin editing
+        if (newGymHall.club_id) {
+            selectedClubId.value = newGymHall.club_id
         }
         
         // Load time slots for existing hall

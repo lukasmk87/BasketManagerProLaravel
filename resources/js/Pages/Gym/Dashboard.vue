@@ -295,6 +295,7 @@
             :show="showHallModal"
             :gym-hall="selectedHall"
             :current-club="currentClub"
+            :available-clubs="availableClubs"
             @close="closeHallModal"
             @updated="refreshData"
         />
@@ -333,6 +334,10 @@ const props = defineProps({
     initialStats: Object,
     userPermissions: Object,
     currentClub: Object,
+    availableClubs: {
+        type: Array,
+        default: () => []
+    }
 })
 
 // Composables

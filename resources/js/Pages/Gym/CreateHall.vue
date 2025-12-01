@@ -62,6 +62,36 @@
                         <div v-if="activeTab === 'details'">
                             <form @submit.prevent="submitForm">
                                 <div class="space-y-6">
+                                    <!-- Club Selection (Admin/Superadmin only) -->
+                                    <div v-if="showClubSelector" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <h4 class="font-medium text-blue-900 mb-3">
+                                            <svg class="inline-block h-5 w-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h6m-6 4h6m-6 4h6" />
+                                            </svg>
+                                            Verein auswählen
+                                        </h4>
+                                        <div>
+                                            <label class="block text-sm font-medium text-blue-800 mb-1">Verein *</label>
+                                            <select
+                                                v-model="selectedClubId"
+                                                class="w-full border border-blue-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+                                                required
+                                            >
+                                                <option :value="null" disabled>-- Bitte Verein auswählen --</option>
+                                                <option
+                                                    v-for="club in availableClubs"
+                                                    :key="club.id"
+                                                    :value="club.id"
+                                                >
+                                                    {{ club.name }}
+                                                </option>
+                                            </select>
+                                            <p class="mt-1 text-xs text-blue-600">
+                                                Als Administrator können Sie die Sporthalle einem beliebigen Verein zuordnen.
+                                            </p>
+                                        </div>
+                                    </div>
+
                                     <!-- Basic Information -->
                                     <div>
                                         <h4 class="font-medium text-gray-900 mb-4">Grundinformationen</h4>
@@ -464,13 +494,17 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import GymTimeSlotManager from '@/Components/Gym/GymTimeSlotManager.vue'
 
 const props = defineProps({
-    currentClub: Object
+    currentClub: Object,
+    availableClubs: {
+        type: Array,
+        default: () => []
+    }
 })
 
 const page = usePage()
@@ -482,6 +516,14 @@ const initializingSession = ref(false)
 const errors = ref([])
 const createdHallId = ref(null)
 const createdHall = ref(null)
+const selectedClubId = ref(null)
+
+// Check if user is Admin/Superadmin and should see club selector
+const showClubSelector = computed(() => {
+    const user = page.props.auth?.user
+    const hasAdminRole = user?.roles?.some(r => ['admin', 'super_admin'].includes(r.name))
+    return hasAdminRole && props.availableClubs.length > 0
+})
 
 // Form data
 const form = ref({
@@ -552,15 +594,30 @@ const submitForm = async () => {
         
         // Get club_id from multiple possible sources
         let clubId = null
-        
-        if (props.currentClub?.id) {
+
+        // 0. If admin/superadmin with club selector, use selected club
+        if (showClubSelector.value && selectedClubId.value) {
+            clubId = selectedClubId.value
+        }
+        // 1. Try current club from props
+        else if (props.currentClub?.id) {
             clubId = props.currentClub.id
-        } else if (page.props.auth?.user?.current_team?.club_id) {
+        }
+        // 2. Try auth user's current team club_id
+        else if (page.props.auth?.user?.current_team?.club_id) {
             clubId = page.props.auth.user.current_team.club_id
-        } else if (page.props.user?.current_team?.club_id) {
+        }
+        // 3. Try alternative user structure
+        else if (page.props.user?.current_team?.club_id) {
             clubId = page.props.user.current_team.club_id
         }
-        
+
+        // Special error message for admins who haven't selected a club
+        if (!clubId && showClubSelector.value) {
+            errors.value = ['Bitte wählen Sie einen Verein aus der Liste aus.']
+            return
+        }
+
         if (!clubId) {
             errors.value = ['Vereins-ID konnte nicht ermittelt werden. Bitte wenden Sie sich an den Administrator.']
             return
