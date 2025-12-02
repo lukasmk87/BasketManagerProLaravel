@@ -38,6 +38,10 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::post('/club/{club}/billing-portal', [ClubCheckoutController::class, 'billingPortal'])
         ->name('club.billing-portal');
 
+    // Request invoice payment (instead of card)
+    Route::post('/club/{club}/checkout/request-invoice', [ClubCheckoutController::class, 'requestInvoicePayment'])
+        ->name('club.checkout.request-invoice');
+
     // ============================
     // BILLING MANAGEMENT (Phase 2)
     // ============================

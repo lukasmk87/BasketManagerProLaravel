@@ -78,3 +78,22 @@ app(Schedule::class)->command('club:sync-storage')
     ->onOneServer()
     ->name('club-storage-sync')
     ->description('Sync storage usage calculations for all clubs');
+
+// Invoice Scheduled Tasks
+// Generate recurring invoices for invoice-paying clubs on the 1st of each month
+app(Schedule::class)->command('invoices:generate-recurring')
+    ->monthlyOn(1, '08:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onOneServer()
+    ->name('invoices-generate-recurring')
+    ->description('Generate recurring invoices for clubs paying via invoice');
+
+// Process overdue invoices daily - send reminders, suspend subscriptions
+app(Schedule::class)->command('invoices:process-overdue')
+    ->dailyAt('09:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onOneServer()
+    ->name('invoices-process-overdue')
+    ->description('Process overdue invoices, send reminders, and suspend subscriptions');

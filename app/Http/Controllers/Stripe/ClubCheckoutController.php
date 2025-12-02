@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Stripe;
 
 use App\Http\Controllers\Controller;
 use App\Models\Club;
+use App\Models\ClubInvoiceRequest;
 use App\Models\ClubSubscriptionPlan;
 use App\Services\Stripe\ClubSubscriptionCheckoutService;
 use Illuminate\Http\JsonResponse;
@@ -197,5 +198,82 @@ class ClubCheckoutController extends Controller
             'trial_days_remaining' => $club->trialDaysRemaining(),
             'billing_days_remaining' => $club->billingDaysRemaining(),
         ]);
+    }
+
+    /**
+     * Request invoice payment instead of card payment.
+     */
+    public function requestInvoicePayment(Request $request, Club $club): RedirectResponse
+    {
+        try {
+            // Authorize: User must be club admin or owner
+            $this->authorize('manageBilling', $club);
+
+            // Validate request
+            $validated = $request->validate([
+                'plan_id' => 'required|exists:club_subscription_plans,id',
+                'billing_name' => 'required|string|max:255',
+                'billing_email' => 'required|email|max:255',
+                'billing_address' => 'nullable|array',
+                'billing_address.street' => 'nullable|string|max:255',
+                'billing_address.city' => 'nullable|string|max:255',
+                'billing_address.postal_code' => 'nullable|string|max:20',
+                'billing_address.country' => 'nullable|string|max:2',
+                'vat_number' => 'nullable|string|max:50',
+                'billing_interval' => 'required|in:monthly,yearly',
+            ]);
+
+            $plan = ClubSubscriptionPlan::findOrFail($validated['plan_id']);
+
+            // Validate plan belongs to same tenant
+            if ($plan->tenant_id !== $club->tenant_id) {
+                return redirect()->back()->withErrors([
+                    'plan_id' => 'Der ausgewählte Plan gehört nicht zu diesem Tenant.',
+                ]);
+            }
+
+            // Check if there's already a pending request
+            $existingRequest = ClubInvoiceRequest::where('club_id', $club->id)
+                ->where('status', 'pending')
+                ->exists();
+
+            if ($existingRequest) {
+                return redirect()->back()->withErrors([
+                    'general' => 'Es existiert bereits eine ausstehende Rechnungsanfrage für diesen Club.',
+                ]);
+            }
+
+            // Create invoice request
+            ClubInvoiceRequest::create([
+                'tenant_id' => $club->tenant_id,
+                'club_id' => $club->id,
+                'club_subscription_plan_id' => $plan->id,
+                'billing_name' => $validated['billing_name'],
+                'billing_email' => $validated['billing_email'],
+                'billing_address' => $validated['billing_address'] ?? null,
+                'vat_number' => $validated['vat_number'] ?? null,
+                'billing_interval' => $validated['billing_interval'],
+                'status' => 'pending',
+                'requested_by' => auth()->id(),
+            ]);
+
+            Log::info('Invoice payment requested', [
+                'club_id' => $club->id,
+                'plan_id' => $plan->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->back()->with('success', 'Ihre Rechnungsanfrage wurde eingereicht. Wir werden sie zeitnah bearbeiten.');
+        } catch (\Exception $e) {
+            Log::error('Invoice payment request failed', [
+                'club_id' => $club->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->back()->withErrors([
+                'general' => 'Die Anfrage konnte nicht erstellt werden: ' . $e->getMessage(),
+            ]);
+        }
     }
 }
