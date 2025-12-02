@@ -167,16 +167,13 @@ class OnboardingService
             'price' => $plan->price,
         ]);
 
-        // Free plan - directly assign
+        // Free plan - directly assign (but don't mark onboarding as complete yet - team step follows)
         if ((float) $plan->price === 0.0) {
             $club->update([
                 'club_subscription_plan_id' => $plan->id,
             ]);
 
-            // Mark onboarding as complete
-            $user->markOnboardingComplete();
-
-            Log::info('OnboardingService: Free plan assigned, onboarding complete', [
+            Log::info('OnboardingService: Free plan assigned, proceeding to team step', [
                 'club_id' => $club->id,
                 'plan_id' => $plan->id,
             ]);
@@ -302,6 +299,7 @@ class OnboardingService
 
     /**
      * Determine the current onboarding step.
+     * Order: 1. Club erstellen → 2. Plan wählen → 3. Team erstellen
      */
     private function determineCurrentStep(bool $hasClub, bool $hasTeam, bool $hasPlan): int
     {
@@ -309,11 +307,11 @@ class OnboardingService
             return 1;
         }
 
-        if (!$hasTeam) {
+        if (!$hasPlan) {
             return 2;
         }
 
-        if (!$hasPlan) {
+        if (!$hasTeam) {
             return 3;
         }
 

@@ -43,15 +43,15 @@ onMounted(() => {
 });
 
 const handleClubCreated = () => {
-    currentStep.value = 2;
-};
-
-const handleTeamCreated = () => {
-    currentStep.value = 3;
+    currentStep.value = 2; // Go to Plan step
 };
 
 const handlePlanSelected = () => {
-    // This will redirect to complete or Stripe
+    currentStep.value = 3; // Go to Team step (or Stripe redirect for paid plans)
+};
+
+const handleTeamCreated = () => {
+    // This will redirect to complete page
 };
 
 const goBack = () => {
@@ -123,20 +123,20 @@ const goBack = () => {
                             @next="handleClubCreated"
                         />
 
-                        <!-- Step 2: Team -->
-                        <TeamStep
-                            v-else-if="currentStep === 2"
-                            :age-groups="ageGroups"
-                            @next="handleTeamCreated"
-                            @back="goBack"
-                        />
-
-                        <!-- Step 3: Plan -->
+                        <!-- Step 2: Plan -->
                         <PlanStep
-                            v-else-if="currentStep === 3"
+                            v-else-if="currentStep === 2"
                             :available-plans="availablePlans"
                             :free-plan-id="freePlanId"
                             @complete="handlePlanSelected"
+                            @back="goBack"
+                        />
+
+                        <!-- Step 3: Team -->
+                        <TeamStep
+                            v-else-if="currentStep === 3"
+                            :age-groups="ageGroups"
+                            @next="handleTeamCreated"
                             @back="goBack"
                         />
                     </transition>

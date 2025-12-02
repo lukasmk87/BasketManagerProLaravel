@@ -74,7 +74,7 @@ class OnboardingController extends Controller
             session(['onboarding_club_id' => $club->id]);
 
             return redirect()->route('onboarding.index')
-                ->with('success', 'Club erfolgreich erstellt! Jetzt erstelle dein erstes Team.');
+                ->with('success', 'Club erfolgreich erstellt! Jetzt wähle deinen Plan.');
 
         } catch (\Exception $e) {
             Log::error('Onboarding: Failed to create club', [
@@ -110,8 +110,14 @@ class OnboardingController extends Controller
         try {
             $team = $this->onboardingService->createTeamForOnboarding($validated, $club, $user);
 
-            return redirect()->route('onboarding.index')
-                ->with('success', 'Team erfolgreich erstellt! Jetzt wähle deinen Plan.');
+            // Team is the final step - mark onboarding as complete and redirect
+            $user->markOnboardingComplete();
+
+            // Clear session
+            session()->forget('onboarding_club_id');
+
+            return redirect()->route('onboarding.complete')
+                ->with('success', 'Team erfolgreich erstellt!');
 
         } catch (\Exception $e) {
             Log::error('Onboarding: Failed to create team', [
@@ -150,12 +156,10 @@ class OnboardingController extends Controller
 
             $checkoutUrl = $this->onboardingService->selectPlanForOnboarding($plan, $club, $user);
 
-            // Free plan - redirect to complete
+            // Free plan - redirect back to onboarding for team step
             if (!$checkoutUrl) {
-                // Clear session
-                session()->forget('onboarding_club_id');
-
-                return redirect()->route('onboarding.complete');
+                return redirect()->route('onboarding.index')
+                    ->with('success', 'Plan erfolgreich gewählt! Jetzt erstelle dein erstes Team.');
             }
 
             // Paid plan - redirect to Stripe checkout
