@@ -97,6 +97,10 @@ class Club extends Model implements HasMedia
         'billing_email',
         'billing_address',
         'payment_method_id',
+        // Invoice payment fields
+        'payment_method_type',
+        'invoice_billing_name',
+        'invoice_vat_number',
     ];
 
     /**
@@ -299,6 +303,38 @@ class Club extends Model implements HasMedia
     public function subscriptionEvents(): HasMany
     {
         return $this->hasMany(ClubSubscriptionEvent::class);
+    }
+
+    /**
+     * Get invoices for this club.
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(ClubInvoice::class);
+    }
+
+    /**
+     * Get pending (unpaid) invoices for this club.
+     */
+    public function pendingInvoices(): HasMany
+    {
+        return $this->invoices()->pending();
+    }
+
+    /**
+     * Get invoice requests for this club.
+     */
+    public function invoiceRequests(): HasMany
+    {
+        return $this->hasMany(ClubInvoiceRequest::class);
+    }
+
+    /**
+     * Get pending invoice requests for this club.
+     */
+    public function pendingInvoiceRequests(): HasMany
+    {
+        return $this->invoiceRequests()->pending();
     }
 
     // ============================
@@ -829,6 +865,50 @@ class Club extends Model implements HasMedia
         }
 
         return max(0, now()->diffInDays($this->subscription_current_period_end, false));
+    }
+
+    // ============================
+    // INVOICE PAYMENT METHODS
+    // ============================
+
+    /**
+     * Check if club pays via invoice (bank transfer).
+     */
+    public function paysViaInvoice(): bool
+    {
+        return $this->payment_method_type === 'invoice';
+    }
+
+    /**
+     * Check if club pays via Stripe (credit card/SEPA).
+     */
+    public function paysViaStripe(): bool
+    {
+        return $this->payment_method_type === 'stripe' || $this->payment_method_type === null;
+    }
+
+    /**
+     * Get the billing name for invoice payments.
+     */
+    public function getInvoiceBillingNameAttribute($value): string
+    {
+        return $value ?? $this->name;
+    }
+
+    /**
+     * Check if club has any unpaid invoices.
+     */
+    public function hasUnpaidInvoices(): bool
+    {
+        return $this->pendingInvoices()->exists();
+    }
+
+    /**
+     * Get the most recent unpaid invoice.
+     */
+    public function getLatestUnpaidInvoice(): ?ClubInvoice
+    {
+        return $this->pendingInvoices()->latest('issue_date')->first();
     }
 
     // ============================

@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\TenantSubscriptionController;
 use App\Http\Controllers\Admin\UsageLimitsController;
 use App\Http\Controllers\Admin\ClubTransferController;
 use App\Http\Controllers\Admin\ClubSubscriptionPlanController;
+use App\Http\Controllers\Admin\ClubInvoiceController;
+use App\Http\Controllers\Admin\ClubInvoiceRequestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,4 +66,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Club Subscription Plans Management
     Route::resource('club-plans', ClubSubscriptionPlanController::class)->parameters(['club-plans' => 'plan']);
     Route::post('club-plans/{plan}/clone', [ClubSubscriptionPlanController::class, 'clone'])->name('club-plans.clone');
+
+    // Club Invoices Management
+    Route::resource('invoices', ClubInvoiceController::class);
+    Route::post('invoices/{invoice}/send', [ClubInvoiceController::class, 'send'])->name('invoices.send');
+    Route::post('invoices/{invoice}/mark-paid', [ClubInvoiceController::class, 'markAsPaid'])->name('invoices.mark-paid');
+    Route::post('invoices/{invoice}/cancel', [ClubInvoiceController::class, 'cancel'])->name('invoices.cancel');
+    Route::post('invoices/{invoice}/reminder', [ClubInvoiceController::class, 'sendReminder'])->name('invoices.reminder');
+    Route::get('invoices/{invoice}/pdf', [ClubInvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
+    Route::get('invoices/{invoice}/pdf/preview', [ClubInvoiceController::class, 'previewPdf'])->name('invoices.pdf.preview');
+
+    // Club Invoice Requests Management
+    Route::get('invoice-requests', [ClubInvoiceRequestController::class, 'index'])->name('invoice-requests.index');
+    Route::get('invoice-requests/{invoiceRequest}', [ClubInvoiceRequestController::class, 'show'])->name('invoice-requests.show');
+    Route::post('invoice-requests/{invoiceRequest}/approve', [ClubInvoiceRequestController::class, 'approve'])->name('invoice-requests.approve');
+    Route::post('invoice-requests/{invoiceRequest}/reject', [ClubInvoiceRequestController::class, 'reject'])->name('invoice-requests.reject');
 });
