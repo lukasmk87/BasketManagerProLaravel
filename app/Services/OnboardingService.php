@@ -156,9 +156,9 @@ class OnboardingService
 
     /**
      * Assign a subscription plan to a club.
-     * Returns checkout URL for paid plans, null for free plans.
+     * Returns the plan for paid plans (controller handles checkout), null for free plans.
      */
-    public function selectPlanForOnboarding(ClubSubscriptionPlan $plan, Club $club, User $user): ?string
+    public function selectPlanForOnboarding(ClubSubscriptionPlan $plan, Club $club, User $user): ?ClubSubscriptionPlan
     {
         Log::info('OnboardingService: Selecting plan for club', [
             'plan_id' => $plan->id,
@@ -181,13 +181,9 @@ class OnboardingService
             return null;
         }
 
-        // Paid plan - return checkout URL (will be handled by ClubCheckoutController)
+        // Paid plan - return plan for controller to handle Stripe checkout
         // The onboarding_completed_at will be set via webhook after successful payment
-        return route('club.checkout.create', [
-            'club' => $club->id,
-            'plan' => $plan->id,
-            'onboarding' => true,
-        ]);
+        return $plan;
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Http\Requests\Onboarding\StoreTeamRequest;
 use App\Models\Club;
 use App\Models\ClubSubscriptionPlan;
 use App\Services\OnboardingService;
+use App\Services\Stripe\ClubSubscriptionCheckoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,8 @@ use Inertia\Response;
 class OnboardingController extends Controller
 {
     public function __construct(
-        private OnboardingService $onboardingService
+        private OnboardingService $onboardingService,
+        private ClubSubscriptionCheckoutService $checkoutService
     ) {}
 
     /**
@@ -89,7 +91,7 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Store the team (Step 2).
+     * Store the team (Step 3 - final step).
      */
     public function storeTeam(StoreTeamRequest $request): RedirectResponse
     {
@@ -133,7 +135,7 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Store the plan selection (Step 3).
+     * Store the plan selection (Step 2).
      */
     public function storePlan(StorePlanRequest $request): RedirectResponse
     {
@@ -154,16 +156,26 @@ class OnboardingController extends Controller
         try {
             $plan = ClubSubscriptionPlan::findOrFail($validated['plan_id']);
 
-            $checkoutUrl = $this->onboardingService->selectPlanForOnboarding($plan, $club, $user);
+            $paidPlan = $this->onboardingService->selectPlanForOnboarding($plan, $club, $user);
 
             // Free plan - redirect back to onboarding for team step
-            if (!$checkoutUrl) {
+            if (!$paidPlan) {
                 return redirect()->route('onboarding.index')
                     ->with('success', 'Plan erfolgreich gewählt! Jetzt erstelle dein erstes Team.');
             }
 
-            // Paid plan - redirect to Stripe checkout
-            return redirect()->away($checkoutUrl);
+            // Paid plan - create Stripe checkout session and redirect
+            $session = $this->checkoutService->createCheckoutSession(
+                $club,
+                $paidPlan,
+                [
+                    'billing_interval' => $validated['billing_interval'] ?? 'monthly',
+                    'success_url' => route('onboarding.index'),
+                    'cancel_url' => route('onboarding.index'),
+                ]
+            );
+
+            return redirect()->away($session->url);
 
         } catch (\Exception $e) {
             Log::error('Onboarding: Failed to select plan', [
