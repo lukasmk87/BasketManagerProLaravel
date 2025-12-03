@@ -434,7 +434,7 @@
                                             :key="plan.id"
                                             :value="plan.id"
                                         >
-                                            {{ plan.name }} - {{ plan.price }} {{ plan.currency }}/{{ plan.billing_interval === 'monthly' ? 'Monat' : 'Jahr' }}
+                                            {{ plan.name }} - {{ plan.price > 0 ? formatPrice(plan.price, plan.currency) : 'Kostenlos' }}/{{ plan.billing_interval === 'monthly' ? 'Monat' : 'Jahr' }} {{ getPriceLabel() }}
                                         </option>
                                     </select>
                                     <InputError :message="form.errors.club_subscription_plan_id" class="mt-2" />
@@ -562,6 +562,9 @@ import TextInput from '@/Components/TextInput.vue'
 import InputLabel from '@/Components/InputLabel.vue'
 import InputError from '@/Components/InputError.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
+import { usePricing } from '@/Composables/usePricing'
+
+const { formatPrice, getPriceLabel } = usePricing()
 
 const props = defineProps({
     club: Object,

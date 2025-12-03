@@ -189,11 +189,15 @@
                                     <!-- Price -->
                                     <div class="mb-4 text-center border-b pb-3">
                                         <div class="text-2xl font-bold text-gray-900">
-                                            {{ club.subscription_plan.price }} {{ club.subscription_plan.currency }}
+                                            {{ club.subscription_plan.price > 0 ? formatPrice(club.subscription_plan.price, club.subscription_plan.currency) : 'Kostenlos' }}
                                         </div>
-                                        <div class="text-sm text-gray-500">
+                                        <div v-if="club.subscription_plan.price > 0" class="text-sm text-gray-500">
                                             / {{ club.subscription_plan.billing_interval === 'monthly' ? 'Monat' : 'Jahr' }}
+                                            <span v-if="getPriceLabel()" class="block text-xs">{{ getPriceLabel() }}</span>
                                         </div>
+                                        <p v-if="getSmallBusinessNotice()" class="mt-1 text-xs text-amber-700 italic">
+                                            {{ getSmallBusinessNotice() }}
+                                        </p>
                                     </div>
 
                                     <!-- Description -->
@@ -283,6 +287,9 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 import { Link } from '@inertiajs/vue3'
+import { usePricing } from '@/Composables/usePricing'
+
+const { formatPrice, getPriceLabel, getSmallBusinessNotice } = usePricing()
 
 defineProps({
     club: Object,

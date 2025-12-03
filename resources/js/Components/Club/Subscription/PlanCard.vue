@@ -3,8 +3,10 @@ import { computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { useTranslations } from '@/composables/useTranslations';
+import { usePricing } from '@/Composables/usePricing';
 
 const { trans } = useTranslations();
+const { formatPrice: formatPriceWithSettings, getPriceLabel, getSmallBusinessNotice } = usePricing();
 
 const props = defineProps({
     plan: {
@@ -47,11 +49,11 @@ const price = computed(() => {
         ? props.plan.price * 12 * 0.9  // 10% discount for yearly
         : props.plan.price;
 
-    return new Intl.NumberFormat('de-DE', {
-        style: 'currency',
-        currency: props.plan.currency || 'EUR',
-    }).format(amount);
+    return formatPriceWithSettings(amount, props.plan.currency || 'EUR');
 });
+
+const priceLabel = computed(() => getPriceLabel());
+const smallBusinessNotice = computed(() => getSmallBusinessNotice());
 
 const billingPeriod = computed(() => {
     return props.billingInterval === 'yearly'
@@ -190,8 +192,14 @@ const handleAction = () => {
                         / {{ billingPeriod }}
                     </span>
                 </div>
+                <span v-if="plan.price > 0 && priceLabel" class="block text-xs text-gray-500 mt-1">
+                    {{ priceLabel }}
+                </span>
                 <p v-if="plan.trial_period_days > 0" class="mt-2 text-sm text-green-600 font-medium">
                     {{ trans('subscription.trial.test_free', { days: plan.trial_period_days }) }}
+                </p>
+                <p v-if="smallBusinessNotice" class="mt-2 text-xs text-amber-700 italic">
+                    {{ smallBusinessNotice }}
                 </p>
             </div>
 
