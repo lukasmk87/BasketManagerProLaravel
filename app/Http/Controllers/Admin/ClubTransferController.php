@@ -67,6 +67,7 @@ class ClubTransferController extends Controller
 
         // Get all club subscription plans grouped by tenant (bypass TenantScope for super admin)
         $clubPlans = ClubSubscriptionPlan::withoutGlobalScopes()
+            ->whereNull('deleted_at')
             ->where('is_active', true)
             ->orderBy('tenant_id')
             ->orderBy('sort_order')
