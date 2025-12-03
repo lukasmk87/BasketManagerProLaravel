@@ -196,12 +196,20 @@ class HandleInertiaRequests extends Middleware
 
                     return $pricingService->getFrontendPricingData();
                 } catch (\Exception $e) {
+                    // Log the exception for debugging
+                    \Illuminate\Support\Facades\Log::warning('PricingService unavailable: '.$e->getMessage());
+
                     // Return defaults if service is not available (e.g., during installation)
                     return [
                         'display_gross' => true,
                         'is_small_business' => false,
                         'default_tax_rate' => 19.00,
                         'small_business_notice' => null,
+                        'admin_input' => [
+                            'mode' => 'gross',
+                            'label' => 'Bruttopreis (inkl. 19% MwSt.)',
+                            'input_is_gross' => true,
+                        ],
                     ];
                 }
             },
