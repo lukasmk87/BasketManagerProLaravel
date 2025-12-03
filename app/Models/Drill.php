@@ -123,6 +123,14 @@ class Drill extends Model implements HasMedia
         return $this->hasMany(DrillFavorite::class);
     }
 
+    public function plays(): BelongsToMany
+    {
+        return $this->belongsToMany(Play::class, 'drill_plays')
+            ->withPivot('order')
+            ->withTimestamps()
+            ->orderByPivot('order');
+    }
+
     // Scopes
     public function scopePublic($query)
     {

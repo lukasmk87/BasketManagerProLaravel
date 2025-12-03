@@ -94,6 +94,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::prefix('api')
                 ->middleware('api')
                 ->group(base_path('routes/season.php'));
+
+            // Tactic Board API routes
+            \Illuminate\Support\Facades\Route::prefix('api')
+                ->middleware('api')
+                ->group(base_path('routes/api_tactics.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

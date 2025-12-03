@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\TacticBoardController;
 
 // Define supported locales
 $supportedLocales = config('localization.supported_locales', ['de', 'en']);
@@ -196,7 +197,23 @@ Route::middleware([
         Route::get('/players', [\App\Http\Controllers\StatisticsController::class, 'players'])->name('players');
         Route::get('/games', [\App\Http\Controllers\StatisticsController::class, 'games'])->name('games');
     });
-    
+
+    // Tactic Board Routes
+    Route::prefix('tactic-board')->name('tactic-board.')->group(function () {
+        Route::get('/', [TacticBoardController::class, 'index'])->name('index');
+
+        // Plays
+        Route::get('/plays/create', [TacticBoardController::class, 'createPlay'])->name('plays.create');
+        Route::get('/plays/{play}', [TacticBoardController::class, 'showPlay'])->name('plays.show');
+        Route::get('/plays/{play}/edit', [TacticBoardController::class, 'editPlay'])->name('plays.edit');
+
+        // Playbooks
+        Route::get('/playbooks', [TacticBoardController::class, 'playbooksIndex'])->name('playbooks.index');
+        Route::get('/playbooks/create', [TacticBoardController::class, 'createPlaybook'])->name('playbooks.create');
+        Route::get('/playbooks/{playbook}', [TacticBoardController::class, 'showPlaybook'])->name('playbooks.show');
+        Route::get('/playbooks/{playbook}/edit', [TacticBoardController::class, 'editPlaybook'])->name('playbooks.edit');
+    });
+
     // Live Scoring Routes
     Route::prefix('games')->name('games.')->group(function () {
         Route::get('/{game}/live-scoring', [\App\Http\Controllers\LiveScoringController::class, 'show'])

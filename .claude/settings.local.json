@@ -19,7 +19,9 @@
       "Bash(powershell -Command:*)",
       "Bash(python:*)",
       "Bash(grep:*)",
-      "Bash(php /home/lukas/Projekt/BasketManagerProLaravel/artisan:*)"
+      "Bash(php /home/lukas/Projekt/BasketManagerProLaravel/artisan:*)",
+      "WebFetch(domain:tactical-board.com)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

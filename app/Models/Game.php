@@ -272,6 +272,15 @@ class Game extends Model implements HasMedia
         return $this->hasMany(GameParticipation::class);
     }
 
+    /**
+     * Get all playbooks assigned to this game for preparation.
+     */
+    public function playbooks(): BelongsToMany
+    {
+        return $this->belongsToMany(Playbook::class, 'game_playbooks')
+            ->withTimestamps();
+    }
+
     // ============================
     // EXTERNAL TEAM SUPPORT METHODS
     // ============================

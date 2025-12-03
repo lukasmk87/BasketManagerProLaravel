@@ -249,6 +249,15 @@ class RoleAndPermissionSeeder extends Seeder
             'start new season',
             'export season statistics',
             'compare seasons',
+
+            // Tactic Board Management
+            'view tactic board',
+            'manage tactic board',
+            'create plays',
+            'edit plays',
+            'delete plays',
+            'manage playbooks',
+            'export plays',
         ];
 
         foreach ($permissions as $permission) {
@@ -390,6 +399,10 @@ class RoleAndPermissionSeeder extends Seeder
             'view seasons', 'view any seasons', 'create seasons', 'edit seasons',
             'delete seasons', 'manage seasons', 'complete seasons', 'activate seasons',
             'start new season', 'export season statistics', 'compare seasons',
+
+            // Tactic Board (full management)
+            'view tactic board', 'manage tactic board', 'create plays', 'edit plays',
+            'delete plays', 'manage playbooks', 'export plays',
         ]);
 
         // Club Administrator Role
@@ -479,6 +492,10 @@ class RoleAndPermissionSeeder extends Seeder
             'view seasons', 'create seasons', 'edit seasons', 'delete seasons',
             'manage seasons', 'complete seasons', 'activate seasons',
             'start new season', 'export season statistics', 'compare seasons',
+
+            // Tactic Board (full management)
+            'view tactic board', 'manage tactic board', 'create plays', 'edit plays',
+            'delete plays', 'manage playbooks', 'export plays',
         ]);
 
         // Head Coach/Trainer Role
@@ -538,6 +555,10 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Season Management (view and export only)
             'view seasons', 'export season statistics', 'compare seasons',
+
+            // Tactic Board
+            'view tactic board', 'create plays', 'edit plays', 'delete plays',
+            'manage playbooks', 'export plays',
         ]);
 
         // Assistant Coach Role
@@ -588,6 +609,9 @@ class RoleAndPermissionSeeder extends Seeder
 
             // Season Management (view only)
             'view seasons',
+
+            // Tactic Board (view, create, edit own, export)
+            'view tactic board', 'create plays', 'edit plays', 'export plays',
         ]);
 
         // Scorer/Statistician Role
@@ -644,6 +668,9 @@ class RoleAndPermissionSeeder extends Seeder
 
             // User Preferences
             'view user preferences', 'edit user preferences',
+
+            // Tactic Board (view only)
+            'view tactic board',
         ]);
 
         // Parent/Guardian Role

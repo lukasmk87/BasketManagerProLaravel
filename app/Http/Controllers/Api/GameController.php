@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Game;
+use App\Models\Playbook;
 use App\Services\Statistics\StatisticsService;
+use App\Http\Resources\PlaybookResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -206,7 +208,7 @@ class GameController extends Controller
             ],
             'away_team' => [
                 'id' => $game->awayTeam?->id,
-                'name' => $game->getAwayTeamDisplayName(), 
+                'name' => $game->getAwayTeamDisplayName(),
                 'score' => $game->away_team_score,
             ],
             'current_period' => $game->current_period,
@@ -221,6 +223,141 @@ class GameController extends Controller
         return response()->json([
             'success' => true,
             'data' => $liveData,
+        ]);
+    }
+
+    // ============================
+    // PLAYBOOK (TACTIC BOARD) INTEGRATION
+    // ============================
+
+    /**
+     * Get playbooks attached to a game.
+     */
+    public function getPlaybooks(Game $game): JsonResponse
+    {
+        $this->authorize('view', $game);
+
+        $playbooks = $game->playbooks()
+            ->with(['createdBy', 'plays' => function ($query) {
+                $query->orderBy('playbook_plays.order');
+            }])
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => PlaybookResource::collection($playbooks),
+            'meta' => [
+                'total' => $playbooks->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Attach a playbook to a game.
+     */
+    public function attachPlaybook(Request $request, Game $game): JsonResponse
+    {
+        try {
+            $this->authorize('update', $game);
+
+            $validated = $request->validate([
+                'playbook_id' => 'required|exists:playbooks,id',
+            ]);
+
+            $playbook = Playbook::findOrFail($validated['playbook_id']);
+
+            // Check if playbook is already attached
+            if ($game->playbooks()->where('playbook_id', $playbook->id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Playbook ist bereits mit diesem Spiel verknüpft'
+                ], 422);
+            }
+
+            // Attach playbook
+            $game->playbooks()->attach($playbook->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Playbook erfolgreich verknüpft',
+                'data' => [
+                    'game_id' => $game->id,
+                    'playbook_id' => $playbook->id,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Verknüpfen des Playbooks',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Detach a playbook from a game.
+     */
+    public function detachPlaybook(Game $game, Playbook $playbook): JsonResponse
+    {
+        try {
+            $this->authorize('update', $game);
+
+            if (!$game->playbooks()->where('playbook_id', $playbook->id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Playbook ist nicht mit diesem Spiel verknüpft'
+                ], 404);
+            }
+
+            $game->playbooks()->detach($playbook->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Playbook erfolgreich entfernt'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Entfernen des Playbooks',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Get all plays from playbooks attached to a game.
+     */
+    public function getAllPlays(Game $game): JsonResponse
+    {
+        $this->authorize('view', $game);
+
+        $playbooks = $game->playbooks()
+            ->with(['plays' => function ($query) {
+                $query->with('createdBy')->orderBy('playbook_plays.order');
+            }])
+            ->get();
+
+        $plays = $playbooks->flatMap(function ($playbook) {
+            return $playbook->plays->map(function ($play) use ($playbook) {
+                return [
+                    'play' => $play,
+                    'playbook' => [
+                        'id' => $playbook->id,
+                        'name' => $playbook->name,
+                    ],
+                    'order' => $play->pivot->order,
+                    'notes' => $play->pivot->notes,
+                ];
+            });
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $plays,
+            'meta' => [
+                'total_playbooks' => $playbooks->count(),
+                'total_plays' => $plays->count(),
+            ]
         ]);
     }
 }

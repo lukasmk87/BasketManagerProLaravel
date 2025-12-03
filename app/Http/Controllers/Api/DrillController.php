@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Drill;
+use App\Models\Play;
 use App\Models\Team;
 use App\Http\Requests\Drill\CreateDrillRequest;
 use App\Http\Requests\Drill\UpdateDrillRequest;
 use App\Http\Resources\DrillResource;
+use App\Http\Resources\PlayResource;
+use App\Services\TacticBoard\PlayService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -438,5 +441,133 @@ class DrillController extends Controller
         return response()->json([
             'data' => $stats
         ]);
+    }
+
+    /**
+     * Get plays attached to a drill.
+     */
+    public function getPlays(Drill $drill): JsonResponse
+    {
+        $plays = $drill->plays()
+            ->with('createdBy')
+            ->orderBy('drill_plays.order')
+            ->get();
+
+        return response()->json([
+            'data' => PlayResource::collection($plays),
+            'meta' => [
+                'total' => $plays->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Attach a play to a drill.
+     */
+    public function attachPlay(Request $request, Drill $drill): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'play_id' => 'required|exists:plays,id',
+                'order' => 'nullable|integer|min:0',
+            ]);
+
+            $play = Play::findOrFail($validated['play_id']);
+
+            // Check if play is already attached
+            if ($drill->plays()->where('play_id', $play->id)->exists()) {
+                return response()->json([
+                    'message' => 'Spielzug ist bereits mit diesem Drill verknüpft'
+                ], 422);
+            }
+
+            // Get the next order if not provided
+            $order = $validated['order'] ?? ($drill->plays()->max('drill_plays.order') + 1);
+
+            // Attach play
+            $drill->plays()->attach($play->id, ['order' => $order]);
+
+            // Increment play usage count
+            $play->incrementUsage();
+
+            return response()->json([
+                'message' => 'Spielzug erfolgreich verknüpft',
+                'data' => [
+                    'drill_id' => $drill->id,
+                    'play_id' => $play->id,
+                    'order' => $order,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Fehler beim Verknüpfen des Spielzugs',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Detach a play from a drill.
+     */
+    public function detachPlay(Drill $drill, Play $play): JsonResponse
+    {
+        try {
+            if (!$drill->plays()->where('play_id', $play->id)->exists()) {
+                return response()->json([
+                    'message' => 'Spielzug ist nicht mit diesem Drill verknüpft'
+                ], 404);
+            }
+
+            $drill->plays()->detach($play->id);
+
+            // Reorder remaining plays
+            $this->reorderPlaysAfterDetach($drill);
+
+            return response()->json([
+                'message' => 'Spielzug erfolgreich entfernt'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Fehler beim Entfernen des Spielzugs',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Reorder plays within a drill.
+     */
+    public function reorderPlays(Request $request, Drill $drill): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'play_ids' => 'required|array',
+                'play_ids.*' => 'exists:plays,id',
+            ]);
+
+            foreach ($validated['play_ids'] as $order => $playId) {
+                $drill->plays()->updateExistingPivot($playId, ['order' => $order]);
+            }
+
+            return response()->json([
+                'message' => 'Spielzüge erfolgreich neu geordnet'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Fehler beim Neuordnen der Spielzüge',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Helper to reorder plays after one is detached.
+     */
+    private function reorderPlaysAfterDetach(Drill $drill): void
+    {
+        $plays = $drill->plays()->orderBy('drill_plays.order')->get();
+        foreach ($plays as $index => $play) {
+            $drill->plays()->updateExistingPivot($play->id, ['order' => $index]);
+        }
     }
 }

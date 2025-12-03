@@ -50,6 +50,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Statistics
         Route::get('/{trainingSession}/statistics', [TrainingSessionController::class, 'statistics'])->name('statistics');
+
+        // Play (Tactic Board) Integration
+        Route::get('/{trainingSession}/plays', [TrainingSessionController::class, 'getPlays'])->name('plays.index');
+        Route::post('/{trainingSession}/plays', [TrainingSessionController::class, 'attachPlay'])->name('plays.attach');
+        Route::delete('/{trainingSession}/plays/{play}', [TrainingSessionController::class, 'detachPlay'])->name('plays.detach');
+        Route::put('/{trainingSession}/plays/reorder', [TrainingSessionController::class, 'reorderPlays'])->name('plays.reorder');
+        Route::put('/{trainingSession}/plays/{play}/notes', [TrainingSessionController::class, 'updatePlayNotes'])->name('plays.update-notes');
     });
 
     // Drills Routes
@@ -69,6 +76,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{drill}/rate', [DrillController::class, 'rate'])->name('rate');
         Route::post('/{drill}/favorites', [DrillController::class, 'addToFavorites'])->name('add-to-favorites');
         Route::delete('/{drill}/favorites', [DrillController::class, 'removeFromFavorites'])->name('remove-from-favorites');
+
+        // Play (Tactic Board) Integration
+        Route::get('/{drill}/plays', [DrillController::class, 'getPlays'])->name('plays.index');
+        Route::post('/{drill}/plays', [DrillController::class, 'attachPlay'])->name('plays.attach');
+        Route::delete('/{drill}/plays/{play}', [DrillController::class, 'detachPlay'])->name('plays.detach');
+        Route::put('/{drill}/plays/reorder', [DrillController::class, 'reorderPlays'])->name('plays.reorder');
     });
 
 });

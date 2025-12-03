@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Play;
 use App\Models\TrainingRegistration;
 use App\Models\TrainingSession;
 use App\Services\TrainingService;
@@ -10,6 +11,7 @@ use App\Services\BookingService;
 use App\Http\Requests\TrainingSession\CreateTrainingSessionRequest;
 use App\Http\Requests\TrainingSession\UpdateTrainingSessionRequest;
 use App\Http\Resources\TrainingSessionResource;
+use App\Http\Resources\PlayResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
@@ -671,6 +673,180 @@ class TrainingSessionController extends Controller
                 'message' => 'Fehler beim Laden der Anmeldungen',
                 'error' => $e->getMessage()
             ], 422);
+        }
+    }
+
+    // ============================
+    // PLAY (TACTIC BOARD) INTEGRATION
+    // ============================
+
+    /**
+     * Get plays attached to a training session.
+     */
+    public function getPlays(TrainingSession $trainingSession): JsonResponse
+    {
+        $plays = $trainingSession->plays()
+            ->with('createdBy')
+            ->orderBy('training_session_plays.order')
+            ->get();
+
+        return response()->json([
+            'data' => $plays->map(function ($play) {
+                return [
+                    'play' => new PlayResource($play),
+                    'order' => $play->pivot->order,
+                    'notes' => $play->pivot->notes,
+                ];
+            }),
+            'meta' => [
+                'total' => $plays->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Attach a play to a training session.
+     */
+    public function attachPlay(Request $request, TrainingSession $trainingSession): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'play_id' => 'required|exists:plays,id',
+                'order' => 'nullable|integer|min:0',
+                'notes' => 'nullable|string|max:1000',
+            ]);
+
+            $play = Play::findOrFail($validated['play_id']);
+
+            // Check if play is already attached
+            if ($trainingSession->plays()->where('play_id', $play->id)->exists()) {
+                return response()->json([
+                    'message' => 'Spielzug ist bereits mit dieser Trainingseinheit verknüpft'
+                ], 422);
+            }
+
+            // Get the next order if not provided
+            $order = $validated['order'] ?? ($trainingSession->plays()->max('training_session_plays.order') + 1);
+
+            // Attach play with pivot data
+            $trainingSession->plays()->attach($play->id, [
+                'order' => $order,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            // Increment play usage count
+            $play->incrementUsage();
+
+            return response()->json([
+                'message' => 'Spielzug erfolgreich verknüpft',
+                'data' => [
+                    'training_session_id' => $trainingSession->id,
+                    'play_id' => $play->id,
+                    'order' => $order,
+                    'notes' => $validated['notes'] ?? null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Fehler beim Verknüpfen des Spielzugs',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Detach a play from a training session.
+     */
+    public function detachPlay(TrainingSession $trainingSession, Play $play): JsonResponse
+    {
+        try {
+            if (!$trainingSession->plays()->where('play_id', $play->id)->exists()) {
+                return response()->json([
+                    'message' => 'Spielzug ist nicht mit dieser Trainingseinheit verknüpft'
+                ], 404);
+            }
+
+            $trainingSession->plays()->detach($play->id);
+
+            // Reorder remaining plays
+            $this->reorderPlaysAfterDetach($trainingSession);
+
+            return response()->json([
+                'message' => 'Spielzug erfolgreich entfernt'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Fehler beim Entfernen des Spielzugs',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Reorder plays within a training session.
+     */
+    public function reorderPlays(Request $request, TrainingSession $trainingSession): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'play_ids' => 'required|array',
+                'play_ids.*' => 'exists:plays,id',
+            ]);
+
+            foreach ($validated['play_ids'] as $order => $playId) {
+                $trainingSession->plays()->updateExistingPivot($playId, ['order' => $order]);
+            }
+
+            return response()->json([
+                'message' => 'Spielzüge erfolgreich neu geordnet'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Fehler beim Neuordnen der Spielzüge',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Update play notes in a training session.
+     */
+    public function updatePlayNotes(Request $request, TrainingSession $trainingSession, Play $play): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'notes' => 'nullable|string|max:1000',
+            ]);
+
+            if (!$trainingSession->plays()->where('play_id', $play->id)->exists()) {
+                return response()->json([
+                    'message' => 'Spielzug ist nicht mit dieser Trainingseinheit verknüpft'
+                ], 404);
+            }
+
+            $trainingSession->plays()->updateExistingPivot($play->id, [
+                'notes' => $validated['notes'],
+            ]);
+
+            return response()->json([
+                'message' => 'Notizen erfolgreich aktualisiert'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Fehler beim Aktualisieren der Notizen',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Helper to reorder plays after one is detached.
+     */
+    private function reorderPlaysAfterDetach(TrainingSession $trainingSession): void
+    {
+        $plays = $trainingSession->plays()->orderBy('training_session_plays.order')->get();
+        foreach ($plays as $index => $play) {
+            $trainingSession->plays()->updateExistingPivot($play->id, ['order' => $index]);
         }
     }
 }

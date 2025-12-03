@@ -125,6 +125,14 @@ class TrainingSession extends Model
         return $this->hasMany(TrainingRegistration::class);
     }
 
+    public function plays(): BelongsToMany
+    {
+        return $this->belongsToMany(Play::class, 'training_session_plays')
+            ->withPivot(['order', 'notes'])
+            ->withTimestamps()
+            ->orderByPivot('order');
+    }
+
     // Scopes
     public function scopeUpcoming($query)
     {

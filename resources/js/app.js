@@ -7,6 +7,7 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from 'ziggy-js';
 import { router } from '@inertiajs/vue3';
+import VueKonva from 'vue-konva';
 import { getCurrentToken, updateToken, handle419Error, ensureTokenForAxios } from './utils/csrf';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -93,6 +94,7 @@ createInertiaApp({
         return createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
+            .use(VueKonva)
             .mount(el);
     },
     progress: {

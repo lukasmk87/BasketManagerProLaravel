@@ -37,6 +37,10 @@ use App\Models\TrainingRegistration;
 use App\Policies\TrainingRegistrationPolicy;
 use App\Models\TournamentAward;
 use App\Policies\TournamentAwardPolicy;
+use App\Models\Play;
+use App\Policies\PlayPolicy;
+use App\Models\Playbook;
+use App\Policies\PlaybookPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -63,6 +67,8 @@ class AuthServiceProvider extends ServiceProvider
         GameRegistration::class => GameRegistrationPolicy::class,
         TrainingRegistration::class => TrainingRegistrationPolicy::class,
         TournamentAward::class => TournamentAwardPolicy::class,
+        Play::class => PlayPolicy::class,
+        Playbook::class => PlaybookPolicy::class,
     ];
 
     /**
