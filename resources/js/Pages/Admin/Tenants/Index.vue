@@ -6,6 +6,7 @@ import TenantCard from '@/Components/Admin/TenantCard.vue';
 import Pagination from '@/Components/Pagination.vue';
 import TextInput from '@/Components/TextInput.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import DeleteTenantModal from './Partials/DeleteTenantModal.vue';
 
 const props = defineProps({
     tenants: Object,
@@ -24,6 +25,10 @@ const search = ref(props.filters?.search || '');
 const selectedPlan = ref(props.filters?.plan || '');
 const selectedStatus = ref(props.filters?.status || '');
 
+// Delete modal state
+const showDeleteModal = ref(false);
+const tenantToDelete = ref(null);
+
 // Watch for changes and update URL
 watch([search, selectedPlan, selectedStatus], ([newSearch, newPlan, newStatus]) => {
     router.get(route('admin.tenants.index'), {
@@ -40,6 +45,21 @@ const clearFilters = () => {
     search.value = '';
     selectedPlan.value = '';
     selectedStatus.value = '';
+};
+
+const openDeleteModal = (tenant) => {
+    tenantToDelete.value = tenant;
+    showDeleteModal.value = true;
+};
+
+const closeDeleteModal = () => {
+    showDeleteModal.value = false;
+    tenantToDelete.value = null;
+};
+
+const handleTenantDeleted = () => {
+    closeDeleteModal();
+    // Page will be refreshed by Inertia redirect
 };
 </script>
 
@@ -238,6 +258,7 @@ const clearFilters = () => {
                                 :key="tenant.id"
                                 :tenant="tenant"
                                 :show-actions="true"
+                                @delete="openDeleteModal"
                             />
                         </div>
 
@@ -267,5 +288,13 @@ const clearFilters = () => {
                 </div>
             </div>
         </div>
+
+        <!-- Delete Tenant Modal -->
+        <DeleteTenantModal
+            :show="showDeleteModal"
+            :tenant="tenantToDelete"
+            @close="closeDeleteModal"
+            @deleted="handleTenantDeleted"
+        />
     </AdminLayout>
 </template>

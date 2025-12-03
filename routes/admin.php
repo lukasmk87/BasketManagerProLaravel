@@ -36,6 +36,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('tenants/{tenant}', [TenantSubscriptionController::class, 'show'])->name('tenants.show');
     Route::get('tenants/{tenant}/edit', [TenantSubscriptionController::class, 'edit'])->name('tenants.edit');
     Route::put('tenants/{tenant}', [TenantSubscriptionController::class, 'update'])->name('tenants.update');
+    Route::get('tenants/{tenant}/delete-preview', [TenantSubscriptionController::class, 'previewDelete'])->name('tenants.delete-preview');
     Route::delete('tenants/{tenant}', [TenantSubscriptionController::class, 'destroy'])->name('tenants.destroy');
 
     // Tenant Selection for Super Admin Filtering

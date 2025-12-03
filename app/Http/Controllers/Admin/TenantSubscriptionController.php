@@ -13,7 +13,10 @@ use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Models\TenantPlanCustomization;
 use App\Services\LimitEnforcementService;
+use App\Services\TenantDeletionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -22,6 +25,10 @@ use Inertia\Response;
 
 class TenantSubscriptionController extends Controller
 {
+    public function __construct(
+        protected TenantDeletionService $tenantDeletionService
+    ) {}
+
     /**
      * Display a listing of tenants with subscription details.
      */
@@ -349,56 +356,53 @@ class TenantSubscriptionController extends Controller
     }
 
     /**
-     * Remove the specified tenant from storage (soft delete).
+     * Preview what will happen when deleting the tenant.
      */
-    public function destroy(Tenant $tenant): RedirectResponse
+    public function previewDelete(Tenant $tenant): JsonResponse
     {
-        DB::beginTransaction();
+        // Verify user is Super Admin
+        if (!auth()->user() || !auth()->user()->hasRole('super_admin')) {
+            abort(403, 'Nur Super-Admins können Tenants löschen.');
+        }
+
+        $preview = $this->tenantDeletionService->previewDeletion($tenant);
+
+        return response()->json($preview);
+    }
+
+    /**
+     * Remove the specified tenant from storage (soft delete).
+     * If tenant has clubs, they must be transferred to a target tenant.
+     */
+    public function destroy(Request $request, Tenant $tenant): RedirectResponse
+    {
+        // Verify user is Super Admin
+        if (!auth()->user() || !auth()->user()->hasRole('super_admin')) {
+            abort(403, 'Nur Super-Admins können Tenants löschen.');
+        }
 
         try {
-            // Safety checks before deletion
-            $activeUsersCount = $tenant->users()->count();
-            $activeTeamsCount = $tenant->teams()->count();
-            $activeClubsCount = $tenant->clubs()->count();
-
-            // Warn if tenant has active data
-            if ($activeUsersCount > 0 || $activeTeamsCount > 0 || $activeClubsCount > 0) {
-                Log::warning('Attempting to delete tenant with active data', [
-                    'tenant_id' => $tenant->id,
-                    'active_users' => $activeUsersCount,
-                    'active_teams' => $activeTeamsCount,
-                    'active_clubs' => $activeClubsCount,
-                ]);
-            }
-
-            // Store tenant info for logging
-            $tenantInfo = [
-                'id' => $tenant->id,
-                'name' => $tenant->name,
-                'slug' => $tenant->slug,
-                'domain' => $tenant->domain,
-                'subdomain' => $tenant->subdomain,
-                'active_users' => $activeUsersCount,
-                'active_teams' => $activeTeamsCount,
-                'active_clubs' => $activeClubsCount,
-            ];
-
-            // Soft delete the tenant
-            $tenant->delete();
-
-            DB::commit();
-
-            Log::info('Tenant deleted by admin', [
-                'tenant_info' => $tenantInfo,
-                'deleted_by' => auth()->id(),
+            $request->validate([
+                'target_tenant_id' => 'nullable|uuid|exists:tenants,id',
             ]);
+
+            $targetTenant = $request->target_tenant_id
+                ? Tenant::find($request->target_tenant_id)
+                : null;
+
+            $this->tenantDeletionService->deleteTenant(
+                $tenant,
+                $targetTenant,
+                auth()->user()
+            );
 
             return redirect()->route('admin.tenants.index')
                 ->with('success', 'Tenant wurde erfolgreich gelöscht!');
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors());
 
+        } catch (\Exception $e) {
             Log::error('Failed to delete tenant', [
                 'tenant_id' => $tenant->id,
                 'error' => $e->getMessage(),
