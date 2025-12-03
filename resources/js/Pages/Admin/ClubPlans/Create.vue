@@ -3,6 +3,7 @@ import { useForm, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import FeatureSelector from '@/Components/Admin/FeatureSelector.vue';
 
 const props = defineProps({
     tenants: {
@@ -327,6 +328,23 @@ const savePlan = () => {
                                     />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Features -->
+                    <div v-if="featuresList && Object.keys(featuresList).length > 0" class="bg-white shadow rounded-lg overflow-hidden">
+                        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                            <h3 class="text-lg font-semibold text-gray-900">Features</h3>
+                            <p class="mt-1 text-sm text-gray-500">Wähle die Features für diesen Plan</p>
+                        </div>
+                        <div class="px-6 py-5 space-y-3">
+                            <FeatureSelector
+                                v-for="(featureName, featureKey) in featuresList"
+                                :key="featureKey"
+                                v-model="form.features"
+                                :feature-key="featureKey"
+                                :feature-name="featureName"
+                            />
                         </div>
                     </div>
 
