@@ -4,6 +4,9 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import FeatureSelector from '@/Components/Admin/FeatureSelector.vue';
+import { usePricing } from '@/Composables/usePricing';
+
+const { formatPrice, getPriceLabel, getSmallBusinessNotice } = usePricing();
 
 const props = defineProps({
     plan: {
@@ -151,7 +154,7 @@ const updatePlan = () => {
                             <div class="grid grid-cols-3 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">
-                                        Preis (EUR) *
+                                        Preis (EUR) * <span class="font-normal text-gray-500">– Netto-Preis eingeben</span>
                                     </label>
                                     <input
                                         v-model.number="form.price"
@@ -161,6 +164,13 @@ const updatePlan = () => {
                                         required
                                         class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                     />
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        Vorschau für Kunden: {{ form.price > 0 ? formatPrice(form.price) : 'Kostenlos' }}
+                                        <span v-if="form.price > 0 && getPriceLabel()">{{ getPriceLabel() }}</span>
+                                    </p>
+                                    <p v-if="getSmallBusinessNotice()" class="mt-1 text-xs text-amber-600">
+                                        {{ getSmallBusinessNotice() }}
+                                    </p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">
