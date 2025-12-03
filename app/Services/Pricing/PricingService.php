@@ -117,6 +117,62 @@ class PricingService
     }
 
     /**
+     * Convert gross price to net price.
+     */
+    public function grossToNet(float $grossPrice): float
+    {
+        if ($this->isSmallBusiness()) {
+            return $grossPrice;
+        }
+
+        $taxRate = $this->getDefaultTaxRate();
+
+        return round($grossPrice / (1 + $taxRate / 100), 2);
+    }
+
+    /**
+     * Convert net price to gross price.
+     */
+    public function netToGross(float $netPrice): float
+    {
+        if ($this->isSmallBusiness()) {
+            return $netPrice;
+        }
+
+        $taxRate = $this->getDefaultTaxRate();
+
+        return round($netPrice * (1 + $taxRate / 100), 2);
+    }
+
+    /**
+     * Get admin price input configuration.
+     */
+    public function getAdminPriceInputConfig(): array
+    {
+        if ($this->isSmallBusiness()) {
+            return [
+                'mode' => 'small_business',
+                'label' => 'Preis (gemäß §19 UStG ohne MwSt.)',
+                'input_is_gross' => false,
+            ];
+        }
+
+        if ($this->displayPricesGross()) {
+            return [
+                'mode' => 'gross',
+                'label' => 'Bruttopreis (inkl. '.$this->getDefaultTaxRate().'% MwSt.)',
+                'input_is_gross' => true,
+            ];
+        }
+
+        return [
+            'mode' => 'net',
+            'label' => 'Nettopreis (zzgl. '.$this->getDefaultTaxRate().'% MwSt.)',
+            'input_is_gross' => false,
+        ];
+    }
+
+    /**
      * Get pricing data for frontend (Inertia props).
      */
     public function getFrontendPricingData(): array
@@ -126,6 +182,7 @@ class PricingService
             'is_small_business' => $this->settings->isSmallBusiness(),
             'default_tax_rate' => $this->settings->getDefaultTaxRate(),
             'small_business_notice' => $this->settings->isSmallBusiness() ? $this->getSmallBusinessNotice() : null,
+            'admin_input' => $this->getAdminPriceInputConfig(),
         ];
     }
 

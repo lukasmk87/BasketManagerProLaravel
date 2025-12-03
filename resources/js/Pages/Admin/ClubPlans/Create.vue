@@ -6,7 +6,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import FeatureSelector from '@/Components/Admin/FeatureSelector.vue';
 import { usePricing } from '@/Composables/usePricing';
 
-const { formatPrice, getPriceLabel, getSmallBusinessNotice } = usePricing();
+const { formatPrice, getPriceLabel, getSmallBusinessNotice, getAdminPriceLabel, inputPriceToNet, adminInputIsGross } = usePricing();
 
 const props = defineProps({
     tenants: {
@@ -58,7 +58,11 @@ const generateSlug = () => {
 };
 
 const savePlan = () => {
-    form.post(route('admin.club-plans.store'));
+    const formData = form.transform((data) => ({
+        ...data,
+        price: inputPriceToNet(data.price),
+    }));
+    formData.post(route('admin.club-plans.store'));
 };
 </script>
 
@@ -162,7 +166,7 @@ const savePlan = () => {
                             <div class="grid grid-cols-3 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">
-                                        Preis (EUR) * <span class="font-normal text-gray-500">– Netto-Preis eingeben</span>
+                                        Preis (EUR) * <span class="font-normal text-gray-500">{{ getAdminPriceLabel() }}</span>
                                     </label>
                                     <input
                                         v-model.number="form.price"
@@ -173,7 +177,7 @@ const savePlan = () => {
                                         class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                     />
                                     <p class="mt-1 text-xs text-gray-500">
-                                        Vorschau für Kunden: {{ form.price > 0 ? formatPrice(form.price) : 'Kostenlos' }}
+                                        Vorschau für Kunden: {{ form.price > 0 ? formatPrice(adminInputIsGross ? inputPriceToNet(form.price) : form.price) : 'Kostenlos' }}
                                         <span v-if="form.price > 0 && getPriceLabel()">{{ getPriceLabel() }}</span>
                                     </p>
                                     <p v-if="getSmallBusinessNotice()" class="mt-1 text-xs text-amber-600">

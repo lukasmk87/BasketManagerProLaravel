@@ -92,6 +92,85 @@ export function usePricing() {
     };
 
     /**
+     * Get admin price input configuration.
+     */
+    const adminInputConfig = computed(() => page.props.pricing?.admin_input || {
+        mode: 'net',
+        label: 'Nettopreis (zzgl. MwSt.)',
+        input_is_gross: false,
+    });
+
+    /**
+     * Check if admin should input gross prices.
+     */
+    const adminInputIsGross = computed(() => adminInputConfig.value.input_is_gross);
+
+    /**
+     * Get the label for admin price input field.
+     */
+    const getAdminPriceLabel = () => {
+        return adminInputConfig.value.label;
+    };
+
+    /**
+     * Convert gross price to net price.
+     * @param {number} grossPrice - Gross price including VAT
+     * @returns {number} Net price
+     */
+    const grossToNet = (grossPrice) => {
+        const settings = pricingSettings.value;
+
+        if (settings.is_small_business) {
+            return grossPrice;
+        }
+
+        const taxRate = settings.default_tax_rate / 100;
+        return Math.round((grossPrice / (1 + taxRate)) * 100) / 100;
+    };
+
+    /**
+     * Convert net price to gross price.
+     * @param {number} netPrice - Net price excluding VAT
+     * @returns {number} Gross price
+     */
+    const netToGross = (netPrice) => {
+        const settings = pricingSettings.value;
+
+        if (settings.is_small_business) {
+            return netPrice;
+        }
+
+        const taxRate = settings.default_tax_rate / 100;
+        return Math.round((netPrice * (1 + taxRate)) * 100) / 100;
+    };
+
+    /**
+     * Convert input price to net price for storage.
+     * Use this before sending to backend.
+     * @param {number} inputPrice - Price as entered by admin
+     * @returns {number} Net price for database storage
+     */
+    const inputPriceToNet = (inputPrice) => {
+        if (adminInputConfig.value.input_is_gross) {
+            return grossToNet(inputPrice);
+        }
+        return inputPrice;
+    };
+
+    /**
+     * Convert net price from database to input price for display.
+     * Use this when loading data from backend.
+     * @param {number} netPrice - Net price from database
+     * @returns {number} Price to display in input field
+     */
+    const netPriceToInput = (netPrice) => {
+        if (adminInputConfig.value.input_is_gross) {
+            return netToGross(netPrice);
+        }
+        return netPrice;
+    };
+
+    /**
      * Calculate full pricing breakdown for a net price.
      * @param {number} netPrice - Net price from database
      * @returns {object} Pricing breakdown
@@ -157,5 +236,13 @@ export function usePricing() {
         getSmallBusinessNotice,
         calculatePricing,
         getFullPriceString,
+        // Admin price input
+        adminInputConfig,
+        adminInputIsGross,
+        getAdminPriceLabel,
+        grossToNet,
+        netToGross,
+        inputPriceToNet,
+        netPriceToInput,
     };
 }
