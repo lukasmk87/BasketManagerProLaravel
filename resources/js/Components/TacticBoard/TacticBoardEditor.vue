@@ -6,6 +6,9 @@
             :courtType="board.courtType.value"
             :canUndo="history.canUndo.value"
             :canRedo="history.canRedo.value"
+            :zoomPercent="zoom.zoomPercent.value"
+            :gridEnabled="board.gridEnabled.value"
+            :gridSize="board.gridSize.value"
             @update:currentTool="board.currentTool.value = $event"
             @update:courtType="handleCourtTypeChange"
             @undo="handleUndo"
@@ -14,6 +17,12 @@
             @add-default-players="board.addDefaultPlayers()"
             @export-png="handleExportPng"
             @export-pdf="handleExportPdf"
+            @zoom-in="zoom.zoomIn"
+            @zoom-out="zoom.zoomOut"
+            @zoom-reset="zoom.resetZoom"
+            @toggle-grid="board.toggleGrid"
+            @update:gridSize="board.setGridSize"
+            @toggle-team-settings="showTeamSettings = !showTeamSettings"
         />
 
         <!-- Canvas Container -->
@@ -27,6 +36,7 @@
                 @touchstart="handleMouseDown"
                 @touchmove="handleMouseMove"
                 @touchend="handleMouseUp"
+                @wheel="handleWheel"
             >
                 <!-- Court Layer -->
                 <v-layer>
@@ -35,6 +45,14 @@
                         :width="canvasWidth"
                         :height="canvasHeight"
                         :courtColor="board.courtColor.value"
+                    />
+
+                    <!-- Grid Overlay -->
+                    <GridOverlay
+                        :visible="board.gridEnabled.value"
+                        :width="canvasWidth"
+                        :height="canvasHeight"
+                        :gridSize="board.gridSize.value"
                     />
                 </v-layer>
 
@@ -99,6 +117,74 @@
                         @edit="handleEditAnnotation"
                     />
 
+                    <!-- Freehand paths -->
+                    <FreehandPath
+                        v-for="freehand in board.freehandPaths.value"
+                        :key="freehand.id"
+                        :id="freehand.id"
+                        :points="freehand.points"
+                        :color="freehand.color"
+                        :strokeWidth="freehand.strokeWidth || 3"
+                        :lineStyle="freehand.lineStyle || 'solid'"
+                        :selected="board.selectedElementId.value === freehand.id"
+                        @select="handleSelectFreehand(freehand)"
+                        @update:points="handleUpdateFreehandPoints"
+                    />
+
+                    <!-- Circles -->
+                    <CircleShape
+                        v-for="circle in board.circles.value"
+                        :key="circle.id"
+                        :id="circle.id"
+                        :x="circle.x"
+                        :y="circle.y"
+                        :radiusX="circle.radiusX"
+                        :radiusY="circle.radiusY"
+                        :fill="circle.fill"
+                        :stroke="circle.stroke"
+                        :strokeWidth="circle.strokeWidth"
+                        :opacity="circle.opacity"
+                        :selected="board.selectedElementId.value === circle.id"
+                        @select="handleSelectCircle(circle)"
+                        @update:position="handleUpdateCirclePosition"
+                        @update:size="handleUpdateCircleSize"
+                    />
+
+                    <!-- Rectangles -->
+                    <RectangleShape
+                        v-for="rect in board.rectangles.value"
+                        :key="rect.id"
+                        :id="rect.id"
+                        :x="rect.x"
+                        :y="rect.y"
+                        :width="rect.width"
+                        :height="rect.height"
+                        :rotation="rect.rotation"
+                        :fill="rect.fill"
+                        :stroke="rect.stroke"
+                        :strokeWidth="rect.strokeWidth"
+                        :selected="board.selectedElementId.value === rect.id"
+                        @select="handleSelectRectangle(rect)"
+                        @update:position="handleUpdateRectanglePosition"
+                        @update:size="handleUpdateRectangleSize"
+                        @update:rotation="handleUpdateRectangleRotation"
+                    />
+
+                    <!-- Arrows -->
+                    <ArrowShape
+                        v-for="arrow in board.arrows.value"
+                        :key="arrow.id"
+                        :id="arrow.id"
+                        :points="arrow.points"
+                        :color="arrow.color"
+                        :strokeWidth="arrow.strokeWidth"
+                        :pointerLength="arrow.pointerLength"
+                        :pointerWidth="arrow.pointerWidth"
+                        :selected="board.selectedElementId.value === arrow.id"
+                        @select="handleSelectArrow(arrow)"
+                        @update:points="handleUpdateArrowPoints"
+                    />
+
                     <!-- Players -->
                     <PlayerToken
                         v-for="player in board.players.value"
@@ -110,9 +196,22 @@
                         :label="player.label"
                         :team="player.team"
                         :hasBall="player.hasBall"
+                        :teamColors="board.teamColors.value"
                         :selected="board.selectedElementId.value === player.id"
                         @select="handleSelectPlayer(player)"
                         @update:position="handleUpdatePlayerPosition"
+                    />
+
+                    <!-- Ball -->
+                    <BallElement
+                        v-if="board.ball.value"
+                        :id="board.ball.value.id"
+                        :x="board.ball.value.x"
+                        :y="board.ball.value.y"
+                        :radius="board.ball.value.radius || 12"
+                        :selected="board.selectedElementId.value === board.ball.value?.id"
+                        @select="handleSelectBall"
+                        @update:position="handleUpdateBallPosition"
                     />
                 </v-layer>
             </v-stage>
@@ -177,12 +276,37 @@
                     </div>
                 </template>
 
+                <!-- Freehand/Path properties (Line Style) -->
+                <template v-if="board.selectedElementType.value === 'freehand' || board.selectedElementType.value === 'path'">
+                    <LineStylePanel
+                        :strokeWidth="board.selectedElement.value.strokeWidth || 3"
+                        :lineStyle="board.selectedElement.value.lineStyle || 'solid'"
+                        :color="board.selectedElement.value.color || '#ffffff'"
+                        @update:strokeWidth="updateLineProperty('strokeWidth', $event)"
+                        @update:lineStyle="updateLineProperty('lineStyle', $event)"
+                        @update:color="updateLineProperty('color', $event)"
+                    />
+                </template>
+
                 <!-- Delete button -->
                 <button class="delete-btn" @click="handleDeleteSelected">
                     Element löschen
                 </button>
             </div>
         </div>
+
+        <!-- Team Settings Panel -->
+        <TeamSettingsPanel
+            v-if="showTeamSettings"
+            :offenseColor="board.teamColors.value.offense"
+            :defenseColor="board.teamColors.value.defense"
+            :hasBall="!!board.ball.value"
+            @close="showTeamSettings = false"
+            @update:offenseColor="handleUpdateTeamColor('offense', $event)"
+            @update:defenseColor="handleUpdateTeamColor('defense', $event)"
+            @add-ball="handleAddBall"
+            @remove-ball="handleRemoveBall"
+        />
 
         <!-- Text Input Modal -->
         <div v-if="showTextInput" class="text-input-modal">
@@ -242,6 +366,8 @@ import { FilmIcon } from '@heroicons/vue/24/outline';
 import { useTacticBoard } from '@/composables/useTacticBoard';
 import { useTacticHistory } from '@/composables/useTacticHistory';
 import { useTacticExport } from '@/composables/useTacticExport';
+import { useTacticZoom } from '@/composables/useTacticZoom';
+import { useTacticKeyboard } from '@/composables/useTacticKeyboard';
 
 // Components
 import TacticBoardToolbar from './TacticBoardToolbar.vue';
@@ -250,12 +376,20 @@ import AnimationPreview from './Animation/AnimationPreview.vue';
 import HalfCourtHorizontal from './Court/HalfCourtHorizontal.vue';
 import FullCourt from './Court/FullCourt.vue';
 import HalfCourtVertical from './Court/HalfCourtVertical.vue';
+import GridOverlay from './Court/GridOverlay.vue';
 import PlayerToken from './Elements/PlayerToken.vue';
 import MovementPath from './Elements/MovementPath.vue';
 import PassLine from './Elements/PassLine.vue';
 import DribblePath from './Elements/DribblePath.vue';
 import ScreenShape from './Elements/ScreenShape.vue';
 import TextAnnotation from './Elements/TextAnnotation.vue';
+import FreehandPath from './Elements/FreehandPath.vue';
+import CircleShape from './Elements/CircleShape.vue';
+import RectangleShape from './Elements/RectangleShape.vue';
+import ArrowShape from './Elements/ArrowShape.vue';
+import BallElement from './Elements/BallElement.vue';
+import LineStylePanel from './Panels/LineStylePanel.vue';
+import TeamSettingsPanel from './Panels/TeamSettingsPanel.vue';
 
 const props = defineProps({
     initialData: {
@@ -289,6 +423,7 @@ const canvasHeight = ref(500);
 const board = useTacticBoard(props.initialData?.play_data);
 const history = useTacticHistory();
 const exportUtil = useTacticExport();
+const zoom = useTacticZoom();
 
 // Text input modal
 const showTextInput = ref(false);
@@ -296,10 +431,33 @@ const textInputValue = ref('');
 const pendingTextPosition = ref({ x: 0, y: 0 });
 const editingAnnotationId = ref(null);
 
-// Stage configuration
+// Team settings panel
+const showTeamSettings = ref(false);
+
+// Keyboard shortcuts (must be after showTextInput is defined)
+useTacticKeyboard({
+    onToolChange: (tool) => {
+        board.currentTool.value = tool;
+    },
+    onUndo: () => handleUndo(),
+    onRedo: () => handleRedo(),
+    onDelete: () => handleDeleteSelected(),
+    onClearSelection: () => board.clearSelection(),
+    onZoomIn: () => zoom.zoomIn(),
+    onZoomOut: () => zoom.zoomOut(),
+    onZoomReset: () => zoom.resetZoom(),
+    onToggleGrid: () => board.toggleGrid(),
+    isEnabled: () => !showTextInput.value, // Disable when text input is open
+});
+
+// Stage configuration with zoom
 const stageConfig = computed(() => ({
     width: canvasWidth.value,
     height: canvasHeight.value,
+    scaleX: zoom.scale.value,
+    scaleY: zoom.scale.value,
+    x: zoom.positionX.value,
+    y: zoom.positionY.value,
 }));
 
 // Court component based on type
@@ -402,6 +560,10 @@ const handleMouseDown = (e) => {
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
 
+    // Apply snap-to-grid
+    const snappedX = board.snapToGrid(pos.x);
+    const snappedY = board.snapToGrid(pos.y);
+
     // Check if clicked on empty area
     const clickedOnEmpty = e.target === stage || e.target.getClassName() === 'Rect';
 
@@ -411,22 +573,41 @@ const handleMouseDown = (e) => {
         switch (board.currentTool.value) {
             case 'player':
                 recordHistory();
-                board.addPlayer({ x: pos.x, y: pos.y });
+                board.addPlayer({ x: snappedX, y: snappedY });
                 break;
 
             case 'movement':
             case 'pass':
             case 'dribble':
-                board.startDrawing(pos.x, pos.y);
+                board.startDrawing(snappedX, snappedY);
+                break;
+
+            case 'freehand':
+                board.startFreehandDrawing(pos.x, pos.y); // Freehand does not use grid snap
                 break;
 
             case 'screen':
                 recordHistory();
-                board.addScreen({ x: pos.x, y: pos.y });
+                board.addScreen({ x: snappedX, y: snappedY });
+                break;
+
+            case 'circle':
+                recordHistory();
+                board.addCircle({ x: snappedX, y: snappedY });
+                break;
+
+            case 'rectangle':
+                recordHistory();
+                board.addRectangle({ x: snappedX, y: snappedY });
+                break;
+
+            case 'arrow':
+                recordHistory();
+                board.addArrow({ x: snappedX, y: snappedY });
                 break;
 
             case 'text':
-                pendingTextPosition.value = { x: pos.x, y: pos.y };
+                pendingTextPosition.value = { x: snappedX, y: snappedY };
                 editingAnnotationId.value = null;
                 textInputValue.value = '';
                 showTextInput.value = true;
@@ -443,14 +624,34 @@ const handleMouseMove = (e) => {
 
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
-    board.continueDrawing(pos.x, pos.y);
+
+    // Handle based on current tool
+    if (board.currentTool.value === 'freehand') {
+        board.continueFreehandDrawing(pos.x, pos.y); // No snapping for freehand
+    } else {
+        // Apply snap-to-grid for path drawing
+        const snappedX = board.snapToGrid(pos.x);
+        const snappedY = board.snapToGrid(pos.y);
+        board.continueDrawing(snappedX, snappedY);
+    }
 };
 
 const handleMouseUp = () => {
     if (board.isDrawing.value) {
         recordHistory();
-        board.finishDrawing();
+
+        // Handle based on current tool
+        if (board.currentTool.value === 'freehand') {
+            board.finishFreehandDrawing();
+        } else {
+            board.finishDrawing();
+        }
     }
+};
+
+// Zoom event handler
+const handleWheel = (e) => {
+    zoom.handleWheel(e, canvasWidth.value, canvasHeight.value);
 };
 
 // Selection handlers
@@ -470,9 +671,28 @@ const handleSelectAnnotation = (annotation) => {
     board.selectElement(annotation.id, 'annotation');
 };
 
-// Update handlers
+// New element selection handlers
+const handleSelectFreehand = (freehand) => {
+    board.selectElement(freehand.id, 'freehand');
+};
+
+const handleSelectCircle = (circle) => {
+    board.selectElement(circle.id, 'circle');
+};
+
+const handleSelectRectangle = (rect) => {
+    board.selectElement(rect.id, 'rectangle');
+};
+
+const handleSelectArrow = (arrow) => {
+    board.selectElement(arrow.id, 'arrow');
+};
+
+// Update handlers with snap-to-grid support
 const handleUpdatePlayerPosition = ({ id, x, y }) => {
-    board.updatePlayerPosition(id, x, y);
+    const snappedX = board.snapToGrid(x);
+    const snappedY = board.snapToGrid(y);
+    board.updatePlayerPosition(id, snappedX, snappedY);
 };
 
 const handleUpdatePathPoints = ({ id, points }) => {
@@ -480,7 +700,9 @@ const handleUpdatePathPoints = ({ id, points }) => {
 };
 
 const handleUpdateShapePosition = ({ id, x, y }) => {
-    board.updateShapePosition(id, x, y);
+    const snappedX = board.snapToGrid(x);
+    const snappedY = board.snapToGrid(y);
+    board.updateShapePosition(id, snappedX, snappedY);
 };
 
 const handleUpdateShapeRotation = ({ id, rotation }) => {
@@ -488,12 +710,91 @@ const handleUpdateShapeRotation = ({ id, rotation }) => {
 };
 
 const handleUpdateAnnotationPosition = ({ id, x, y }) => {
-    board.updateAnnotationPosition(id, x, y);
+    const snappedX = board.snapToGrid(x);
+    const snappedY = board.snapToGrid(y);
+    board.updateAnnotationPosition(id, snappedX, snappedY);
 };
 
 const handleUpdateAnnotationContent = (content) => {
     if (board.selectedElement.value) {
         board.updateAnnotationContent(board.selectedElementId.value, content);
+    }
+};
+
+// New element update handlers
+const handleUpdateFreehandPoints = ({ id, points }) => {
+    board.updateFreehandPoints(id, points);
+};
+
+const handleUpdateCirclePosition = ({ id, x, y }) => {
+    const snappedX = board.snapToGrid(x);
+    const snappedY = board.snapToGrid(y);
+    board.updateCirclePosition(id, snappedX, snappedY);
+};
+
+const handleUpdateCircleSize = ({ id, radiusX, radiusY }) => {
+    board.updateCircleSize(id, radiusX, radiusY);
+};
+
+const handleUpdateRectanglePosition = ({ id, x, y }) => {
+    const snappedX = board.snapToGrid(x);
+    const snappedY = board.snapToGrid(y);
+    board.updateRectanglePosition(id, snappedX, snappedY);
+};
+
+const handleUpdateRectangleSize = ({ id, width, height }) => {
+    board.updateRectangleSize(id, width, height);
+};
+
+const handleUpdateRectangleRotation = ({ id, rotation }) => {
+    board.updateRectangleRotation(id, rotation);
+};
+
+const handleUpdateArrowPoints = ({ id, points }) => {
+    board.updateArrowPoints(id, points);
+};
+
+// Ball handlers
+const handleSelectBall = ({ id }) => {
+    board.selectElement(id, 'ball');
+};
+
+const handleUpdateBallPosition = ({ id, x, y }) => {
+    const snappedX = board.snapToGrid(x);
+    const snappedY = board.snapToGrid(y);
+    board.updateBallPosition(snappedX, snappedY);
+};
+
+const handleAddBall = () => {
+    recordHistory();
+    board.addBall({ x: canvasWidth.value / 2, y: canvasHeight.value / 2 });
+};
+
+const handleRemoveBall = () => {
+    recordHistory();
+    board.removeBall();
+};
+
+// Team color handlers
+const handleUpdateTeamColor = (team, color) => {
+    board.teamColors.value[team] = color;
+};
+
+// Update line properties (for freehand and path elements)
+const updateLineProperty = (property, value) => {
+    if (!board.selectedElement.value) return;
+
+    const id = board.selectedElementId.value;
+    const type = board.selectedElementType.value;
+
+    if (type === 'freehand') {
+        board.updateFreehand(id, { [property]: value });
+    } else if (type === 'path') {
+        // Update path element
+        const path = board.paths.value.find(p => p.id === id);
+        if (path) {
+            path[property] = value;
+        }
     }
 };
 

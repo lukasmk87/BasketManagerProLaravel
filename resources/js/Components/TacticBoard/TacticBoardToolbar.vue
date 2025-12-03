@@ -74,6 +74,13 @@
             <div class="tool-buttons">
                 <button
                     class="tool-btn"
+                    title="Team-Einstellungen"
+                    @click="$emit('toggle-team-settings')"
+                >
+                    <Cog6ToothIcon class="h-5 w-5" />
+                </button>
+                <button
+                    class="tool-btn"
                     title="Standard-Aufstellung"
                     @click="$emit('add-default-players')"
                 >
@@ -102,6 +109,65 @@
                 >
                     <TrashIcon class="h-5 w-5" />
                 </button>
+            </div>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="toolbar-section">
+            <span class="section-label">Zoom</span>
+            <div class="zoom-controls">
+                <button
+                    class="tool-btn small"
+                    title="Verkleinern"
+                    @click="$emit('zoom-out')"
+                >
+                    <span class="zoom-icon">-</span>
+                </button>
+                <span class="zoom-value">{{ zoomPercent }}%</span>
+                <button
+                    class="tool-btn small"
+                    title="Vergrößern"
+                    @click="$emit('zoom-in')"
+                >
+                    <span class="zoom-icon">+</span>
+                </button>
+                <button
+                    class="tool-btn small"
+                    title="Zurücksetzen"
+                    @click="$emit('zoom-reset')"
+                    :disabled="zoomPercent === 100"
+                >
+                    <span class="zoom-reset">1:1</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="toolbar-divider"></div>
+
+        <!-- Grid Controls -->
+        <div class="toolbar-section">
+            <span class="section-label">Raster</span>
+            <div class="grid-controls">
+                <button
+                    :class="['tool-btn', { active: gridEnabled }]"
+                    title="Raster ein/aus"
+                    @click="$emit('toggle-grid')"
+                >
+                    <TableCellsIcon class="h-5 w-5" />
+                </button>
+                <select
+                    v-if="gridEnabled"
+                    :value="gridSize"
+                    class="grid-size-select"
+                    title="Rastergröße"
+                    @change="$emit('update:gridSize', Number($event.target.value))"
+                >
+                    <option value="10">10px</option>
+                    <option value="20">20px</option>
+                    <option value="25">25px</option>
+                    <option value="50">50px</option>
+                </select>
             </div>
         </div>
 
@@ -144,6 +210,12 @@ import {
     PhotoIcon,
     DocumentIcon,
     UsersIcon,
+    PencilSquareIcon,
+    ArrowUpRightIcon,
+    Square2StackIcon,
+    EllipsisHorizontalCircleIcon,
+    TableCellsIcon,
+    Cog6ToothIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -163,6 +235,18 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    zoomPercent: {
+        type: Number,
+        default: 100,
+    },
+    gridEnabled: {
+        type: Boolean,
+        default: false,
+    },
+    gridSize: {
+        type: Number,
+        default: 20,
+    },
 });
 
 const emit = defineEmits([
@@ -174,6 +258,12 @@ const emit = defineEmits([
     'add-default-players',
     'export-png',
     'export-pdf',
+    'zoom-in',
+    'zoom-out',
+    'zoom-reset',
+    'toggle-grid',
+    'update:gridSize',
+    'toggle-team-settings',
 ]);
 
 // Local state
@@ -187,13 +277,17 @@ const tools = [
     { id: 'movement', label: 'Bewegungslinie', icon: ArrowLongRightIcon },
     { id: 'pass', label: 'Passlinie', icon: ArrowTrendingUpIcon },
     { id: 'dribble', label: 'Dribbellinie', icon: PencilIcon },
+    { id: 'freehand', label: 'Freihand zeichnen', icon: PencilSquareIcon },
     { id: 'screen', label: 'Screen/Block', icon: StopIcon },
+    { id: 'circle', label: 'Kreis/Zone', icon: EllipsisHorizontalCircleIcon },
+    { id: 'rectangle', label: 'Rechteck/Zone', icon: Square2StackIcon },
+    { id: 'arrow', label: 'Pfeil', icon: ArrowUpRightIcon },
     { id: 'text', label: 'Text', icon: ChatBubbleLeftIcon },
 ];
 
-// Check if current tool is a path tool
+// Check if current tool is a path tool (shows line color picker)
 const isPathTool = computed(() => {
-    return ['movement', 'pass', 'dribble'].includes(props.currentTool);
+    return ['movement', 'pass', 'dribble', 'freehand'].includes(props.currentTool);
 });
 
 // Court type local model
@@ -347,5 +441,62 @@ watch(lineColor, (value) => {
 
 .ml-auto {
     margin-left: auto;
+}
+
+/* Zoom Controls */
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tool-btn.small {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.zoom-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.zoom-value {
+    font-size: 12px;
+    color: #d1d5db;
+    min-width: 40px;
+    text-align: center;
+}
+
+.zoom-reset {
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* Grid Controls */
+.grid-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.grid-size-select {
+    padding: 4px 8px;
+    background: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 4px;
+    color: #d1d5db;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.grid-size-select:hover {
+    border-color: #6b7280;
+}
+
+.grid-size-select:focus {
+    outline: none;
+    border-color: #2563eb;
 }
 </style>

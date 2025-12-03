@@ -267,6 +267,16 @@
                                 />
                             </div>
 
+                            <!-- Play Management (Spielzüge) -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <PlaySelector
+                                    :plays="availablePlays"
+                                    :initial-selected-plays="[]"
+                                    :show-preview="true"
+                                    @update:selected-plays="handlePlaysUpdate"
+                                />
+                            </div>
+
                             <!-- Options -->
                             <div class="space-y-4">
                                 <h3 class="text-lg font-medium text-gray-900">Einstellungen</h3>
@@ -340,10 +350,15 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 import DrillSelector from '@/Components/Training/DrillSelector.vue'
+import PlaySelector from '@/Components/TacticBoard/PlaySelector.vue'
 
 const props = defineProps({
     teams: Array,
     drills: Array,
+    availablePlays: {
+        type: Array,
+        default: () => []
+    }
 })
 
 const processing = ref(false)
@@ -358,6 +373,8 @@ const minDateTime = computed(() => {
     now.setMinutes(now.getMinutes() + 30) // At least 30 minutes from now
     return now.toISOString().slice(0, 16)
 })
+
+const selectedPlays = ref([])
 
 const form = reactive({
     title: '',
@@ -388,7 +405,8 @@ const form = reactive({
         reminder_times: [24, 2] // 24 hours and 2 hours before
     },
     auto_add_drills: false,
-    drills: []
+    drills: [],
+    plays: []
 })
 
 // Watch for changes in focus areas text and convert to array
@@ -417,6 +435,15 @@ function handleDrillsUpdate(drills) {
         specific_instructions: drill.specific_instructions || '',
         participants_count: drill.participants_count || null,
         status: 'planned'
+    }))
+}
+
+function handlePlaysUpdate(plays) {
+    selectedPlays.value = plays
+    form.plays = plays.map(play => ({
+        play_id: play.id || play.play_id,
+        order: play.order,
+        notes: play.notes || ''
     }))
 }
 

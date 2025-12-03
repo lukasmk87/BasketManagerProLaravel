@@ -115,16 +115,23 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    teamColors: {
+        type: Object,
+        default: () => ({
+            offense: '#2563eb',
+            defense: '#dc2626',
+        }),
+    },
 });
 
 const emit = defineEmits(['update:position', 'select', 'dragstart', 'dragend']);
 
-// Colors based on team
+// Colors based on team (using customizable team colors)
 const fillColor = computed(() => {
     if (props.team === 'offense') {
-        return '#2563eb'; // Blue for offense
+        return props.teamColors.offense;
     } else if (props.team === 'defense') {
-        return '#dc2626'; // Red for defense
+        return props.teamColors.defense;
     }
     return '#6b7280'; // Gray for neutral
 });

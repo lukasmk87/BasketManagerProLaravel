@@ -298,6 +298,24 @@
                                 </div>
                             </div>
 
+                            <!-- Verknüpfte Spielzüge -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div v-if="playsLoading" class="text-center py-4">
+                                    <svg class="animate-spin h-6 w-6 mx-auto text-orange-500" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <p class="mt-2 text-sm text-gray-500">Spielzüge werden geladen...</p>
+                                </div>
+                                <PlaySelector
+                                    v-else
+                                    :plays="availablePlays"
+                                    :initial-selected-plays="drillPlays"
+                                    :show-preview="true"
+                                    @update:selected-plays="handlePlaysUpdate"
+                                />
+                            </div>
+
                             <!-- Action Buttons -->
                             <div class="flex justify-between pt-6 border-t border-gray-200">
                                 <div class="flex gap-2">
@@ -340,19 +358,85 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 import DangerButton from '@/Components/DangerButton.vue'
+import PlaySelector from '@/Components/TacticBoard/PlaySelector.vue'
 
 const props = defineProps({
     drill: Object,
+    availablePlays: {
+        type: Array,
+        default: () => []
+    }
 })
 
 const processing = ref(false)
 const errors = ref({})
+const drillPlays = ref([])
+const playsLoading = ref(false)
+
+// Load linked plays on mount
+onMounted(async () => {
+    await loadDrillPlays()
+})
+
+async function loadDrillPlays() {
+    playsLoading.value = true
+    try {
+        const response = await axios.get(`/api/drills/${props.drill.id}/plays`)
+        drillPlays.value = response.data.data || []
+    } catch (error) {
+        console.error('Fehler beim Laden der Spielzüge:', error)
+    } finally {
+        playsLoading.value = false
+    }
+}
+
+async function handlePlaysUpdate(selectedPlays) {
+    drillPlays.value = selectedPlays
+}
+
+async function syncPlays() {
+    try {
+        // Get current plays from API
+        const currentResponse = await axios.get(`/api/drills/${props.drill.id}/plays`)
+        const currentPlayIds = (currentResponse.data.data || []).map(p => p.id)
+        const newPlayIds = drillPlays.value.map(p => p.id || p.play_id)
+
+        // Detach removed plays
+        for (const playId of currentPlayIds) {
+            if (!newPlayIds.includes(playId)) {
+                await axios.delete(`/api/drills/${props.drill.id}/plays/${playId}`)
+            }
+        }
+
+        // Attach new plays
+        for (const play of drillPlays.value) {
+            const playId = play.id || play.play_id
+            if (!currentPlayIds.includes(playId)) {
+                await axios.post(`/api/drills/${props.drill.id}/plays`, {
+                    play_id: playId,
+                    order: play.order
+                })
+            }
+        }
+
+        // Reorder if needed
+        if (newPlayIds.length > 0) {
+            await axios.put(`/api/drills/${props.drill.id}/plays/reorder`, {
+                play_ids: newPlayIds
+            })
+        }
+    } catch (error) {
+        console.error('Fehler beim Synchronisieren der Spielzüge:', error)
+        throw error
+    }
+}
 
 const form = reactive({
     name: props.drill.name,
@@ -372,21 +456,30 @@ const form = reactive({
     status: props.drill.status,
 })
 
-function submitForm() {
+async function submitForm() {
     processing.value = true
     errors.value = {}
 
-    router.put(`/training/drills/${props.drill.id}`, form, {
-        onSuccess: () => {
-            // Form submitted successfully, redirect will be handled by controller
-        },
-        onError: (errorResponse) => {
-            errors.value = errorResponse
-        },
-        onFinish: () => {
-            processing.value = false
-        }
-    })
+    try {
+        // First sync plays
+        await syncPlays()
+
+        // Then update drill
+        router.put(`/training/drills/${props.drill.id}`, form, {
+            onSuccess: () => {
+                // Form submitted successfully, redirect will be handled by controller
+            },
+            onError: (errorResponse) => {
+                errors.value = errorResponse
+            },
+            onFinish: () => {
+                processing.value = false
+            }
+        })
+    } catch (error) {
+        console.error('Fehler beim Speichern:', error)
+        processing.value = false
+    }
 }
 
 function deleteDrill() {

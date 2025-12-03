@@ -195,7 +195,7 @@
                 </div>
 
                 <!-- Player Registration (for players) -->
-                <PlayerRegistration 
+                <PlayerRegistration
                     v-if="$page.props.auth.user?.player"
                     type="game"
                     :entity-id="game.id"
@@ -204,6 +204,120 @@
                     @registration-updated="refreshRegistrationData"
                     class="mb-6"
                 />
+
+                <!-- Spielvorbereitung (Playbooks) -->
+                <div v-if="can?.update || gamePlaybooks.length > 0" class="bg-white overflow-hidden shadow-xl sm:rounded-lg mb-6">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold">Spielvorbereitung</h3>
+                            <button
+                                v-if="can?.update"
+                                @click="showPlaybookSection = !showPlaybookSection"
+                                type="button"
+                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-orange-700 bg-orange-100 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                            >
+                                {{ showPlaybookSection ? 'Schließen' : 'Playbooks verwalten' }}
+                            </button>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div v-if="playbooksLoading" class="text-center py-4">
+                            <svg class="animate-spin h-6 w-6 mx-auto text-orange-500" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-500">Playbooks werden geladen...</p>
+                        </div>
+
+                        <!-- Playbook Selector (Edit Mode) -->
+                        <PlaybookSelector
+                            v-if="showPlaybookSection && can?.update"
+                            :playbooks="availablePlaybooks"
+                            :selected-playbooks="gamePlaybooks"
+                            @attach="attachPlaybook"
+                            @detach="detachPlaybook"
+                            class="mb-6"
+                        />
+
+                        <!-- Verknüpfte Playbooks anzeigen -->
+                        <div v-if="!playbooksLoading && gamePlaybooks.length > 0" class="space-y-4">
+                            <div
+                                v-for="playbook in gamePlaybooks"
+                                :key="playbook.id"
+                                class="border border-gray-200 rounded-lg overflow-hidden"
+                            >
+                                <!-- Playbook Header -->
+                                <div
+                                    class="flex items-center justify-between p-4 bg-gray-50 cursor-pointer"
+                                    @click="togglePlaybookExpand(playbook.id)"
+                                >
+                                    <div class="flex items-center">
+                                        <svg
+                                            class="h-5 w-5 text-gray-400 mr-3 transition-transform duration-200"
+                                            :class="{ 'rotate-90': expandedPlaybooks.includes(playbook.id) }"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                        <div>
+                                            <h4 class="font-medium text-gray-900">{{ playbook.name }}</h4>
+                                            <p v-if="playbook.description" class="text-sm text-gray-500">{{ playbook.description }}</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm text-gray-500">
+                                        {{ playbook.plays?.length || 0 }} Spielzüge
+                                    </span>
+                                </div>
+
+                                <!-- Playbook Plays (Expandable) -->
+                                <div v-if="expandedPlaybooks.includes(playbook.id)" class="p-4 border-t bg-white">
+                                    <div v-if="playbook.plays && playbook.plays.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        <div
+                                            v-for="play in playbook.plays"
+                                            :key="play.id"
+                                            class="bg-gray-50 rounded-lg overflow-hidden"
+                                        >
+                                            <!-- TacticBoardViewer or Thumbnail -->
+                                            <div class="aspect-video bg-gray-800">
+                                                <TacticBoardViewer
+                                                    v-if="play.play_data"
+                                                    :play-data="play.play_data"
+                                                    :court-type="play.court_type || 'half_horizontal'"
+                                                    class="w-full h-full"
+                                                />
+                                                <div v-else class="w-full h-full flex items-center justify-center">
+                                                    <svg class="h-8 w-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <div class="p-2">
+                                                <h5 class="text-sm font-medium text-gray-900 truncate">{{ play.name }}</h5>
+                                                <p v-if="play.category" class="text-xs text-gray-500">{{ play.category }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p v-else class="text-sm text-gray-500 text-center py-4">
+                                        Keine Spielzüge in diesem Playbook
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div v-else-if="!playbooksLoading && gamePlaybooks.length === 0 && !showPlaybookSection" class="text-center py-6 text-gray-500">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">Keine Playbooks verknüpft</h3>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Verknüpfen Sie Playbooks für die Spielvorbereitung.
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Game Statistics (if available) -->
                 <div v-if="gameStats" class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
@@ -298,25 +412,84 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useForm } from '@inertiajs/vue3'
+import axios from 'axios'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 import DangerButton from '@/Components/DangerButton.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import PlayerRegistration from '@/Components/PlayerRegistration.vue'
+import PlaybookSelector from '@/Components/TacticBoard/PlaybookSelector.vue'
+import TacticBoardViewer from '@/Components/TacticBoard/TacticBoardViewer.vue'
 
 const props = defineProps({
     game: Object,
     gameStats: Object,
     can: Object,
     currentPlayerRegistration: Object,
+    availablePlaybooks: {
+        type: Array,
+        default: () => []
+    }
 })
 
 // Delete functionality
 const confirmingGameDeletion = ref(false)
 const deleteForm = useForm({})
+
+// Playbook functionality
+const gamePlaybooks = ref([])
+const showPlaybookSection = ref(false)
+const playbooksLoading = ref(false)
+const expandedPlaybooks = ref([])
+
+// Load playbooks on mount
+onMounted(async () => {
+    await loadGamePlaybooks()
+})
+
+async function loadGamePlaybooks() {
+    playbooksLoading.value = true
+    try {
+        const response = await axios.get(`/api/games/${props.game.id}/playbooks`)
+        gamePlaybooks.value = response.data.data || []
+    } catch (error) {
+        console.error('Fehler beim Laden der Playbooks:', error)
+    } finally {
+        playbooksLoading.value = false
+    }
+}
+
+async function attachPlaybook(playbookId) {
+    try {
+        await axios.post(`/api/games/${props.game.id}/playbooks`, {
+            playbook_id: playbookId
+        })
+        await loadGamePlaybooks()
+    } catch (error) {
+        console.error('Fehler beim Hinzufügen des Playbooks:', error)
+    }
+}
+
+async function detachPlaybook(playbookId) {
+    try {
+        await axios.delete(`/api/games/${props.game.id}/playbooks/${playbookId}`)
+        await loadGamePlaybooks()
+    } catch (error) {
+        console.error('Fehler beim Entfernen des Playbooks:', error)
+    }
+}
+
+function togglePlaybookExpand(playbookId) {
+    const index = expandedPlaybooks.value.indexOf(playbookId)
+    if (index === -1) {
+        expandedPlaybooks.value.push(playbookId)
+    } else {
+        expandedPlaybooks.value.splice(index, 1)
+    }
+}
 
 const deleteGameConfirmed = () => {
     deleteForm.delete(route('web.games.destroy', props.game.id), {

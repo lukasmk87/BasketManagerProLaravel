@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Drill\CreateDrillRequest;
 use App\Http\Requests\Drill\UpdateDrillRequest;
 use App\Models\Drill;
+use App\Models\Play;
 use App\Models\TrainingSession;
 use App\Services\TrainingService;
 use Illuminate\Http\RedirectResponse;
@@ -178,11 +179,19 @@ class TrainingController extends Controller
         // Get available drills (active drills + user's own draft drills)
         $drills = \App\Models\Drill::accessibleByUser($user->id)
             ->orderBy('name')
-            ->get(['id', 'name', 'description', 'estimated_duration', 'status', 'created_by_user_id']);
+            ->get(['id', 'name', 'description', 'estimated_duration', 'status', 'created_by_user_id', 'category']);
+
+        // Get available plays for linking
+        $availablePlays = Play::query()
+            ->where('status', 'published')
+            ->orWhere('created_by_user_id', $user->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'description', 'category', 'thumbnail_path', 'court_type', 'play_data', 'tags']);
 
         return Inertia::render('Training/CreateSession', [
             'teams' => $teams,
             'drills' => $drills,
+            'availablePlays' => $availablePlays,
         ]);
     }
 
@@ -231,12 +240,20 @@ class TrainingController extends Controller
         // Get available drills (active drills + user's own draft drills)
         $drills = \App\Models\Drill::accessibleByUser($user->id)
             ->orderBy('name')
-            ->get(['id', 'name', 'description', 'estimated_duration', 'status', 'created_by_user_id']);
+            ->get(['id', 'name', 'description', 'estimated_duration', 'status', 'created_by_user_id', 'category']);
+
+        // Get available plays for linking
+        $availablePlays = Play::query()
+            ->where('status', 'published')
+            ->orWhere('created_by_user_id', $user->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'description', 'category', 'thumbnail_path', 'court_type', 'play_data', 'tags']);
 
         return Inertia::render('Training/EditSession', [
             'session' => $session,
             'teams' => $teams,
             'drills' => $drills,
+            'availablePlays' => $availablePlays,
         ]);
     }
 
@@ -321,8 +338,16 @@ class TrainingController extends Controller
             abort(403, 'Sie haben keine Berechtigung, diese Trainingsübung zu bearbeiten.');
         }
 
+        // Get available plays for linking
+        $availablePlays = Play::query()
+            ->where('status', 'published')
+            ->orWhere('created_by_user_id', $user->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'description', 'category', 'thumbnail_path', 'court_type', 'play_data', 'tags']);
+
         return Inertia::render('Training/EditDrill', [
             'drill' => $drill,
+            'availablePlays' => $availablePlays,
         ]);
     }
 

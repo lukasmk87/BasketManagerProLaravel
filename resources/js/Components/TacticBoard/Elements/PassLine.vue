@@ -14,7 +14,7 @@
                 strokeWidth: strokeWidth,
                 lineCap: 'round',
                 lineJoin: 'round',
-                dash: [12, 6],
+                dash: dashPattern,
                 tension: 0,
                 shadowColor: selected ? '#ffc107' : 'transparent',
                 shadowBlur: selected ? 8 : 0,
@@ -85,9 +85,26 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    lineStyle: {
+        type: String,
+        default: 'dashed', // 'solid', 'dashed', 'dotted' - default dashed for pass
+    },
 });
 
 const emit = defineEmits(['update:points', 'select']);
+
+// Get dash pattern based on line style
+const dashPattern = computed(() => {
+    switch (props.lineStyle) {
+        case 'solid':
+            return [];
+        case 'dotted':
+            return [4, 4];
+        case 'dashed':
+        default:
+            return [12, 6];
+    }
+});
 
 // Flatten points array for Konva Line
 const flatPoints = computed(() => {

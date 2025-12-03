@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
+use App\Models\Playbook;
 use App\Models\Team;
 use App\Services\Statistics\StatisticsService;
 use Illuminate\Http\Request;
@@ -181,11 +182,20 @@ class GameController extends Controller
                 ->first();
         }
 
+        // Get available playbooks for game preparation
+        $availablePlaybooks = Playbook::query()
+            ->with(['plays' => fn ($q) => $q->orderBy('playbook_plays.order')])
+            ->where('status', 'published')
+            ->orWhere('created_by_user_id', auth()->id())
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Games/Show', [
             'game' => $game,
             'recentGameActions' => $recentGameActions,
             'statistics' => $gameStats,
             'currentPlayerRegistration' => $currentPlayerRegistration,
+            'availablePlaybooks' => $availablePlaybooks,
             'can' => [
                 'update' => auth()->user()->can('update', $game),
                 'delete' => auth()->user()->can('delete', $game),

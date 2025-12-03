@@ -23,7 +23,8 @@
       "WebFetch(domain:tactical-board.com)",
       "Bash(ls:*)",
       "Bash(xargs cat:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

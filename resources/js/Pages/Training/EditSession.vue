@@ -266,6 +266,24 @@
                                 />
                             </div>
 
+                            <!-- Play Management (Spielzüge) -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div v-if="playsLoading" class="text-center py-4">
+                                    <svg class="animate-spin h-6 w-6 mx-auto text-orange-500" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <p class="mt-2 text-sm text-gray-500">Spielzüge werden geladen...</p>
+                                </div>
+                                <PlaySelector
+                                    v-else
+                                    :plays="availablePlays"
+                                    :initial-selected-plays="existingPlays"
+                                    :show-preview="true"
+                                    @update:selected-plays="handlePlaysUpdate"
+                                />
+                            </div>
+
                             <!-- Options -->
                             <div class="space-y-4">
                                 <h3 class="text-lg font-medium text-gray-900">Einstellungen</h3>
@@ -330,11 +348,17 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 import DrillSelector from '@/Components/Training/DrillSelector.vue'
+import PlaySelector from '@/Components/TacticBoard/PlaySelector.vue'
+import axios from 'axios'
 
 const props = defineProps({
     session: Object,
     teams: Array,
     drills: Array,
+    availablePlays: {
+        type: Array,
+        default: () => []
+    }
 })
 
 const processing = ref(false)
@@ -343,6 +367,9 @@ const focusAreasText = ref('')
 const equipmentText = ref('')
 const selectedDrills = ref([])
 const existingDrills = ref([])
+const selectedPlays = ref([])
+const existingPlays = ref([])
+const playsLoading = ref(false)
 
 // Form with existing session data
 const form = reactive({
@@ -373,7 +400,8 @@ const form = reactive({
         send_reminders: true,
         reminder_times: [24, 2]
     },
-    drills: []
+    drills: [],
+    plays: []
 })
 
 // Load existing session data
@@ -441,8 +469,28 @@ onMounted(() => {
                 isEditing: false
             }))
         }
+
+        // Load existing plays
+        loadSessionPlays()
     }
 })
+
+async function loadSessionPlays() {
+    playsLoading.value = true
+    try {
+        const response = await axios.get(`/api/training-sessions/${props.session.id}/plays`)
+        existingPlays.value = (response.data.data || []).map(item => ({
+            ...item.play,
+            order: item.order,
+            notes: item.notes || '',
+            isEditing: false
+        }))
+    } catch (error) {
+        console.error('Fehler beim Laden der Spielzüge:', error)
+    } finally {
+        playsLoading.value = false
+    }
+}
 
 // Watch for changes in focus areas text and convert to array
 watch(focusAreasText, (newValue) => {
@@ -466,45 +514,108 @@ function handleDrillsUpdate(drills) {
     }))
 }
 
-function submitForm() {
+function handlePlaysUpdate(plays) {
+    selectedPlays.value = plays
+    form.plays = plays.map(play => ({
+        play_id: play.id || play.play_id,
+        order: play.order,
+        notes: play.notes || ''
+    }))
+}
+
+async function syncPlays() {
+    try {
+        // Get current plays from API
+        const currentResponse = await axios.get(`/api/training-sessions/${props.session.id}/plays`)
+        const currentPlayIds = (currentResponse.data.data || []).map(p => p.play?.id || p.play_id)
+        const newPlayIds = form.plays.map(p => p.play_id)
+
+        // Detach removed plays
+        for (const playId of currentPlayIds) {
+            if (!newPlayIds.includes(playId)) {
+                await axios.delete(`/api/training-sessions/${props.session.id}/plays/${playId}`)
+            }
+        }
+
+        // Attach new plays
+        for (const play of form.plays) {
+            if (!currentPlayIds.includes(play.play_id)) {
+                await axios.post(`/api/training-sessions/${props.session.id}/plays`, {
+                    play_id: play.play_id,
+                    order: play.order,
+                    notes: play.notes
+                })
+            }
+        }
+
+        // Reorder and update notes if needed
+        if (newPlayIds.length > 0) {
+            await axios.put(`/api/training-sessions/${props.session.id}/plays/reorder`, {
+                play_ids: newPlayIds
+            })
+
+            // Update notes for each play
+            for (const play of form.plays) {
+                if (play.notes) {
+                    await axios.put(`/api/training-sessions/${props.session.id}/plays/${play.play_id}/notes`, {
+                        notes: play.notes
+                    })
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Fehler beim Synchronisieren der Spielzüge:', error)
+        throw error
+    }
+}
+
+async function submitForm() {
     processing.value = true
     errors.value = {}
 
-    // Prepare the data - convert current_user to actual user ID
-    const submitData = { ...form }
-    if (submitData.trainer_id === 'current_user') {
-        delete submitData.trainer_id // Let the backend set the current user
-    }
+    try {
+        // First sync plays
+        await syncPlays()
 
-    // Ensure CSRF token is fresh before submitting
-    const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
-    if (!csrfToken) {
-        console.error('CSRF token not found, refreshing page');
-        window.location.reload();
-        return;
-    }
-
-    router.put(`/training/sessions/${props.session.id}`, submitData, {
-        preserveScroll: true,
-        onSuccess: () => {
-            // Form submitted successfully, redirect will be handled by controller
-        },
-        onError: (errorResponse) => {
-            console.error('Form submission error:', errorResponse);
-            errors.value = errorResponse;
-            
-            // If it's a CSRF error (419), try to refresh the token
-            if (errorResponse.status === 419 || (typeof errorResponse === 'object' && errorResponse['419'])) {
-                console.warn('CSRF token error detected, attempting to refresh');
-                if (window.updateCsrfToken) {
-                    window.updateCsrfToken();
-                }
-            }
-        },
-        onFinish: () => {
-            processing.value = false
+        // Prepare the data - convert current_user to actual user ID
+        const submitData = { ...form }
+        if (submitData.trainer_id === 'current_user') {
+            delete submitData.trainer_id // Let the backend set the current user
         }
-    })
+
+        // Ensure CSRF token is fresh before submitting
+        const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrfToken) {
+            console.error('CSRF token not found, refreshing page');
+            window.location.reload();
+            return;
+        }
+
+        router.put(`/training/sessions/${props.session.id}`, submitData, {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Form submitted successfully, redirect will be handled by controller
+            },
+            onError: (errorResponse) => {
+                console.error('Form submission error:', errorResponse);
+                errors.value = errorResponse;
+
+                // If it's a CSRF error (419), try to refresh the token
+                if (errorResponse.status === 419 || (typeof errorResponse === 'object' && errorResponse['419'])) {
+                    console.warn('CSRF token error detected, attempting to refresh');
+                    if (window.updateCsrfToken) {
+                        window.updateCsrfToken();
+                    }
+                }
+            },
+            onFinish: () => {
+                processing.value = false
+            }
+        })
+    } catch (error) {
+        console.error('Fehler beim Speichern:', error)
+        processing.value = false
+    }
 }
 
 function goBack() {
