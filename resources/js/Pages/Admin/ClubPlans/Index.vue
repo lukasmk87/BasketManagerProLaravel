@@ -2,6 +2,9 @@
 import { ref, computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { usePricing } from '@/Composables/usePricing';
+
+const { formatPrice: formatPriceWithSettings, getPriceLabel, pricingSettings } = usePricing();
 
 const props = defineProps({
     plans: {
@@ -32,13 +35,11 @@ const getTenantName = (tenantId) => {
     return tenant?.name || 'Unbekannt';
 };
 
-const formatPrice = (price) => {
-    const priceValue = typeof price === 'number' ? price : parseFloat(price) || 0;
-    return new Intl.NumberFormat('de-DE', {
-        style: 'currency',
-        currency: 'EUR',
-    }).format(priceValue);
+const formatPrice = (price, currency = 'EUR') => {
+    return formatPriceWithSettings(price, currency);
 };
+
+const priceLabel = computed(() => getPriceLabel());
 
 const formatLimit = (value) => {
     if (value === -1 || value === null) {
@@ -226,10 +227,11 @@ const stats = computed(() => ({
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">
-                                        {{ formatPrice(plan.price) }}
+                                        {{ formatPrice(plan.price, plan.currency) }}
                                     </div>
                                     <div class="text-sm text-gray-500">
                                         {{ plan.billing_interval_label }}
+                                        <span v-if="priceLabel" class="block text-xs">{{ priceLabel }}</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

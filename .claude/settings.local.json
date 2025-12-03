@@ -17,7 +17,9 @@
       "Bash(composer require:*)",
       "Bash(php -l:*)",
       "Bash(powershell -Command:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(grep:*)",
+      "Bash(php /home/lukas/Projekt/BasketManagerProLaravel/artisan:*)"
     ],
     "deny": [],
     "ask": []

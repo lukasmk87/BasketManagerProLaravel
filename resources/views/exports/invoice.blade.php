@@ -341,6 +341,7 @@
                     <td class="label">Nettobetrag:</td>
                     <td class="value">{{ $formatted['net_amount'] }}</td>
                 </tr>
+                @if(!$invoice->is_small_business)
                 <tr>
                     <td class="label">MwSt. ({{ $formatted['tax_rate'] }}):</td>
                     <td class="value">{{ $formatted['tax_amount'] }}</td>
@@ -349,8 +350,23 @@
                     <td class="label">Gesamtbetrag:</td>
                     <td class="value">{{ $formatted['gross_amount'] }}</td>
                 </tr>
+                @else
+                <tr class="total-row">
+                    <td class="label">Gesamtbetrag:</td>
+                    <td class="value">{{ $formatted['net_amount'] }}</td>
+                </tr>
+                @endif
             </table>
         </div>
+
+        @if($invoice->is_small_business)
+        <!-- Kleinunternehmer-Hinweis -->
+        <div style="margin-top: 10mm; padding: 4mm; background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 2mm;">
+            <p style="font-size: 9pt; color: #92400e; margin: 0;">
+                <strong>Hinweis:</strong> Gemäß §19 UStG wird keine Umsatzsteuer berechnet.
+            </p>
+        </div>
+        @endif
 
         <!-- Payment Info -->
         @if($invoice->status !== 'paid' && $invoice->status !== 'cancelled')
@@ -400,7 +416,7 @@
 
         <!-- Legal Text -->
         <div class="legal-text">
-            @if($company['vat_number'])
+            @if(!$invoice->is_small_business && $company['vat_number'])
                 <p>USt-IdNr.: {{ $company['vat_number'] }}</p>
             @endif
             @if($company['tax_number'])

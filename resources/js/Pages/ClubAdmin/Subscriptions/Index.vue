@@ -1,10 +1,14 @@
 <script setup>
+import { computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import ClubAdminLayout from '@/Layouts/ClubAdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
+import { usePricing } from '@/Composables/usePricing';
+
+const { formatPrice: formatPriceWithSettings, getPriceLabel, getSmallBusinessNotice, pricingSettings } = usePricing();
 
 const props = defineProps({
     club: Object,
@@ -46,10 +50,14 @@ const getPlanColor = (color) => {
     return colors[color] || colors.gray;
 };
 
-const formatPrice = (price, currency, interval) => {
+const formatPrice = (price, currency = 'EUR', interval = 'monthly') => {
     if (price == 0) return 'Kostenlos';
-    return `${price} ${currency}/${interval === 'monthly' ? 'Monat' : 'Jahr'}`;
+    const formattedPrice = formatPriceWithSettings(price, currency);
+    return `${formattedPrice}/${interval === 'monthly' ? 'Monat' : 'Jahr'}`;
 };
+
+const priceLabel = computed(() => getPriceLabel());
+const smallBusinessNotice = computed(() => getSmallBusinessNotice());
 
 const getLimitPercentage = (limit) => {
     if (!limit || limit.unlimited) return 0;
@@ -106,8 +114,14 @@ const getLimitColor = (percentage) => {
                                         <span class="text-3xl font-bold text-gray-900">
                                             {{ formatPrice(current_plan.price, current_plan.currency, current_plan.billing_interval) }}
                                         </span>
+                                        <span v-if="priceLabel" class="block text-sm text-gray-500 mt-1">{{ priceLabel }}</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Small Business Notice -->
+                            <div v-if="smallBusinessNotice" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p class="text-sm text-amber-800">{{ smallBusinessNotice }}</p>
                             </div>
 
                             <!-- Features -->
@@ -301,6 +315,7 @@ const getLimitColor = (percentage) => {
                                     <span class="text-3xl font-bold text-gray-900">
                                         {{ formatPrice(plan.price, plan.currency, plan.billing_interval) }}
                                     </span>
+                                    <span v-if="priceLabel" class="block text-sm text-gray-500 mt-1">{{ priceLabel }}</span>
                                 </div>
                                 <ul v-if="plan.features && plan.features.length > 0" class="space-y-2">
                                     <li

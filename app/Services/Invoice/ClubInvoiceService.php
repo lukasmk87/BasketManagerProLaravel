@@ -9,6 +9,7 @@ use App\Models\ClubSubscriptionEvent;
 use App\Models\ClubSubscriptionPlan;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\Pricing\PricingService;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -109,11 +110,13 @@ class ClubInvoiceService
         return DB::transaction(function () use ($club, $data, $creator) {
             $tenant = $club->tenant;
 
-            // Calculate amounts
-            $amounts = ClubInvoice::calculateAmounts(
-                $data['net_amount'],
-                $data['tax_rate'] ?? config('invoices.default_tax_rate', 19.00)
-            );
+            // Get pricing settings to check for small business status
+            $pricingService = app(PricingService::class);
+            $isSmallBusiness = $pricingService->isSmallBusiness();
+
+            // Calculate amounts - use 0 tax rate for small business
+            $taxRate = $isSmallBusiness ? 0.00 : ($data['tax_rate'] ?? $pricingService->getDefaultTaxRate());
+            $amounts = ClubInvoice::calculateAmounts($data['net_amount'], $taxRate);
 
             // Generate invoice number
             $invoiceNumber = ClubInvoice::generateNumber($tenant);
@@ -137,6 +140,7 @@ class ClubInvoiceService
                 'tax_rate' => $amounts['tax_rate'],
                 'tax_amount' => $amounts['tax_amount'],
                 'gross_amount' => $amounts['gross_amount'],
+                'is_small_business' => $isSmallBusiness,
                 'currency' => $data['currency'] ?? 'EUR',
                 'billing_period' => $data['billing_period'] ?? null,
                 'description' => $data['description'] ?? null,

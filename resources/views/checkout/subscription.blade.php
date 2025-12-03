@@ -312,10 +312,24 @@
             <div class="plan-card @if(isset($tier['recommended'])) recommended @endif @if($currentTier === $tierId) current @endif">
                 <div class="plan-header">
                     <div class="plan-name">{{ $tier['name'] }}</div>
-                    <div class="plan-price" data-monthly="{{ $tier['price'] }}" data-yearly="{{ $tier['price'] * 10 }}">
-                        <span class="amount">{{ number_format($tier['price'] / 100, 0) }}</span><span class="currency">€</span>
+                    @php
+                        $netPrice = $tier['price'] / 100;
+                        $taxRate = $pricingSettings['default_tax_rate'] ?? 19;
+                        $grossPrice = $pricingSettings['is_small_business'] ? $netPrice : $netPrice * (1 + $taxRate / 100);
+                        $displayPrice = $pricingSettings['display_gross'] ? $grossPrice : $netPrice;
+                        $priceLabel = $pricingSettings['is_small_business'] ? '' : ($pricingSettings['display_gross'] ? 'inkl. MwSt.' : 'zzgl. MwSt.');
+                    @endphp
+                    <div class="plan-price"
+                         data-monthly="{{ $tier['price'] }}"
+                         data-yearly="{{ $tier['price'] * 10 }}"
+                         data-tax-rate="{{ $taxRate }}"
+                         data-display-gross="{{ $pricingSettings['display_gross'] ? 'true' : 'false' }}"
+                         data-is-small-business="{{ $pricingSettings['is_small_business'] ? 'true' : 'false' }}">
+                        <span class="amount">{{ number_format($displayPrice, 0, ',', '.') }}</span><span class="currency">€</span>
                     </div>
-                    <div class="plan-period">pro Monat</div>
+                    <div class="plan-period">
+                        pro Monat @if($priceLabel)<span style="font-size: 0.8rem; display: block; opacity: 0.8;">{{ $priceLabel }}</span>@endif
+                    </div>
                 </div>
                 
                 <ul class="plan-features">
@@ -348,6 +362,13 @@
             @endforeach
         </div>
         
+        @if($pricingSettings['is_small_business'] && $pricingSettings['small_business_notice'])
+        <div class="guarantee" style="background: rgba(251, 191, 36, 0.2); border: 1px solid rgba(251, 191, 36, 0.5);">
+            <h4 style="color: #fbbf24;">Hinweis zur Mehrwertsteuer</h4>
+            <p>{{ $pricingSettings['small_business_notice'] }}</p>
+        </div>
+        @endif
+
         <div class="guarantee">
             <h4>💯 30 Tage Geld-zurück-Garantie</h4>
             <p>Nicht zufrieden? Erhalten Sie Ihr Geld vollständig zurück - ohne Fragen!</p>
@@ -379,13 +400,33 @@
             document.querySelectorAll('.plan-price').forEach(priceEl => {
                 const monthlyPrice = parseInt(priceEl.dataset.monthly);
                 const yearlyPrice = parseInt(priceEl.dataset.yearly);
-                const price = currentBillingCycle === 'yearly' ? yearlyPrice : monthlyPrice;
-                
-                priceEl.querySelector('.amount').textContent = (price / 100).toLocaleString('de-DE');
+                const taxRate = parseFloat(priceEl.dataset.taxRate) || 19;
+                const displayGross = priceEl.dataset.displayGross === 'true';
+                const isSmallBusiness = priceEl.dataset.isSmallBusiness === 'true';
+
+                let netPrice = currentBillingCycle === 'yearly' ? yearlyPrice : monthlyPrice;
+                netPrice = netPrice / 100;
+
+                let displayPrice;
+                if (isSmallBusiness) {
+                    displayPrice = netPrice;
+                } else if (displayGross) {
+                    displayPrice = netPrice * (1 + taxRate / 100);
+                } else {
+                    displayPrice = netPrice;
+                }
+
+                priceEl.querySelector('.amount').textContent = Math.round(displayPrice).toLocaleString('de-DE');
             });
-            
+
+            const priceLabel = @json($pricingSettings['is_small_business'] ? '' : ($pricingSettings['display_gross'] ? 'inkl. MwSt.' : 'zzgl. MwSt.'));
             document.querySelectorAll('.plan-period').forEach(periodEl => {
-                periodEl.textContent = currentBillingCycle === 'yearly' ? 'pro Jahr' : 'pro Monat';
+                const periodText = currentBillingCycle === 'yearly' ? 'pro Jahr' : 'pro Monat';
+                if (priceLabel) {
+                    periodEl.innerHTML = `${periodText} <span style="font-size: 0.8rem; display: block; opacity: 0.8;">${priceLabel}</span>`;
+                } else {
+                    periodEl.textContent = periodText;
+                }
             });
         }
         

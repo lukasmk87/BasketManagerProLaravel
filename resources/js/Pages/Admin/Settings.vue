@@ -13,6 +13,7 @@ const props = defineProps({
     system_stats: Object,
     recent_activities: Array,
     settings: Object,
+    pricing_settings: Object,
     roles: Array,
     permissions: Object,
 });
@@ -36,9 +37,40 @@ const updateSettings = () => {
     });
 };
 
+const pricingForm = useForm({
+    display_mode: props.pricing_settings?.display_mode ?? 'gross',
+    is_small_business: props.pricing_settings?.is_small_business ?? false,
+    default_tax_rate: props.pricing_settings?.default_tax_rate ?? 19.00,
+});
+
+const updatePricingSettings = () => {
+    pricingForm.put(route('admin.settings.pricing.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            // Success handled by redirect
+        },
+    });
+};
+
+// Calculate preview prices based on current settings
+const previewNetPrice = 49.00;
+const previewGrossPrice = computed(() => {
+    if (pricingForm.is_small_business) {
+        return previewNetPrice;
+    }
+    return (previewNetPrice * (1 + pricingForm.default_tax_rate / 100)).toFixed(2);
+});
+const previewTaxAmount = computed(() => {
+    if (pricingForm.is_small_business) {
+        return 0;
+    }
+    return (previewNetPrice * pricingForm.default_tax_rate / 100).toFixed(2);
+});
+
 const tabs = [
     { id: 'overview', name: 'Übersicht', icon: 'chart-bar' },
     { id: 'settings', name: 'Einstellungen', icon: 'cog' },
+    { id: 'pricing', name: 'Preise & Steuern', icon: 'currency-euro' },
     { id: 'roles', name: 'Rollen & Berechtigungen', icon: 'shield-check' },
     { id: 'activities', name: 'Aktivitäten', icon: 'clock' },
 ];
@@ -99,6 +131,8 @@ const getIconColor = (tab) => {
                                     <path v-else-if="tab.icon === 'shield-check'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                                     <!-- Clock Icon -->
                                     <path v-else-if="tab.icon === 'clock'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    <!-- Currency Euro Icon -->
+                                    <path v-else-if="tab.icon === 'currency-euro'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 15.536c-1.171 1.952-3.07 1.952-4.242 0-1.172-1.953-1.172-5.119 0-7.072 1.171-1.952 3.07-1.952 4.242 0M8 10.5h4m-4 3h4m9-1.5a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 {{ tab.name }}
                             </button>
@@ -262,6 +296,130 @@ const getIconColor = (tab) => {
                                     <div class="flex justify-end">
                                         <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                                             Einstellungen speichern
+                                        </PrimaryButton>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Tab -->
+                    <div v-if="activeTab === 'pricing'" class="space-y-6">
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="p-6">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                                    Preise & Mehrwertsteuer
+                                </h3>
+                                <form @submit.prevent="updatePricingSettings" class="space-y-6">
+                                    <!-- Display Mode -->
+                                    <div>
+                                        <InputLabel value="Preisanzeige-Modus" class="mb-3" />
+                                        <div class="space-y-3">
+                                            <label class="flex items-start cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    v-model="pricingForm.display_mode"
+                                                    value="gross"
+                                                    class="mt-1 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" />
+                                                <span class="ml-3">
+                                                    <span class="block text-sm font-medium text-gray-900">Bruttopreise (inkl. MwSt.)</span>
+                                                    <span class="block text-sm text-gray-500">Empfohlen für Endkunden (B2C). Der angezeigte Preis enthält bereits die Mehrwertsteuer.</span>
+                                                </span>
+                                            </label>
+                                            <label class="flex items-start cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    v-model="pricingForm.display_mode"
+                                                    value="net"
+                                                    class="mt-1 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" />
+                                                <span class="ml-3">
+                                                    <span class="block text-sm font-medium text-gray-900">Nettopreise (zzgl. MwSt.)</span>
+                                                    <span class="block text-sm text-gray-500">Empfohlen für Geschäftskunden (B2B). Die Mehrwertsteuer wird separat ausgewiesen.</span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                        <InputError :message="pricingForm.errors.display_mode" class="mt-2" />
+                                    </div>
+
+                                    <!-- Small Business (Kleinunternehmer) -->
+                                    <div class="border-t border-gray-200 pt-6">
+                                        <div class="flex items-start">
+                                            <Checkbox
+                                                id="is_small_business"
+                                                v-model:checked="pricingForm.is_small_business" />
+                                            <div class="ml-3">
+                                                <InputLabel for="is_small_business" value="Kleinunternehmer-Regelung (§19 UStG)" class="font-medium" />
+                                                <p class="text-sm text-gray-500 mt-1">
+                                                    Als Kleinunternehmer dürfen Sie keine Mehrwertsteuer ausweisen.
+                                                    Auf allen Rechnungen erscheint der Hinweis:
+                                                    <span class="block mt-1 italic text-amber-700">"Gemäß §19 UStG wird keine Umsatzsteuer berechnet."</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <InputError :message="pricingForm.errors.is_small_business" class="mt-2" />
+                                    </div>
+
+                                    <!-- Default Tax Rate -->
+                                    <div v-if="!pricingForm.is_small_business" class="border-t border-gray-200 pt-6">
+                                        <InputLabel for="default_tax_rate" value="Standard-MwSt.-Satz (%)" />
+                                        <div class="mt-1 flex items-center">
+                                            <input
+                                                type="number"
+                                                id="default_tax_rate"
+                                                v-model.number="pricingForm.default_tax_rate"
+                                                step="0.01"
+                                                min="0"
+                                                max="100"
+                                                class="block w-24 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm" />
+                                            <span class="ml-2 text-gray-500">%</span>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">
+                                            Der deutsche Standard-MwSt.-Satz beträgt 19%. Der ermäßigte Satz liegt bei 7%.
+                                        </p>
+                                        <InputError :message="pricingForm.errors.default_tax_rate" class="mt-2" />
+                                    </div>
+
+                                    <!-- Preview -->
+                                    <div class="border-t border-gray-200 pt-6">
+                                        <h4 class="text-sm font-medium text-gray-900 mb-3">Vorschau</h4>
+                                        <div class="bg-gray-50 rounded-lg p-4">
+                                            <p class="text-sm text-gray-600 mb-3">Bei einem Netto-Preis von <strong>49,00 EUR</strong>:</p>
+                                            <div v-if="pricingForm.is_small_business" class="space-y-2">
+                                                <p class="text-sm">
+                                                    <span class="text-gray-500">Anzeige:</span>
+                                                    <span class="ml-2 font-semibold text-gray-900">49,00 EUR</span>
+                                                </p>
+                                                <p class="text-sm">
+                                                    <span class="text-gray-500">Rechnung:</span>
+                                                    <span class="ml-2">49,00 EUR (keine MwSt.)</span>
+                                                </p>
+                                                <p class="text-sm text-amber-700 italic mt-2">
+                                                    "Gemäß §19 UStG wird keine Umsatzsteuer berechnet."
+                                                </p>
+                                            </div>
+                                            <div v-else class="space-y-2">
+                                                <p class="text-sm">
+                                                    <span class="text-gray-500">Anzeige:</span>
+                                                    <span class="ml-2 font-semibold text-gray-900">
+                                                        {{ pricingForm.display_mode === 'gross' ? previewGrossPrice : '49,00' }} EUR
+                                                        {{ pricingForm.display_mode === 'gross' ? 'inkl. MwSt.' : 'zzgl. MwSt.' }}
+                                                    </span>
+                                                </p>
+                                                <p class="text-sm">
+                                                    <span class="text-gray-500">MwSt.-Betrag:</span>
+                                                    <span class="ml-2">{{ previewTaxAmount }} EUR</span>
+                                                </p>
+                                                <p class="text-sm">
+                                                    <span class="text-gray-500">Rechnungsbetrag (brutto):</span>
+                                                    <span class="ml-2 font-semibold">{{ previewGrossPrice }} EUR</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end pt-4">
+                                        <PrimaryButton :class="{ 'opacity-25': pricingForm.processing }" :disabled="pricingForm.processing">
+                                            Preiseinstellungen speichern
                                         </PrimaryButton>
                                     </div>
                                 </form>

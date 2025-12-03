@@ -249,6 +249,7 @@ Route::middleware([
     Route::prefix('admin')->name('admin.')->middleware('role:admin|super_admin')->group(function () {
         Route::get('/settings', [\App\Http\Controllers\AdminPanelController::class, 'settings'])->name('settings');
         Route::put('/settings', [\App\Http\Controllers\AdminPanelController::class, 'updateSettings'])->name('settings.update');
+        Route::put('/settings/pricing', [\App\Http\Controllers\AdminPanelController::class, 'updatePricingSettings'])->name('settings.pricing.update');
 
         // User Management Routes (create route MUST come before {user} routes)
         Route::get('/users', [\App\Http\Controllers\AdminPanelController::class, 'users'])->name('users');

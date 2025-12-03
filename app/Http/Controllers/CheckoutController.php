@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Pricing\PricingService;
 use App\Services\Stripe\CheckoutService;
 use App\Services\Stripe\PaymentMethodService;
 use Illuminate\Http\JsonResponse;
@@ -84,10 +85,20 @@ class CheckoutController extends Controller
             ],
         ];
 
+        // Get pricing settings for display
+        $pricingService = app(PricingService::class);
+        $pricingSettings = [
+            'display_gross' => $pricingService->displayPricesGross(),
+            'is_small_business' => $pricingService->isSmallBusiness(),
+            'default_tax_rate' => $pricingService->getDefaultTaxRate(),
+            'small_business_notice' => $pricingService->isSmallBusiness() ? $pricingService->getSmallBusinessNotice() : null,
+        ];
+
         return view('checkout.subscription', [
             'tenant' => $tenant,
             'tiers' => $subscriptionTiers,
             'currentTier' => $tenant->subscription_tier ?? 'trial',
+            'pricingSettings' => $pricingSettings,
         ]);
     }
 

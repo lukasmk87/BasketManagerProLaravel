@@ -3,6 +3,9 @@ import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import { usePricing } from '@/Composables/usePricing';
+
+const { formatPrice: formatPriceWithSettings, getPriceLabel, getSmallBusinessNotice, pricingSettings } = usePricing();
 
 const props = defineProps({
     availablePlans: {
@@ -40,15 +43,17 @@ const isFreePlan = computed(() => {
 const formatPrice = (price, currency = 'EUR') => {
     if (parseFloat(price) === 0) return 'Kostenlos';
 
-    const amount = billingInterval.value === 'yearly'
+    // Calculate base price with yearly discount if applicable
+    const netPrice = billingInterval.value === 'yearly'
         ? parseFloat(price) * 12 * 0.9  // 10% discount for yearly
         : parseFloat(price);
 
-    return new Intl.NumberFormat('de-DE', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
+    // Use pricing settings for display
+    return formatPriceWithSettings(netPrice, currency);
 };
+
+const priceLabel = computed(() => getPriceLabel());
+const smallBusinessNotice = computed(() => getSmallBusinessNotice());
 
 const submit = () => {
     form.plan_id = selectedPlanId.value;
@@ -175,6 +180,7 @@ const getFeatureList = (plan) => {
                     </span>
                     <span v-if="parseFloat(plan.price) > 0" class="text-gray-500 text-sm">
                         / {{ billingInterval === 'yearly' ? 'Jahr' : 'Monat' }}
+                        <span v-if="priceLabel" class="block text-xs">{{ priceLabel }}</span>
                     </span>
                 </div>
 
@@ -202,6 +208,11 @@ const getFeatureList = (plan) => {
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Small Business Notice -->
+        <div v-if="smallBusinessNotice" class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
+            <p class="text-sm text-amber-800">{{ smallBusinessNotice }}</p>
         </div>
 
         <!-- Buttons -->

@@ -190,6 +190,21 @@ class HandleInertiaRequests extends Middleware
                 'billing' => __('billing'),
                 'checkout' => __('checkout'),
             ],
+            'pricing' => function () {
+                try {
+                    $pricingService = app(\App\Services\Pricing\PricingService::class);
+
+                    return $pricingService->getFrontendPricingData();
+                } catch (\Exception $e) {
+                    // Return defaults if service is not available (e.g., during installation)
+                    return [
+                        'display_gross' => true,
+                        'is_small_business' => false,
+                        'default_tax_rate' => 19.00,
+                        'small_business_notice' => null,
+                    ];
+                }
+            },
         ];
     }
 }

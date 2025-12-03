@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -7,6 +7,9 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { usePricing } from '@/Composables/usePricing';
+
+const { formatPrice: formatPriceWithSettings, getPriceLabel, pricingSettings } = usePricing();
 
 const props = defineProps({
     plan: Object,
@@ -29,13 +32,11 @@ const deletePlan = () => {
     });
 };
 
-const formatPrice = (price) => {
-    const priceValue = typeof price === 'number' ? price : parseFloat(price) || 0;
-    return new Intl.NumberFormat('de-DE', {
-        style: 'currency',
-        currency: 'EUR',
-    }).format(priceValue);
+const formatPrice = (price, currency = 'EUR') => {
+    return formatPriceWithSettings(price, currency);
 };
+
+const priceLabel = computed(() => getPriceLabel());
 
 const formatLimit = (value) => {
     if (value === -1 || value === null || value === undefined) {
@@ -115,9 +116,12 @@ const formatDate = (dateString) => {
                         <div class="p-5">
                             <dt class="text-sm font-medium text-gray-500 truncate">Preis</dt>
                             <dd class="mt-1 text-2xl font-semibold text-gray-900">
-                                {{ formatPrice(plan.price) }}
+                                {{ formatPrice(plan.price, plan.currency) }}
                             </dd>
-                            <dd class="text-xs text-gray-500">{{ plan.billing_interval_label }}</dd>
+                            <dd class="text-xs text-gray-500">
+                                {{ plan.billing_interval_label }}
+                                <span v-if="priceLabel">{{ priceLabel }}</span>
+                            </dd>
                         </div>
                     </div>
 

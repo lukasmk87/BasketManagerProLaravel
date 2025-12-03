@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Admin\UpdatePricingSettingsRequest;
 use App\Models\Club;
 use App\Models\Game;
 use App\Models\Player;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\Settings\SystemSettingsService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -67,10 +70,15 @@ class AdminPanelController extends Controller
             'maintenance_mode' => app()->isDownForMaintenance(),
         ];
 
+        // Get pricing settings from SystemSettingsService
+        $systemSettingsService = app(SystemSettingsService::class);
+        $pricingSettings = $systemSettingsService->getPricingSettings();
+
         return Inertia::render('Admin/Settings', [
             'system_stats' => $systemStats,
             'recent_activities' => $recentActivities,
             'settings' => $settings,
+            'pricing_settings' => $pricingSettings,
             'roles' => Role::with('permissions')->get(),
             'permissions' => Permission::all()->groupBy(function ($permission) {
                 return explode(' ', $permission->name)[1] ?? 'other';
@@ -99,6 +107,20 @@ class AdminPanelController extends Controller
 
         return redirect()->route('admin.settings')
             ->with('success', 'Einstellungen wurden erfolgreich aktualisiert.');
+    }
+
+    /**
+     * Update pricing settings (MwSt., Kleinunternehmer, etc.).
+     */
+    public function updatePricingSettings(UpdatePricingSettingsRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        $systemSettingsService = app(SystemSettingsService::class);
+        $systemSettingsService->updatePricingSettings($validated);
+
+        return redirect()->route('admin.settings')
+            ->with('success', 'Preiseinstellungen wurden erfolgreich aktualisiert.');
     }
 
     /**
