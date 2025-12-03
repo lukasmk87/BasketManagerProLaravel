@@ -11,7 +11,7 @@ class UpdatePricingSettingsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() && $this->user()->isSuperAdmin();
+        return $this->user() && $this->user()->hasAnyRole(['super_admin', 'admin']);
     }
 
     /**
