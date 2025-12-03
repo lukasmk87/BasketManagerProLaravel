@@ -46,7 +46,7 @@
                                         >
                                             <option value="">Team wählen</option>
                                             <option v-for="team in teams" :key="team.id" :value="team.id">
-                                                {{ team.name }} ({{ team.club.name }})
+                                                {{ team.name }}{{ team.club ? ` (${team.club.name})` : '' }}
                                             </option>
                                         </select>
                                         <p v-if="errors.team_id" class="mt-1 text-sm text-red-600">{{ errors.team_id }}</p>
