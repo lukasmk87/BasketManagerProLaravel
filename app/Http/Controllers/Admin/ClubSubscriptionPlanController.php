@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ClubSubscriptionPlan;
+use App\Models\Scopes\TenantScope;
 use App\Models\Tenant;
 use App\Http\Requests\Admin\CreateClubPlanRequest;
 use App\Http\Requests\Admin\UpdateClubPlanRequest;
@@ -20,7 +21,7 @@ class ClubSubscriptionPlanController extends Controller
      */
     public function index(): Response
     {
-        $plans = ClubSubscriptionPlan::withoutGlobalScopes()
+        $plans = ClubSubscriptionPlan::withoutGlobalScope(TenantScope::class)
             ->with('tenant')
             ->withCount('clubs')
             ->orderBy('tenant_id')
@@ -88,7 +89,7 @@ class ClubSubscriptionPlanController extends Controller
     public function show(ClubSubscriptionPlan $plan): Response
     {
         // Bypass TenantScope for admin
-        $plan = ClubSubscriptionPlan::withoutGlobalScopes()
+        $plan = ClubSubscriptionPlan::withoutGlobalScope(TenantScope::class)
             ->with(['tenant', 'clubs'])
             ->withCount('clubs')
             ->findOrFail($plan->id);
@@ -105,7 +106,7 @@ class ClubSubscriptionPlanController extends Controller
     public function edit(ClubSubscriptionPlan $plan): Response
     {
         // Bypass TenantScope for admin
-        $plan = ClubSubscriptionPlan::withoutGlobalScopes()
+        $plan = ClubSubscriptionPlan::withoutGlobalScope(TenantScope::class)
             ->with('tenant')
             ->findOrFail($plan->id);
 
@@ -123,7 +124,7 @@ class ClubSubscriptionPlanController extends Controller
     public function update(UpdateClubPlanRequest $request, ClubSubscriptionPlan $plan): RedirectResponse
     {
         // Bypass TenantScope for admin
-        $plan = ClubSubscriptionPlan::withoutGlobalScopes()->findOrFail($plan->id);
+        $plan = ClubSubscriptionPlan::withoutGlobalScope(TenantScope::class)->findOrFail($plan->id);
 
         try {
             $plan->update($request->validated());
@@ -157,7 +158,7 @@ class ClubSubscriptionPlanController extends Controller
     public function destroy(ClubSubscriptionPlan $plan): RedirectResponse
     {
         // Bypass TenantScope for admin
-        $plan = ClubSubscriptionPlan::withoutGlobalScopes()
+        $plan = ClubSubscriptionPlan::withoutGlobalScope(TenantScope::class)
             ->withCount('clubs')
             ->findOrFail($plan->id);
 
@@ -195,7 +196,7 @@ class ClubSubscriptionPlanController extends Controller
     public function clone(ClubSubscriptionPlan $plan): RedirectResponse
     {
         // Bypass TenantScope for admin
-        $plan = ClubSubscriptionPlan::withoutGlobalScopes()->findOrFail($plan->id);
+        $plan = ClubSubscriptionPlan::withoutGlobalScope(TenantScope::class)->findOrFail($plan->id);
 
         try {
             $newPlan = $plan->replicate();
