@@ -55,11 +55,6 @@ export default defineConfig({
                         return 'realtime';
                     }
 
-                    // Drag & Drop (only Team Management)
-                    if (id.includes('node_modules/sortablejs') || id.includes('node_modules/vue-draggable-plus')) {
-                        return 'dragdrop';
-                    }
-
                     // Vendor Core
                     if (id.includes('node_modules/vue') ||
                         id.includes('node_modules/@inertiajs') ||

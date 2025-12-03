@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { MagnifyingGlassIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
-import { VueDraggable } from 'vue-draggable-plus';
 
 const props = defineProps({
     availablePlayers: {

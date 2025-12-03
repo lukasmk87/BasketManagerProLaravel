@@ -21,7 +21,9 @@
       "Bash(grep:*)",
       "Bash(php /home/lukas/Projekt/BasketManagerProLaravel/artisan:*)",
       "WebFetch(domain:tactical-board.com)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(xargs cat:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
