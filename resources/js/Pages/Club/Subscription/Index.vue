@@ -1,14 +1,17 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SubscriptionOverview from '@/Components/Club/Subscription/SubscriptionOverview.vue';
 import PlanCard from '@/Components/Club/Subscription/PlanCard.vue';
 import BillingIntervalToggle from '@/Components/Club/Subscription/BillingIntervalToggle.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import PlanSwapModal from '@/Components/Club/Subscription/PlanSwapModal.vue';
+import PaymentMethodSelector from '@/Components/Checkout/PaymentMethodSelector.vue';
 import { useStripe } from '@/composables/useStripe.js';
 import { useTranslations } from '@/composables/useTranslations';
+
+const page = usePage();
 
 const { trans } = useTranslations();
 
@@ -58,6 +61,9 @@ const cancelImmediately = ref(false);
 const showSwapModal = ref(false);
 const selectedNewPlan = ref(null);
 const currentBillingInterval = ref('monthly'); // Track current subscription's billing interval
+const paymentMethod = ref('card');
+const invoiceData = ref({});
+const loadingInvoiceRequest = ref(false);
 
 // Computed
 const sortedPlans = computed(() => {
@@ -76,6 +82,9 @@ const handlePlanSelection = (plan) => {
         // Open swap modal for proration preview
         selectedNewPlan.value = plan;
         showSwapModal.value = true;
+    } else if (paymentMethod.value === 'invoice') {
+        // Invoice payment flow
+        initiateInvoiceRequest(plan);
     } else {
         // Normal checkout flow for new subscriptions
         initiateCheckout(plan);
@@ -110,6 +119,25 @@ const initiateCheckout = async (plan) => {
         loadingCheckout.value = false;
         selectedPlanId.value = null;
     }
+};
+
+const initiateInvoiceRequest = async (plan) => {
+    if (loadingInvoiceRequest.value) return;
+
+    selectedPlanId.value = plan.id;
+    loadingInvoiceRequest.value = true;
+
+    router.post(route('club.checkout.request-invoice', { club: props.club.id }), {
+        plan_id: plan.id,
+        billing_interval: billingInterval.value,
+        ...invoiceData.value,
+    }, {
+        preserveScroll: true,
+        onFinish: () => {
+            loadingInvoiceRequest.value = false;
+            selectedPlanId.value = null;
+        },
+    });
 };
 
 const handlePlanSwapConfirmed = (data) => {
@@ -246,6 +274,16 @@ const getLimitColor = (percentage) => {
                             {{ trans('subscription.plans.choose') }}
                         </p>
 
+                        <!-- Payment Method Selector (only for new subscriptions) -->
+                        <div v-if="!has_active_subscription" class="max-w-xl mx-auto mb-8">
+                            <PaymentMethodSelector
+                                v-model="paymentMethod"
+                                :club="club"
+                                :errors="page.props.errors"
+                                @invoice-data-change="invoiceData = $event"
+                            />
+                        </div>
+
                         <!-- Billing Interval Toggle -->
                         <div class="flex justify-center">
                             <BillingIntervalToggle
@@ -267,7 +305,7 @@ const getLimitColor = (percentage) => {
                             :is-recommended="isRecommendedPlan(plan)"
                             :current-plan="current_plan"
                             :has-active-subscription="has_active_subscription"
-                            :loading="loadingCheckout && selectedPlanId === plan.id"
+                            :loading="(loadingCheckout || loadingInvoiceRequest) && selectedPlanId === plan.id"
                             @subscribe="handlePlanSelection"
                             @manage="openBillingPortal"
                         />
