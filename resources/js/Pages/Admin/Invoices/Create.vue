@@ -2,12 +2,14 @@
 import { ref, computed, watch } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { usePricing } from '@/Composables/usePricing';
+
+const { pricingSettings, isSmallBusiness, defaultTaxRate, getSmallBusinessNotice } = usePricing();
 
 const props = defineProps({
     club: Object,
     clubs: Array,
     plans: Array,
-    defaultTaxRate: Number,
     paymentTermsDays: Number,
 });
 
@@ -15,7 +17,7 @@ const form = useForm({
     club_id: props.club?.id || '',
     club_subscription_plan_id: '',
     net_amount: '',
-    tax_rate: props.defaultTaxRate,
+    tax_rate: isSmallBusiness.value ? 0 : defaultTaxRate.value,
     billing_period: '',
     description: '',
     line_items: [],
@@ -294,6 +296,12 @@ const submit = () => {
                     <div class="bg-white shadow sm:rounded-lg">
                         <div class="px-4 py-5 sm:p-6">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Beträge</h3>
+
+                            <!-- Kleinunternehmer-Hinweis -->
+                            <div v-if="isSmallBusiness" class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p class="text-sm text-amber-800">{{ getSmallBusinessNotice() }}</p>
+                            </div>
+
                             <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Nettobetrag (€) *</label>
@@ -315,15 +323,20 @@ const submit = () => {
                                         step="0.01"
                                         min="0"
                                         max="100"
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                        :disabled="isSmallBusiness"
+                                        :class="[
+                                            'mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm',
+                                            isSmallBusiness ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-indigo-500 focus:border-indigo-500'
+                                        ]"
                                     />
+                                    <p v-if="isSmallBusiness" class="mt-1 text-xs text-amber-600">Kleinunternehmer: keine MwSt.</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Bruttobetrag</label>
                                     <div class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900 sm:text-sm">
                                         {{ formatCurrency(grossAmount) }}
                                     </div>
-                                    <p class="mt-1 text-xs text-gray-500">inkl. {{ formatCurrency(taxAmount) }} MwSt.</p>
+                                    <p v-if="!isSmallBusiness" class="mt-1 text-xs text-gray-500">inkl. {{ formatCurrency(taxAmount) }} MwSt.</p>
                                 </div>
                             </div>
                         </div>

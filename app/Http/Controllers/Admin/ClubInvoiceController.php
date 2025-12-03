@@ -63,7 +63,6 @@ class ClubInvoiceController extends Controller
             'club' => $club,
             'clubs' => $clubs,
             'plans' => $plans,
-            'defaultTaxRate' => config('invoices.default_tax_rate', 19.00),
             'paymentTermsDays' => config('invoices.payment_terms_days', 14),
         ]);
     }
@@ -125,7 +124,6 @@ class ClubInvoiceController extends Controller
         return Inertia::render('Admin/Invoices/Edit', [
             'invoice' => $invoice,
             'plans' => $plans,
-            'defaultTaxRate' => config('invoices.default_tax_rate', 19.00),
         ]);
     }
 
