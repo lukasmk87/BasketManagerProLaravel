@@ -248,7 +248,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { usePage } from '@inertiajs/vue3';
-import { useStripe } from '@/composables/useStripe';
+import { useStripe } from '@/Composables/core/useStripe';
 
 const page = usePage();
 

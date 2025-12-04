@@ -8,8 +8,8 @@ import BillingIntervalToggle from '@/Components/Club/Subscription/BillingInterva
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import PlanSwapModal from '@/Components/Club/Subscription/PlanSwapModal.vue';
 import PaymentMethodSelector from '@/Components/Checkout/PaymentMethodSelector.vue';
-import { useStripe } from '@/composables/useStripe.js';
-import { useTranslations } from '@/composables/useTranslations';
+import { useStripe } from '@/Composables/core/useStripe.js';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 const page = usePage();
 

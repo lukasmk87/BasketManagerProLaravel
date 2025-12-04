@@ -80,7 +80,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, markRaw } from 'vue';
-import { useTacticExport } from '@/composables/useTacticExport';
+import { useTacticExport } from '@/Composables/tactic-board/useTacticExport';
 
 // Components
 import HalfCourtHorizontal from './Court/HalfCourtHorizontal.vue';

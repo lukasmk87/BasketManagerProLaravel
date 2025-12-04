@@ -245,7 +245,7 @@ import {
     TableCellsIcon
 } from '@heroicons/vue/24/outline'
 import GymCourtGridView from './GymCourtGridView.vue'
-import { useGymCourts } from '@/Composables/useGymCourts'
+import { useGymCourts } from '@/Composables/gym/useGymCourts'
 import { format } from 'date-fns'
 
 const props = defineProps({

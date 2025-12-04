@@ -7,7 +7,8 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/Composables/core/useTranslations';
+import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 defineProps({
     title: String,
@@ -133,9 +134,9 @@ const currentClubId = computed(() => page.props.currentClub?.id);
 
         <Banner />
 
-        <div class="min-h-screen bg-gray-100">
+        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
             <!-- Top Navigation -->
-            <nav class="bg-white border-b border-gray-100">
+            <nav class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16">
                         <div class="flex">
@@ -158,6 +159,9 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                         </div>
 
                         <div class="hidden sm:flex sm:items-center sm:ml-6">
+                            <!-- Theme Toggle -->
+                            <ThemeToggle class="mr-3" />
+
                             <!-- Settings Dropdown -->
                             <div class="ml-3 relative">
                                 <Dropdown align="right" width="48">
@@ -167,7 +171,7 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                                         </button>
 
                                         <span v-else class="inline-flex rounded-md">
-                                            <button type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none focus:bg-gray-50 active:bg-gray-50 transition ease-in-out duration-150">
+                                            <button type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-700 active:bg-gray-50 dark:active:bg-gray-700 transition ease-in-out duration-150">
                                                 {{ $page.props.auth.user?.name || 'Benutzer' }}
 
                                                 <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -179,7 +183,7 @@ const currentClubId = computed(() => page.props.currentClub?.id);
 
                                     <template #content>
                                         <!-- Account Management -->
-                                        <div class="block px-4 py-2 text-xs text-gray-400">
+                                        <div class="block px-4 py-2 text-xs text-gray-400 dark:text-gray-500">
                                             Account verwalten
                                         </div>
 
@@ -191,18 +195,18 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                                             API Tokens
                                         </DropdownLink>
 
-                                        <div class="border-t border-gray-200" />
+                                        <div class="border-t border-gray-200 dark:border-gray-700" />
 
                                         <!-- Language Selection -->
-                                        <div class="block px-4 py-2 text-xs text-gray-400">
+                                        <div class="block px-4 py-2 text-xs text-gray-400 dark:text-gray-500">
                                             Sprache / Language
                                         </div>
 
                                         <button
                                             @click="switchLanguage('de')"
                                             type="button"
-                                            class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out"
-                                            :class="{ 'bg-indigo-50 text-indigo-600 font-semibold': $page.props.locale === 'de' }"
+                                            class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 transition duration-150 ease-in-out"
+                                            :class="{ 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 font-semibold': $page.props.locale === 'de' }"
                                         >
                                             <span class="flex items-center justify-between">
                                                 <span>Deutsch</span>
@@ -215,8 +219,8 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                                         <button
                                             @click="switchLanguage('en')"
                                             type="button"
-                                            class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out"
-                                            :class="{ 'bg-indigo-50 text-indigo-600 font-semibold': $page.props.locale === 'en' }"
+                                            class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 transition duration-150 ease-in-out"
+                                            :class="{ 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 font-semibold': $page.props.locale === 'en' }"
                                         >
                                             <span class="flex items-center justify-between">
                                                 <span>English</span>
@@ -226,7 +230,7 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                                             </span>
                                         </button>
 
-                                        <div class="border-t border-gray-200" />
+                                        <div class="border-t border-gray-200 dark:border-gray-700" />
 
                                         <!-- Authentication -->
                                         <form @submit.prevent="logout">
@@ -241,7 +245,7 @@ const currentClubId = computed(() => page.props.currentClub?.id);
 
                         <!-- Hamburger -->
                         <div class="-mr-2 flex items-center sm:hidden">
-                            <button class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out" @click="showingNavigationDropdown = ! showingNavigationDropdown">
+                            <button class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 focus:text-gray-500 dark:focus:text-gray-400 transition duration-150 ease-in-out" @click="showingNavigationDropdown = ! showingNavigationDropdown">
                                 <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                                     <path :class="{'hidden': showingNavigationDropdown, 'inline-flex': ! showingNavigationDropdown }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                                     <path :class="{'hidden': ! showingNavigationDropdown, 'inline-flex': showingNavigationDropdown }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -260,17 +264,17 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                     </div>
 
                     <!-- Responsive Settings Options -->
-                    <div class="pt-4 pb-1 border-t border-gray-200">
+                    <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-700">
                         <div class="flex items-center px-4">
                             <div v-if="$page.props.jetstream.managesProfilePhotos" class="shrink-0 mr-3">
                                 <img class="h-10 w-10 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user?.name">
                             </div>
 
                             <div>
-                                <div class="font-medium text-base text-gray-800">
+                                <div class="font-medium text-base text-gray-800 dark:text-gray-200">
                                     {{ $page.props.auth.user?.name || 'Benutzer' }}
                                 </div>
-                                <div class="font-medium text-sm text-gray-500">
+                                <div class="font-medium text-sm text-gray-500 dark:text-gray-400">
                                     {{ $page.props.auth.user?.email }}
                                 </div>
                             </div>
@@ -301,15 +305,15 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                 <!-- Sidebar -->
                 <aside
                     :class="sidebarOpen ? 'w-64' : 'w-20'"
-                    class="bg-white shadow-lg h-screen sticky top-0 transition-all duration-300 hidden md:block"
+                    class="bg-white dark:bg-gray-800 shadow-lg h-screen sticky top-0 transition-all duration-300 hidden md:block border-r border-gray-200 dark:border-gray-700"
                 >
                     <!-- Toggle Button -->
                     <button
                         @click="sidebarOpen = !sidebarOpen"
-                        class="absolute -right-3 top-6 bg-white border border-gray-200 rounded-full p-1.5 shadow-md hover:shadow-lg transition-all"
+                        class="absolute -right-3 top-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full p-1.5 shadow-md hover:shadow-lg transition-all"
                     >
                         <svg
-                            class="w-4 h-4 text-gray-600 transition-transform"
+                            class="w-4 h-4 text-gray-600 dark:text-gray-300 transition-transform"
                             :class="{ 'rotate-180': !sidebarOpen }"
                             fill="none"
                             stroke="currentColor"
@@ -329,13 +333,13 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                                 :class="[
                                     'flex items-center px-3 py-2.5 rounded-lg transition-all duration-200',
                                     isCurrentRoute(item.route)
-                                        ? 'bg-blue-50 text-blue-700 font-semibold'
-                                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                        ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold'
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                                 ]"
                             >
                                 <svg
                                     class="flex-shrink-0 w-6 h-6"
-                                    :class="isCurrentRoute(item.route) ? 'text-blue-600' : 'text-gray-400'"
+                                    :class="isCurrentRoute(item.route) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -350,7 +354,7 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                                 </span>
                                 <span
                                     v-if="sidebarOpen && item.badge"
-                                    class="ml-auto inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800"
+                                    class="ml-auto inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300"
                                 >
                                     Neu
                                 </span>
@@ -363,13 +367,13 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                                     :class="[
                                         'w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200',
                                         isSubmenuActive(item)
-                                            ? 'bg-blue-50 text-blue-700 font-semibold'
-                                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                            ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold'
+                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                                     ]"
                                 >
                                     <svg
                                         class="flex-shrink-0 w-6 h-6"
-                                        :class="isSubmenuActive(item) ? 'text-blue-600' : 'text-gray-400'"
+                                        :class="isSubmenuActive(item) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -404,13 +408,13 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                                             :class="[
                                                 'flex items-center px-3 py-2 rounded-lg transition-all duration-200 text-sm',
                                                 route().current(child.route)
-                                                    ? 'bg-blue-100 text-blue-700 font-medium'
-                                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
+                                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
                                             ]"
                                         >
                                             <svg
                                                 class="flex-shrink-0 w-5 h-5"
-                                                :class="route().current(child.route) ? 'text-blue-600' : 'text-gray-400'"
+                                                :class="route().current(child.route) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -428,8 +432,8 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                     </nav>
 
                     <!-- Footer -->
-                    <div v-if="sidebarOpen" class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50">
-                        <p class="text-xs text-gray-500 text-center">
+                    <div v-if="sidebarOpen" class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
                             Club Admin Panel
                         </p>
                     </div>
@@ -438,7 +442,7 @@ const currentClubId = computed(() => page.props.currentClub?.id);
                 <!-- Main Content Area -->
                 <main class="flex-1">
                     <!-- Page Heading -->
-                    <header v-if="$slots.header" class="bg-white shadow">
+                    <header v-if="$slots.header" class="bg-white dark:bg-gray-800 shadow dark:shadow-gray-900/50">
                         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                             <slot name="header" />
                         </div>

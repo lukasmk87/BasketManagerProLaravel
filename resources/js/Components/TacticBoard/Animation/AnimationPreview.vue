@@ -147,8 +147,8 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, markRaw } from 'vue';
 import { XMarkIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
-import { useTacticAnimation } from '@/composables/useTacticAnimation';
-import { useTacticExport } from '@/composables/useTacticExport';
+import { useTacticAnimation } from '@/Composables/tactic-board/useTacticAnimation';
+import { useTacticExport } from '@/Composables/tactic-board/useTacticExport';
 
 // Components
 import TimelineControl from './TimelineControl.vue';

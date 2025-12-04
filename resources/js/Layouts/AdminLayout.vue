@@ -8,6 +8,7 @@ import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import TenantSelector from '@/Components/Admin/TenantSelector.vue';
+import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 defineProps({
     title: String,
@@ -90,9 +91,9 @@ const isCurrentRoute = (routeName) => {
 
         <Banner />
 
-        <div class="min-h-screen bg-gray-100">
+        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
             <!-- Top Navigation -->
-            <nav class="bg-gradient-to-r from-indigo-600 to-indigo-800 border-b border-indigo-900">
+            <nav class="bg-gradient-to-r from-indigo-600 to-indigo-800 dark:from-indigo-800 dark:to-indigo-950 border-b border-indigo-900 dark:border-indigo-950">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16">
                         <div class="flex items-center">
@@ -123,6 +124,9 @@ const isCurrentRoute = (routeName) => {
                         </div>
 
                         <div class="hidden sm:flex sm:items-center sm:ml-6">
+                            <!-- Theme Toggle -->
+                            <ThemeToggle class="mr-4" />
+
                             <!-- Back to Main Dashboard -->
                             <Link
                                 :href="route('dashboard')"
@@ -155,7 +159,7 @@ const isCurrentRoute = (routeName) => {
 
                                     <template #content>
                                         <!-- Account Management -->
-                                        <div class="block px-4 py-2 text-xs text-gray-400">
+                                        <div class="block px-4 py-2 text-xs text-gray-400 dark:text-gray-500">
                                             Account verwalten
                                         </div>
 
@@ -163,7 +167,7 @@ const isCurrentRoute = (routeName) => {
                                             Profil
                                         </DropdownLink>
 
-                                        <div class="border-t border-gray-200" />
+                                        <div class="border-t border-gray-200 dark:border-gray-700" />
 
                                         <!-- Authentication -->
                                         <form @submit.prevent="logout">
@@ -240,15 +244,15 @@ const isCurrentRoute = (routeName) => {
                 <!-- Sidebar -->
                 <aside
                     :class="sidebarOpen ? 'w-64' : 'w-20'"
-                    class="bg-white shadow-lg min-h-screen sticky top-0 transition-all duration-300 hidden md:block border-r border-gray-200"
+                    class="bg-white dark:bg-gray-800 shadow-lg min-h-screen sticky top-0 transition-all duration-300 hidden md:block border-r border-gray-200 dark:border-gray-700"
                 >
                     <!-- Toggle Button -->
                     <button
                         @click="sidebarOpen = !sidebarOpen"
-                        class="absolute -right-3 top-6 bg-white border border-gray-200 rounded-full p-1.5 shadow-md hover:shadow-lg transition-all z-10"
+                        class="absolute -right-3 top-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full p-1.5 shadow-md hover:shadow-lg transition-all z-10"
                     >
                         <svg
-                            class="w-4 h-4 text-gray-600 transition-transform"
+                            class="w-4 h-4 text-gray-600 dark:text-gray-300 transition-transform"
                             :class="{ 'rotate-180': !sidebarOpen }"
                             fill="none"
                             stroke="currentColor"
@@ -267,13 +271,13 @@ const isCurrentRoute = (routeName) => {
                             :class="[
                                 'flex items-center px-3 py-2.5 rounded-lg transition-all duration-200',
                                 isCurrentRoute(item.route)
-                                    ? 'bg-indigo-50 text-indigo-700 font-semibold shadow-sm'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                    ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-semibold shadow-sm'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                             ]"
                         >
                             <svg
                                 class="flex-shrink-0 w-6 h-6"
-                                :class="isCurrentRoute(item.route) ? 'text-indigo-600' : 'text-gray-400'"
+                                :class="isCurrentRoute(item.route) ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -290,16 +294,16 @@ const isCurrentRoute = (routeName) => {
                     </nav>
 
                     <!-- Sidebar Footer -->
-                    <div v-if="sidebarOpen" class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+                    <div v-if="sidebarOpen" class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30">
                         <div class="flex items-center space-x-2">
-                            <svg class="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <p class="text-xs font-semibold text-indigo-700">
+                            <p class="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                                 Admin Panel
                             </p>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             System Administration
                         </p>
                     </div>
@@ -308,7 +312,7 @@ const isCurrentRoute = (routeName) => {
                 <!-- Main Content Area -->
                 <main class="flex-1">
                     <!-- Page Heading -->
-                    <header v-if="$slots.header" class="bg-white shadow">
+                    <header v-if="$slots.header" class="bg-white dark:bg-gray-800 shadow dark:shadow-gray-900/50">
                         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                             <slot name="header" />
                         </div>

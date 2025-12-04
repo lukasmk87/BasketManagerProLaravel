@@ -382,7 +382,7 @@ import {
     XMarkIcon,
     ShareIcon
 } from '@heroicons/vue/24/outline'
-import { useGymBookings } from '@/Composables/useGymBookings'
+import { useGymBookings } from '@/Composables/gym/useGymBookings'
 
 const props = defineProps({
     show: Boolean,

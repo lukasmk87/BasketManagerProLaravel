@@ -6,8 +6,21 @@
     display: none;
 }
 
-/* TacticBoard Theme Variables - Dark Mode (default) */
+/* TacticBoard Theme Variables - Light Mode (default) */
 :root {
+    --tb-bg-darkest: #f3f4f6;
+    --tb-bg-canvas: #e5e7eb;
+    --tb-bg-panel: #ffffff;
+    --tb-bg-button: #e5e7eb;
+    --tb-bg-hover: #d1d5db;
+    --tb-border: #d1d5db;
+    --tb-text-primary: #1f2937;
+    --tb-text-secondary: #6b7280;
+    --tb-text-heading: #111827;
+}
+
+/* TacticBoard Theme Variables - Dark Mode (class-based) */
+.dark {
     --tb-bg-darkest: #111827;
     --tb-bg-canvas: #0f172a;
     --tb-bg-panel: #1f2937;
@@ -17,19 +30,4 @@
     --tb-text-primary: #d1d5db;
     --tb-text-secondary: #9ca3af;
     --tb-text-heading: #ffffff;
-}
-
-/* TacticBoard Theme Variables - Light Mode */
-@media (prefers-color-scheme: light) {
-    :root {
-        --tb-bg-darkest: #f3f4f6;
-        --tb-bg-canvas: #e5e7eb;
-        --tb-bg-panel: #ffffff;
-        --tb-bg-button: #e5e7eb;
-        --tb-bg-hover: #d1d5db;
-        --tb-border: #d1d5db;
-        --tb-text-primary: #1f2937;
-        --tb-text-secondary: #6b7280;
-        --tb-text-heading: #111827;
-    }
 }

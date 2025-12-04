@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
-import { useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 const { trans } = useTranslations();
 

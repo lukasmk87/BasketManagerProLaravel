@@ -251,7 +251,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useStripe } from '@/composables/useStripe';
+import { useStripe } from '@/Composables/core/useStripe';
 
 const props = defineProps({
     show: {

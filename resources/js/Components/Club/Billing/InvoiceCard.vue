@@ -1,8 +1,8 @@
 <script setup>
 import { computed } from 'vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import { useStripe } from '@/composables/useStripe.js';
-import { useTranslations } from '@/composables/useTranslations';
+import { useStripe } from '@/Composables/core/useStripe.js';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 const props = defineProps({
     invoice: {

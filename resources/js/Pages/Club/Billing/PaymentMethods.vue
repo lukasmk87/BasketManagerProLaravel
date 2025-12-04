@@ -204,7 +204,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import PaymentMethodList from '@/Components/Club/Billing/PaymentMethodList.vue';
 import AddPaymentMethodModal from '@/Components/Club/Billing/AddPaymentMethodModal.vue';
 import UpdateBillingDetailsModal from '@/Components/Club/Billing/UpdateBillingDetailsModal.vue';
-import { useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 const { trans } = useTranslations();
 

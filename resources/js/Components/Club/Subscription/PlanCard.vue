@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import { useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/Composables/core/useTranslations';
 import { usePricing } from '@/Composables/usePricing';
 
 const { trans } = useTranslations();

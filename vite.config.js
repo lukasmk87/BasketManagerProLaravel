@@ -31,7 +31,7 @@ export default defineConfig({
             output: {
                 manualChunks(id) {
                     // Video/ML Components - Only loaded on analysis pages (~60 KB savings)
-                    if (id.includes('/components/ml/') || id.includes('/components/video/')) {
+                    if (id.includes('/Components/Features/ML/') || id.includes('/Components/Features/Video/')) {
                         return 'video-ml';
                     }
 

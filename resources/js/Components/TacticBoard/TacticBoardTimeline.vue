@@ -101,7 +101,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { PlusIcon, EyeIcon } from '@heroicons/vue/24/outline';
-import { useTacticAnimation } from '@/composables/useTacticAnimation';
+import { useTacticAnimation } from '@/Composables/tactic-board/useTacticAnimation';
 import TimelineControl from './Animation/TimelineControl.vue';
 import KeyframeMarker from './Animation/KeyframeMarker.vue';
 

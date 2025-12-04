@@ -3,7 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import { useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 const { trans } = useTranslations();
 

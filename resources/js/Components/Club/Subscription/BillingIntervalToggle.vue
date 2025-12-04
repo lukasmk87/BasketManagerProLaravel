@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 const { trans } = useTranslations();
 

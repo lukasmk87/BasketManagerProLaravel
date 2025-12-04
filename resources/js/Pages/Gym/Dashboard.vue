@@ -325,8 +325,8 @@ import {
     ChevronLeftIcon,
     ChevronRightIcon
 } from '@heroicons/vue/24/outline'
-import { useGymManagement } from '@/Composables/useGymManagement'
-import { useGymNotifications } from '@/Composables/useGymNotifications'
+import { useGymManagement } from '@/Composables/gym/useGymManagement'
+import { useGymNotifications } from '@/Composables/gym/useGymNotifications'
 
 // Props from Inertia
 const props = defineProps({

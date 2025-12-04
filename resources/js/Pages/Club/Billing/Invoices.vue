@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import InvoiceCard from '@/Components/Club/Billing/InvoiceCard.vue';
 import UpcomingInvoicePreview from '@/Components/Club/Billing/UpcomingInvoicePreview.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import { useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 const { trans } = useTranslations();
 

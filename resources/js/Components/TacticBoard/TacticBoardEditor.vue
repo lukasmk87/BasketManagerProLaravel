@@ -393,13 +393,13 @@
 <script setup>
 import { ref, computed, watch, onMounted, nextTick, markRaw } from 'vue';
 import { FilmIcon } from '@heroicons/vue/24/outline';
-import { useTacticBoard } from '@/composables/useTacticBoard';
-import { useTacticHistory } from '@/composables/useTacticHistory';
-import { useTacticExport } from '@/composables/useTacticExport';
-import { useTacticZoom } from '@/composables/useTacticZoom';
-import { useTacticKeyboard } from '@/composables/useTacticKeyboard';
-import { useTacticLayers } from '@/composables/useTacticLayers';
-import { useTacticAlignment } from '@/composables/useTacticAlignment';
+import { useTacticBoard } from '@/Composables/tactic-board/useTacticBoard';
+import { useTacticHistory } from '@/Composables/tactic-board/useTacticHistory';
+import { useTacticExport } from '@/Composables/tactic-board/useTacticExport';
+import { useTacticZoom } from '@/Composables/tactic-board/useTacticZoom';
+import { useTacticKeyboard } from '@/Composables/tactic-board/useTacticKeyboard';
+import { useTacticLayers } from '@/Composables/tactic-board/useTacticLayers';
+import { useTacticAlignment } from '@/Composables/tactic-board/useTacticAlignment';
 
 // Components
 import TacticBoardToolbar from './TacticBoardToolbar.vue';

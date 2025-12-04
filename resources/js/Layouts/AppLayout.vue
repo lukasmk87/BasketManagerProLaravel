@@ -7,6 +7,7 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 defineProps({
     title: String,
@@ -281,6 +282,9 @@ const switchLanguage = (locale) => {
                         </div>
 
                         <div class="hidden sm:flex sm:items-center sm:ms-6">
+                            <!-- Theme Toggle -->
+                            <ThemeToggle class="me-3" />
+
                             <div class="ms-3 relative">
                                 <!-- Teams Dropdown -->
                                 <Dropdown v-if="$page.props.jetstream.hasTeamFeatures" align="right" width="60">

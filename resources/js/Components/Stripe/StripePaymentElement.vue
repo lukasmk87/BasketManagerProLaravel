@@ -33,7 +33,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
-import { useStripe } from '@/composables/useStripe';
+import { useStripe } from '@/Composables/core/useStripe';
 import { formatStripeError } from '@/utils/stripeErrors';
 
 const props = defineProps({
