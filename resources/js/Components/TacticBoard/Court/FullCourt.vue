@@ -117,7 +117,7 @@
                     :config="{
                         x: centerX,
                         y: offsetY + actualCourtHeight - basketOffset,
-                        innerRadius: 0,
+                        innerRadius: restrictedAreaRadius,
                         outerRadius: restrictedAreaRadius,
                         angle: 180,
                         rotation: 180,
@@ -213,7 +213,7 @@
                     :config="{
                         x: centerX,
                         y: offsetY + basketOffset,
-                        innerRadius: 0,
+                        innerRadius: restrictedAreaRadius,
                         outerRadius: restrictedAreaRadius,
                         angle: 180,
                         rotation: 0,

@@ -79,7 +79,7 @@
                     innerRadius: 0,
                     outerRadius: freeThrowCircleRadius,
                     angle: 180,
-                    rotation: -90,
+                    rotation: 180,
                     stroke: lineColor,
                     strokeWidth: lineWidth,
                     fill: 'transparent',
@@ -93,7 +93,7 @@
                     innerRadius: 0,
                     outerRadius: freeThrowCircleRadius,
                     angle: 180,
-                    rotation: 90,
+                    rotation: 0,
                     stroke: lineColor,
                     strokeWidth: lineWidth,
                     dash: [10, 5],
@@ -110,41 +110,15 @@
                 }"
             />
 
-            <!-- Restricted Area Lines (vertical lines from baseline to arc) -->
-            <v-line
-                :config="{
-                    points: [
-                        centerX - restrictedAreaRadius,
-                        offsetY + actualCourtHeight,
-                        centerX - restrictedAreaRadius,
-                        offsetY + actualCourtHeight - basketOffset,
-                    ],
-                    stroke: lineColor,
-                    strokeWidth: lineWidth,
-                }"
-            />
-            <v-line
-                :config="{
-                    points: [
-                        centerX + restrictedAreaRadius,
-                        offsetY + actualCourtHeight,
-                        centerX + restrictedAreaRadius,
-                        offsetY + actualCourtHeight - basketOffset,
-                    ],
-                    stroke: lineColor,
-                    strokeWidth: lineWidth,
-                }"
-            />
-
             <!-- Restricted Area Arc -->
             <v-arc
                 :config="{
                     x: centerX,
                     y: offsetY + actualCourtHeight - basketOffset,
-                    innerRadius: 0,
+                    innerRadius: restrictedAreaRadius,
                     outerRadius: restrictedAreaRadius,
                     angle: 180,
-                    rotation: -90,
+                    rotation: 180,
                     stroke: lineColor,
                     strokeWidth: lineWidth,
                     fill: 'transparent',

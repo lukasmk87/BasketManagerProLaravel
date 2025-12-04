@@ -110,38 +110,12 @@
                 }"
             />
 
-            <!-- Restricted Area Lines (horizontal lines from baseline to arc) -->
-            <v-line
-                :config="{
-                    points: [
-                        offsetX + actualCourtWidth,
-                        centerY - restrictedAreaRadius,
-                        offsetX + actualCourtWidth - basketOffset,
-                        centerY - restrictedAreaRadius,
-                    ],
-                    stroke: lineColor,
-                    strokeWidth: lineWidth,
-                }"
-            />
-            <v-line
-                :config="{
-                    points: [
-                        offsetX + actualCourtWidth,
-                        centerY + restrictedAreaRadius,
-                        offsetX + actualCourtWidth - basketOffset,
-                        centerY + restrictedAreaRadius,
-                    ],
-                    stroke: lineColor,
-                    strokeWidth: lineWidth,
-                }"
-            />
-
             <!-- Restricted Area Arc -->
             <v-arc
                 :config="{
                     x: offsetX + actualCourtWidth - basketOffset,
                     y: centerY,
-                    innerRadius: 0,
+                    innerRadius: restrictedAreaRadius,
                     outerRadius: restrictedAreaRadius,
                     angle: 180,
                     rotation: 180,
