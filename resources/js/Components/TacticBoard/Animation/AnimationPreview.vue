@@ -423,7 +423,7 @@ onUnmounted(() => {
 }
 
 .animation-preview-modal {
-    background: #111827;
+    background: var(--tb-bg-darkest);
     border-radius: 12px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     max-width: 90vw;
@@ -438,13 +438,13 @@ onUnmounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--tb-border);
 }
 
 .modal-title {
     font-size: 18px;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--tb-text-heading);
     margin: 0;
 }
 
@@ -456,15 +456,15 @@ onUnmounted(() => {
     height: 36px;
     border: none;
     border-radius: 6px;
-    background: #374151;
-    color: #d1d5db;
+    background: var(--tb-bg-button);
+    color: var(--tb-text-primary);
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .close-btn:hover {
-    background: #4b5563;
-    color: #ffffff;
+    background: var(--tb-bg-hover);
+    color: var(--tb-text-heading);
 }
 
 .viewer-container {
@@ -473,7 +473,7 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: #0f172a;
+    background: var(--tb-bg-canvas);
     min-height: 400px;
 }
 
@@ -485,7 +485,7 @@ onUnmounted(() => {
 
 .modal-controls {
     padding: 16px 20px;
-    border-top: 1px solid #374151;
+    border-top: 1px solid var(--tb-border);
 }
 
 .controls-row {

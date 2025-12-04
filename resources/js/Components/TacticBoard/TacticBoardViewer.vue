@@ -231,14 +231,14 @@ defineExpose({
 <style scoped>
 .tactic-board-viewer {
     padding: 16px;
-    background: #111827;
+    background: var(--tb-bg-darkest);
 }
 
 .canvas-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0f172a;
+    background: var(--tb-bg-canvas);
     border-radius: 8px;
     padding: 10px;
     min-height: 300px;

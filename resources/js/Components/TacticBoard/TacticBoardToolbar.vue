@@ -353,7 +353,7 @@ watch(lineColor, (value) => {
     align-items: center;
     gap: 12px;
     padding: 8px 12px;
-    background: #1f2937;
+    background: var(--tb-bg-panel);
     border-radius: 8px;
     flex-wrap: wrap;
 }
@@ -366,7 +366,7 @@ watch(lineColor, (value) => {
 
 .section-label {
     font-size: 11px;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -384,15 +384,15 @@ watch(lineColor, (value) => {
     height: 36px;
     border: none;
     border-radius: 6px;
-    background: #374151;
-    color: #d1d5db;
+    background: var(--tb-bg-button);
+    color: var(--tb-text-primary);
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .tool-btn:hover:not(:disabled) {
-    background: #4b5563;
-    color: #ffffff;
+    background: var(--tb-bg-hover);
+    color: var(--tb-text-heading);
 }
 
 .tool-btn.active {
@@ -413,7 +413,7 @@ watch(lineColor, (value) => {
 .toolbar-divider {
     width: 1px;
     height: 28px;
-    background: #374151;
+    background: var(--tb-border);
 }
 
 .team-indicator {
@@ -441,7 +441,7 @@ watch(lineColor, (value) => {
     width: 32px;
     height: 32px;
     padding: 0;
-    border: 2px solid #374151;
+    border: 2px solid var(--tb-border);
     border-radius: 6px;
     cursor: pointer;
 }

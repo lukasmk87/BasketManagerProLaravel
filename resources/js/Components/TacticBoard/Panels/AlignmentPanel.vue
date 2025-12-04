@@ -150,7 +150,7 @@ defineEmits([
     top: 60px;
     right: 250px;
     width: 220px;
-    background: #1f2937;
+    background: var(--tb-bg-panel);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 100;
@@ -161,15 +161,15 @@ defineEmits([
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    border-bottom: 1px solid #374151;
-    color: #ffffff;
+    border-bottom: 1px solid var(--tb-border);
+    color: var(--tb-text-heading);
     font-weight: 500;
 }
 
 .close-btn {
     background: none;
     border: none;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     font-size: 20px;
     cursor: pointer;
     padding: 0;
@@ -177,7 +177,7 @@ defineEmits([
 }
 
 .close-btn:hover {
-    color: #ffffff;
+    color: var(--tb-text-heading);
 }
 
 .panel-content {
@@ -192,7 +192,7 @@ defineEmits([
     display: block;
     font-size: 11px;
     font-weight: 500;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 8px;
@@ -210,10 +210,10 @@ defineEmits([
     gap: 4px;
     flex: 1;
     padding: 8px;
-    background: #374151;
+    background: var(--tb-bg-button);
     border: none;
     border-radius: 6px;
-    color: #d1d5db;
+    color: var(--tb-text-primary);
     cursor: pointer;
     transition: all 0.15s ease;
 }
@@ -224,8 +224,8 @@ defineEmits([
 }
 
 .align-btn:hover:not(:disabled) {
-    background: #4b5563;
-    color: #ffffff;
+    background: var(--tb-bg-hover);
+    color: var(--tb-text-heading);
 }
 
 .align-btn:disabled {
@@ -246,17 +246,17 @@ defineEmits([
 
 .divider {
     height: 1px;
-    background: #374151;
+    background: var(--tb-border);
     margin: 12px 0;
 }
 
 .hint {
     margin-top: 12px;
     padding: 8px;
-    background: #374151;
+    background: var(--tb-bg-button);
     border-radius: 6px;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     text-align: center;
 }
 </style>

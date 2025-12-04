@@ -134,7 +134,7 @@ const defensePresets = [
     top: 60px;
     left: 20px;
     width: 220px;
-    background: #1f2937;
+    background: var(--tb-bg-panel);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 100;
@@ -145,15 +145,15 @@ const defensePresets = [
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    border-bottom: 1px solid #374151;
-    color: #ffffff;
+    border-bottom: 1px solid var(--tb-border);
+    color: var(--tb-text-heading);
     font-weight: 500;
 }
 
 .close-btn {
     background: none;
     border: none;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     font-size: 20px;
     cursor: pointer;
     padding: 0;
@@ -161,7 +161,7 @@ const defensePresets = [
 }
 
 .close-btn:hover {
-    color: #ffffff;
+    color: var(--tb-text-heading);
 }
 
 .panel-content {
@@ -177,12 +177,12 @@ const defensePresets = [
     display: block;
     font-size: 13px;
     font-weight: 500;
-    color: #d1d5db;
+    color: var(--tb-text-primary);
     margin-bottom: 8px;
 }
 
 .team-controls {
-    background: #374151;
+    background: var(--tb-bg-button);
     border-radius: 6px;
     padding: 8px;
 }
@@ -196,14 +196,14 @@ const defensePresets = [
 
 .color-picker-row label {
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
 }
 
 .color-picker-row input[type="color"] {
     width: 32px;
     height: 32px;
     padding: 0;
-    border: 2px solid #4b5563;
+    border: 2px solid var(--tb-bg-hover);
     border-radius: 6px;
     cursor: pointer;
 }
@@ -242,7 +242,7 @@ const defensePresets = [
 
 .divider {
     height: 1px;
-    background: #374151;
+    background: var(--tb-border);
     margin: 12px 0;
 }
 

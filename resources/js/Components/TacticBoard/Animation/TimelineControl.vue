@@ -179,7 +179,7 @@ const startDragging = (event) => {
     align-items: center;
     gap: 16px;
     padding: 12px 16px;
-    background: #1f2937;
+    background: var(--tb-bg-panel);
     border-radius: 8px;
 }
 
@@ -197,15 +197,15 @@ const startDragging = (event) => {
     height: 36px;
     border: none;
     border-radius: 6px;
-    background: #374151;
-    color: #d1d5db;
+    background: var(--tb-bg-button);
+    color: var(--tb-text-primary);
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .control-btn:hover {
-    background: #4b5563;
-    color: #ffffff;
+    background: var(--tb-bg-hover);
+    color: var(--tb-text-heading);
 }
 
 .control-btn.active {
@@ -235,7 +235,7 @@ const startDragging = (event) => {
 .time-display {
     font-size: 12px;
     font-family: monospace;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     min-width: 50px;
 }
 
@@ -248,7 +248,7 @@ const startDragging = (event) => {
 .progress-bar {
     position: relative;
     height: 6px;
-    background: #374151;
+    background: var(--tb-bg-button);
     border-radius: 3px;
 }
 

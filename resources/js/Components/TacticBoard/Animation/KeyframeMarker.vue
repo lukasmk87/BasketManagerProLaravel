@@ -218,7 +218,7 @@ onUnmounted(() => {
     top: 100%;
     margin-top: 4px;
     font-size: 10px;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     white-space: nowrap;
     opacity: 0;
     transition: opacity 0.15s ease;
@@ -231,8 +231,8 @@ onUnmounted(() => {
 
 .context-menu {
     position: fixed;
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--tb-bg-panel);
+    border: 1px solid var(--tb-border);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     z-index: 1000;
@@ -248,7 +248,7 @@ onUnmounted(() => {
     padding: 10px 14px;
     background: none;
     border: none;
-    color: #d1d5db;
+    color: var(--tb-text-primary);
     font-size: 13px;
     cursor: pointer;
     transition: background 0.15s ease;
@@ -256,8 +256,8 @@ onUnmounted(() => {
 }
 
 .menu-item:hover {
-    background: #374151;
-    color: #ffffff;
+    background: var(--tb-bg-button);
+    color: var(--tb-text-heading);
 }
 
 .menu-item.danger:hover {

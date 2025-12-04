@@ -109,7 +109,7 @@ const colorPresets = [
 
 <style scoped>
 .line-style-panel {
-    background: #1f2937;
+    background: var(--tb-bg-panel);
     border-radius: 8px;
     overflow: hidden;
     width: 220px;
@@ -117,8 +117,8 @@ const colorPresets = [
 
 .panel-header {
     padding: 10px 12px;
-    border-bottom: 1px solid #374151;
-    color: #ffffff;
+    border-bottom: 1px solid var(--tb-border);
+    color: var(--tb-text-heading);
     font-weight: 500;
     font-size: 13px;
 }
@@ -138,7 +138,7 @@ const colorPresets = [
 .property-row label {
     display: block;
     font-size: 11px;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     margin-bottom: 6px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -154,7 +154,7 @@ const colorPresets = [
     flex: 1;
     height: 4px;
     -webkit-appearance: none;
-    background: #374151;
+    background: var(--tb-bg-button);
     border-radius: 2px;
     cursor: pointer;
 }
@@ -170,7 +170,7 @@ const colorPresets = [
 
 .slider-row .value {
     font-size: 12px;
-    color: #d1d5db;
+    color: var(--tb-text-primary);
     min-width: 35px;
     text-align: right;
 }
@@ -186,17 +186,17 @@ const colorPresets = [
     align-items: center;
     justify-content: center;
     padding: 8px;
-    background: #374151;
+    background: var(--tb-bg-button);
     border: 2px solid transparent;
     border-radius: 6px;
-    color: #d1d5db;
+    color: var(--tb-text-primary);
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .style-btn:hover {
-    background: #4b5563;
-    color: #ffffff;
+    background: var(--tb-bg-hover);
+    color: var(--tb-text-heading);
 }
 
 .style-btn.active {
@@ -220,7 +220,7 @@ const colorPresets = [
     width: 36px;
     height: 36px;
     padding: 0;
-    border: 2px solid #374151;
+    border: 2px solid var(--tb-border);
     border-radius: 6px;
     cursor: pointer;
     background: transparent;

@@ -1099,7 +1099,7 @@ defineExpose({
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: #111827;
+    background: var(--tb-bg-darkest);
     padding: 16px;
     border-radius: 12px;
 }
@@ -1109,7 +1109,7 @@ defineExpose({
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0f172a;
+    background: var(--tb-bg-canvas);
     border-radius: 8px;
     padding: 10px;
     min-height: 400px;
@@ -1121,7 +1121,7 @@ defineExpose({
     top: 60px;
     right: 20px;
     width: 220px;
-    background: #1f2937;
+    background: var(--tb-bg-panel);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 100;
@@ -1132,15 +1132,15 @@ defineExpose({
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    border-bottom: 1px solid #374151;
-    color: #ffffff;
+    border-bottom: 1px solid var(--tb-border);
+    color: var(--tb-text-heading);
     font-weight: 500;
 }
 
 .close-btn {
     background: none;
     border: none;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     font-size: 20px;
     cursor: pointer;
     padding: 0;
@@ -1148,7 +1148,7 @@ defineExpose({
 }
 
 .close-btn:hover {
-    color: #ffffff;
+    color: var(--tb-text-heading);
 }
 
 .panel-content {
@@ -1162,7 +1162,7 @@ defineExpose({
 .property-row label {
     display: block;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--tb-text-secondary);
     margin-bottom: 4px;
 }
 
@@ -1170,10 +1170,10 @@ defineExpose({
 .property-row select {
     width: 100%;
     padding: 8px;
-    background: #374151;
-    border: 1px solid #4b5563;
+    background: var(--tb-bg-button);
+    border: 1px solid var(--tb-bg-hover);
     border-radius: 4px;
-    color: #ffffff;
+    color: var(--tb-text-heading);
     font-size: 13px;
 }
 
@@ -1211,7 +1211,7 @@ defineExpose({
 }
 
 .modal-content {
-    background: #1f2937;
+    background: var(--tb-bg-panel);
     padding: 20px;
     border-radius: 8px;
     min-width: 300px;
@@ -1220,10 +1220,10 @@ defineExpose({
 .modal-content input {
     width: 100%;
     padding: 10px;
-    background: #374151;
-    border: 1px solid #4b5563;
+    background: var(--tb-bg-button);
+    border: 1px solid var(--tb-bg-hover);
     border-radius: 4px;
-    color: #ffffff;
+    color: var(--tb-text-heading);
     font-size: 14px;
     margin-bottom: 12px;
 }

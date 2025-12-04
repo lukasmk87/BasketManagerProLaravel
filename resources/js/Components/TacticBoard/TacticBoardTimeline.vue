@@ -318,7 +318,7 @@ defineExpose({
 
 <style scoped>
 .tactic-board-timeline {
-    background: #111827;
+    background: var(--tb-bg-darkest);
     border-radius: 8px;
     padding: 16px;
     display: flex;
@@ -335,7 +335,7 @@ defineExpose({
 .timeline-title {
     font-size: 14px;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--tb-text-heading);
     margin: 0;
 }
 
@@ -349,22 +349,22 @@ defineExpose({
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: #374151;
+    background: var(--tb-bg-button);
     border: none;
     border-radius: 6px;
-    color: #d1d5db;
+    color: var(--tb-text-primary);
     font-size: 12px;
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .action-btn:hover {
-    background: #4b5563;
-    color: #ffffff;
+    background: var(--tb-bg-hover);
+    color: var(--tb-text-heading);
 }
 
 .timeline-track-container {
-    background: #0f172a;
+    background: var(--tb-bg-canvas);
     border-radius: 6px;
     padding: 12px 16px;
 }
@@ -395,7 +395,7 @@ defineExpose({
     left: 0;
     right: 0;
     height: 24px;
-    background: #1f2937;
+    background: var(--tb-bg-panel);
     border-radius: 4px;
 }
 

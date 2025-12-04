@@ -5,3 +5,31 @@
 [x-cloak] {
     display: none;
 }
+
+/* TacticBoard Theme Variables - Dark Mode (default) */
+:root {
+    --tb-bg-darkest: #111827;
+    --tb-bg-canvas: #0f172a;
+    --tb-bg-panel: #1f2937;
+    --tb-bg-button: #374151;
+    --tb-bg-hover: #4b5563;
+    --tb-border: #374151;
+    --tb-text-primary: #d1d5db;
+    --tb-text-secondary: #9ca3af;
+    --tb-text-heading: #ffffff;
+}
+
+/* TacticBoard Theme Variables - Light Mode */
+@media (prefers-color-scheme: light) {
+    :root {
+        --tb-bg-darkest: #f3f4f6;
+        --tb-bg-canvas: #e5e7eb;
+        --tb-bg-panel: #ffffff;
+        --tb-bg-button: #e5e7eb;
+        --tb-bg-hover: #d1d5db;
+        --tb-border: #d1d5db;
+        --tb-text-primary: #1f2937;
+        --tb-text-secondary: #6b7280;
+        --tb-text-heading: #111827;
+    }
+}
