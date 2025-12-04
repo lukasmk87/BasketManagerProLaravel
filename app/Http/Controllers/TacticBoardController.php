@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Drill;
 use App\Models\Play;
 use App\Models\Playbook;
+use App\Services\TacticBoard\DrillService;
 use App\Services\TacticBoard\PlayFavoriteService;
 use App\Services\TacticBoard\PlayService;
 use App\Services\TacticBoard\PlaybookService;
@@ -18,7 +20,8 @@ class TacticBoardController extends Controller
         protected PlayService $playService,
         protected PlaybookService $playbookService,
         protected PlayTemplateService $templateService,
-        protected PlayFavoriteService $favoriteService
+        protected PlayFavoriteService $favoriteService,
+        protected DrillService $drillService
     ) {
     }
 
@@ -44,18 +47,23 @@ class TacticBoardController extends Controller
         // Get recent playbooks (last 6)
         $recentPlaybooks = $this->playbookService->getPlaybooks($tenantFilter, 6);
 
+        // Get recent drills (last 6)
+        $recentDrills = $this->drillService->getDrills($tenantFilter, 6);
+
         // Get stats
         $stats = [
             'total_plays' => Play::where('created_by_user_id', $user->id)
                 ->where('is_system_template', false)
                 ->count(),
             'total_playbooks' => Playbook::where('created_by_user_id', $user->id)->count(),
+            'total_drills' => Drill::where('created_by_user_id', $user->id)->count(),
             'favorites' => $user->playFavorites()->count(),
         ];
 
         return Inertia::render('TacticBoard/Index', [
             'recentPlays' => $recentPlays,
             'recentPlaybooks' => $recentPlaybooks,
+            'recentDrills' => $recentDrills,
             'stats' => $stats,
         ]);
     }

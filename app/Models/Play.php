@@ -26,6 +26,7 @@ class Play extends Model
         'animation_data',
         'thumbnail_path',
         'category',
+        'category_id',
         'tags',
         'is_public',
         'is_featured',
@@ -65,6 +66,11 @@ class Play extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function tacticCategory(): BelongsTo
+    {
+        return $this->belongsTo(TacticCategory::class, 'category_id');
     }
 
     public function playbooks(): BelongsToMany
@@ -192,6 +198,12 @@ class Play extends Model
     {
         return Attribute::make(
             get: function () {
+                // Erst die neue TacticCategory prüfen
+                if ($this->category_id && $this->tacticCategory) {
+                    return $this->tacticCategory->name;
+                }
+
+                // Fallback auf alte ENUM-Kategorie
                 $categories = [
                     'offense' => 'Offense',
                     'defense' => 'Defense',

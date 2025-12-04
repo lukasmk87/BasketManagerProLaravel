@@ -25,6 +25,12 @@
                                 Spielzüge
                             </Link>
                             <Link
+                                :href="route('tactic-board.drills.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Übungen
+                            </Link>
+                            <Link
                                 :href="route('tactic-board.playbooks.index')"
                                 class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
                             >
@@ -92,21 +98,21 @@
                         </div>
                     </Link>
 
-                    <Link :href="route('tactic-board.templates')" class="group">
+                    <Link :href="route('tactic-board.drills.create')" class="group">
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg hover:shadow-2xl transition-shadow">
                             <div class="p-6">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
-                                        <div class="w-10 h-10 bg-purple-500 rounded-md flex items-center justify-center">
-                                            <RectangleStackIcon class="w-6 h-6 text-white" />
+                                        <div class="w-10 h-10 bg-teal-500 rounded-md flex items-center justify-center">
+                                            <AcademicCapIcon class="w-6 h-6 text-white" />
                                         </div>
                                     </div>
                                     <div class="ml-4">
-                                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 group-hover:text-purple-600 dark:group-hover:text-purple-400">
-                                            Templates
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 group-hover:text-teal-600 dark:group-hover:text-teal-400">
+                                            Neue Übung
                                         </h3>
                                         <p class="text-sm text-gray-600 dark:text-gray-400">
-                                            Vorlagen durchsuchen
+                                            Übung erstellen
                                         </p>
                                     </div>
                                 </div>
@@ -138,7 +144,7 @@
                 </div>
 
                 <!-- Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow sm:rounded-lg">
                         <div class="p-6">
                             <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
@@ -146,6 +152,16 @@
                             </dt>
                             <dd class="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100">
                                 {{ stats.total_plays }}
+                            </dd>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow sm:rounded-lg">
+                        <div class="p-6">
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                Meine Übungen
+                            </dt>
+                            <dd class="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100">
+                                {{ stats.total_drills }}
                             </dd>
                         </div>
                     </div>
@@ -223,6 +239,58 @@
                     </div>
                 </div>
 
+                <!-- Recent Drills -->
+                <div class="mb-8">
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                Aktuelle Übungen
+                            </h3>
+                            <Link
+                                :href="route('tactic-board.drills.index')"
+                                class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+                            >
+                                Alle anzeigen
+                            </Link>
+                        </div>
+                        <div class="p-6">
+                            <div v-if="recentDrills?.data && recentDrills.data.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div
+                                    v-for="drill in recentDrills.data"
+                                    :key="drill.id"
+                                    class="flex items-center p-4 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                >
+                                    <div class="flex-shrink-0">
+                                        <div class="w-12 h-12 bg-teal-100 dark:bg-teal-900 rounded-lg flex items-center justify-center">
+                                            <AcademicCapIcon class="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                                        </div>
+                                    </div>
+                                    <div class="ml-4 flex-1 min-w-0">
+                                        <Link
+                                            :href="route('tactic-board.drills.show', drill.id)"
+                                            class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-teal-600 dark:hover:text-teal-400 truncate block"
+                                        >
+                                            {{ drill.name }}
+                                        </Link>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                                            {{ drill.tactic_category?.name || drill.category || 'Keine Kategorie' }}
+                                        </p>
+                                    </div>
+                                    <Link
+                                        :href="route('tactic-board.drills.edit', drill.id)"
+                                        class="text-gray-400 hover:text-teal-600 dark:hover:text-teal-400"
+                                    >
+                                        <PencilIcon class="w-5 h-5" />
+                                    </Link>
+                                </div>
+                            </div>
+                            <div v-else class="text-center text-gray-500 dark:text-gray-400 py-8">
+                                Noch keine Übungen erstellt
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Recent Playbooks -->
                 <div>
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
@@ -289,11 +357,13 @@ import {
     StarIcon,
     DocumentIcon,
     PencilIcon,
+    AcademicCapIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     recentPlays: Object,
     recentPlaybooks: Object,
+    recentDrills: Object,
     stats: Object,
 });
 

@@ -196,6 +196,50 @@ export function useTacticExport() {
     };
 
     /**
+     * Download drill PDF (redirects to PDF export endpoint)
+     */
+    const downloadDrillPdf = (drillId) => {
+        const url = `/api/drills/${drillId}/export/pdf`;
+        window.open(url, '_blank');
+    };
+
+    /**
+     * Save drill thumbnail to server
+     */
+    const saveDrillThumbnail = async (drillId, stageRef, csrfToken) => {
+        isExporting.value = true;
+        exportError.value = null;
+
+        try {
+            const imageData = await exportAsPng(stageRef, { pixelRatio: 1 });
+
+            const response = await fetch(`/api/drills/${drillId}/thumbnail`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    image_data: imageData,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save drill thumbnail');
+            }
+
+            const data = await response.json();
+            return data.thumbnail_path;
+        } catch (error) {
+            exportError.value = error.message;
+            throw error;
+        } finally {
+            isExporting.value = false;
+        }
+    };
+
+    /**
      * Copy image to clipboard
      */
     const copyToClipboard = async (stageRef) => {
@@ -364,8 +408,10 @@ export function useTacticExport() {
         downloadPng,
         generateThumbnail,
         saveThumbnail,
+        saveDrillThumbnail,
         exportPlayPng,
         downloadPdf,
+        downloadDrillPdf,
         downloadPlaybookPdf,
         copyToClipboard,
 

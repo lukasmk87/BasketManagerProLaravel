@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\PlayController;
 use App\Http\Controllers\Api\PlaybookController;
 use App\Http\Controllers\Api\PlayTemplateController;
 use App\Http\Controllers\Api\PlayFavoriteController;
+use App\Http\Controllers\Api\TacticCategoryController;
+use App\Http\Controllers\Api\DrillController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -91,5 +93,37 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/{favorite}', [PlayFavoriteController::class, 'update'])->name('update');
         Route::delete('/{favorite}', [PlayFavoriteController::class, 'destroy'])->name('destroy');
         Route::post('/{favorite}/toggle-quick-access', [PlayFavoriteController::class, 'toggleQuickAccess'])->name('toggle-quick-access');
+    });
+
+    // Tactic Categories
+    Route::prefix('tactic-categories')->name('tactic-categories.')->group(function () {
+        Route::get('/', [TacticCategoryController::class, 'index'])->name('index');
+        Route::get('/plays', [TacticCategoryController::class, 'forPlays'])->name('plays');
+        Route::get('/drills', [TacticCategoryController::class, 'forDrills'])->name('drills');
+        Route::get('/stats', [TacticCategoryController::class, 'stats'])->name('stats');
+        Route::post('/', [TacticCategoryController::class, 'store'])->name('store');
+        Route::get('/{category}', [TacticCategoryController::class, 'show'])->name('show');
+        Route::put('/{category}', [TacticCategoryController::class, 'update'])->name('update');
+        Route::delete('/{category}', [TacticCategoryController::class, 'destroy'])->name('destroy');
+        Route::post('/reorder', [TacticCategoryController::class, 'reorder'])->name('reorder');
+    });
+
+    // Drills (Visual Editor Extensions)
+    Route::prefix('drills')->name('drills.')->group(function () {
+        Route::get('/', [DrillController::class, 'index'])->name('index');
+        Route::post('/', [DrillController::class, 'store'])->name('store');
+        Route::get('/{drill}', [DrillController::class, 'show'])->name('show');
+        Route::put('/{drill}', [DrillController::class, 'update'])->name('update');
+        Route::delete('/{drill}', [DrillController::class, 'destroy'])->name('destroy');
+
+        // Visual editing actions
+        Route::post('/{drill}/duplicate', [DrillController::class, 'duplicate'])->name('duplicate');
+        Route::post('/{drill}/thumbnail', [DrillController::class, 'saveThumbnail'])->name('thumbnail');
+        Route::post('/{drill}/publish', [DrillController::class, 'publish'])->name('publish');
+        Route::post('/{drill}/archive', [DrillController::class, 'archive'])->name('archive');
+
+        // Export
+        Route::post('/{drill}/export/png', [DrillController::class, 'exportPng'])->name('export.png');
+        Route::get('/{drill}/export/pdf', [DrillController::class, 'exportPdf'])->name('export.pdf');
     });
 });

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TacticBoardController;
+use App\Http\Controllers\DrillTacticBoardController;
 
 // Define supported locales
 $supportedLocales = config('localization.supported_locales', ['de', 'en']);
@@ -220,6 +221,12 @@ Route::middleware([
 
         // Personal Library
         Route::get('/library', [TacticBoardController::class, 'library'])->name('library');
+
+        // Drills (Visual Editor)
+        Route::get('/drills', [DrillTacticBoardController::class, 'index'])->name('drills.index');
+        Route::get('/drills/create', [DrillTacticBoardController::class, 'create'])->name('drills.create');
+        Route::get('/drills/{drill}', [DrillTacticBoardController::class, 'show'])->name('drills.show');
+        Route::get('/drills/{drill}/edit', [DrillTacticBoardController::class, 'edit'])->name('drills.edit');
     });
 
     // Live Scoring Routes

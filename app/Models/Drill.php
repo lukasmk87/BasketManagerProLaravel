@@ -19,12 +19,18 @@ class Drill extends Model implements HasMedia
     use HasFactory, SoftDeletes, InteractsWithMedia, Searchable;
 
     protected $fillable = [
+        'tenant_id',
         'created_by_user_id',
         'name',
         'description',
         'objectives',
         'instructions',
+        'drill_data',
+        'animation_data',
+        'thumbnail_path',
+        'court_type',
         'category',
+        'category_id',
         'sub_category',
         'difficulty_level',
         'age_group',
@@ -65,6 +71,8 @@ class Drill extends Model implements HasMedia
     ];
 
     protected $casts = [
+        'drill_data' => 'array',
+        'animation_data' => 'array',
         'min_players' => 'integer',
         'max_players' => 'integer',
         'optimal_players' => 'integer',
@@ -101,6 +109,16 @@ class Drill extends Model implements HasMedia
         return $this->belongsTo(User::class, 'reviewed_by_user_id');
     }
 
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
+    public function tacticCategory(): BelongsTo
+    {
+        return $this->belongsTo(TacticCategory::class, 'category_id');
+    }
+
     public function trainingSessions(): BelongsToMany
     {
         return $this->belongsToMany(TrainingSession::class, 'training_drills')
@@ -135,6 +153,19 @@ class Drill extends Model implements HasMedia
     public function scopePublic($query)
     {
         return $query->where('is_public', true)->where('status', 'approved');
+    }
+
+    public function scopeForTenant($query, ?string $tenantId)
+    {
+        if ($tenantId) {
+            return $query->where('tenant_id', $tenantId);
+        }
+        return $query->whereNull('tenant_id');
+    }
+
+    public function scopeByCourtType($query, string $courtType)
+    {
+        return $query->where('court_type', $courtType);
     }
 
     public function scopeByCategory($query, string $category)
@@ -196,6 +227,20 @@ class Drill extends Model implements HasMedia
         );
     }
 
+    public function hasVisualData(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => !empty($this->drill_data),
+        );
+    }
+
+    public function hasAnimation(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => !empty($this->animation_data) && !empty($this->animation_data['keyframes']),
+        );
+    }
+
     public function canBeUsed(): Attribute
     {
         return Attribute::make(
@@ -238,6 +283,12 @@ class Drill extends Model implements HasMedia
     {
         return Attribute::make(
             get: function () {
+                // Erst die neue TacticCategory prüfen
+                if ($this->category_id && $this->tacticCategory) {
+                    return $this->tacticCategory->name;
+                }
+
+                // Fallback auf alte ENUM-Kategorie
                 $categories = [
                     'ball_handling' => 'Ballhandling',
                     'shooting' => 'Wurf',
@@ -255,8 +306,23 @@ class Drill extends Model implements HasMedia
                     'warm_up' => 'Aufwärmen',
                     'cool_down' => 'Abwärmen',
                 ];
-                
+
                 return $categories[$this->category] ?? $this->category;
+            },
+        );
+    }
+
+    public function courtTypeDisplay(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $types = [
+                    'half_horizontal' => 'Halbes Feld (horizontal)',
+                    'full' => 'Ganzes Feld',
+                    'half_vertical' => 'Halbes Feld (vertikal)',
+                ];
+
+                return $types[$this->court_type] ?? $this->court_type;
             },
         );
     }

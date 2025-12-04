@@ -434,9 +434,22 @@ const props = defineProps({
         type: [Number, String],
         default: null,
     },
+    drillId: {
+        type: [Number, String],
+        default: null,
+    },
+    entityType: {
+        type: String,
+        default: 'play', // 'play' or 'drill'
+        validator: (value) => ['play', 'drill'].includes(value),
+    },
+    courtType: {
+        type: String,
+        default: null, // if null, use default from useTacticBoard
+    },
 });
 
-const emit = defineEmits(['save', 'change', 'animation-change']);
+const emit = defineEmits(['save', 'change', 'update:data', 'animation-change']);
 
 // Refs
 const containerRef = ref(null);
@@ -453,8 +466,21 @@ const animationData = ref(props.initialData?.animation_data || null);
 const canvasWidth = ref(700);
 const canvasHeight = ref(500);
 
+// Get initial data based on entity type (play_data or drill_data)
+const getInitialBoardData = () => {
+    if (props.entityType === 'drill') {
+        return props.initialData?.drill_data || props.initialData?.play_data || null;
+    }
+    return props.initialData?.play_data || null;
+};
+
+// Get entity ID based on type
+const entityId = computed(() => {
+    return props.entityType === 'drill' ? props.drillId : props.playId;
+});
+
 // Composables
-const board = useTacticBoard(props.initialData?.play_data);
+const board = useTacticBoard(getInitialBoardData());
 const history = useTacticHistory();
 const exportUtil = useTacticExport();
 const zoom = useTacticZoom();
@@ -557,6 +583,11 @@ const getCurrentDrawingColor = () => {
 
 // Initialize canvas dimensions
 onMounted(() => {
+    // Set court type from props if provided
+    if (props.courtType) {
+        board.courtType.value = props.courtType;
+    }
+
     updateCanvasDimensions();
     window.addEventListener('resize', updateCanvasDimensions);
 
@@ -1011,13 +1042,18 @@ const handleClearAll = () => {
 // Export handlers
 const handleExportPng = async () => {
     if (stageRef.value) {
-        await exportUtil.downloadPng(stageRef.value.getStage(), 'spielzug');
+        const filename = props.entityType === 'drill' ? 'uebung' : 'spielzug';
+        await exportUtil.downloadPng(stageRef.value.getStage(), filename);
     }
 };
 
 const handleExportPdf = () => {
-    if (props.playId) {
-        exportUtil.downloadPdf(props.playId);
+    if (entityId.value) {
+        if (props.entityType === 'drill') {
+            exportUtil.downloadDrillPdf(entityId.value);
+        } else {
+            exportUtil.downloadPdf(entityId.value);
+        }
     }
 };
 
@@ -1026,6 +1062,7 @@ watch(
     () => board.exportData(),
     (newData) => {
         emit('change', newData);
+        emit('update:data', newData);
     },
     { deep: true }
 );
