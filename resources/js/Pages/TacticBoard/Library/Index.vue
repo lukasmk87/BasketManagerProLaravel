@@ -131,13 +131,13 @@ watch(search, (newValue) => {
 </script>
 
 <template>
-    <Head title="Meine Bibliothek" />
+    <Head title="Bibliothek - Taktik-Board" />
 
-    <AppLayout title="Meine Bibliothek">
+    <AppLayout title="Bibliothek - Taktik-Board">
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Meine Bibliothek
+                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                    Taktik-Board
                 </h2>
                 <Link
                     :href="route('tactic-board.plays.create')"
@@ -151,6 +151,44 @@ watch(search, (newValue) => {
 
         <div class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Tab Navigation -->
+                <div class="mb-8">
+                    <div class="border-b border-gray-200 dark:border-gray-700">
+                        <nav class="-mb-px flex space-x-8">
+                            <Link
+                                :href="route('tactic-board.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Übersicht
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.plays.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Spielzüge
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.playbooks.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Playbooks
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.templates')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Templates
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.library')"
+                                class="border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Bibliothek
+                            </Link>
+                        </nav>
+                    </div>
+                </div>
+
                 <div class="flex flex-col lg:flex-row gap-6">
                     <!-- Sidebar with Quick Access -->
                     <div class="lg:w-64 flex-shrink-0">

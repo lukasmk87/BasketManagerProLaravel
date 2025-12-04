@@ -200,9 +200,11 @@ Route::middleware([
 
     // Tactic Board Routes
     Route::prefix('tactic-board')->name('tactic-board.')->group(function () {
+        // Dashboard
         Route::get('/', [TacticBoardController::class, 'index'])->name('index');
 
-        // Plays
+        // Plays (static routes first!)
+        Route::get('/plays', [TacticBoardController::class, 'plays'])->name('plays.index');
         Route::get('/plays/create', [TacticBoardController::class, 'createPlay'])->name('plays.create');
         Route::get('/plays/{play}', [TacticBoardController::class, 'showPlay'])->name('plays.show');
         Route::get('/plays/{play}/edit', [TacticBoardController::class, 'editPlay'])->name('plays.edit');

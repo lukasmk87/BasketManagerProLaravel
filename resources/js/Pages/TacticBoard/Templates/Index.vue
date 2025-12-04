@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, Link } from '@inertiajs/vue3';
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import TemplateCard from '@/Components/TacticBoard/TemplateCard.vue';
@@ -89,19 +89,57 @@ watch(search, (newValue) => {
 </script>
 
 <template>
-    <Head title="Template-Galerie" />
+    <Head title="Templates - Taktik-Board" />
 
-    <AppLayout title="Template-Galerie">
+    <AppLayout title="Templates - Taktik-Board">
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Template-Galerie
+                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                    Taktik-Board
                 </h2>
             </div>
         </template>
 
         <div class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Tab Navigation -->
+                <div class="mb-8">
+                    <div class="border-b border-gray-200 dark:border-gray-700">
+                        <nav class="-mb-px flex space-x-8">
+                            <Link
+                                :href="route('tactic-board.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Übersicht
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.plays.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Spielzüge
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.playbooks.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Playbooks
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.templates')"
+                                class="border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Templates
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.library')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Bibliothek
+                            </Link>
+                        </nav>
+                    </div>
+                </div>
+
                 <!-- Search and Filters -->
                 <div class="mb-6 space-y-4">
                     <div class="flex flex-col sm:flex-row gap-4">

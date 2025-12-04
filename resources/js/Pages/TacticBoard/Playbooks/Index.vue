@@ -1,18 +1,10 @@
 <template>
-    <AppLayout title="Playbooks">
+    <AppLayout title="Playbooks - Taktik-Board">
         <template #header>
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <Link
-                        :href="route('tactic-board.index')"
-                        class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                        <ArrowLeftIcon class="h-5 w-5" />
-                    </Link>
-                    <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                        Playbooks
-                    </h2>
-                </div>
+                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                    Taktik-Board
+                </h2>
                 <Link
                     :href="route('tactic-board.playbooks.create')"
                     class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
@@ -25,6 +17,44 @@
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <!-- Tab Navigation -->
+                <div class="mb-8">
+                    <div class="border-b border-gray-200 dark:border-gray-700">
+                        <nav class="-mb-px flex space-x-8">
+                            <Link
+                                :href="route('tactic-board.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Übersicht
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.plays.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Spielzüge
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.playbooks.index')"
+                                class="border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Playbooks
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.templates')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Templates
+                            </Link>
+                            <Link
+                                :href="route('tactic-board.library')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Bibliothek
+                            </Link>
+                        </nav>
+                    </div>
+                </div>
+
                 <!-- Filters -->
                 <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                     <div class="flex flex-wrap gap-4">
@@ -140,7 +170,7 @@ import { reactive } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { PlusIcon, ArrowLeftIcon, BookOpenIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, BookOpenIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     playbooks: Object,

@@ -120,7 +120,12 @@ const switchLanguage = (locale) => {
                                 <NavLink :href="route('statistics.index')" :active="route().current('statistics.*')">
                                     Statistiken
                                 </NavLink>
-                                
+
+                                <!-- Tactic Board -->
+                                <NavLink :href="route('tactic-board.index')" :active="route().current('tactic-board.*')">
+                                    Tactic Board
+                                </NavLink>
+
                                 <!-- Hallenverwaltung (für berechtigte Benutzer) -->
                                 <NavLink v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin') || $page.props.auth.user.roles.includes('club_admin') || $page.props.auth.user.roles.includes('trainer'))"
                                          :href="route('gym.index')"
@@ -505,7 +510,12 @@ const switchLanguage = (locale) => {
                         <ResponsiveNavLink :href="route('statistics.index')" :active="route().current('statistics.*')">
                             Statistiken
                         </ResponsiveNavLink>
-                        
+
+                        <!-- Tactic Board -->
+                        <ResponsiveNavLink :href="route('tactic-board.index')" :active="route().current('tactic-board.*')">
+                            Tactic Board
+                        </ResponsiveNavLink>
+
                         <!-- Hallenverwaltung (für berechtigte Benutzer) -->
                         <ResponsiveNavLink v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin') || $page.props.auth.user.roles.includes('club_admin') || $page.props.auth.user.roles.includes('trainer'))"
                                            :href="route('gym.index')"

@@ -23,9 +23,47 @@ class TacticBoardController extends Controller
     }
 
     /**
-     * Display the plays index page.
+     * Display the tactic board dashboard.
      */
     public function index(Request $request): Response
+    {
+        $this->authorize('viewAny', Play::class);
+
+        $user = $request->user();
+        $tenantFilter = [];
+        if ($user->tenant_id) {
+            $tenantFilter['tenant_id'] = $user->tenant_id;
+        }
+
+        // Get recent plays (last 6)
+        $recentPlays = $this->playService->getPlays(
+            array_merge($tenantFilter, ['status' => 'published']),
+            6
+        );
+
+        // Get recent playbooks (last 6)
+        $recentPlaybooks = $this->playbookService->getPlaybooks($tenantFilter, 6);
+
+        // Get stats
+        $stats = [
+            'total_plays' => Play::where('created_by_user_id', $user->id)
+                ->where('is_system_template', false)
+                ->count(),
+            'total_playbooks' => Playbook::where('created_by_user_id', $user->id)->count(),
+            'favorites' => $user->playFavorites()->count(),
+        ];
+
+        return Inertia::render('TacticBoard/Index', [
+            'recentPlays' => $recentPlays,
+            'recentPlaybooks' => $recentPlaybooks,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Display the plays list page.
+     */
+    public function plays(Request $request): Response
     {
         $this->authorize('viewAny', Play::class);
 
@@ -37,7 +75,7 @@ class TacticBoardController extends Controller
 
         $plays = $this->playService->getPlays($filters, 12);
 
-        return Inertia::render('TacticBoard/Index', [
+        return Inertia::render('TacticBoard/Plays/Index', [
             'plays' => $plays,
             'filters' => $filters,
             'categories' => $this->playService->getCategories(),
@@ -52,7 +90,7 @@ class TacticBoardController extends Controller
     {
         $this->authorize('create', Play::class);
 
-        return Inertia::render('TacticBoard/Create', [
+        return Inertia::render('TacticBoard/Plays/Create', [
             'categories' => $this->playService->getCategories(),
             'courtTypes' => $this->playService->getCourtTypes(),
             'defaultPlayData' => $this->playService->getDefaultPlayData(),
@@ -67,7 +105,7 @@ class TacticBoardController extends Controller
     {
         $this->authorize('update', $play);
 
-        return Inertia::render('TacticBoard/Edit', [
+        return Inertia::render('TacticBoard/Plays/Edit', [
             'play' => $play->load('createdBy'),
             'categories' => $this->playService->getCategories(),
             'courtTypes' => $this->playService->getCourtTypes(),
@@ -81,7 +119,7 @@ class TacticBoardController extends Controller
     {
         $this->authorize('view', $play);
 
-        return Inertia::render('TacticBoard/Show', [
+        return Inertia::render('TacticBoard/Plays/Show', [
             'play' => $play->load(['createdBy', 'playbooks', 'drills']),
             'canEdit' => $play->created_by_user_id === auth()->id() ||
                 auth()->user()->can('manage tactic board'),

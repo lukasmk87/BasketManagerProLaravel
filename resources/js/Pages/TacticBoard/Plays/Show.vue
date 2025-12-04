@@ -4,7 +4,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <Link
-                        :href="route('tactic-board.index')"
+                        :href="route('tactic-board.plays.index')"
                         class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     >
                         <ArrowLeftIcon class="h-5 w-5" />
