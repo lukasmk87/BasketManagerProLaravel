@@ -26,7 +26,7 @@
         />
 
         <!-- Canvas Container -->
-        <div ref="containerRef" class="canvas-container">
+        <div ref="containerRef" :class="canvasClass">
             <v-stage
                 ref="stageRef"
                 :config="stageConfig"
@@ -491,6 +491,14 @@ const flatDrawingPoints = computed(() => {
     return board.currentDrawingPoints.value.flatMap(p => [p.x, p.y]);
 });
 
+// Canvas class based on current tool
+const canvasClass = computed(() => {
+    return {
+        'canvas-container': true,
+        'eraser-mode': board.currentTool.value === 'eraser',
+    };
+});
+
 // Get current drawing color based on tool
 const getCurrentDrawingColor = () => {
     switch (board.currentTool.value) {
@@ -615,15 +623,27 @@ const handleMouseDown = (e) => {
                     textInputRef.value?.focus();
                 });
                 break;
+
+            case 'eraser':
+                recordHistory();
+                board.startErasing();
+                board.eraseAtPosition(pos.x, pos.y);
+                break;
         }
     }
 };
 
 const handleMouseMove = (e) => {
-    if (!board.isDrawing.value) return;
-
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
+
+    // Handle eraser tool - continuous erasing while dragging
+    if (board.currentTool.value === 'eraser' && board.isErasing.value) {
+        board.eraseAtPosition(pos.x, pos.y);
+        return;
+    }
+
+    if (!board.isDrawing.value) return;
 
     // Handle based on current tool
     if (board.currentTool.value === 'freehand') {
@@ -637,6 +657,12 @@ const handleMouseMove = (e) => {
 };
 
 const handleMouseUp = () => {
+    // Finish eraser mode
+    if (board.currentTool.value === 'eraser' && board.isErasing.value) {
+        board.finishErasing();
+        return;
+    }
+
     if (board.isDrawing.value) {
         recordHistory();
 
@@ -1152,5 +1178,10 @@ defineExpose({
 .toggle-btn.active {
     background: #e25822;
     color: #ffffff;
+}
+
+/* Eraser mode cursor */
+.canvas-container.eraser-mode {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z'/%3E%3Cline x1='18' y1='9' x2='12' y2='15'/%3E%3Cline x1='12' y1='9' x2='18' y2='15'/%3E%3C/svg%3E") 12 12, crosshair;
 }
 </style>

@@ -216,6 +216,7 @@ import {
     EllipsisHorizontalCircleIcon,
     TableCellsIcon,
     Cog6ToothIcon,
+    BackspaceIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -283,6 +284,7 @@ const tools = [
     { id: 'rectangle', label: 'Rechteck/Zone', icon: Square2StackIcon },
     { id: 'arrow', label: 'Pfeil', icon: ArrowUpRightIcon },
     { id: 'text', label: 'Text', icon: ChatBubbleLeftIcon },
+    { id: 'eraser', label: 'Radiergummi (E)', icon: BackspaceIcon },
 ];
 
 // Check if current tool is a path tool (shows line color picker)

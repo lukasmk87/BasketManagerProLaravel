@@ -53,6 +53,10 @@ export function useTacticBoard(initialData = null) {
     // Counter for generating unique IDs
     const idCounter = ref(1);
 
+    // Eraser state (Phase 8.3)
+    const isErasing = ref(false);
+    const erasedElementIds = ref(new Set());
+
     /**
      * Generate a unique ID for elements
      */
@@ -493,6 +497,181 @@ export function useTacticBoard(initialData = null) {
         gridSize.value = size;
     };
 
+    // ============================================
+    // Eraser Methods (Phase 8.3)
+    // ============================================
+
+    /**
+     * Calculate distance from point to line segment
+     */
+    const pointToLineDistance = (px, py, x1, y1, x2, y2) => {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        let param = -1;
+
+        if (lenSq !== 0) {
+            param = dot / lenSq;
+        }
+
+        let xx, yy;
+
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+
+        const dx = px - xx;
+        const dy = py - yy;
+        return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    /**
+     * Check if point is near a path (array of points)
+     */
+    const isPointNearPath = (px, py, points, tolerance = 15) => {
+        if (!points || points.length < 2) return false;
+
+        for (let i = 0; i < points.length - 1; i++) {
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const distance = pointToLineDistance(px, py, p1.x, p1.y, p2.x, p2.y);
+            if (distance <= tolerance) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    /**
+     * Get element at position for eraser
+     */
+    const getElementAtPosition = (x, y, tolerance = 15) => {
+        // Check ball (highest priority - small target)
+        if (ball.value) {
+            const dx = ball.value.x - x;
+            const dy = ball.value.y - y;
+            if (Math.sqrt(dx * dx + dy * dy) <= (ball.value.radius || 12) + tolerance) {
+                return { id: ball.value.id, type: 'ball' };
+            }
+        }
+
+        // Check players
+        for (const player of players.value) {
+            const dx = player.x - x;
+            const dy = player.y - y;
+            const playerSize = 20; // Default player size
+            if (Math.sqrt(dx * dx + dy * dy) <= playerSize + tolerance) {
+                return { id: player.id, type: 'player' };
+            }
+        }
+
+        // Check circles
+        for (const circle of circles.value) {
+            const dx = (circle.x - x) / (circle.radiusX || 30);
+            const dy = (circle.y - y) / (circle.radiusY || 30);
+            // Check if point is near the ellipse border
+            const normalizedDist = Math.sqrt(dx * dx + dy * dy);
+            if (normalizedDist <= 1.3) { // Allow some tolerance for the fill area
+                return { id: circle.id, type: 'circle' };
+            }
+        }
+
+        // Check rectangles
+        for (const rect of rectangles.value) {
+            const halfW = (rect.width || 60) / 2 + tolerance;
+            const halfH = (rect.height || 40) / 2 + tolerance;
+            if (Math.abs(x - rect.x) <= halfW && Math.abs(y - rect.y) <= halfH) {
+                return { id: rect.id, type: 'rectangle' };
+            }
+        }
+
+        // Check arrows
+        for (const arrow of arrows.value) {
+            if (isPointNearPath(x, y, arrow.points, tolerance)) {
+                return { id: arrow.id, type: 'arrow' };
+            }
+        }
+
+        // Check freehand paths
+        for (const freehand of freehandPaths.value) {
+            if (isPointNearPath(x, y, freehand.points, tolerance)) {
+                return { id: freehand.id, type: 'freehand' };
+            }
+        }
+
+        // Check paths (movement, pass, dribble)
+        for (const path of paths.value) {
+            if (isPointNearPath(x, y, path.points, tolerance)) {
+                return { id: path.id, type: 'path' };
+            }
+        }
+
+        // Check shapes (screens)
+        for (const shape of shapes.value) {
+            const shapeWidth = shape.width || 40;
+            const shapeHeight = 10; // Screen height
+            const halfW = shapeWidth / 2 + tolerance;
+            const halfH = shapeHeight / 2 + tolerance;
+            if (Math.abs(x - shape.x) <= halfW && Math.abs(y - shape.y) <= halfH) {
+                return { id: shape.id, type: 'shape' };
+            }
+        }
+
+        // Check annotations
+        for (const annotation of annotations.value) {
+            const textWidth = (annotation.content?.length || 4) * (annotation.fontSize || 16) * 0.6;
+            const textHeight = (annotation.fontSize || 16) * 1.2;
+            if (x >= annotation.x - tolerance &&
+                x <= annotation.x + textWidth + tolerance &&
+                y >= annotation.y - textHeight - tolerance &&
+                y <= annotation.y + tolerance) {
+                return { id: annotation.id, type: 'annotation' };
+            }
+        }
+
+        return null;
+    };
+
+    /**
+     * Start erasing mode
+     */
+    const startErasing = () => {
+        isErasing.value = true;
+        erasedElementIds.value = new Set();
+    };
+
+    /**
+     * Erase element at position
+     */
+    const eraseAtPosition = (x, y) => {
+        const element = getElementAtPosition(x, y);
+        if (element && !erasedElementIds.value.has(element.id)) {
+            erasedElementIds.value.add(element.id);
+            deleteElement(element.id, element.type);
+            return true;
+        }
+        return false;
+    };
+
+    /**
+     * Finish erasing mode
+     */
+    const finishErasing = () => {
+        isErasing.value = false;
+        erasedElementIds.value = new Set();
+    };
+
     /**
      * Update path points
      */
@@ -889,5 +1068,12 @@ export function useTacticBoard(initialData = null) {
         snapToGrid,
         toggleGrid,
         setGridSize,
+
+        // Eraser state and methods (Phase 8.3)
+        isErasing,
+        getElementAtPosition,
+        startErasing,
+        eraseAtPosition,
+        finishErasing,
     };
 }

@@ -13,7 +13,7 @@
 | Phase 7 | ✅ Abgeschlossen | Frontend-Erweiterungen (Drill, Session, Game Integration) |
 | Phase 8.1 | ✅ Abgeschlossen | Freihand-Zeichnung |
 | Phase 8.2 | ✅ Abgeschlossen | Form-Werkzeuge (Kreis, Rechteck, Pfeil) |
-| Phase 8.3 | ⏳ Ausstehend | Radiergummi |
+| Phase 8.3 | ✅ Abgeschlossen | Radiergummi |
 | Phase 8.4 | ✅ Abgeschlossen | Linien-Styling Panel |
 | Phase 9.1 | ✅ Abgeschlossen | Zoom & Pan System |
 | Phase 9.2 | ✅ Abgeschlossen | Raster-System mit Snap-to-Grid |
@@ -415,6 +415,34 @@ tests/Feature/TacticBoardWebTest.php
 - `addCircle()`, `addRectangle()`, `addArrow()` Methoden
 - Position- und Size-Update-Handler
 
+### 8.3 Radiergummi ✅
+
+**Implementierte Funktionen:**
+
+#### Eraser-Tool
+- Klick auf Element löscht es sofort
+- Ziehen über Elemente löscht alle berührten Elemente (kontinuierlich)
+- Löscht alle Element-Typen: Spieler, Ball, Linien, Formen, Text, Annotationen
+- Visueller Cursor-Feedback (roter Backspace-Cursor)
+
+**Keyboard-Shortcut:**
+- `E` aktiviert den Radiergummi
+
+**Erweiterungen in useTacticBoard.js:**
+- `isErasing` ref für Eraser-Modus-State
+- `getElementAtPosition(x, y, tolerance)` - Hit-Detection für alle Element-Typen
+- `startErasing()`, `eraseAtPosition(x, y)`, `finishErasing()` Methoden
+- `pointToLineDistance()` und `isPointNearPath()` Hilfsfunktionen für Linien-Hit-Detection
+
+**TacticBoardEditor.vue Anpassungen:**
+- Eraser-Case in `handleMouseDown()`
+- Kontinuierliches Löschen in `handleMouseMove()` während `isErasing`
+- Eraser-Modus beenden in `handleMouseUp()`
+- CSS-Cursor für Eraser-Modus
+
+**TacticBoardToolbar.vue:**
+- Neues Tool `eraser` mit `BackspaceIcon`
+
 ### 8.4 Linien-Styling ✅
 
 **Neue Komponente:**
@@ -567,9 +595,10 @@ tests/Feature/TacticBoardWebTest.php
 ### Modifizierte Dateien
 | Datei | Änderungen |
 |-------|------------|
-| `resources/js/composables/useTacticBoard.js` | Neue Element-Typen, Grid, Ball, Team-Farben |
-| `resources/js/Components/TacticBoard/TacticBoardEditor.vue` | Zoom/Pan, neue Tools, Panels, Keyboard |
-| `resources/js/Components/TacticBoard/TacticBoardToolbar.vue` | Neue Werkzeuge, Zoom, Grid-Toggle |
+| `resources/js/composables/useTacticBoard.js` | Neue Element-Typen, Grid, Ball, Team-Farben, Eraser-Methoden |
+| `resources/js/Components/TacticBoard/TacticBoardEditor.vue` | Zoom/Pan, neue Tools, Panels, Keyboard, Eraser-Modus |
+| `resources/js/Components/TacticBoard/TacticBoardToolbar.vue` | Neue Werkzeuge, Zoom, Grid-Toggle, Eraser-Tool |
+| `resources/js/composables/useTacticKeyboard.js` | Eraser-Shortcut (E) aktiviert |
 | `resources/js/Components/TacticBoard/Elements/PlayerToken.vue` | teamColors prop |
 | `resources/js/Components/TacticBoard/Elements/MovementPath.vue` | lineStyle prop |
 | `resources/js/Components/TacticBoard/Elements/PassLine.vue` | lineStyle prop |
@@ -579,11 +608,10 @@ tests/Feature/TacticBoardWebTest.php
 ## Nächste Schritte
 
 ### Ausstehende Phasen
-1. **Phase 8.3**: Radiergummi-Tool
-2. **Phase 11.1-11.2**: Ball-Animation & Easing-Funktionen
-3. **Phase 11.3**: GIF-Export
-4. **Phase 12.2-12.3**: Ebenen-Verwaltung & Ausrichten
-5. **Phase 13**: Templates & Bibliothek
+1. **Phase 11.1-11.2**: Ball-Animation & Easing-Funktionen
+2. **Phase 11.3**: GIF-Export
+3. **Phase 12.2-12.3**: Ebenen-Verwaltung & Ausrichten
+4. **Phase 13**: Templates & Bibliothek
 
 ### Optionale Erweiterungen (Phase 14)
 - Echtzeit-Kollaboration (WebSockets)

@@ -17,7 +17,7 @@ import { onMounted, onUnmounted } from 'vue';
  * | C            | Circle tool          |
  * | R            | Rectangle tool       |
  * | W            | Arrow tool           |
- * | E            | Eraser (reserved)    |
+ * | E            | Eraser tool          |
  * | G            | Toggle grid          |
  * | Ctrl+Z       | Undo                 |
  * | Ctrl+Shift+Z | Redo                 |
@@ -53,7 +53,7 @@ export function useTacticKeyboard({
         c: 'circle',
         r: 'rectangle',
         w: 'arrow',
-        // e: 'eraser', // Reserved for future implementation
+        e: 'eraser',
     };
 
     const handleKeyDown = (e) => {
