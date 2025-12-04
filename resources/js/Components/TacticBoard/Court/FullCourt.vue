@@ -112,32 +112,6 @@
                     }"
                 />
 
-                <!-- Restricted Area Lines (vertical lines from baseline to arc) -->
-                <v-line
-                    :config="{
-                        points: [
-                            centerX - restrictedAreaRadius,
-                            offsetY + actualCourtHeight,
-                            centerX - restrictedAreaRadius,
-                            offsetY + actualCourtHeight - basketOffset,
-                        ],
-                        stroke: lineColor,
-                        strokeWidth: lineWidth,
-                    }"
-                />
-                <v-line
-                    :config="{
-                        points: [
-                            centerX + restrictedAreaRadius,
-                            offsetY + actualCourtHeight,
-                            centerX + restrictedAreaRadius,
-                            offsetY + actualCourtHeight - basketOffset,
-                        ],
-                        stroke: lineColor,
-                        strokeWidth: lineWidth,
-                    }"
-                />
-
                 <!-- Restricted Area Arc -->
                 <v-arc
                     :config="{
@@ -229,32 +203,6 @@
                 <v-shape
                     :config="{
                         sceneFunc: (ctx, shape) => drawThreePointLine(ctx, shape, 'top'),
-                        stroke: lineColor,
-                        strokeWidth: lineWidth,
-                    }"
-                />
-
-                <!-- Restricted Area Lines (vertical lines from baseline to arc) -->
-                <v-line
-                    :config="{
-                        points: [
-                            centerX - restrictedAreaRadius,
-                            offsetY,
-                            centerX - restrictedAreaRadius,
-                            offsetY + basketOffset,
-                        ],
-                        stroke: lineColor,
-                        strokeWidth: lineWidth,
-                    }"
-                />
-                <v-line
-                    :config="{
-                        points: [
-                            centerX + restrictedAreaRadius,
-                            offsetY,
-                            centerX + restrictedAreaRadius,
-                            offsetY + basketOffset,
-                        ],
                         stroke: lineColor,
                         strokeWidth: lineWidth,
                     }"
