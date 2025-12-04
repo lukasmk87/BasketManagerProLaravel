@@ -9,6 +9,7 @@
             :zoomPercent="zoom.zoomPercent.value"
             :gridEnabled="board.gridEnabled.value"
             :gridSize="board.gridSize.value"
+            :selectedCount="board.selectedCount.value"
             @update:currentTool="board.currentTool.value = $event"
             @update:courtType="handleCourtTypeChange"
             @undo="handleUndo"
@@ -23,6 +24,8 @@
             @toggle-grid="board.toggleGrid"
             @update:gridSize="board.setGridSize"
             @toggle-team-settings="showTeamSettings = !showTeamSettings"
+            @toggle-layers="showLayerPanel = !showLayerPanel"
+            @toggle-alignment="showAlignmentPanel = !showAlignmentPanel"
         />
 
         <!-- Canvas Container -->
@@ -308,6 +311,33 @@
             @remove-ball="handleRemoveBall"
         />
 
+        <!-- Layer Panel (Phase 12.2) -->
+        <LayerPanel
+            v-if="showLayerPanel"
+            :hasSelection="board.selectedIds.value.size > 0"
+            @close="showLayerPanel = false"
+            @bring-to-front="layers.bringToFront()"
+            @bring-forward="layers.bringForward()"
+            @send-backward="layers.sendBackward()"
+            @send-to-back="layers.sendToBack()"
+        />
+
+        <!-- Alignment Panel (Phase 12.3) -->
+        <AlignmentPanel
+            v-if="showAlignmentPanel"
+            :canAlign="board.selectedIds.value.size >= 2"
+            :canDistribute="board.selectedIds.value.size >= 3"
+            @close="showAlignmentPanel = false"
+            @align-left="alignment.alignLeft()"
+            @align-center="alignment.alignCenter()"
+            @align-right="alignment.alignRight()"
+            @align-top="alignment.alignTop()"
+            @align-middle="alignment.alignMiddle()"
+            @align-bottom="alignment.alignBottom()"
+            @distribute-horizontally="alignment.distributeHorizontally()"
+            @distribute-vertically="alignment.distributeVertically()"
+        />
+
         <!-- Text Input Modal -->
         <div v-if="showTextInput" class="text-input-modal">
             <div class="modal-content">
@@ -368,6 +398,8 @@ import { useTacticHistory } from '@/composables/useTacticHistory';
 import { useTacticExport } from '@/composables/useTacticExport';
 import { useTacticZoom } from '@/composables/useTacticZoom';
 import { useTacticKeyboard } from '@/composables/useTacticKeyboard';
+import { useTacticLayers } from '@/composables/useTacticLayers';
+import { useTacticAlignment } from '@/composables/useTacticAlignment';
 
 // Components
 import TacticBoardToolbar from './TacticBoardToolbar.vue';
@@ -390,6 +422,8 @@ import ArrowShape from './Elements/ArrowShape.vue';
 import BallElement from './Elements/BallElement.vue';
 import LineStylePanel from './Panels/LineStylePanel.vue';
 import TeamSettingsPanel from './Panels/TeamSettingsPanel.vue';
+import LayerPanel from './Panels/LayerPanel.vue';
+import AlignmentPanel from './Panels/AlignmentPanel.vue';
 
 const props = defineProps({
     initialData: {
@@ -424,6 +458,12 @@ const board = useTacticBoard(props.initialData?.play_data);
 const history = useTacticHistory();
 const exportUtil = useTacticExport();
 const zoom = useTacticZoom();
+const layers = useTacticLayers(board);
+const alignment = useTacticAlignment(board);
+
+// Panel states (Phase 12)
+const showLayerPanel = ref(false);
+const showAlignmentPanel = ref(false);
 
 // Text input modal
 const showTextInput = ref(false);
@@ -447,6 +487,13 @@ useTacticKeyboard({
     onZoomOut: () => zoom.zoomOut(),
     onZoomReset: () => zoom.resetZoom(),
     onToggleGrid: () => board.toggleGrid(),
+    // Phase 12.3: Select all
+    onSelectAll: () => board.selectAll(),
+    // Phase 12.2: Layer management
+    onBringToFront: () => layers.bringToFront(),
+    onSendToBack: () => layers.sendToBack(),
+    onBringForward: () => layers.bringForward(),
+    onSendBackward: () => layers.sendBackward(),
     isEnabled: () => !showTextInput.value, // Disable when text input is open
 });
 
@@ -565,6 +612,9 @@ const handleCourtTypeChange = (newType) => {
 
 // Mouse/touch event handlers
 const handleMouseDown = (e) => {
+    // Track event for shift detection (Phase 12.3)
+    trackMouseEvent(e);
+
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
 
@@ -680,38 +730,93 @@ const handleWheel = (e) => {
     zoom.handleWheel(e, canvasWidth.value, canvasHeight.value);
 };
 
-// Selection handlers
+// Track last mouse event for shift detection
+let lastMouseEvent = null;
+const trackMouseEvent = (e) => {
+    lastMouseEvent = e.evt || e;
+};
+
+// Selection handlers with multi-select support (Phase 12.3)
 const handleSelectPlayer = (player) => {
-    board.selectElement(player.id, 'player');
+    const isShift = lastMouseEvent?.shiftKey || false;
+    if (isShift) {
+        board.toggleSelection(player.id, 'player');
+    } else {
+        board.selectElement(player.id, 'player');
+    }
 };
 
 const handleSelectPath = (path) => {
-    board.selectElement(path.id, 'path');
+    const isShift = lastMouseEvent?.shiftKey || false;
+    if (isShift) {
+        board.toggleSelection(path.id, 'path');
+    } else {
+        board.selectElement(path.id, 'path');
+    }
 };
 
 const handleSelectShape = (shape) => {
-    board.selectElement(shape.id, 'shape');
+    const isShift = lastMouseEvent?.shiftKey || false;
+    if (isShift) {
+        board.toggleSelection(shape.id, 'shape');
+    } else {
+        board.selectElement(shape.id, 'shape');
+    }
 };
 
 const handleSelectAnnotation = (annotation) => {
-    board.selectElement(annotation.id, 'annotation');
+    const isShift = lastMouseEvent?.shiftKey || false;
+    if (isShift) {
+        board.toggleSelection(annotation.id, 'annotation');
+    } else {
+        board.selectElement(annotation.id, 'annotation');
+    }
 };
 
-// New element selection handlers
+// New element selection handlers with multi-select support
 const handleSelectFreehand = (freehand) => {
-    board.selectElement(freehand.id, 'freehand');
+    const isShift = lastMouseEvent?.shiftKey || false;
+    if (isShift) {
+        board.toggleSelection(freehand.id, 'freehand');
+    } else {
+        board.selectElement(freehand.id, 'freehand');
+    }
 };
 
 const handleSelectCircle = (circle) => {
-    board.selectElement(circle.id, 'circle');
+    const isShift = lastMouseEvent?.shiftKey || false;
+    if (isShift) {
+        board.toggleSelection(circle.id, 'circle');
+    } else {
+        board.selectElement(circle.id, 'circle');
+    }
 };
 
 const handleSelectRectangle = (rect) => {
-    board.selectElement(rect.id, 'rectangle');
+    const isShift = lastMouseEvent?.shiftKey || false;
+    if (isShift) {
+        board.toggleSelection(rect.id, 'rectangle');
+    } else {
+        board.selectElement(rect.id, 'rectangle');
+    }
 };
 
 const handleSelectArrow = (arrow) => {
-    board.selectElement(arrow.id, 'arrow');
+    const isShift = lastMouseEvent?.shiftKey || false;
+    if (isShift) {
+        board.toggleSelection(arrow.id, 'arrow');
+    } else {
+        board.selectElement(arrow.id, 'arrow');
+    }
+};
+
+const handleSelectBall = () => {
+    const isShift = lastMouseEvent?.shiftKey || false;
+    if (isShift && board.ball.value) {
+        board.toggleSelection(board.ball.value.id, 'ball');
+    } else if (board.ball.value) {
+        board.selectElement(board.ball.value.id, 'ball');
+    }
 };
 
 // Update handlers with snap-to-grid support
@@ -781,9 +886,6 @@ const handleUpdateArrowPoints = ({ id, points }) => {
 };
 
 // Ball handlers
-const handleSelectBall = ({ id }) => {
-    board.selectElement(id, 'ball');
-};
 
 const handleUpdateBallPosition = ({ id, x, y }) => {
     const snappedX = board.snapToGrid(x);

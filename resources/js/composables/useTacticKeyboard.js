@@ -28,6 +28,11 @@ import { onMounted, onUnmounted } from 'vue';
  * | Ctrl++       | Zoom in              |
  * | Ctrl+-       | Zoom out             |
  * | Ctrl+0       | Reset zoom           |
+ * | Ctrl+A       | Select all (Phase 12.3) |
+ * | Ctrl+Shift+] | Bring to front (Phase 12.2) |
+ * | Ctrl+Shift+[ | Send to back (Phase 12.2) |
+ * | Ctrl+]       | Bring forward (Phase 12.2) |
+ * | Ctrl+[       | Send backward (Phase 12.2) |
  */
 export function useTacticKeyboard({
     onToolChange,
@@ -39,6 +44,11 @@ export function useTacticKeyboard({
     onZoomOut,
     onZoomReset,
     onToggleGrid,
+    onSelectAll,
+    onBringToFront,
+    onSendToBack,
+    onBringForward,
+    onSendBackward,
     isEnabled = () => true,
 }) {
     const toolShortcuts = {
@@ -101,6 +111,42 @@ export function useTacticKeyboard({
         if (isCtrl && key === '0') {
             e.preventDefault();
             onZoomReset?.();
+            return;
+        }
+
+        // Ctrl+A: Select all (Phase 12.3)
+        if (isCtrl && !isShift && key === 'a') {
+            e.preventDefault();
+            onSelectAll?.();
+            return;
+        }
+
+        // Layer management shortcuts (Phase 12.2)
+        // Ctrl+Shift+]: Bring to front
+        if (isCtrl && isShift && key === ']') {
+            e.preventDefault();
+            onBringToFront?.();
+            return;
+        }
+
+        // Ctrl+Shift+[: Send to back
+        if (isCtrl && isShift && key === '[') {
+            e.preventDefault();
+            onSendToBack?.();
+            return;
+        }
+
+        // Ctrl+]: Bring forward
+        if (isCtrl && !isShift && key === ']') {
+            e.preventDefault();
+            onBringForward?.();
+            return;
+        }
+
+        // Ctrl+[: Send backward
+        if (isCtrl && !isShift && key === '[') {
+            e.preventDefault();
+            onSendBackward?.();
             return;
         }
 

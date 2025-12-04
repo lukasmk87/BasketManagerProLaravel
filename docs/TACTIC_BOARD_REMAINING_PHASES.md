@@ -20,7 +20,7 @@
 | Phase 10.1-10.2 | ✅ Abgeschlossen | Team-Farben & Ball-Element |
 | Phase 11.1-11.3 | ✅ Abgeschlossen | Ball-Animation, Easing, GIF-Export |
 | Phase 12.1 | ✅ Abgeschlossen | Tastaturkürzel-System |
-| Phase 12.2-12.3 | ⏳ Ausstehend | Ebenen-Verwaltung & Ausrichten |
+| Phase 12.2-12.3 | ✅ Abgeschlossen | Ebenen-Verwaltung & Ausrichten |
 | Phase 13 | ⏳ Ausstehend | Templates & Bibliothek |
 | Phase 14 | ⏳ Optional | Kollaboration (Echtzeit, Kommentare, Share-Links) |
 
@@ -673,9 +673,81 @@ POST /api/plays/{play}/export/gif
 - Automatische Deaktivierung bei Text-Eingabe
 - Input-Feld-Erkennung (INPUT, TEXTAREA, contentEditable)
 
+### 12.2 Ebenen-Verwaltung (z-Index) ✅
+
+**Neues Composable:**
+- `resources/js/composables/useTacticLayers.js`
+
+**Funktionen:**
+- `bringToFront()` - Element an oberste Ebene
+- `sendToBack()` - Element an unterste Ebene
+- `bringForward()` - Element eine Ebene nach vorne
+- `sendBackward()` - Element eine Ebene nach hinten
+
+**Neue UI-Komponente:**
+- `resources/js/Components/TacticBoard/Panels/LayerPanel.vue`
+
+**Erweiterungen in useTacticBoard.js:**
+- `zIndexCounter` ref für z-Index Vergabe
+- `zIndex` Property bei allen Element-Typen (players, paths, shapes, annotations, freehandPaths, circles, rectangles, arrows, ball)
+- `allElementsSorted` computed property für sortierte Element-Liste
+- `getMaxZIndex()`, `getMinZIndex()`, `updateElementZIndex()` Hilfsmethoden
+
+**Keyboard Shortcuts:**
+| Taste | Aktion |
+|-------|--------|
+| Ctrl+Shift+] | Ganz nach vorne |
+| Ctrl+Shift+[ | Ganz nach hinten |
+| Ctrl+] | Eine Ebene vor |
+| Ctrl+[ | Eine Ebene zurück |
+
+**Export-Format Update:**
+- Version 1.1 → 1.2
+- Alle Elemente enthalten jetzt `zIndex` Property
+- Backward-Kompatibilität: Bei Import ohne zIndex wird sequentieller zIndex basierend auf Array-Position zugewiesen
+
+### 12.3 Ausrichten & Verteilen ✅
+
+**Neues Composable:**
+- `resources/js/composables/useTacticAlignment.js`
+
+**Alignment-Funktionen (mind. 2 Elemente):**
+- `alignLeft()` - Links ausrichten
+- `alignCenter()` - Horizontal zentrieren
+- `alignRight()` - Rechts ausrichten
+- `alignTop()` - Oben ausrichten
+- `alignMiddle()` - Vertikal zentrieren
+- `alignBottom()` - Unten ausrichten
+
+**Distribution-Funktionen (mind. 3 Elemente):**
+- `distributeHorizontally()` - Gleichmäßiger horizontaler Abstand
+- `distributeVertically()` - Gleichmäßiger vertikaler Abstand
+
+**Neue UI-Komponente:**
+- `resources/js/Components/TacticBoard/Panels/AlignmentPanel.vue`
+
+**Mehrfachauswahl-System:**
+- `selectedIds` ref (Set) für mehrere ausgewählte Element-IDs
+- `selectedTypes` ref (Map) für Element-Typ pro ID
+- `selectedCount` computed property
+- `selectElement(id, type)` - Einzelauswahl
+- `toggleSelection(id, type)` - Zur Auswahl hinzufügen/entfernen (Shift+Click)
+- `isSelected(id)` - Prüft ob Element ausgewählt
+- `selectAll()` - Alle Elemente auswählen
+
+**Keyboard Shortcuts:**
+| Taste | Aktion |
+|-------|--------|
+| Ctrl+A | Alle auswählen |
+
+**TacticBoardEditor.vue Erweiterungen:**
+- Shift+Click Handler für alle Element-Typen
+- LayerPanel und AlignmentPanel Integration
+- Toolbar-Buttons für Panel-Toggles
+
 ---
 
-## Implementierte Dateien (Vollständige Liste - Phase 8-12.1)
+## Implementierte Dateien (Vollständige Liste - Phase 8-12.3)
 
 ### Phase 8 (Zeichenwerkzeuge)
 | Datei | Status |
@@ -702,14 +774,18 @@ POST /api/plays/{play}/export/gif
 | Datei | Status |
 |-------|--------|
 | `resources/js/composables/useTacticKeyboard.js` | ✅ Erstellt |
+| `resources/js/composables/useTacticLayers.js` | ✅ Erstellt |
+| `resources/js/composables/useTacticAlignment.js` | ✅ Erstellt |
+| `resources/js/Components/TacticBoard/Panels/LayerPanel.vue` | ✅ Erstellt |
+| `resources/js/Components/TacticBoard/Panels/AlignmentPanel.vue` | ✅ Erstellt |
 
 ### Modifizierte Dateien
 | Datei | Änderungen |
 |-------|------------|
-| `resources/js/composables/useTacticBoard.js` | Neue Element-Typen, Grid, Ball, Team-Farben, Eraser-Methoden |
-| `resources/js/Components/TacticBoard/TacticBoardEditor.vue` | Zoom/Pan, neue Tools, Panels, Keyboard, Eraser-Modus |
-| `resources/js/Components/TacticBoard/TacticBoardToolbar.vue` | Neue Werkzeuge, Zoom, Grid-Toggle, Eraser-Tool |
-| `resources/js/composables/useTacticKeyboard.js` | Eraser-Shortcut (E) aktiviert |
+| `resources/js/composables/useTacticBoard.js` | Neue Element-Typen, Grid, Ball, Team-Farben, Eraser-Methoden, zIndex, Mehrfachauswahl |
+| `resources/js/Components/TacticBoard/TacticBoardEditor.vue` | Zoom/Pan, neue Tools, Panels, Keyboard, Eraser-Modus, Layer/Alignment Panels, Shift+Click |
+| `resources/js/Components/TacticBoard/TacticBoardToolbar.vue` | Neue Werkzeuge, Zoom, Grid-Toggle, Eraser-Tool, Layer/Alignment Buttons |
+| `resources/js/composables/useTacticKeyboard.js` | Eraser-Shortcut (E), Layer-Shortcuts, Ctrl+A |
 | `resources/js/Components/TacticBoard/Elements/PlayerToken.vue` | teamColors prop |
 | `resources/js/Components/TacticBoard/Elements/MovementPath.vue` | lineStyle prop |
 | `resources/js/Components/TacticBoard/Elements/PassLine.vue` | lineStyle prop |
@@ -719,8 +795,7 @@ POST /api/plays/{play}/export/gif
 ## Nächste Schritte
 
 ### Ausstehende Phasen
-1. **Phase 12.2-12.3**: Ebenen-Verwaltung & Ausrichten
-2. **Phase 13**: Templates & Bibliothek
+1. **Phase 13**: Templates & Bibliothek
 
 ### Optionale Erweiterungen (Phase 14)
 - Echtzeit-Kollaboration (WebSockets)

@@ -171,6 +171,31 @@
             </div>
         </div>
 
+        <!-- Divider -->
+        <div class="toolbar-divider"></div>
+
+        <!-- Layer & Alignment Controls (Phase 12) -->
+        <div class="toolbar-section">
+            <span class="section-label">Anordnung</span>
+            <div class="tool-buttons">
+                <button
+                    class="tool-btn"
+                    title="Ebenen-Verwaltung"
+                    @click="$emit('toggle-layers')"
+                >
+                    <Squares2X2Icon class="h-5 w-5" />
+                </button>
+                <button
+                    class="tool-btn"
+                    :disabled="selectedCount < 2"
+                    title="Ausrichten (min. 2 Elemente)"
+                    @click="$emit('toggle-alignment')"
+                >
+                    <ViewColumnsIcon class="h-5 w-5" />
+                </button>
+            </div>
+        </div>
+
         <!-- Export Actions -->
         <div class="toolbar-section ml-auto">
             <span class="section-label">Export</span>
@@ -217,6 +242,8 @@ import {
     TableCellsIcon,
     Cog6ToothIcon,
     BackspaceIcon,
+    Squares2X2Icon,
+    ViewColumnsIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -248,6 +275,10 @@ const props = defineProps({
         type: Number,
         default: 20,
     },
+    selectedCount: {
+        type: Number,
+        default: 0,
+    },
 });
 
 const emit = defineEmits([
@@ -265,6 +296,8 @@ const emit = defineEmits([
     'toggle-grid',
     'update:gridSize',
     'toggle-team-settings',
+    'toggle-layers',
+    'toggle-alignment',
 ]);
 
 // Local state

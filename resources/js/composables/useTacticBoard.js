@@ -53,6 +53,13 @@ export function useTacticBoard(initialData = null) {
     // Counter for generating unique IDs
     const idCounter = ref(1);
 
+    // Z-Index counter for layer ordering (Phase 12.2)
+    const zIndexCounter = ref(0);
+
+    // Multi-selection state (Phase 12.3)
+    const selectedIds = ref(new Set());
+    const selectedTypes = ref(new Map()); // id -> type
+
     // Eraser state (Phase 8.3)
     const isErasing = ref(false);
     const erasedElementIds = ref(new Set());
@@ -100,14 +107,111 @@ export function useTacticBoard(initialData = null) {
     const clearSelection = () => {
         selectedElementId.value = null;
         selectedElementType.value = null;
+        selectedIds.value = new Set();
+        selectedTypes.value = new Map();
     };
 
     /**
-     * Select an element
+     * Select an element (supports multi-selection with additive flag)
      */
-    const selectElement = (id, type) => {
+    const selectElement = (id, type, additive = false) => {
+        if (!additive) {
+            selectedIds.value = new Set();
+            selectedTypes.value = new Map();
+        }
+        selectedIds.value.add(id);
+        selectedTypes.value.set(id, type);
+        // Keep backward compatibility
         selectedElementId.value = id;
         selectedElementType.value = type;
+    };
+
+    /**
+     * Toggle element in selection (Phase 12.3)
+     */
+    const toggleSelection = (id, type) => {
+        if (selectedIds.value.has(id)) {
+            selectedIds.value.delete(id);
+            selectedTypes.value.delete(id);
+            // Update single selection refs
+            if (selectedIds.value.size === 0) {
+                selectedElementId.value = null;
+                selectedElementType.value = null;
+            } else {
+                const lastId = [...selectedIds.value].pop();
+                selectedElementId.value = lastId;
+                selectedElementType.value = selectedTypes.value.get(lastId);
+            }
+        } else {
+            selectedIds.value.add(id);
+            selectedTypes.value.set(id, type);
+            selectedElementId.value = id;
+            selectedElementType.value = type;
+        }
+    };
+
+    /**
+     * Check if element is selected (Phase 12.3)
+     */
+    const isSelected = (id) => {
+        return selectedIds.value.has(id);
+    };
+
+    /**
+     * Get count of selected elements (Phase 12.3)
+     */
+    const selectedCount = computed(() => selectedIds.value.size);
+
+    /**
+     * Select all elements (Phase 12.3)
+     */
+    const selectAll = () => {
+        selectedIds.value = new Set();
+        selectedTypes.value = new Map();
+
+        players.value.forEach(p => {
+            selectedIds.value.add(p.id);
+            selectedTypes.value.set(p.id, 'player');
+        });
+        paths.value.forEach(p => {
+            selectedIds.value.add(p.id);
+            selectedTypes.value.set(p.id, 'path');
+        });
+        shapes.value.forEach(s => {
+            selectedIds.value.add(s.id);
+            selectedTypes.value.set(s.id, 'shape');
+        });
+        annotations.value.forEach(a => {
+            selectedIds.value.add(a.id);
+            selectedTypes.value.set(a.id, 'annotation');
+        });
+        freehandPaths.value.forEach(f => {
+            selectedIds.value.add(f.id);
+            selectedTypes.value.set(f.id, 'freehand');
+        });
+        circles.value.forEach(c => {
+            selectedIds.value.add(c.id);
+            selectedTypes.value.set(c.id, 'circle');
+        });
+        rectangles.value.forEach(r => {
+            selectedIds.value.add(r.id);
+            selectedTypes.value.set(r.id, 'rectangle');
+        });
+        arrows.value.forEach(a => {
+            selectedIds.value.add(a.id);
+            selectedTypes.value.set(a.id, 'arrow');
+        });
+        if (ball.value) {
+            selectedIds.value.add(ball.value.id);
+            selectedTypes.value.set(ball.value.id, 'ball');
+        }
+
+        // Update single selection to first element
+        if (selectedIds.value.size > 0) {
+            const firstId = [...selectedIds.value][0];
+            selectedElementId.value = firstId;
+            selectedElementType.value = selectedTypes.value.get(firstId);
+        }
     };
 
     /**
@@ -122,6 +226,7 @@ export function useTacticBoard(initialData = null) {
             label: options.label || '',
             team: options.team || 'offense',
             hasBall: options.hasBall || false,
+            zIndex: options.zIndex ?? zIndexCounter.value++,
         };
         players.value.push(newPlayer);
         selectElement(newPlayer.id, 'player');
@@ -181,6 +286,7 @@ export function useTacticBoard(initialData = null) {
             type: pathType,
             points: [...currentDrawingPoints.value],
             color: getPathColor(pathType),
+            zIndex: zIndexCounter.value++,
         };
 
         paths.value.push(newPath);
@@ -245,6 +351,7 @@ export function useTacticBoard(initialData = null) {
             color: options.color || '#ffffff',
             strokeWidth: options.strokeWidth || 3,
             lineStyle: options.lineStyle || 'solid', // 'solid', 'dashed', 'dotted'
+            zIndex: zIndexCounter.value++,
         };
 
         freehandPaths.value.push(newFreehand);
@@ -320,6 +427,7 @@ export function useTacticBoard(initialData = null) {
             stroke: options.stroke || '#ffffff',
             strokeWidth: options.strokeWidth || 2,
             opacity: options.opacity || 0.7,
+            zIndex: options.zIndex ?? zIndexCounter.value++,
         };
         circles.value.push(newCircle);
         selectElement(newCircle.id, 'circle');
@@ -363,6 +471,7 @@ export function useTacticBoard(initialData = null) {
             fill: options.fill || 'rgba(255, 255, 255, 0.2)',
             stroke: options.stroke || '#ffffff',
             strokeWidth: options.strokeWidth || 2,
+            zIndex: options.zIndex ?? zIndexCounter.value++,
         };
         rectangles.value.push(newRect);
         selectElement(newRect.id, 'rectangle');
@@ -416,6 +525,7 @@ export function useTacticBoard(initialData = null) {
             strokeWidth: options.strokeWidth || 3,
             pointerLength: options.pointerLength || 10,
             pointerWidth: options.pointerWidth || 10,
+            zIndex: options.zIndex ?? zIndexCounter.value++,
         };
         arrows.value.push(newArrow);
         selectElement(newArrow.id, 'arrow');
@@ -446,6 +556,7 @@ export function useTacticBoard(initialData = null) {
             x: options.x || courtWidth.value / 2,
             y: options.y || courtHeight.value / 2,
             radius: options.radius || 12,
+            zIndex: options.zIndex ?? zIndexCounter.value++,
         };
         selectElement(ball.value.id, 'ball');
         return ball.value;
@@ -694,6 +805,7 @@ export function useTacticBoard(initialData = null) {
             rotation: options.rotation || 0,
             width: options.width || 40,
             color: options.color || '#ffffff',
+            zIndex: options.zIndex ?? zIndexCounter.value++,
         };
         shapes.value.push(newScreen);
         selectElement(newScreen.id, 'shape');
@@ -733,6 +845,7 @@ export function useTacticBoard(initialData = null) {
             content: options.content || 'Text',
             fontSize: options.fontSize || 16,
             color: options.color || '#ffffff',
+            zIndex: options.zIndex ?? zIndexCounter.value++,
         };
         annotations.value.push(newAnnotation);
         selectElement(newAnnotation.id, 'annotation');
@@ -859,7 +972,7 @@ export function useTacticBoard(initialData = null) {
      */
     const exportData = () => {
         return {
-            version: '1.1', // Updated version for new features
+            version: '1.2', // Updated version for layer management (Phase 12)
             court: {
                 type: courtType.value,
                 backgroundColor: courtColor.value,
@@ -884,6 +997,17 @@ export function useTacticBoard(initialData = null) {
     };
 
     /**
+     * Ensure all elements have zIndex (backward compatibility)
+     */
+    const ensureZIndex = (elements) => {
+        if (!elements) return [];
+        return elements.map((e, index) => ({
+            ...e,
+            zIndex: e.zIndex ?? zIndexCounter.value++,
+        }));
+    };
+
+    /**
      * Import data from JSON
      */
     const importData = (data) => {
@@ -895,15 +1019,24 @@ export function useTacticBoard(initialData = null) {
         }
 
         if (data.elements) {
-            players.value = data.elements.players || [];
-            paths.value = data.elements.paths || [];
-            shapes.value = data.elements.shapes || [];
-            annotations.value = data.elements.annotations || [];
-            freehandPaths.value = data.elements.freehandPaths || [];
-            circles.value = data.elements.circles || [];
-            rectangles.value = data.elements.rectangles || [];
-            arrows.value = data.elements.arrows || [];
-            ball.value = data.elements.ball || null;
+            // Use ensureZIndex for backward compatibility with older saves
+            players.value = ensureZIndex(data.elements.players);
+            paths.value = ensureZIndex(data.elements.paths);
+            shapes.value = ensureZIndex(data.elements.shapes);
+            annotations.value = ensureZIndex(data.elements.annotations);
+            freehandPaths.value = ensureZIndex(data.elements.freehandPaths);
+            circles.value = ensureZIndex(data.elements.circles);
+            rectangles.value = ensureZIndex(data.elements.rectangles);
+            arrows.value = ensureZIndex(data.elements.arrows);
+            // Handle ball separately
+            if (data.elements.ball) {
+                ball.value = {
+                    ...data.elements.ball,
+                    zIndex: data.elements.ball.zIndex ?? zIndexCounter.value++,
+                };
+            } else {
+                ball.value = null;
+            }
         }
 
         if (data.teamColors) {
@@ -952,6 +1085,7 @@ export function useTacticBoard(initialData = null) {
                 label: pos.label,
                 team: 'offense',
                 hasBall: index === 0, // PG has ball
+                zIndex: zIndexCounter.value++,
             });
         });
 
@@ -974,8 +1108,149 @@ export function useTacticBoard(initialData = null) {
                 label: 'X',
                 team: 'defense',
                 hasBall: false,
+                zIndex: zIndexCounter.value++,
             });
         });
+    };
+
+    // ============================================
+    // All Elements Sorted (Phase 12.2)
+    // ============================================
+
+    /**
+     * Get all elements sorted by zIndex
+     */
+    const allElementsSorted = computed(() => {
+        const all = [
+            ...players.value.map(e => ({ ...e, _type: 'player' })),
+            ...paths.value.map(e => ({ ...e, _type: 'path' })),
+            ...shapes.value.map(e => ({ ...e, _type: 'shape' })),
+            ...annotations.value.map(e => ({ ...e, _type: 'annotation' })),
+            ...freehandPaths.value.map(e => ({ ...e, _type: 'freehand' })),
+            ...circles.value.map(e => ({ ...e, _type: 'circle' })),
+            ...rectangles.value.map(e => ({ ...e, _type: 'rectangle' })),
+            ...arrows.value.map(e => ({ ...e, _type: 'arrow' })),
+            ...(ball.value ? [{ ...ball.value, _type: 'ball' }] : []),
+        ];
+        return all.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+    });
+
+    /**
+     * Get selected elements as array (Phase 12.3)
+     */
+    const getSelectedElements = () => {
+        const elements = [];
+        for (const [id, type] of selectedTypes.value) {
+            let element = null;
+            switch (type) {
+                case 'player':
+                    element = players.value.find(p => p.id === id);
+                    break;
+                case 'path':
+                    element = paths.value.find(p => p.id === id);
+                    break;
+                case 'shape':
+                    element = shapes.value.find(s => s.id === id);
+                    break;
+                case 'annotation':
+                    element = annotations.value.find(a => a.id === id);
+                    break;
+                case 'freehand':
+                    element = freehandPaths.value.find(f => f.id === id);
+                    break;
+                case 'circle':
+                    element = circles.value.find(c => c.id === id);
+                    break;
+                case 'rectangle':
+                    element = rectangles.value.find(r => r.id === id);
+                    break;
+                case 'arrow':
+                    element = arrows.value.find(a => a.id === id);
+                    break;
+                case 'ball':
+                    element = ball.value;
+                    break;
+            }
+            if (element) {
+                elements.push({ ...element, _type: type });
+            }
+        }
+        return elements;
+    };
+
+    /**
+     * Get maximum zIndex value
+     */
+    const getMaxZIndex = () => {
+        return Math.max(
+            ...players.value.map(e => e.zIndex ?? 0),
+            ...paths.value.map(e => e.zIndex ?? 0),
+            ...shapes.value.map(e => e.zIndex ?? 0),
+            ...annotations.value.map(e => e.zIndex ?? 0),
+            ...freehandPaths.value.map(e => e.zIndex ?? 0),
+            ...circles.value.map(e => e.zIndex ?? 0),
+            ...rectangles.value.map(e => e.zIndex ?? 0),
+            ...arrows.value.map(e => e.zIndex ?? 0),
+            ball.value?.zIndex ?? 0,
+            -1
+        );
+    };
+
+    /**
+     * Get minimum zIndex value
+     */
+    const getMinZIndex = () => {
+        const values = [
+            ...players.value.map(e => e.zIndex ?? 0),
+            ...paths.value.map(e => e.zIndex ?? 0),
+            ...shapes.value.map(e => e.zIndex ?? 0),
+            ...annotations.value.map(e => e.zIndex ?? 0),
+            ...freehandPaths.value.map(e => e.zIndex ?? 0),
+            ...circles.value.map(e => e.zIndex ?? 0),
+            ...rectangles.value.map(e => e.zIndex ?? 0),
+            ...arrows.value.map(e => e.zIndex ?? 0),
+        ];
+        if (ball.value) values.push(ball.value.zIndex ?? 0);
+        return values.length > 0 ? Math.min(...values) : 0;
+    };
+
+    /**
+     * Update zIndex for an element
+     */
+    const updateElementZIndex = (id, type, newZIndex) => {
+        let element = null;
+        switch (type) {
+            case 'player':
+                element = players.value.find(p => p.id === id);
+                break;
+            case 'path':
+                element = paths.value.find(p => p.id === id);
+                break;
+            case 'shape':
+                element = shapes.value.find(s => s.id === id);
+                break;
+            case 'annotation':
+                element = annotations.value.find(a => a.id === id);
+                break;
+            case 'freehand':
+                element = freehandPaths.value.find(f => f.id === id);
+                break;
+            case 'circle':
+                element = circles.value.find(c => c.id === id);
+                break;
+            case 'rectangle':
+                element = rectangles.value.find(r => r.id === id);
+                break;
+            case 'arrow':
+                element = arrows.value.find(a => a.id === id);
+                break;
+            case 'ball':
+                element = ball.value;
+                break;
+        }
+        if (element) {
+            element.zIndex = newZIndex;
+        }
     };
 
     // Initialize with provided data
@@ -1075,5 +1350,20 @@ export function useTacticBoard(initialData = null) {
         startErasing,
         eraseAtPosition,
         finishErasing,
+
+        // Multi-selection state and methods (Phase 12.3)
+        selectedIds,
+        selectedTypes,
+        selectedCount,
+        toggleSelection,
+        isSelected,
+        selectAll,
+        getSelectedElements,
+
+        // Layer management (Phase 12.2)
+        allElementsSorted,
+        getMaxZIndex,
+        getMinZIndex,
+        updateElementZIndex,
     };
 }
