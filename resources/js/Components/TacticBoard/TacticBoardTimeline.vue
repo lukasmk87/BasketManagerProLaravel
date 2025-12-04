@@ -252,16 +252,21 @@ const handleKeyframeEasingChange = ({ index, easing }) => {
 
 // Handle adding a new keyframe
 const handleAddKeyframe = () => {
-    const currentTime = animation.currentTime.value;
+    // Automatisch ans Ende: Zeit = letztes Keyframe + 1 Sekunde, oder 0 wenn keine existieren
+    const keyframes = animation.keyframes.value;
+    const newTime = keyframes.length > 0
+        ? keyframes[keyframes.length - 1].time + 1000
+        : 0;
+
     const elements = captureCurrentElements();
 
-    animation.addKeyframe(currentTime, elements);
+    animation.addKeyframe(newTime, elements);
 
     // Find the new keyframe's index
-    const newIndex = animation.keyframes.value.findIndex(k => k.time === currentTime);
+    const newIndex = animation.keyframes.value.findIndex(k => k.time === newTime);
     activeKeyframeIndex.value = newIndex;
 
-    emit('keyframe-added', { time: currentTime, elements });
+    emit('keyframe-added', { time: newTime, elements });
 };
 
 // Capture current element positions
