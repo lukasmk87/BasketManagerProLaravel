@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Str;
@@ -27,6 +28,9 @@ class Play extends Model
         'category',
         'tags',
         'is_public',
+        'is_featured',
+        'is_system_template',
+        'template_order',
         'status',
         'usage_count',
     ];
@@ -36,6 +40,8 @@ class Play extends Model
         'animation_data' => 'array',
         'tags' => 'array',
         'is_public' => 'boolean',
+        'is_featured' => 'boolean',
+        'is_system_template' => 'boolean',
         'usage_count' => 'integer',
     ];
 
@@ -85,6 +91,18 @@ class Play extends Model
             ->orderByPivot('order');
     }
 
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(PlayFavorite::class);
+    }
+
+    public function favoritedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'play_favorites')
+            ->withPivot(['notes', 'tags', 'favorite_type', 'personal_priority', 'is_quick_access'])
+            ->withTimestamps();
+    }
+
     // Scopes
     public function scopePublished($query)
     {
@@ -123,6 +141,30 @@ class Play extends Model
         });
     }
 
+    public function scopeSystemTemplates($query)
+    {
+        return $query->whereNull('tenant_id')
+            ->where('is_system_template', true)
+            ->where('status', 'published');
+    }
+
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true)
+            ->where('status', 'published');
+    }
+
+    public function scopeTemplates($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('tenant_id')
+              ->where('is_system_template', true);
+        })->orWhere(function ($q) {
+            $q->where('is_public', true)
+              ->where('status', 'published');
+        });
+    }
+
     // Accessors
     public function isPublished(): Attribute
     {
@@ -135,6 +177,14 @@ class Play extends Model
     {
         return Attribute::make(
             get: fn () => !empty($this->animation_data) && !empty($this->animation_data['keyframes']),
+        );
+    }
+
+    public function isTemplate(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->is_system_template ||
+                ($this->tenant_id === null && $this->is_public && $this->status === 'published'),
         );
     }
 
@@ -180,14 +230,18 @@ class Play extends Model
         $this->increment('usage_count');
     }
 
-    public function duplicate(?int $userId = null): self
+    public function duplicate(?int $userId = null, ?string $tenantId = null): self
     {
         $duplicate = $this->replicate();
         $duplicate->uuid = (string) Str::uuid();
         $duplicate->name = $this->name . ' (Kopie)';
         $duplicate->created_by_user_id = $userId ?? auth()->id();
+        $duplicate->tenant_id = $tenantId ?? auth()->user()?->tenant_id;
         $duplicate->status = 'draft';
         $duplicate->is_public = false;
+        $duplicate->is_featured = false;
+        $duplicate->is_system_template = false;
+        $duplicate->template_order = null;
         $duplicate->usage_count = 0;
         $duplicate->thumbnail_path = null;
         $duplicate->save();

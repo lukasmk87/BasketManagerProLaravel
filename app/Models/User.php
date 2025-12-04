@@ -307,6 +307,24 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(PushSubscription::class);
     }
 
+    /**
+     * Get the user's play favorites.
+     */
+    public function playFavorites(): HasMany
+    {
+        return $this->hasMany(PlayFavorite::class);
+    }
+
+    /**
+     * Get the plays favorited by this user.
+     */
+    public function favoritedPlays(): BelongsToMany
+    {
+        return $this->belongsToMany(Play::class, 'play_favorites')
+            ->withPivot(['notes', 'tags', 'favorite_type', 'personal_priority', 'is_quick_access'])
+            ->withTimestamps();
+    }
+
     // ============================
     // SCOPES
     // ============================

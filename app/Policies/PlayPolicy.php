@@ -197,4 +197,29 @@ class PlayPolicy
     {
         return $user->hasRole('super_admin');
     }
+
+    /**
+     * Determine whether the user can manage system templates.
+     */
+    public function manageTemplates(User $user): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    /**
+     * Determine whether the user can feature a play.
+     */
+    public function feature(User $user, Play $play): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    /**
+     * Determine whether the user can favorite a play.
+     */
+    public function favorite(User $user, Play $play): bool
+    {
+        // Can favorite any play they can view
+        return $this->view($user, $play);
+    }
 }

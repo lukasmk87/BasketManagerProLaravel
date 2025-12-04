@@ -212,6 +212,12 @@ Route::middleware([
         Route::get('/playbooks/create', [TacticBoardController::class, 'createPlaybook'])->name('playbooks.create');
         Route::get('/playbooks/{playbook}', [TacticBoardController::class, 'showPlaybook'])->name('playbooks.show');
         Route::get('/playbooks/{playbook}/edit', [TacticBoardController::class, 'editPlaybook'])->name('playbooks.edit');
+
+        // Templates Gallery
+        Route::get('/templates', [TacticBoardController::class, 'templates'])->name('templates');
+
+        // Personal Library
+        Route::get('/library', [TacticBoardController::class, 'library'])->name('library');
     });
 
     // Live Scoring Routes

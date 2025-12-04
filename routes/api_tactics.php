@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\PlayController;
 use App\Http\Controllers\Api\PlaybookController;
+use App\Http\Controllers\Api\PlayTemplateController;
+use App\Http\Controllers\Api\PlayFavoriteController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -64,5 +66,30 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Game Preparation
         Route::post('/{playbook}/attach-to-game', [PlaybookController::class, 'attachToGame'])->name('attach-game');
+    });
+
+    // Templates
+    Route::prefix('templates')->name('templates.')->group(function () {
+        Route::get('/', [PlayTemplateController::class, 'index'])->name('index');
+        Route::get('/featured', [PlayTemplateController::class, 'featured'])->name('featured');
+        Route::get('/by-category', [PlayTemplateController::class, 'byCategory'])->name('by-category');
+        Route::get('/stats', [PlayTemplateController::class, 'stats'])->name('stats');
+        Route::post('/{play}/use', [PlayTemplateController::class, 'createFromTemplate'])->name('use');
+        Route::post('/{play}/toggle-featured', [PlayTemplateController::class, 'toggleFeatured'])->name('toggle-featured');
+        Route::put('/{play}/order', [PlayTemplateController::class, 'updateOrder'])->name('update-order');
+    });
+
+    // Favorites
+    Route::prefix('favorites')->name('favorites.')->group(function () {
+        Route::get('/', [PlayFavoriteController::class, 'index'])->name('index');
+        Route::get('/quick-access', [PlayFavoriteController::class, 'quickAccess'])->name('quick-access');
+        Route::get('/library', [PlayFavoriteController::class, 'library'])->name('library');
+        Route::get('/stats', [PlayFavoriteController::class, 'stats'])->name('stats');
+        Route::get('/type/{type}', [PlayFavoriteController::class, 'byType'])->name('by-type');
+        Route::post('/plays/{play}/toggle', [PlayFavoriteController::class, 'toggle'])->name('toggle');
+        Route::get('/plays/{play}/check', [PlayFavoriteController::class, 'check'])->name('check');
+        Route::put('/{favorite}', [PlayFavoriteController::class, 'update'])->name('update');
+        Route::delete('/{favorite}', [PlayFavoriteController::class, 'destroy'])->name('destroy');
+        Route::post('/{favorite}/toggle-quick-access', [PlayFavoriteController::class, 'toggleQuickAccess'])->name('toggle-quick-access');
     });
 });

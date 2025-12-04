@@ -10,10 +10,10 @@
                         <ArrowLeftIcon class="h-5 w-5" />
                     </Link>
                     <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                        Neuer Spielzug
+                        {{ showTemplatePicker ? 'Neuen Spielzug erstellen' : 'Spielzug bearbeiten' }}
                     </h2>
                 </div>
-                <div class="flex items-center gap-3">
+                <div v-if="!showTemplatePicker" class="flex items-center gap-3">
                     <button
                         @click="saveAsDraft"
                         :disabled="isSaving"
@@ -34,13 +34,39 @@
 
         <div class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Template Picker Step -->
+                <div v-if="showTemplatePicker" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <TemplatePicker
+                        :featuredTemplates="featuredTemplates"
+                        @select="handleTemplateSelect"
+                        @startBlank="handleStartBlank"
+                        @browseAll="handleBrowseAll"
+                    />
+                </div>
+
+                <!-- Editor Step -->
+                <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <!-- Sidebar - Play Info -->
                     <div class="lg:col-span-1">
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-6">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                Spielzug Details
-                            </h3>
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    Spielzug Details
+                                </h3>
+                                <button
+                                    @click="goBackToTemplatePicker"
+                                    class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                >
+                                    Template wechseln
+                                </button>
+                            </div>
+
+                            <!-- Selected Template Info -->
+                            <div v-if="selectedTemplate" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                <p class="text-sm text-blue-700 dark:text-blue-300">
+                                    Basiert auf: <strong>{{ selectedTemplate.name }}</strong>
+                                </p>
+                            </div>
 
                             <!-- Name -->
                             <div>
@@ -136,7 +162,7 @@
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                             <TacticBoardEditor
                                 ref="editorRef"
-                                :initialData="defaultPlayData"
+                                :initialData="editorInitialData"
                                 @change="handleEditorChange"
                             />
                         </div>
@@ -152,13 +178,22 @@ import { ref, computed, watch } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import TacticBoardEditor from '@/Components/TacticBoard/TacticBoardEditor.vue';
+import TemplatePicker from '@/Components/TacticBoard/TemplatePicker.vue';
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     categories: Array,
     courtTypes: Array,
     defaultPlayData: Object,
+    featuredTemplates: {
+        type: Array,
+        default: () => [],
+    },
 });
+
+// Template picker state
+const showTemplatePicker = ref(true);
+const selectedTemplate = ref(null);
 
 // Editor ref
 const editorRef = ref(null);
@@ -181,10 +216,56 @@ const form = useForm({
     status: 'draft',
 });
 
+// Computed initial data for editor
+const editorInitialData = computed(() => {
+    if (selectedTemplate.value?.play_data) {
+        return selectedTemplate.value.play_data;
+    }
+    return props.defaultPlayData || {};
+});
+
 // Watch tags input and parse to array
 watch(tagsInput, (value) => {
     form.tags = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
 });
+
+// Handle template selection
+const handleTemplateSelect = (data) => {
+    selectedTemplate.value = data.template;
+    form.name = data.name || data.template.name;
+    form.description = data.template.description || '';
+    form.category = data.template.category || 'offense';
+    form.court_type = data.template.court_type || 'half_horizontal';
+    form.play_data = data.template.play_data || {};
+
+    if (data.template.tags?.length) {
+        tagsInput.value = data.template.tags.join(', ');
+    }
+
+    showTemplatePicker.value = false;
+};
+
+// Handle start blank
+const handleStartBlank = () => {
+    selectedTemplate.value = null;
+    form.name = '';
+    form.description = '';
+    form.category = 'offense';
+    form.court_type = 'half_horizontal';
+    form.play_data = props.defaultPlayData || {};
+    tagsInput.value = '';
+    showTemplatePicker.value = false;
+};
+
+// Handle browse all templates
+const handleBrowseAll = () => {
+    router.visit(route('tactic-board.templates'));
+};
+
+// Go back to template picker
+const goBackToTemplatePicker = () => {
+    showTemplatePicker.value = true;
+};
 
 // Handle editor changes
 const handleEditorChange = (data) => {

@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Play;
 use App\Models\Playbook;
+use App\Services\TacticBoard\PlayFavoriteService;
 use App\Services\TacticBoard\PlayService;
 use App\Services\TacticBoard\PlaybookService;
+use App\Services\TacticBoard\PlayTemplateService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,7 +16,9 @@ class TacticBoardController extends Controller
 {
     public function __construct(
         protected PlayService $playService,
-        protected PlaybookService $playbookService
+        protected PlaybookService $playbookService,
+        protected PlayTemplateService $templateService,
+        protected PlayFavoriteService $favoriteService
     ) {
     }
 
@@ -52,6 +56,7 @@ class TacticBoardController extends Controller
             'categories' => $this->playService->getCategories(),
             'courtTypes' => $this->playService->getCourtTypes(),
             'defaultPlayData' => $this->playService->getDefaultPlayData(),
+            'featuredTemplates' => $this->templateService->getFeaturedTemplates(6),
         ]);
     }
 
@@ -170,6 +175,65 @@ class TacticBoardController extends Controller
             'categories' => $this->playbookService->getCategories(),
             'availablePlays' => $plays,
             'teams' => $teams,
+        ]);
+    }
+
+    /**
+     * Display the template gallery page.
+     */
+    public function templates(Request $request): Response
+    {
+        $this->authorize('viewAny', Play::class);
+
+        $filters = $request->only(['category', 'court_type', 'search', 'tags']);
+
+        $templates = $this->templateService->getSystemTemplates($filters, 12);
+
+        return Inertia::render('TacticBoard/Templates/Index', [
+            'templates' => $templates,
+            'filters' => $filters,
+            'categories' => $this->playService->getCategories(),
+            'courtTypes' => $this->playService->getCourtTypes(),
+            'availableTags' => $this->templateService->getTemplateTags(),
+        ]);
+    }
+
+    /**
+     * Display the user's library page (own plays + favorites).
+     */
+    public function library(Request $request): Response
+    {
+        $this->authorize('viewAny', Play::class);
+
+        $user = $request->user();
+        $tab = $request->get('tab', 'all');
+        $filters = $request->only(['category', 'court_type', 'search', 'tags']);
+
+        // Get plays based on active tab
+        $plays = $this->favoriteService->getUserLibrary($user, array_merge($filters, ['tab' => $tab]), 12);
+
+        // Get quick access favorites
+        $quickAccessFavorites = $this->favoriteService->getQuickAccessFavorites($user, 5);
+
+        // Get stats
+        $stats = [
+            'my_plays' => Play::where('created_by_user_id', $user->id)
+                ->where('is_system_template', false)
+                ->count(),
+            'favorites' => $user->playFavorites()->count(),
+            'total' => Play::where('created_by_user_id', $user->id)
+                ->where('is_system_template', false)
+                ->count() + $user->playFavorites()->count(),
+        ];
+
+        return Inertia::render('TacticBoard/Library/Index', [
+            'plays' => $plays,
+            'quickAccessFavorites' => $quickAccessFavorites,
+            'filters' => array_merge($filters, ['tab' => $tab]),
+            'categories' => $this->playService->getCategories(),
+            'courtTypes' => $this->playService->getCourtTypes(),
+            'availableTags' => $this->templateService->getTemplateTags(),
+            'stats' => $stats,
         ]);
     }
 }
