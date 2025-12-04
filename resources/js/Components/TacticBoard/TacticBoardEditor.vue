@@ -199,6 +199,7 @@
                         :label="player.label"
                         :team="player.team"
                         :hasBall="player.hasBall"
+                        :size="playerSize"
                         :teamColors="board.teamColors.value"
                         :selected="board.selectedElementId.value === player.id"
                         @select="handleSelectPlayer(player)"
@@ -544,6 +545,11 @@ const courtComponent = computed(() => {
         default:
             return markRaw(HalfCourtHorizontal);
     }
+});
+
+// Player size based on court type (FullCourt = smaller)
+const playerSize = computed(() => {
+    return board.courtType.value === 'full' ? 16 : 20;
 });
 
 // Get path component based on type

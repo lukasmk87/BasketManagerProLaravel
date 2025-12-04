@@ -1066,14 +1066,41 @@ export function useTacticBoard(initialData = null) {
         // Clear existing players
         players.value = [];
 
-        // Default positions for half court (offense)
-        const offensePositions = [
-            { x: courtWidth.value * 0.5, y: courtHeight.value * 0.3, label: 'PG' },
-            { x: courtWidth.value * 0.25, y: courtHeight.value * 0.4, label: 'SG' },
-            { x: courtWidth.value * 0.75, y: courtHeight.value * 0.4, label: 'SF' },
-            { x: courtWidth.value * 0.3, y: courtHeight.value * 0.6, label: 'PF' },
-            { x: courtWidth.value * 0.7, y: courtHeight.value * 0.6, label: 'C' },
-        ];
+        let offensePositions, defensePositions;
+
+        if (courtType.value === 'half_horizontal') {
+            // Horizontales Feld - Korb rechts, um -90° gedreht
+            offensePositions = [
+                { x: courtWidth.value * 0.7, y: courtHeight.value * 0.5, label: 'PG' },
+                { x: courtWidth.value * 0.6, y: courtHeight.value * 0.25, label: 'SG' },
+                { x: courtWidth.value * 0.6, y: courtHeight.value * 0.75, label: 'SF' },
+                { x: courtWidth.value * 0.4, y: courtHeight.value * 0.3, label: 'PF' },
+                { x: courtWidth.value * 0.4, y: courtHeight.value * 0.7, label: 'C' },
+            ];
+            defensePositions = [
+                { x: courtWidth.value * 0.65, y: courtHeight.value * 0.5 },
+                { x: courtWidth.value * 0.55, y: courtHeight.value * 0.25 },
+                { x: courtWidth.value * 0.55, y: courtHeight.value * 0.75 },
+                { x: courtWidth.value * 0.35, y: courtHeight.value * 0.3 },
+                { x: courtWidth.value * 0.35, y: courtHeight.value * 0.7 },
+            ];
+        } else {
+            // Vertikales Feld / Vollfeld - Korb unten
+            offensePositions = [
+                { x: courtWidth.value * 0.5, y: courtHeight.value * 0.3, label: 'PG' },
+                { x: courtWidth.value * 0.25, y: courtHeight.value * 0.4, label: 'SG' },
+                { x: courtWidth.value * 0.75, y: courtHeight.value * 0.4, label: 'SF' },
+                { x: courtWidth.value * 0.3, y: courtHeight.value * 0.6, label: 'PF' },
+                { x: courtWidth.value * 0.7, y: courtHeight.value * 0.6, label: 'C' },
+            ];
+            defensePositions = [
+                { x: courtWidth.value * 0.5, y: courtHeight.value * 0.35 },
+                { x: courtWidth.value * 0.25, y: courtHeight.value * 0.45 },
+                { x: courtWidth.value * 0.75, y: courtHeight.value * 0.45 },
+                { x: courtWidth.value * 0.3, y: courtHeight.value * 0.65 },
+                { x: courtWidth.value * 0.7, y: courtHeight.value * 0.65 },
+            ];
+        }
 
         // Add offense players
         offensePositions.forEach((pos, index) => {
@@ -1088,15 +1115,6 @@ export function useTacticBoard(initialData = null) {
                 zIndex: zIndexCounter.value++,
             });
         });
-
-        // Default positions for defense
-        const defensePositions = [
-            { x: courtWidth.value * 0.5, y: courtHeight.value * 0.35 },
-            { x: courtWidth.value * 0.25, y: courtHeight.value * 0.45 },
-            { x: courtWidth.value * 0.75, y: courtHeight.value * 0.45 },
-            { x: courtWidth.value * 0.3, y: courtHeight.value * 0.65 },
-            { x: courtWidth.value * 0.7, y: courtHeight.value * 0.65 },
-        ];
 
         // Add defense players
         defensePositions.forEach((pos, index) => {
