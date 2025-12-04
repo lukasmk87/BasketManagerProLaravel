@@ -129,11 +129,11 @@ class PlayTemplateService
         $result = [];
         $categories = $this->playService->getCategories();
 
-        foreach ($categories as $key => $label) {
-            $categoryTemplates = $grouped->get($key, collect());
+        foreach ($categories as $category) {
+            $categoryTemplates = $grouped->get($category['value'], collect());
             if ($categoryTemplates->count() > 0) {
-                $result[$key] = [
-                    'label' => $label,
+                $result[$category['value']] = [
+                    'label' => $category['label'],
                     'templates' => $categoryTemplates->toArray(),
                 ];
             }

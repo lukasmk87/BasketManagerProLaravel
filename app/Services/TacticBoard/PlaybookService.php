@@ -205,9 +205,9 @@ class PlaybookService
     public function getCategories(): array
     {
         return [
-            'game' => 'Spielvorbereitung',
-            'practice' => 'Training',
-            'situational' => 'Situativ',
+            ['value' => 'game', 'label' => 'Spielvorbereitung'],
+            ['value' => 'practice', 'label' => 'Training'],
+            ['value' => 'situational', 'label' => 'Situativ'],
         ];
     }
 

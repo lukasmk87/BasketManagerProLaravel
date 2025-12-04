@@ -226,15 +226,15 @@ class PlayService
     public function getCategories(): array
     {
         return [
-            'offense' => 'Offense',
-            'defense' => 'Defense',
-            'press_break' => 'Press Break',
-            'inbound' => 'Einwurf',
-            'fast_break' => 'Fast Break',
-            'zone' => 'Zonenverteidigung',
-            'man_to_man' => 'Mann-gegen-Mann',
-            'transition' => 'Transition',
-            'special' => 'Spezial',
+            ['value' => 'offense', 'label' => 'Offense'],
+            ['value' => 'defense', 'label' => 'Defense'],
+            ['value' => 'press_break', 'label' => 'Press Break'],
+            ['value' => 'inbound', 'label' => 'Einwurf'],
+            ['value' => 'fast_break', 'label' => 'Fast Break'],
+            ['value' => 'zone', 'label' => 'Zonenverteidigung'],
+            ['value' => 'man_to_man', 'label' => 'Mann-gegen-Mann'],
+            ['value' => 'transition', 'label' => 'Transition'],
+            ['value' => 'special', 'label' => 'Spezial'],
         ];
     }
 
@@ -244,9 +244,9 @@ class PlayService
     public function getCourtTypes(): array
     {
         return [
-            'half_horizontal' => 'Halbes Feld (horizontal)',
-            'full' => 'Ganzes Feld',
-            'half_vertical' => 'Halbes Feld (vertikal)',
+            ['value' => 'half_horizontal', 'label' => 'Halbes Feld (horizontal)'],
+            ['value' => 'full', 'label' => 'Ganzes Feld'],
+            ['value' => 'half_vertical', 'label' => 'Halbes Feld (vertikal)'],
         ];
     }
 
