@@ -18,6 +18,26 @@
                 :style="menuPosition"
                 @click.stop
             >
+                <!-- Easing Selection (Phase 11.2) -->
+                <div class="menu-item easing-item">
+                    <SparklesIcon class="h-4 w-4" />
+                    <span>Easing</span>
+                    <select
+                        class="easing-select"
+                        :value="keyframe.easing || 'linear'"
+                        @change="handleEasingChange"
+                        @click.stop
+                    >
+                        <option
+                            v-for="opt in easingOptions"
+                            :key="opt.value"
+                            :value="opt.value"
+                        >
+                            {{ opt.label }}
+                        </option>
+                    </select>
+                </div>
+                <div class="menu-divider"></div>
                 <button class="menu-item" @click="handleEdit">
                     <PencilIcon class="h-4 w-4" />
                     <span>Bearbeiten</span>
@@ -33,7 +53,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { PencilIcon, TrashIcon, SparklesIcon } from '@heroicons/vue/24/outline';
+import { easingOptions } from '@/utils/easingFunctions';
 
 const props = defineProps({
     keyframe: {
@@ -54,7 +75,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['select', 'move', 'edit', 'delete']);
+const emit = defineEmits(['select', 'move', 'edit', 'delete', 'update:easing']);
 
 const isDragging = ref(false);
 const showMenu = ref(false);
@@ -133,6 +154,12 @@ const handleEdit = () => {
 const handleDelete = () => {
     showMenu.value = false;
     emit('delete', props.index);
+};
+
+// Handle easing change (Phase 11.2)
+const handleEasingChange = (event) => {
+    const newEasing = event.target.value;
+    emit('update:easing', { index: props.index, easing: newEasing });
 };
 
 // Close context menu on outside click
@@ -235,5 +262,36 @@ onUnmounted(() => {
 
 .menu-item.danger:hover {
     background: #dc2626;
+}
+
+/* Easing Item Styles (Phase 11.2) */
+.menu-item.easing-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: default;
+}
+
+.easing-select {
+    flex: 1;
+    padding: 4px 8px;
+    background: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.easing-select:focus {
+    outline: none;
+    border-color: #e25822;
+}
+
+.menu-divider {
+    height: 1px;
+    background: #374151;
+    margin: 4px 0;
 }
 </style>

@@ -33,6 +33,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Export
         Route::post('/{play}/export/png', [PlayController::class, 'exportPng'])->name('export.png');
         Route::get('/{play}/export/pdf', [PlayController::class, 'exportPdf'])->name('export.pdf');
+        Route::post('/{play}/export/gif', [PlayController::class, 'exportGif'])->name('export.gif');
 
         // Connections
         Route::post('/{play}/attach-to-drill', [PlayController::class, 'attachToDrill'])->name('attach-drill');

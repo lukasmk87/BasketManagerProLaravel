@@ -18,7 +18,7 @@
 | Phase 9.1 | ✅ Abgeschlossen | Zoom & Pan System |
 | Phase 9.2 | ✅ Abgeschlossen | Raster-System mit Snap-to-Grid |
 | Phase 10.1-10.2 | ✅ Abgeschlossen | Team-Farben & Ball-Element |
-| Phase 11.1-11.3 | ⏳ Ausstehend | Ball-Animation, Easing, GIF-Export |
+| Phase 11.1-11.3 | ✅ Abgeschlossen | Ball-Animation, Easing, GIF-Export |
 | Phase 12.1 | ✅ Abgeschlossen | Tastaturkürzel-System |
 | Phase 12.2-12.3 | ⏳ Ausstehend | Ebenen-Verwaltung & Ausrichten |
 | Phase 13 | ⏳ Ausstehend | Templates & Bibliothek |
@@ -526,6 +526,117 @@ tests/Feature/TacticBoardWebTest.php
 
 ---
 
+## Phase 11: Animation-Erweiterungen ✅
+
+### 11.1 Ball-Animation ✅
+
+**Problem gelöst:**
+Ball existierte im Board, wurde aber NICHT in Animationen erfasst.
+
+**Implementierte Änderungen:**
+- `TacticBoardEditor.vue`: Ball zu `currentElements` hinzugefügt
+- `TacticBoardTimeline.vue`: Ball in `captureCurrentElements()` erfassen
+- `useTacticAnimation.js`: Ball in `createInitialKeyframe()` unterstützt
+- `AnimationPreview.vue`: Ball-Rendering mit animierten Positionen
+
+### 11.2 Easing-Funktionen ✅
+
+**Neue Datei:** `resources/js/utils/easingFunctions.js`
+
+**Verfügbare Easing-Kurven:**
+| Funktion | Beschreibung |
+|----------|--------------|
+| linear | Gleichmäßige Bewegung |
+| easeIn | Langsamer Start |
+| easeOut | Langsames Ende |
+| easeInOut | Langsamer Start und Ende |
+| easeInCubic | Stärkerer langsamer Start |
+| easeOutCubic | Stärkeres langsames Ende |
+| bounce | Springender Effekt |
+| elastic | Elastischer Effekt |
+| backIn | Überschwingen am Start |
+| backOut | Überschwingen am Ende |
+
+**Erweiterungen:**
+- `useTacticAnimation.js`: `lerpWithEasing()` Funktion, Easing pro Keyframe
+- `KeyframeMarker.vue`: Easing-Dropdown im Kontextmenü
+- Animation-Datenversion auf 1.1 erhöht
+
+### 11.3 GIF-Export ✅
+
+**Neue Dateien:**
+- `resources/js/utils/gifExporter.js` - GifExporter-Klasse mit gif.js
+- `public/js/gif.worker.js` - Web Worker für Encoding
+
+**Features:**
+- Client-seitiger GIF-Export mit Progress-Anzeige
+- Server-Speicherung für späteres Teilen
+- Konfigurierbare FPS und Qualität
+
+**API-Endpunkt:**
+```
+POST /api/plays/{play}/export/gif
+```
+
+**Erweiterungen:**
+- `useTacticExport.js`: `exportAsGif()`, `downloadGif()`, `saveGifToServer()`
+- `AnimationPreview.vue`: Export-Button mit Progress-Spinner
+- `PlayExportService.php`: `exportAsGif()` Methode
+- `PlayController.php`: `exportGif()` Endpoint
+
+### Implementierte Dateien (Phase 11)
+
+| Datei | Status |
+|-------|--------|
+| `resources/js/utils/easingFunctions.js` | ✅ NEU |
+| `resources/js/utils/gifExporter.js` | ✅ NEU |
+| `public/js/gif.worker.js` | ✅ NEU |
+
+### Modifizierte Dateien (Phase 11)
+
+| Datei | Änderungen |
+|-------|------------|
+| `resources/js/Components/TacticBoard/TacticBoardEditor.vue` | Ball zu currentElements |
+| `resources/js/Components/TacticBoard/TacticBoardTimeline.vue` | Ball-Erfassung, Easing-Events |
+| `resources/js/composables/useTacticAnimation.js` | Ball-Support, Easing, Version 1.1 |
+| `resources/js/Components/TacticBoard/Animation/AnimationPreview.vue` | Ball-Rendering, GIF-Export-Button |
+| `resources/js/Components/TacticBoard/Animation/KeyframeMarker.vue` | Easing-UI |
+| `resources/js/composables/useTacticExport.js` | GIF-Export-Methoden |
+| `app/Services/TacticBoard/PlayExportService.php` | exportAsGif() Methode |
+| `app/Http/Controllers/Api/PlayController.php` | exportGif() Endpoint |
+| `routes/api_tactics.php` | GIF-Export Route |
+| `package.json` | gif.js Dependency |
+
+### Animation-Datenstruktur (v1.1)
+```json
+{
+  "version": "1.1",
+  "duration": 5000,
+  "keyframes": [
+    {
+      "time": 0,
+      "elements": {
+        "player_1": { "x": 200, "y": 300 },
+        "ball_abc": { "x": 210, "y": 310 }
+      },
+      "events": [],
+      "easing": "linear"
+    },
+    {
+      "time": 2500,
+      "elements": {
+        "player_1": { "x": 350, "y": 250 },
+        "ball_abc": { "x": 360, "y": 260 }
+      },
+      "events": [],
+      "easing": "easeInOut"
+    }
+  ]
+}
+```
+
+---
+
 ## Phase 12: UX-Verbesserungen
 
 ### 12.1 Tastaturkürzel-System ✅
@@ -608,10 +719,8 @@ tests/Feature/TacticBoardWebTest.php
 ## Nächste Schritte
 
 ### Ausstehende Phasen
-1. **Phase 11.1-11.2**: Ball-Animation & Easing-Funktionen
-2. **Phase 11.3**: GIF-Export
-3. **Phase 12.2-12.3**: Ebenen-Verwaltung & Ausrichten
-4. **Phase 13**: Templates & Bibliothek
+1. **Phase 12.2-12.3**: Ebenen-Verwaltung & Ausrichten
+2. **Phase 13**: Templates & Bibliothek
 
 ### Optionale Erweiterungen (Phase 14)
 - Echtzeit-Kollaboration (WebSockets)

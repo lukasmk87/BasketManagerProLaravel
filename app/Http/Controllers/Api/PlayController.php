@@ -147,6 +147,25 @@ class PlayController extends Controller
     }
 
     /**
+     * Export play animation as GIF (Phase 11.3).
+     */
+    public function exportGif(Request $request, Play $play): JsonResponse
+    {
+        $this->authorize('export', $play);
+
+        $request->validate([
+            'gif_data' => ['required', 'string'],
+        ]);
+
+        $url = $this->exportService->exportAsGif(
+            $play,
+            $request->input('gif_data')
+        );
+
+        return response()->json(['url' => $url]);
+    }
+
+    /**
      * Attach play to a drill.
      */
     public function attachToDrill(Request $request, Play $play): JsonResponse

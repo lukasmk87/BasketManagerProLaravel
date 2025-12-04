@@ -342,7 +342,7 @@
             v-if="isAnimationMode"
             ref="timelineRef"
             :animationData="animationData"
-            :currentElements="{ players: board.players.value, shapes: board.shapes.value }"
+            :currentElements="{ players: board.players.value, shapes: board.shapes.value, ball: board.ball.value }"
             @preview="showAnimationPreview = true"
             @keyframe-added="handleKeyframeAdded"
             @keyframe-updated="handleKeyframeUpdated"

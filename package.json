@@ -39,6 +39,7 @@
         "@vueuse/core": "^14.0.0",
         "chart.js": "^4.5.0",
         "date-fns": "^4.1.0",
+        "gif.js": "^0.2.0",
         "konva": "^10.0.12",
         "laravel-echo": "^2.1.7",
         "pusher-js": "^8.4.0",

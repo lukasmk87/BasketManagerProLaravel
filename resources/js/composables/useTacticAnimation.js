@@ -1,7 +1,9 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
+import { getEasingFunction } from '@/utils/easingFunctions';
 
 /**
  * Composable for managing animations in the Tactic Board
+ * Version 1.1 - Includes Easing Support (Phase 11.2)
  */
 export function useTacticAnimation() {
     // Animation state
@@ -40,12 +42,17 @@ export function useTacticAnimation() {
 
     /**
      * Add a keyframe at the specified time
+     * @param {number} time - Time in milliseconds
+     * @param {Object} elements - Element positions
+     * @param {Array} events - Animation events
+     * @param {string} easing - Easing function name (Phase 11.2)
      */
-    const addKeyframe = (time, elements, events = []) => {
+    const addKeyframe = (time, elements, events = [], easing = 'linear') => {
         const keyframe = {
             time,
             elements: JSON.parse(JSON.stringify(elements)),
             events,
+            easing, // Easing function for transition TO this keyframe
         };
 
         // Insert in sorted order
@@ -112,7 +119,21 @@ export function useTacticAnimation() {
     };
 
     /**
+     * Interpolation with easing function (Phase 11.2)
+     * @param {number} a - Start value
+     * @param {number} b - End value
+     * @param {number} t - Progress (0-1)
+     * @param {string} easingName - Name of easing function
+     */
+    const lerpWithEasing = (a, b, t, easingName = 'linear') => {
+        const easingFn = getEasingFunction(easingName);
+        const easedT = easingFn(t);
+        return a + (b - a) * easedT;
+    };
+
+    /**
      * Interpolate element positions at a given time
+     * Uses easing function from the 'after' keyframe (Phase 11.2)
      */
     const interpolatePositions = (time) => {
         const { before, after } = getSurroundingKeyframes(time);
@@ -126,6 +147,9 @@ export function useTacticAnimation() {
         const timeDiff = after.time - before.time;
         const t = timeDiff === 0 ? 0 : (time - before.time) / timeDiff;
 
+        // Get easing from the 'after' keyframe (defines how we transition TO this keyframe)
+        const easing = after.easing || 'linear';
+
         const interpolated = {};
 
         // Interpolate each element
@@ -138,17 +162,19 @@ export function useTacticAnimation() {
                 return;
             }
 
+            // Use easing-based interpolation (Phase 11.2)
             interpolated[elementId] = {
-                x: lerp(beforeEl.x, afterEl.x, t),
-                y: lerp(beforeEl.y, afterEl.y, t),
+                x: lerpWithEasing(beforeEl.x, afterEl.x, t, easing),
+                y: lerpWithEasing(beforeEl.y, afterEl.y, t, easing),
             };
 
             // Include other properties from before state
             if (beforeEl.rotation !== undefined) {
-                interpolated[elementId].rotation = lerp(
+                interpolated[elementId].rotation = lerpWithEasing(
                     beforeEl.rotation,
                     afterEl.rotation || beforeEl.rotation,
-                    t
+                    t,
+                    easing
                 );
             }
         });
@@ -255,10 +281,11 @@ export function useTacticAnimation() {
 
     /**
      * Export animation data
+     * Version 1.1 includes easing support (Phase 11.2)
      */
     const exportAnimationData = () => {
         return {
-            version: '1.0',
+            version: '1.1',
             duration: totalDuration.value,
             keyframes: JSON.parse(JSON.stringify(keyframes.value)),
         };
@@ -266,12 +293,17 @@ export function useTacticAnimation() {
 
     /**
      * Import animation data
+     * Handles migration from v1.0 to v1.1 (Phase 11.2)
      */
     const importAnimationData = (data) => {
         if (!data) return;
 
         if (data.keyframes) {
-            keyframes.value = data.keyframes;
+            // Migrate v1.0 keyframes to v1.1 by adding default easing
+            keyframes.value = data.keyframes.map(kf => ({
+                ...kf,
+                easing: kf.easing || 'linear', // Default easing for backward compatibility
+            }));
         }
         if (data.duration) {
             duration.value = data.duration;
@@ -300,6 +332,13 @@ export function useTacticAnimation() {
                     rotation: shape.rotation || 0,
                 };
             });
+        }
+        // Capture ball position (Phase 11.1)
+        if (elements.ball) {
+            elementPositions[elements.ball.id] = {
+                x: elements.ball.x,
+                y: elements.ball.y,
+            };
         }
 
         addKeyframe(0, elementPositions);

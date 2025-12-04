@@ -58,6 +58,7 @@
                         @move="handleKeyframeMove"
                         @edit="handleKeyframeEdit"
                         @delete="handleKeyframeDelete"
+                        @update:easing="handleKeyframeEasingChange"
                     />
                 </div>
             </div>
@@ -111,7 +112,7 @@ const props = defineProps({
     },
     currentElements: {
         type: Object,
-        default: () => ({ players: [], shapes: [] }),
+        default: () => ({ players: [], shapes: [], ball: null }),
     },
 });
 
@@ -243,6 +244,12 @@ const handleKeyframeDelete = (index) => {
     }
 };
 
+// Handle keyframe easing change (Phase 11.2)
+const handleKeyframeEasingChange = ({ index, easing }) => {
+    animation.updateKeyframe(index, { easing });
+    emit('keyframe-updated', { index, keyframe: animation.keyframes.value[index] });
+};
+
 // Handle adding a new keyframe
 const handleAddKeyframe = () => {
     const currentTime = animation.currentTime.value;
@@ -275,6 +282,14 @@ const captureCurrentElements = () => {
                 rotation: shape.rotation || 0,
             };
         });
+    }
+
+    // Capture ball position (Phase 11.1)
+    if (props.currentElements.ball) {
+        elements[props.currentElements.ball.id] = {
+            x: props.currentElements.ball.x,
+            y: props.currentElements.ball.y,
+        };
     }
 
     return elements;

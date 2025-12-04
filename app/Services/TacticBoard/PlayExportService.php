@@ -91,6 +91,27 @@ class PlayExportService
     }
 
     /**
+     * Export a play's animation as GIF (Phase 11.3).
+     * Note: The actual GIF generation happens client-side using gif.js.
+     * This method handles the storage and management of exported GIFs.
+     */
+    public function exportAsGif(Play $play, string $base64Data): string
+    {
+        // Decode base64 data (already without prefix from frontend)
+        $gifData = base64_decode($base64Data);
+
+        $filename = "plays/animations/{$play->uuid}.gif";
+        Storage::disk('public')->put($filename, $gifData);
+
+        $gifUrl = Storage::disk('public')->url($filename);
+
+        // Optionally update play with animation GIF URL
+        $play->update(['animation_gif_url' => $gifUrl]);
+
+        return $gifUrl;
+    }
+
+    /**
      * Delete exported files for a play.
      */
     public function deleteExportedFiles(Play $play): void
@@ -98,6 +119,7 @@ class PlayExportService
         $patterns = [
             "plays/{$play->uuid}_*.png",
             "plays/thumbnails/{$play->uuid}.png",
+            "plays/animations/{$play->uuid}.gif",
         ];
 
         foreach ($patterns as $pattern) {

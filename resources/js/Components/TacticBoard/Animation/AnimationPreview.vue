@@ -84,6 +84,16 @@
                                         :selected="false"
                                         :draggable="false"
                                     />
+
+                                    <!-- Ball (animated) - Phase 11.1 -->
+                                    <BallElement
+                                        v-if="animatedBall"
+                                        :id="animatedBall.id"
+                                        :x="animatedBall.x"
+                                        :y="animatedBall.y"
+                                        :radius="animatedBall.radius || 12"
+                                        :selected="false"
+                                    />
                                 </v-layer>
                             </v-stage>
                         </div>
@@ -91,21 +101,42 @@
 
                     <!-- Controls -->
                     <div class="modal-controls">
-                        <TimelineControl
-                            :isPlaying="animation.isPlaying.value"
-                            :isPaused="animation.isPaused.value"
-                            :currentTime="animation.currentTime.value"
-                            :duration="animation.totalDuration.value"
-                            :progress="animation.progress.value"
-                            :playbackSpeed="playbackSpeed"
-                            :isLooping="isLooping"
-                            @play="animation.play()"
-                            @pause="animation.pause()"
-                            @stop="animation.stop()"
-                            @seek="animation.seekTo($event)"
-                            @update:speed="playbackSpeed = $event"
-                            @update:looping="isLooping = $event"
-                        />
+                        <div class="controls-row">
+                            <TimelineControl
+                                :isPlaying="animation.isPlaying.value"
+                                :isPaused="animation.isPaused.value"
+                                :currentTime="animation.currentTime.value"
+                                :duration="animation.totalDuration.value"
+                                :progress="animation.progress.value"
+                                :playbackSpeed="playbackSpeed"
+                                :isLooping="isLooping"
+                                @play="animation.play()"
+                                @pause="animation.pause()"
+                                @stop="animation.stop()"
+                                @seek="animation.seekTo($event)"
+                                @update:speed="playbackSpeed = $event"
+                                @update:looping="isLooping = $event"
+                            />
+
+                            <!-- GIF Export Button (Phase 11.3) -->
+                            <div class="export-section">
+                                <button
+                                    class="export-btn"
+                                    :disabled="isExportingGif || animation.totalDuration.value === 0"
+                                    @click="handleExportGif"
+                                    :title="isExportingGif ? 'Exportiere...' : 'Als GIF exportieren'"
+                                >
+                                    <template v-if="isExportingGif">
+                                        <span class="spinner"></span>
+                                        <span>{{ Math.round(exportProgress * 100) }}%</span>
+                                    </template>
+                                    <template v-else>
+                                        <ArrowDownTrayIcon class="h-5 w-5" />
+                                        <span>GIF</span>
+                                    </template>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -115,8 +146,9 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, markRaw } from 'vue';
-import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { XMarkIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { useTacticAnimation } from '@/composables/useTacticAnimation';
+import { useTacticExport } from '@/composables/useTacticExport';
 
 // Components
 import TimelineControl from './TimelineControl.vue';
@@ -129,6 +161,7 @@ import PassLine from '../Elements/PassLine.vue';
 import DribblePath from '../Elements/DribblePath.vue';
 import ScreenShape from '../Elements/ScreenShape.vue';
 import TextAnnotation from '../Elements/TextAnnotation.vue';
+import BallElement from '../Elements/BallElement.vue';
 
 const props = defineProps({
     show: {
@@ -150,6 +183,9 @@ const emit = defineEmits(['close']);
 // Animation composable
 const animation = useTacticAnimation();
 
+// Export composable (Phase 11.3)
+const exportUtil = useTacticExport();
+
 // Refs
 const stageRef = ref(null);
 
@@ -158,6 +194,8 @@ const playbackSpeed = ref(1);
 const isLooping = ref(true);
 const canvasWidth = ref(600);
 const canvasHeight = ref(450);
+const isExportingGif = ref(false);
+const exportProgress = ref(0);
 
 // Stage configuration
 const stageConfig = computed(() => ({
@@ -221,6 +259,21 @@ const animatedShapes = computed(() => {
             rotation: animatedPos?.rotation ?? shape.rotation ?? 0,
         };
     });
+});
+
+// Animated ball with interpolated position (Phase 11.1)
+const animatedBall = computed(() => {
+    const ball = props.playData?.elements?.ball;
+    if (!ball) return null;
+
+    const positions = animation.currentPositions.value;
+    const animatedPos = positions[ball.id];
+
+    return {
+        ...ball,
+        x: animatedPos?.x ?? ball.x,
+        y: animatedPos?.y ?? ball.y,
+    };
 });
 
 // Watch for show changes
@@ -299,6 +352,51 @@ watch(
         }
     }
 );
+
+// Watch export progress (Phase 11.3)
+watch(
+    () => exportUtil.exportProgress.value,
+    (progress) => {
+        exportProgress.value = progress;
+    }
+);
+
+// Handle GIF export (Phase 11.3)
+const handleExportGif = async () => {
+    if (!stageRef.value || isExportingGif.value) return;
+
+    // Pause animation during export
+    const wasPlaying = animation.isPlaying.value && !animation.isPaused.value;
+    if (wasPlaying) {
+        animation.pause();
+    }
+
+    isExportingGif.value = true;
+
+    try {
+        await exportUtil.downloadGif(
+            stageRef.value,
+            animation,
+            props.playData?.name || 'spielzug',
+            {
+                fps: 15,
+                quality: 10,
+                width: canvasWidth.value,
+                height: canvasHeight.value,
+            }
+        );
+    } catch (error) {
+        console.error('GIF export failed:', error);
+    } finally {
+        isExportingGif.value = false;
+        exportProgress.value = 0;
+
+        // Resume animation if it was playing
+        if (wasPlaying) {
+            animation.play();
+        }
+    }
+};
 
 onMounted(() => {
     document.addEventListener('keydown', handleKeydown);
@@ -388,6 +486,57 @@ onUnmounted(() => {
 .modal-controls {
     padding: 16px 20px;
     border-top: 1px solid #374151;
+}
+
+.controls-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* GIF Export Section (Phase 11.3) */
+.export-section {
+    margin-left: auto;
+}
+
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #2563eb;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.export-btn:hover:not(:disabled) {
+    background: #1d4ed8;
+}
+
+.export-btn:disabled {
+    background: #4b5563;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 /* Modal transitions */
