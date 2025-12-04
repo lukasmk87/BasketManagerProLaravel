@@ -972,10 +972,12 @@ export function useTacticBoard(initialData = null) {
      */
     const exportData = () => {
         return {
-            version: '1.2', // Updated version for layer management (Phase 12)
+            version: '1.3', // Updated version for canvas dimensions
             court: {
                 type: courtType.value,
                 backgroundColor: courtColor.value,
+                width: courtWidth.value,
+                height: courtHeight.value,
             },
             elements: {
                 players: players.value.map(p => ({ ...p })),

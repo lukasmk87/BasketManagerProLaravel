@@ -192,10 +192,16 @@ const stageRef = ref(null);
 // Local state
 const playbackSpeed = ref(1);
 const isLooping = ref(true);
-const canvasWidth = ref(600);
-const canvasHeight = ref(450);
 const isExportingGif = ref(false);
 const exportProgress = ref(0);
+
+// Canvas dimensions - use saved dimensions or fallback to editor defaults
+const canvasWidth = computed(() => {
+    return props.playData?.court?.width || 700;
+});
+const canvasHeight = computed(() => {
+    return props.playData?.court?.height || 500;
+});
 
 // Stage configuration
 const stageConfig = computed(() => ({
