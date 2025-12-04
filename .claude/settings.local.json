@@ -25,7 +25,8 @@
       "Bash(xargs cat:*)",
       "Bash(npm uninstall:*)",
       "Bash(wc:*)",
-      "Bash(xargs sed:*)"
+      "Bash(xargs sed:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

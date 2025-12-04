@@ -1,12 +1,23 @@
 <template>
     <v-group>
-        <!-- Court Background -->
+        <!-- Container Background (for letterboxing) -->
         <v-rect
             :config="{
                 x: 0,
                 y: 0,
-                width: courtWidth,
-                height: courtHeight,
+                width: width,
+                height: height,
+                fill: '#1a472a',
+            }"
+        />
+
+        <!-- Court Background -->
+        <v-rect
+            :config="{
+                x: offsetX,
+                y: offsetY,
+                width: actualCourtWidth,
+                height: actualCourtHeight,
                 fill: courtColor,
             }"
         />
@@ -16,10 +27,10 @@
             <!-- Outer boundary -->
             <v-rect
                 :config="{
-                    x: 0,
-                    y: 0,
-                    width: courtWidth,
-                    height: courtHeight,
+                    x: offsetX,
+                    y: offsetY,
+                    width: actualCourtWidth,
+                    height: actualCourtHeight,
                     stroke: lineColor,
                     strokeWidth: lineWidth,
                     fill: 'transparent',
@@ -29,7 +40,7 @@
             <!-- Center line -->
             <v-line
                 :config="{
-                    points: [0, centerY, courtWidth, centerY],
+                    points: [offsetX, centerY, offsetX + actualCourtWidth, centerY],
                     stroke: lineColor,
                     strokeWidth: lineWidth,
                 }"
@@ -53,7 +64,7 @@
                 <v-rect
                     :config="{
                         x: centerX - paintWidth / 2,
-                        y: courtHeight - paintLength,
+                        y: offsetY + actualCourtHeight - paintLength,
                         width: paintWidth,
                         height: paintLength,
                         stroke: lineColor,
@@ -62,11 +73,11 @@
                     }"
                 />
 
-                <!-- Free Throw Circle -->
+                <!-- Free Throw Circle (solid half - outside paint) -->
                 <v-arc
                     :config="{
                         x: centerX,
-                        y: courtHeight - paintLength,
+                        y: offsetY + actualCourtHeight - paintLength,
                         innerRadius: 0,
                         outerRadius: freeThrowCircleRadius,
                         angle: 180,
@@ -76,10 +87,11 @@
                         fill: 'transparent',
                     }"
                 />
+                <!-- Free Throw Circle (dashed half - inside paint) -->
                 <v-arc
                     :config="{
                         x: centerX,
-                        y: courtHeight - paintLength,
+                        y: offsetY + actualCourtHeight - paintLength,
                         innerRadius: 0,
                         outerRadius: freeThrowCircleRadius,
                         angle: 180,
@@ -100,11 +112,37 @@
                     }"
                 />
 
-                <!-- Restricted Area -->
+                <!-- Restricted Area Lines (vertical lines from baseline to arc) -->
+                <v-line
+                    :config="{
+                        points: [
+                            centerX - restrictedAreaRadius,
+                            offsetY + actualCourtHeight,
+                            centerX - restrictedAreaRadius,
+                            offsetY + actualCourtHeight - basketOffset,
+                        ],
+                        stroke: lineColor,
+                        strokeWidth: lineWidth,
+                    }"
+                />
+                <v-line
+                    :config="{
+                        points: [
+                            centerX + restrictedAreaRadius,
+                            offsetY + actualCourtHeight,
+                            centerX + restrictedAreaRadius,
+                            offsetY + actualCourtHeight - basketOffset,
+                        ],
+                        stroke: lineColor,
+                        strokeWidth: lineWidth,
+                    }"
+                />
+
+                <!-- Restricted Area Arc -->
                 <v-arc
                     :config="{
                         x: centerX,
-                        y: courtHeight - basketOffset,
+                        y: offsetY + actualCourtHeight - basketOffset,
                         innerRadius: 0,
                         outerRadius: restrictedAreaRadius,
                         angle: 180,
@@ -120,9 +158,9 @@
                     :config="{
                         points: [
                             centerX - backboardWidth / 2,
-                            courtHeight - backboardOffset,
+                            offsetY + actualCourtHeight - backboardOffset,
                             centerX + backboardWidth / 2,
-                            courtHeight - backboardOffset,
+                            offsetY + actualCourtHeight - backboardOffset,
                         ],
                         stroke: lineColor,
                         strokeWidth: lineWidth + 1,
@@ -133,7 +171,7 @@
                 <v-circle
                     :config="{
                         x: centerX,
-                        y: courtHeight - basketOffset,
+                        y: offsetY + actualCourtHeight - basketOffset,
                         radius: rimRadius,
                         stroke: rimColor,
                         strokeWidth: lineWidth + 1,
@@ -148,7 +186,7 @@
                 <v-rect
                     :config="{
                         x: centerX - paintWidth / 2,
-                        y: 0,
+                        y: offsetY,
                         width: paintWidth,
                         height: paintLength,
                         stroke: lineColor,
@@ -157,11 +195,11 @@
                     }"
                 />
 
-                <!-- Free Throw Circle -->
+                <!-- Free Throw Circle (solid half - outside paint) -->
                 <v-arc
                     :config="{
                         x: centerX,
-                        y: paintLength,
+                        y: offsetY + paintLength,
                         innerRadius: 0,
                         outerRadius: freeThrowCircleRadius,
                         angle: 180,
@@ -171,10 +209,11 @@
                         fill: 'transparent',
                     }"
                 />
+                <!-- Free Throw Circle (dashed half - inside paint) -->
                 <v-arc
                     :config="{
                         x: centerX,
-                        y: paintLength,
+                        y: offsetY + paintLength,
                         innerRadius: 0,
                         outerRadius: freeThrowCircleRadius,
                         angle: 180,
@@ -195,11 +234,37 @@
                     }"
                 />
 
-                <!-- Restricted Area -->
+                <!-- Restricted Area Lines (vertical lines from baseline to arc) -->
+                <v-line
+                    :config="{
+                        points: [
+                            centerX - restrictedAreaRadius,
+                            offsetY,
+                            centerX - restrictedAreaRadius,
+                            offsetY + basketOffset,
+                        ],
+                        stroke: lineColor,
+                        strokeWidth: lineWidth,
+                    }"
+                />
+                <v-line
+                    :config="{
+                        points: [
+                            centerX + restrictedAreaRadius,
+                            offsetY,
+                            centerX + restrictedAreaRadius,
+                            offsetY + basketOffset,
+                        ],
+                        stroke: lineColor,
+                        strokeWidth: lineWidth,
+                    }"
+                />
+
+                <!-- Restricted Area Arc -->
                 <v-arc
                     :config="{
                         x: centerX,
-                        y: basketOffset,
+                        y: offsetY + basketOffset,
                         innerRadius: 0,
                         outerRadius: restrictedAreaRadius,
                         angle: 180,
@@ -215,9 +280,9 @@
                     :config="{
                         points: [
                             centerX - backboardWidth / 2,
-                            backboardOffset,
+                            offsetY + backboardOffset,
                             centerX + backboardWidth / 2,
-                            backboardOffset,
+                            offsetY + backboardOffset,
                         ],
                         stroke: lineColor,
                         strokeWidth: lineWidth + 1,
@@ -228,7 +293,7 @@
                 <v-circle
                     :config="{
                         x: centerX,
-                        y: basketOffset,
+                        y: offsetY + basketOffset,
                         radius: rimRadius,
                         stroke: rimColor,
                         strokeWidth: lineWidth + 1,
@@ -242,6 +307,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { FIBA_COURT, calculateUniformScale, toPixels } from './constants.js';
 
 const props = defineProps({
     width: {
@@ -270,76 +336,92 @@ const props = defineProps({
     },
 });
 
-// FIBA Court Dimensions (in meters)
-const COURT = {
-    length: 28, // Full court length
-    width: 15, // Court width
-    threePointRadius: 6.75,
-    threePointCorner: 0.9,
-    paintWidth: 4.9,
-    paintLength: 5.8,
-    freeThrowCircleRadius: 1.8,
-    centerCircleRadius: 1.8,
-    restrictedAreaRadius: 1.25,
-    basketOffset: 1.575,
-    backboardOffset: 1.2,
-    backboardWidth: 1.8,
-    rimRadius: 0.225,
-};
+// Calculate uniform scale to maintain aspect ratio
+// Full court is 15m wide x 28m long (width x height in vertical orientation)
+const scaling = computed(() =>
+    calculateUniformScale(props.width, props.height, FIBA_COURT.width, FIBA_COURT.fullLength)
+);
 
-// Scale factors
-const scaleX = computed(() => props.width / COURT.width);
-const scaleY = computed(() => props.height / COURT.length);
+const scale = computed(() => scaling.value.scale);
+const offsetX = computed(() => scaling.value.offsetX);
+const offsetY = computed(() => scaling.value.offsetY);
+const actualCourtWidth = computed(() => scaling.value.actualWidth);
+const actualCourtHeight = computed(() => scaling.value.actualHeight);
 
-// Computed dimensions
-const courtWidth = computed(() => props.width);
-const courtHeight = computed(() => props.height);
-const centerX = computed(() => courtWidth.value / 2);
-const centerY = computed(() => courtHeight.value / 2);
+// Center positions
+const centerX = computed(() => offsetX.value + actualCourtWidth.value / 2);
+const centerY = computed(() => offsetY.value + actualCourtHeight.value / 2);
 
-const paintWidth = computed(() => COURT.paintWidth * scaleX.value);
-const paintLength = computed(() => COURT.paintLength * scaleY.value);
-const freeThrowCircleRadius = computed(() => COURT.freeThrowCircleRadius * scaleX.value);
-const centerCircleRadius = computed(() => COURT.centerCircleRadius * scaleX.value);
-const restrictedAreaRadius = computed(() => COURT.restrictedAreaRadius * scaleX.value);
-const basketOffset = computed(() => COURT.basketOffset * scaleY.value);
-const backboardOffset = computed(() => COURT.backboardOffset * scaleY.value);
-const backboardWidth = computed(() => COURT.backboardWidth * scaleX.value);
-const rimRadius = computed(() => COURT.rimRadius * scaleX.value);
-const threePointRadius = computed(() => COURT.threePointRadius * scaleX.value);
-const threePointCornerY = computed(() => COURT.threePointCorner * scaleY.value);
+// Scaled dimensions (all use uniform scale)
+const paintWidth = computed(() => toPixels(FIBA_COURT.paintWidth, scale.value));
+const paintLength = computed(() => toPixels(FIBA_COURT.paintLength, scale.value));
+const freeThrowCircleRadius = computed(() => toPixels(FIBA_COURT.freeThrowCircleRadius, scale.value));
+const centerCircleRadius = computed(() => toPixels(FIBA_COURT.centerCircleRadius, scale.value));
+const restrictedAreaRadius = computed(() => toPixels(FIBA_COURT.restrictedAreaRadius, scale.value));
+const basketOffset = computed(() => toPixels(FIBA_COURT.basketFromBaseline, scale.value));
+const backboardOffset = computed(() => toPixels(FIBA_COURT.backboardFromBaseline, scale.value));
+const backboardWidth = computed(() => toPixels(FIBA_COURT.backboardWidth, scale.value));
+const rimRadius = computed(() => toPixels(FIBA_COURT.rimRadius, scale.value));
+const threePointRadius = computed(() => toPixels(FIBA_COURT.threePointRadius, scale.value));
 
 // Three point line drawing function
 const drawThreePointLine = (context, shape, side) => {
     const cx = centerX.value;
     const radius = threePointRadius.value;
-    const leftCornerX = cx - (COURT.width / 2 - 0.9) * scaleX.value;
-    const rightCornerX = cx + (COURT.width / 2 - 0.9) * scaleX.value;
+
+    // Corner distance from sideline (0.90m)
+    const cornerDistanceFromSideline = toPixels(FIBA_COURT.threePointCornerDistance, scale.value);
+    const leftCornerX = offsetX.value + cornerDistanceFromSideline;
+    const rightCornerX = offsetX.value + actualCourtWidth.value - cornerDistanceFromSideline;
 
     context.beginPath();
 
     if (side === 'bottom') {
-        const basketY = courtHeight.value - basketOffset.value;
-        const cornerY = courtHeight.value - threePointCornerY.value;
+        const basketY = offsetY.value + actualCourtHeight.value - basketOffset.value;
 
-        context.moveTo(leftCornerX, courtHeight.value);
-        context.lineTo(leftCornerX, cornerY);
+        // Calculate the angle where the arc meets the corner line
+        const dx = leftCornerX - cx; // negative (left of basket)
+        const clampedCos = Math.max(-1, Math.min(1, dx / radius));
+        const arcAngle = Math.acos(clampedCos); // ≈ 168° (2.93 rad)
 
-        const startAngle = Math.PI - Math.acos((leftCornerX - cx) / radius);
-        context.arc(cx, basketY, radius, startAngle, -startAngle, false);
+        // Y-Position of intersection (above the basket)
+        const arcY = basketY - radius * Math.sin(arcAngle);
 
-        context.lineTo(rightCornerX, courtHeight.value);
+        // 1. Left corner: vertical line from baseline to arc intersection
+        context.moveTo(leftCornerX, offsetY.value + actualCourtHeight.value);
+        context.lineTo(leftCornerX, arcY);
+
+        // 2. Arc from left to right
+        // Use negative angles for the upper half-circle (above basket)
+        const startAngle = -arcAngle;           // ≈ -168° (left intersection)
+        const endAngle = arcAngle - Math.PI;    // ≈ -12° (right intersection)
+        context.arc(cx, basketY, radius, startAngle, endAngle, false); // clockwise
+
+        // 3. Right corner: from arc to baseline
+        context.lineTo(rightCornerX, offsetY.value + actualCourtHeight.value);
     } else {
-        const basketY = basketOffset.value;
-        const cornerY = threePointCornerY.value;
+        // Top half (basket at top, arc below)
+        const basketY = offsetY.value + basketOffset.value;
 
-        context.moveTo(leftCornerX, 0);
-        context.lineTo(leftCornerX, cornerY);
+        const dx = leftCornerX - cx;
+        const clampedCos = Math.max(-1, Math.min(1, dx / radius));
+        const arcAngle = Math.acos(clampedCos);
 
-        const startAngle = Math.PI + Math.acos((leftCornerX - cx) / radius);
-        context.arc(cx, basketY, radius, startAngle, -startAngle + Math.PI * 2, true);
+        // Y-Position of intersection (below the basket)
+        const arcY = basketY + radius * Math.sin(arcAngle);
 
-        context.lineTo(rightCornerX, 0);
+        // 1. Left corner: vertical line from baseline to arc intersection
+        context.moveTo(leftCornerX, offsetY.value);
+        context.lineTo(leftCornerX, arcY);
+
+        // 2. Arc from left to right
+        // Use positive angles for the lower half-circle (below basket)
+        const startAngle = arcAngle;            // ≈ 168° (left intersection)
+        const endAngle = Math.PI - arcAngle;    // ≈ 12° (right intersection)
+        context.arc(cx, basketY, radius, startAngle, endAngle, true); // counterclockwise
+
+        // 3. Right corner: from arc to baseline
+        context.lineTo(rightCornerX, offsetY.value);
     }
 
     context.fillStrokeShape(shape);
