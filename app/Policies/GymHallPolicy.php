@@ -16,7 +16,7 @@ class GymHallPolicy
     public function viewAny(User $user, $clubId = null): bool
     {
         // Super admins and admins can view all gym halls
-        if ($user->hasAnyRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -35,7 +35,7 @@ class GymHallPolicy
     public function view(User $user, GymHall $gymHall): bool
     {
         // Admin users can view all gym halls
-        if ($user->hasAnyRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -49,7 +49,7 @@ class GymHallPolicy
     public function create(User $user, $clubId = null): bool
     {
         // Super admins and admins can create gym halls for any club
-        if ($user->hasAnyRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -68,7 +68,7 @@ class GymHallPolicy
     public function update(User $user, GymHall $gymHall): bool
     {
         // Super admins and admins can update any gym hall
-        if ($user->hasAnyRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -83,7 +83,7 @@ class GymHallPolicy
     public function delete(User $user, GymHall $gymHall): bool
     {
         // Super admins and admins can delete any gym hall
-        if ($user->hasAnyRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -114,7 +114,7 @@ class GymHallPolicy
     public function manageTimeSlots(User $user, GymHall $gymHall): bool
     {
         // Super admins and admins can manage time slots for any gym hall
-        if ($user->hasAnyRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -149,7 +149,7 @@ class GymHallPolicy
     public function viewStatistics(User $user, GymHall $gymHall): bool
     {
         // Super admins and admins can view statistics for any gym hall
-        if ($user->hasAnyRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 

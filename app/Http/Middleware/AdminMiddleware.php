@@ -6,6 +6,14 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Middleware für Admin-Bereich Zugriff.
+ *
+ * Hierarchie:
+ * - Super Admin: Hat immer Zugriff (tenant_id = null)
+ * - Tenant Admin: Hat Zugriff auf zugewiesene Tenants
+ * - Users mit 'manage-subscriptions' Permission: Fallback
+ */
 class AdminMiddleware
 {
     /**
@@ -21,11 +29,31 @@ class AdminMiddleware
             abort(401, 'Nicht authentifiziert');
         }
 
-        // Check if user is Super Admin or Admin or has manage-subscriptions permission
-        if (!$user->hasRole('super_admin') && !$user->hasRole('admin') && !$user->can('manage-subscriptions')) {
-            abort(403, 'Keine Berechtigung für Admin-Bereich');
+        // Super Admin hat immer Zugriff
+        if ($user->hasRole('super_admin')) {
+            return $next($request);
         }
 
-        return $next($request);
+        // Tenant Admin mit Tenant-Scope-Prüfung
+        if ($user->hasRole('tenant_admin')) {
+            $tenant = app('tenant');
+
+            // Wenn kein Tenant im Kontext, Zugriff erlauben (z.B. Tenant-Auswahl)
+            if (!$tenant) {
+                return $next($request);
+            }
+
+            // Prüfe ob User Admin für diesen Tenant ist
+            if ($user->isTenantAdminFor($tenant)) {
+                return $next($request);
+            }
+        }
+
+        // Fallback: Users mit manage-subscriptions Permission
+        if ($user->can('manage-subscriptions')) {
+            return $next($request);
+        }
+
+        abort(403, 'Keine Berechtigung für Admin-Bereich');
     }
 }

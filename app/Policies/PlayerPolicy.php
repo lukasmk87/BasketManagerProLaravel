@@ -466,7 +466,7 @@ class PlayerPolicy
         }
 
         // Only club admins, admins, and super admins can view pending players
-        return $user->hasRole(['super_admin', 'admin', 'club_admin']);
+        return $user->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin']);
     }
 
     /**
@@ -485,7 +485,7 @@ class PlayerPolicy
         }
 
         // Super Admin and Admin can assign any player
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 

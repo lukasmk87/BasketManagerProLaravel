@@ -16,7 +16,7 @@ class SeasonPolicy
     public function viewAny(User $user): bool
     {
         // Super admins and admins can view all seasons
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -34,7 +34,7 @@ class SeasonPolicy
     public function view(User $user, Season $season): bool
     {
         // Super admins and admins can view all seasons
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -66,7 +66,7 @@ class SeasonPolicy
     public function create(User $user): bool
     {
         // Super admins and admins can create seasons
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -84,7 +84,7 @@ class SeasonPolicy
     public function update(User $user, Season $season): bool
     {
         // Super admins and admins can update any season
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -108,7 +108,7 @@ class SeasonPolicy
         }
 
         // Super admins and admins can delete seasons
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -132,7 +132,7 @@ class SeasonPolicy
         }
 
         // Super admins and admins can complete any season
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -156,7 +156,7 @@ class SeasonPolicy
         }
 
         // Super admins and admins can activate any season
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -175,7 +175,7 @@ class SeasonPolicy
     public function startNew(User $user): bool
     {
         // Super admins and admins can start new seasons
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -193,7 +193,7 @@ class SeasonPolicy
     public function exportStatistics(User $user, Season $season): bool
     {
         // Super admins and admins can export any season's statistics
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -224,7 +224,7 @@ class SeasonPolicy
     public function compareSeasons(User $user): bool
     {
         // Super admins and admins can compare any seasons
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 

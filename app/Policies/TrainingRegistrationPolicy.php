@@ -31,7 +31,7 @@ class TrainingRegistrationPolicy
         }
 
         // Club admins, trainers, and players can view registrations
-        return $user->hasAnyRole(['club_admin', 'trainer', 'player', 'admin']);
+        return $user->hasAnyRole(['club_admin', 'trainer', 'player', 'tenant_admin']);
     }
 
     /**
@@ -73,7 +73,7 @@ class TrainingRegistrationPolicy
         }
 
         // Trainers and club admins can create registrations
-        if ($user->hasAnyRole(['club_admin', 'trainer', 'admin'])) {
+        if ($user->hasAnyRole(['club_admin', 'trainer', 'tenant_admin'])) {
             return true;
         }
 

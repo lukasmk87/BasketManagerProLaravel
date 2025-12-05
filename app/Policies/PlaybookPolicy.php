@@ -16,7 +16,7 @@ class PlaybookPolicy
     public function viewAny(User $user): bool
     {
         return $user->can('view tactic board') ||
-            $user->hasRole(['trainer', 'assistant_coach', 'club_admin', 'admin', 'super_admin']);
+            $user->hasAnyRole(['trainer', 'assistant_coach', 'club_admin', 'tenant_admin', 'super_admin']);
     }
 
     /**
@@ -43,7 +43,7 @@ class PlaybookPolicy
         }
 
         // Trainers, club admins and admins can view all playbooks
-        if ($user->hasRole(['trainer', 'assistant_coach', 'club_admin', 'admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['trainer', 'assistant_coach', 'club_admin', 'tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -61,7 +61,7 @@ class PlaybookPolicy
         }
 
         // Check if user has one of the required roles
-        if ($user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -84,7 +84,7 @@ class PlaybookPolicy
         }
 
         // Admins can edit all playbooks
-        if ($user->hasRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -123,7 +123,7 @@ class PlaybookPolicy
         }
 
         // Admins can delete all playbooks
-        if ($user->hasRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -173,7 +173,7 @@ class PlaybookPolicy
         }
 
         // Trainers and above can export
-        if ($user->hasRole(['trainer', 'assistant_coach', 'club_admin', 'admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['trainer', 'assistant_coach', 'club_admin', 'tenant_admin', 'super_admin'])) {
             return $this->view($user, $playbook);
         }
 
@@ -191,7 +191,7 @@ class PlaybookPolicy
         }
 
         // Trainers and above can attach playbooks to games
-        return $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin']);
     }
 
     /**
@@ -199,7 +199,7 @@ class PlaybookPolicy
      */
     public function restore(User $user, Playbook $playbook): bool
     {
-        return $user->can('manage tactic board') || $user->hasRole(['admin', 'super_admin']);
+        return $user->can('manage tactic board') || $user->hasAnyRole(['tenant_admin', 'super_admin']);
     }
 
     /**

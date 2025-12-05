@@ -65,7 +65,7 @@ class ClubSubscriptionAdminController extends Controller
             ] : null,
             'available_plans' => $availablePlans,
             'subscription_limits' => $subscriptionLimits,
-            'can_change_plan' => $user->hasAnyRole(['super_admin', 'admin']),
+            'can_change_plan' => $user->hasAnyRole(['super_admin', 'tenant_admin']),
         ]);
     }
 
@@ -76,7 +76,7 @@ class ClubSubscriptionAdminController extends Controller
     {
         $user = Auth::user();
 
-        if (! $user->hasAnyRole(['super_admin', 'admin'])) {
+        if (! $user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             abort(403, 'Sie haben keine Berechtigung, den Subscription Plan zu ändern.');
         }
 

@@ -281,7 +281,7 @@ Route::middleware([
     });
     
     // Admin Panel Routes
-    Route::prefix('admin')->name('admin.')->middleware('role:admin|super_admin')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware('role:tenant_admin|super_admin')->group(function () {
         Route::get('/settings', [\App\Http\Controllers\AdminPanelController::class, 'settings'])->name('settings');
         Route::put('/settings', [\App\Http\Controllers\AdminPanelController::class, 'updateSettings'])->name('settings.update');
         Route::put('/settings/pricing', [\App\Http\Controllers\AdminPanelController::class, 'updatePricingSettings'])->name('settings.pricing.update');

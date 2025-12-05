@@ -35,7 +35,7 @@ class ClubController extends Controller
         $clubs = $query
             ->with(['teams', 'users'])
             ->withCount(['teams', 'users'])
-            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+            ->when($user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) {
                 // Super-Admin and Admin users see all clubs (within scope)
                 return $query;
             }, function ($query) use ($user) {

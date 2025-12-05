@@ -65,6 +65,6 @@ Route::middleware(['web', 'auth'])->prefix('debug')->group(function () {
 
     Route::get('/test-settings-access', function () {
         return app(\App\Http\Controllers\AdminPanelController::class)->settings(request());
-    })->middleware(['role:admin|super_admin']);
+    })->middleware(['role:tenant_admin|super_admin']);
 
 });

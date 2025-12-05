@@ -20,7 +20,7 @@ class GymDashboardController extends Controller
     public function index(Request $request): Response
     {
         $user = Auth::user();
-        $isAdmin = $user->hasAnyRole(['admin', 'super_admin']);
+        $isAdmin = $user->hasAnyRole(['tenant_admin', 'super_admin']);
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
         // For admins, load all clubs for selection
@@ -51,7 +51,7 @@ class GymDashboardController extends Controller
 
         // Get pending booking requests for club admins
         $pendingRequests = collect();
-        if ($userClub && $user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if ($userClub && $user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             $pendingRequests = GymBookingRequest::whereHas('gymBooking.gymTimeSlot.gymHall', function ($query) use ($userClub) {
                     $query->where('club_id', $userClub->id);
                 })
@@ -63,9 +63,9 @@ class GymDashboardController extends Controller
 
         // Get user permissions
         $userPermissions = [
-            'canManageHalls' => $user->hasAnyRole(['admin', 'super_admin', 'club_admin']),
-            'canBookHalls' => $user->hasAnyRole(['admin', 'super_admin', 'club_admin', 'trainer', 'team_manager']),
-            'canApproveRequests' => $user->hasAnyRole(['admin', 'super_admin', 'club_admin']),
+            'canManageHalls' => $user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin']),
+            'canBookHalls' => $user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin', 'trainer', 'team_manager']),
+            'canApproveRequests' => $user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin']),
         ];
 
         return Inertia::render('Gym/Dashboard', [
@@ -89,7 +89,7 @@ class GymDashboardController extends Controller
         $this->authorize('create', GymHall::class);
 
         $user = Auth::user();
-        $isAdmin = $user->hasAnyRole(['admin', 'super_admin']);
+        $isAdmin = $user->hasAnyRole(['tenant_admin', 'super_admin']);
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
         // For admins, load all clubs for selection
@@ -118,7 +118,7 @@ class GymDashboardController extends Controller
         $this->authorize('viewAny', GymHall::class);
 
         $user = Auth::user();
-        $isAdmin = $user->hasAnyRole(['admin', 'super_admin']);
+        $isAdmin = $user->hasAnyRole(['tenant_admin', 'super_admin']);
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
         // For admins without a club, load all gym halls grouped by club
@@ -203,7 +203,7 @@ class GymDashboardController extends Controller
             });
 
             // Filter by user's team if not admin
-            if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
                 $userTeam = $user->currentTeam;
                 if ($userTeam) {
                     $query->where('team_id', $userTeam->id);

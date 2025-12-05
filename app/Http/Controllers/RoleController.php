@@ -149,7 +149,7 @@ class RoleController extends Controller
         }
 
         // Prevent deletion of system roles
-        $systemRoles = ['super_admin', 'admin', 'club_admin'];
+        $systemRoles = ['super_admin', 'tenant_admin', 'club_admin'];
         if (in_array($role->name, $systemRoles)) {
             return back()->with('error',
                 'System-Rollen können nicht gelöscht werden.');

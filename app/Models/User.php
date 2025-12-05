@@ -260,6 +260,61 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get all tenants this user has admin access to.
+     * Used for multi-tenant admin assignment.
+     */
+    public function administeredTenants(): BelongsToMany
+    {
+        return $this->belongsToMany(Tenant::class, 'tenant_user')
+            ->withPivot('role', 'joined_at', 'is_active', 'is_primary', 'permissions')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get IDs of tenants this user can administer.
+     *
+     * @return array<string>
+     */
+    public function getAdministeredTenantIds(): array
+    {
+        // Super Admin hat Zugriff auf alle Tenants
+        if ($this->hasRole('super_admin')) {
+            return Tenant::pluck('id')->toArray();
+        }
+
+        // Tenant Admin nur auf zugewiesene Tenants
+        if ($this->hasRole('tenant_admin')) {
+            return $this->administeredTenants()
+                ->wherePivot('is_active', true)
+                ->pluck('tenants.id')
+                ->toArray();
+        }
+
+        return [];
+    }
+
+    /**
+     * Check if user is Tenant Admin for a specific tenant.
+     */
+    public function isTenantAdminFor(Tenant $tenant): bool
+    {
+        if ($this->hasRole('super_admin')) {
+            return true;
+        }
+
+        return $this->hasRole('tenant_admin') &&
+               in_array($tenant->id, $this->getAdministeredTenantIds());
+    }
+
+    /**
+     * Check if user is a tenant admin.
+     */
+    public function isTenantAdmin(): bool
+    {
+        return $this->hasRole('tenant_admin');
+    }
+
+    /**
      * Get the parent of this user (if they are a minor).
      */
     public function parent(): BelongsTo
@@ -343,7 +398,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function scopeCoaches($query)
     {
         return $query->whereHas('roles', function ($q) {
-            $q->whereIn('name', ['trainer', 'club_admin', 'admin']);
+            $q->whereIn('name', ['trainer', 'club_admin', 'tenant_admin']);
         });
     }
 

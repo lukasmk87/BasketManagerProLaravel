@@ -114,7 +114,7 @@ Route::prefix('api/v2/emergency')->name('api.v2.emergency.')->middleware(['auth:
 });
 
 // Admin Routes for Emergency System Management
-Route::prefix('admin/emergency')->name('admin.emergency.')->middleware(['auth', 'verified', 'role:admin'])->group(function () {
+Route::prefix('admin/emergency')->name('admin.emergency.')->middleware(['auth', 'verified', 'role:tenant_admin'])->group(function () {
     
     // Team Emergency Access Management
     Route::controller(\App\Http\Controllers\EmergencyAccessController::class)->group(function () {

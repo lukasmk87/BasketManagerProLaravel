@@ -17,7 +17,7 @@ class ClubInvitationPolicy
     public function viewAny(User $user): bool
     {
         // Super Admin, Admin, and Club Admin can view invitations
-        return $user->hasAnyRole(['super_admin', 'admin', 'club_admin']);
+        return $user->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin']);
     }
 
     /**
@@ -27,7 +27,7 @@ class ClubInvitationPolicy
     public function view(User $user, ClubInvitation $clubInvitation): bool
     {
         // Super Admin and Admin can view all
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -43,7 +43,7 @@ class ClubInvitationPolicy
     public function create(User $user): bool
     {
         // Super Admin, Admin, and Club Admin can create invitations
-        return $user->hasAnyRole(['super_admin', 'admin', 'club_admin']);
+        return $user->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin']);
     }
 
     /**
@@ -63,7 +63,7 @@ class ClubInvitationPolicy
     public function delete(User $user, ClubInvitation $clubInvitation): bool
     {
         // Super Admin and Admin can delete all
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 

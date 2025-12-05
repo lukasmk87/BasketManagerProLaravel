@@ -30,7 +30,7 @@ class PlayerRegistrationInvitationPolicy
         }
 
         // Super Admin and Admin can view all invitations
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -76,7 +76,7 @@ class PlayerRegistrationInvitationPolicy
         }
 
         // Super Admin and Admin can create for any club
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -96,7 +96,7 @@ class PlayerRegistrationInvitationPolicy
         }
 
         // Super Admin and Admin can update all invitations
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -120,7 +120,7 @@ class PlayerRegistrationInvitationPolicy
         }
 
         // Super Admin and Admin can delete all invitations
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -199,7 +199,7 @@ class PlayerRegistrationInvitationPolicy
         }
 
         // Super Admin and Admin can restore all
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 

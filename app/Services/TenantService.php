@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TenantService
@@ -168,17 +170,27 @@ class TenantService
         if (!$user) {
             return false;
         }
-        
+
+        // Super Admin hat Zugriff auf alle Tenants
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
+        // Tenant Admin hat Zugriff auf zugewiesene Tenants
+        if ($user->hasRole('tenant_admin') && $user->isTenantAdminFor($tenant)) {
+            return true;
+        }
+
         // Check if user belongs to tenant
         if ($user->tenant_id === $tenant->id) {
             return true;
         }
-        
+
         // Check if user has multi-tenant access (enterprise feature)
         if ($tenant->hasFeature('multi_tenant_access')) {
             return $user->tenants()->where('tenant_id', $tenant->id)->exists();
         }
-        
+
         return false;
     }
 
@@ -376,12 +388,301 @@ class TenantService
             "tenant:id:{$tenant->id}",
             "tenant:api_key:{$tenant->api_key}",
         ];
-        
+
         foreach ($cacheKeys as $key) {
             Cache::forget($key);
         }
-        
+
         // Clear tenant-tagged cache
         Cache::tags(["tenant:{$tenant->id}"])->flush();
+    }
+
+    // ========================================
+    // Tenant Admin Management Methods
+    // ========================================
+
+    /**
+     * Prüft ob ein User Admin-Zugriff auf einen Tenant hat.
+     *
+     * Hierarchie:
+     * - Super Admin: Immer true
+     * - Tenant Admin: true wenn in tenant_user Pivot mit is_active=true
+     */
+    public function userHasAdminAccess(User $user, Tenant $tenant): bool
+    {
+        // Super Admin hat Zugriff auf alle Tenants
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
+        // Tenant Admin Prüfung via Pivot-Tabelle
+        if ($user->hasRole('tenant_admin')) {
+            return $user->administeredTenants()
+                ->where('tenants.id', $tenant->id)
+                ->wherePivot('is_active', true)
+                ->exists();
+        }
+
+        return false;
+    }
+
+    /**
+     * Weist einem User die Tenant-Admin Rolle für einen Tenant zu.
+     *
+     * @param Tenant $tenant Der Tenant
+     * @param User $user Der User
+     * @param array $options Optionale Einstellungen:
+     *   - role: 'tenant_admin' (default) oder 'billing_admin'
+     *   - is_primary: bool (default: false)
+     *   - permissions: array (optionale zusätzliche Permissions)
+     *   - notes: string (optionale Notizen)
+     * @throws \InvalidArgumentException wenn User bereits zugewiesen ist
+     */
+    public function assignTenantAdmin(Tenant $tenant, User $user, array $options = []): void
+    {
+        // Prüfe ob bereits zugewiesen
+        $exists = DB::table('tenant_user')
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if ($exists) {
+            throw new \InvalidArgumentException(
+                "User {$user->id} ist bereits Tenant {$tenant->id} zugewiesen."
+            );
+        }
+
+        // Stelle sicher, dass User die tenant_admin Rolle hat
+        if (!$user->hasRole('tenant_admin')) {
+            $user->assignRole('tenant_admin');
+        }
+
+        // Wenn erster Tenant, als primary markieren
+        $isFirstTenant = !$user->administeredTenants()->exists();
+        $isPrimary = $options['is_primary'] ?? $isFirstTenant;
+
+        // Falls is_primary=true, andere Tenants auf is_primary=false setzen
+        if ($isPrimary) {
+            DB::table('tenant_user')
+                ->where('user_id', $user->id)
+                ->update(['is_primary' => false]);
+        }
+
+        // Pivot-Eintrag erstellen
+        DB::table('tenant_user')->insert([
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'role' => $options['role'] ?? 'tenant_admin',
+            'joined_at' => $options['joined_at'] ?? now()->toDateString(),
+            'is_active' => true,
+            'is_primary' => $isPrimary,
+            'permissions' => isset($options['permissions']) ? json_encode($options['permissions']) : null,
+            'notes' => $options['notes'] ?? null,
+            'metadata' => isset($options['metadata']) ? json_encode($options['metadata']) : null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // User's tenant_id aktualisieren falls nicht gesetzt
+        if (!$user->tenant_id) {
+            $user->update(['tenant_id' => $tenant->id]);
+        }
+
+        Log::info('Tenant Admin zugewiesen', [
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'role' => $options['role'] ?? 'tenant_admin',
+            'is_primary' => $isPrimary,
+        ]);
+    }
+
+    /**
+     * Entfernt einen User als Tenant-Admin von einem Tenant.
+     *
+     * @param Tenant $tenant Der Tenant
+     * @param User $user Der User
+     * @param bool $removeRoleIfLast Wenn true und dies der letzte Tenant ist, wird die tenant_admin Rolle entfernt
+     * @throws \InvalidArgumentException wenn User nicht zugewiesen ist
+     */
+    public function removeTenantAdmin(Tenant $tenant, User $user, bool $removeRoleIfLast = true): void
+    {
+        // Prüfe ob zugewiesen
+        $pivotEntry = DB::table('tenant_user')
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$pivotEntry) {
+            throw new \InvalidArgumentException(
+                "User {$user->id} ist kein Admin von Tenant {$tenant->id}."
+            );
+        }
+
+        $wasPrimary = $pivotEntry->is_primary;
+
+        // Pivot-Eintrag löschen
+        DB::table('tenant_user')
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->delete();
+
+        // Falls war primary, anderen Tenant als primary setzen
+        if ($wasPrimary) {
+            $nextTenant = DB::table('tenant_user')
+                ->where('user_id', $user->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($nextTenant) {
+                DB::table('tenant_user')
+                    ->where('id', $nextTenant->id)
+                    ->update(['is_primary' => true]);
+            }
+        }
+
+        // Prüfe ob dies der letzte Tenant war
+        $remainingTenants = $user->administeredTenants()->count();
+
+        if ($remainingTenants === 0 && $removeRoleIfLast) {
+            // Entferne tenant_admin Rolle
+            $user->removeRole('tenant_admin');
+
+            Log::info('Tenant Admin Rolle entfernt (letzter Tenant)', [
+                'user_id' => $user->id,
+            ]);
+        }
+
+        // Falls User's tenant_id auf diesen Tenant zeigt, auf anderen setzen
+        if ($user->tenant_id === $tenant->id) {
+            $newPrimaryTenant = $user->administeredTenants()
+                ->wherePivot('is_primary', true)
+                ->first();
+
+            if ($newPrimaryTenant) {
+                $user->update(['tenant_id' => $newPrimaryTenant->id]);
+            }
+        }
+
+        Log::info('Tenant Admin entfernt', [
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+        ]);
+    }
+
+    /**
+     * Aktualisiert die Rolle/Berechtigungen eines Tenant-Admins.
+     *
+     * @param Tenant $tenant Der Tenant
+     * @param User $user Der User
+     * @param array $updates Die zu aktualisierenden Felder
+     */
+    public function updateTenantAdmin(Tenant $tenant, User $user, array $updates): void
+    {
+        $allowedFields = ['role', 'is_active', 'is_primary', 'permissions', 'notes', 'metadata'];
+        $data = array_intersect_key($updates, array_flip($allowedFields));
+
+        if (empty($data)) {
+            return;
+        }
+
+        // JSON-Felder encodieren
+        if (isset($data['permissions'])) {
+            $data['permissions'] = json_encode($data['permissions']);
+        }
+        if (isset($data['metadata'])) {
+            $data['metadata'] = json_encode($data['metadata']);
+        }
+
+        // Falls is_primary=true, andere auf false setzen
+        if (isset($data['is_primary']) && $data['is_primary']) {
+            DB::table('tenant_user')
+                ->where('user_id', $user->id)
+                ->where('tenant_id', '!=', $tenant->id)
+                ->update(['is_primary' => false]);
+        }
+
+        $data['updated_at'] = now();
+
+        DB::table('tenant_user')
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->update($data);
+
+        Log::info('Tenant Admin aktualisiert', [
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'updates' => array_keys($data),
+        ]);
+    }
+
+    /**
+     * Liefert alle Tenant-Admins eines Tenants.
+     *
+     * @param Tenant $tenant Der Tenant
+     * @param bool $activeOnly Nur aktive Admins
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getTenantAdmins(Tenant $tenant, bool $activeOnly = true): \Illuminate\Database\Eloquent\Collection
+    {
+        $query = $tenant->adminUsers();
+
+        if ($activeOnly) {
+            $query->wherePivot('is_active', true);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Prüft ob ein Tenant mindestens einen aktiven Admin hat.
+     */
+    public function tenantHasActiveAdmin(Tenant $tenant): bool
+    {
+        return $tenant->adminUsers()
+            ->wherePivot('is_active', true)
+            ->exists();
+    }
+
+    /**
+     * Übertrage Tenant-Admin Rechte von einem User zu einem anderen.
+     *
+     * @param Tenant $tenant Der Tenant
+     * @param User $fromUser Aktueller Admin
+     * @param User $toUser Neuer Admin
+     * @param bool $keepSource Wenn true, behält der Quell-User seine Admin-Rechte
+     */
+    public function transferTenantAdmin(Tenant $tenant, User $fromUser, User $toUser, bool $keepSource = false): void
+    {
+        // Hole aktuelle Einstellungen des Quell-Users
+        $currentPivot = DB::table('tenant_user')
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $fromUser->id)
+            ->first();
+
+        if (!$currentPivot) {
+            throw new \InvalidArgumentException(
+                "User {$fromUser->id} ist kein Admin von Tenant {$tenant->id}."
+            );
+        }
+
+        // Weise neuen User zu
+        $this->assignTenantAdmin($tenant, $toUser, [
+            'role' => $currentPivot->role,
+            'is_primary' => $currentPivot->is_primary,
+            'permissions' => $currentPivot->permissions ? json_decode($currentPivot->permissions, true) : null,
+            'notes' => "Übertragen von User {$fromUser->id}",
+        ]);
+
+        // Entferne alten User falls gewünscht
+        if (!$keepSource) {
+            $this->removeTenantAdmin($tenant, $fromUser);
+        }
+
+        Log::info('Tenant Admin übertragen', [
+            'tenant_id' => $tenant->id,
+            'from_user_id' => $fromUser->id,
+            'to_user_id' => $toUser->id,
+            'kept_source' => $keepSource,
+        ]);
     }
 }

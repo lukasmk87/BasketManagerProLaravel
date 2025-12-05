@@ -41,7 +41,7 @@ class StatisticsController extends Controller
         $teams = Team::query()
             ->with(['club', 'players'])
             ->withCount(['players', 'homeGames', 'awayGames'])
-            ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
+            ->when(!$user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) use ($user) {
                 return $query->where(function ($q) use ($user) {
                     $q->whereHas('club.users', function ($subQ) use ($user) {
                         $subQ->where('user_id', $user->id);
@@ -81,7 +81,7 @@ class StatisticsController extends Controller
         
         $players = Player::query()
             ->with(['team.club', 'user'])
-            ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
+            ->when(!$user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) use ($user) {
                 return $query->whereHas('team', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
                       ->orWhereJsonContains('assistant_coaches', $user->id)
@@ -126,7 +126,7 @@ class StatisticsController extends Controller
         $games = Game::query()
             ->with(['homeTeam.club', 'awayTeam.club'])
             ->where('status', 'finished')
-            ->when(!$user->hasRole('admin') && !$user->hasRole('super_admin'), function ($query) use ($user) {
+            ->when(!$user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) use ($user) {
                 return $query->where(function ($q) use ($user) {
                     $q->whereHas('homeTeam', function ($subQ) use ($user) {
                         $subQ->where('head_coach_id', $user->id)
@@ -174,7 +174,7 @@ class StatisticsController extends Controller
      */
     private function getOverallStatistics($user): array
     {
-        if ($user->hasRole('admin') || $user->hasRole('super_admin')) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             // System-wide statistics for admin users
             return [
                 'total_teams' => Team::count(),

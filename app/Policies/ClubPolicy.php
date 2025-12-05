@@ -79,7 +79,7 @@ class ClubPolicy
     public function update(User $user, Club $club): bool
     {
         // Super admins and admins can edit any club
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -119,7 +119,7 @@ class ClubPolicy
     public function manageSettings(User $user, Club $club): bool
     {
         // Super admins and admins can manage any club settings
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -138,7 +138,7 @@ class ClubPolicy
     public function manageMembers(User $user, Club $club): bool
     {
         // Super admins and admins can manage any club members
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -189,7 +189,7 @@ class ClubPolicy
     public function assignRoles(User $user, Club $club): bool
     {
         // Super admins and admins can assign roles in any club
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -208,7 +208,7 @@ class ClubPolicy
     public function createTeams(User $user, Club $club): bool
     {
         // Super admins and admins can create teams in any club
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -227,7 +227,7 @@ class ClubPolicy
     public function manageFinances(User $user, Club $club): bool
     {
         // Super admins and admins can manage any club finances
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -242,20 +242,24 @@ class ClubPolicy
 
     /**
      * Determine whether the user can manage club billing (Stripe subscriptions).
+     *
+     * WICHTIG: Club Admin hat KEINE Billing/Subscription-Rechte!
+     * Nur Super Admin und Tenant Admin können Billing verwalten.
      */
     public function manageBilling(User $user, Club $club): bool
     {
-        // Super admins and admins can manage billing for any club
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        // Super Admin kann alle Clubs verwalten
+        if ($user->hasRole('super_admin')) {
             return true;
         }
 
-        // Club admins can only manage billing for clubs they administer
-        if ($user->hasRole('club_admin') && $user->can('view financial data')) {
-            $administeredClubIds = $user->getAdministeredClubIds();
-            return in_array($club->id, $administeredClubIds);
+        // Tenant Admin kann nur Clubs in eigenen Tenants verwalten
+        if ($user->hasRole('tenant_admin')) {
+            $tenantIds = $user->getAdministeredTenantIds();
+            return in_array($club->tenant_id, $tenantIds);
         }
 
+        // Club Admin hat KEINE Billing-Rechte (kritische Settings!)
         return false;
     }
 
@@ -265,7 +269,7 @@ class ClubPolicy
     public function manageMedia(User $user, Club $club): bool
     {
         // Super admins and admins can manage any club media
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -298,7 +302,7 @@ class ClubPolicy
     public function sendAnnouncements(User $user, Club $club): bool
     {
         // Super admins and admins can send announcements for any club
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -317,7 +321,7 @@ class ClubPolicy
     public function manageTournaments(User $user, Club $club): bool
     {
         // Super admins and admins can manage tournaments for any club
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -363,7 +367,7 @@ class ClubPolicy
     public function changeStatus(User $user, Club $club): bool
     {
         // Only admins and super_admins can change club status
-        if (!$user->hasAnyRole(['admin', 'super_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return false;
         }
 
@@ -407,7 +411,7 @@ class ClubPolicy
     public function manageIntegrations(User $user, Club $club): bool
     {
         // Super admins and admins can manage integrations for any club
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -426,7 +430,7 @@ class ClubPolicy
     public function viewComplianceData(User $user, Club $club): bool
     {
         // Super admins and admins can view compliance data for any club
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 

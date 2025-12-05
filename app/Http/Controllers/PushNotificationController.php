@@ -259,7 +259,7 @@ class PushNotificationController extends Controller
         // Send to federation administrators
         $recipients = \App\Models\User::where('tenant_id', $tenantId)
             ->whereHas('roles', function ($query) {
-                $query->whereIn('name', ['admin', 'club_admin', 'federation_admin']);
+                $query->whereIn('name', ['tenant_admin', 'club_admin', 'federation_admin']);
             })
             ->pluck('id')
             ->toArray();
@@ -435,7 +435,7 @@ class PushNotificationController extends Controller
         $days = $request->input('days', 30);
 
         // Check if user has permission to view stats
-        if (!$user->hasRole(['admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'club_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Insufficient permissions'
@@ -462,7 +462,7 @@ class PushNotificationController extends Controller
         $user = $request->user();
 
         // Only admins can check config
-        if (!$user->hasRole(['admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'club_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Insufficient permissions'
@@ -493,7 +493,7 @@ class PushNotificationController extends Controller
         $user = $request->user();
 
         // Only admins can cleanup subscriptions
-        if (!$user->hasRole(['admin'])) {
+        if (!$user->hasRole('tenant_admin')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Insufficient permissions'

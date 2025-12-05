@@ -30,7 +30,7 @@ class TeamController extends Controller
         $teams = Team::query()
             ->with(['club', 'headCoach'])
             ->withCount(['players', 'homeGames', 'awayGames'])
-            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+            ->when($user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) {
                 // Admin users see all teams
                 return $query;
             }, function ($query) use ($user) {
@@ -85,7 +85,7 @@ class TeamController extends Controller
         $clubs = Club::query()
             ->select(['id', 'name'])
             ->where('is_active', true)
-            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+            ->when($user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) {
                 // Admin users see all clubs
                 return $query;
             }, function ($query) use ($user) {
@@ -277,7 +277,7 @@ class TeamController extends Controller
         $clubs = Club::query()
             ->select(['id', 'name'])
             ->where('is_active', true)
-            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+            ->when($user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) {
                 // Admin users see all clubs
                 return $query;
             }, function ($query) use ($user) {

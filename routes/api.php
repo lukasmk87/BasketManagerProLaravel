@@ -167,7 +167,7 @@ Route::get('status', function () {
 | and monitoring API usage. Protected with admin authentication.
 |
 */
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin/rate-limits')->group(function () {
+Route::middleware(['auth:sanctum', 'role:tenant_admin'])->prefix('admin/rate-limits')->group(function () {
     Route::get('dashboard', [App\Http\Controllers\Admin\RateLimitController::class, 'dashboard']);
     Route::get('user/{user}/status', [App\Http\Controllers\Admin\RateLimitController::class, 'userStatus']);
     Route::post('exceptions', [App\Http\Controllers\Admin\RateLimitController::class, 'createException']);

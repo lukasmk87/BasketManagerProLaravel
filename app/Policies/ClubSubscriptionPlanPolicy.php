@@ -26,7 +26,7 @@ class ClubSubscriptionPlanPolicy
         // Check general permission
         if ($user->can('view club subscription plans')) {
             // Super admin and admin can view all plans
-            if ($user->hasAnyRole(['super_admin', 'admin'])) {
+            if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
                 return true;
             }
 
@@ -60,7 +60,7 @@ class ClubSubscriptionPlanPolicy
         }
 
         // Super admin and admin can update all plans
-        if ($user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -88,7 +88,7 @@ class ClubSubscriptionPlanPolicy
         }
 
         // Super admin and admin can delete all plans
-        if ($user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -106,7 +106,7 @@ class ClubSubscriptionPlanPolicy
     public function restore(User $user, ClubSubscriptionPlan $plan): bool
     {
         return $user->can('delete club subscription plans')
-            && $user->hasAnyRole(['super_admin', 'admin']);
+            && $user->hasAnyRole(['super_admin', 'tenant_admin']);
     }
 
     /**
@@ -157,6 +157,6 @@ class ClubSubscriptionPlanPolicy
 
         // Only admins and super_admins can manage features
         // Club admins have limited control
-        return $user->hasAnyRole(['super_admin', 'admin', 'club_admin']);
+        return $user->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin']);
     }
 }

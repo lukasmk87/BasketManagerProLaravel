@@ -534,7 +534,28 @@ class Tenant extends Model implements Invoiceable
     {
         return $this->hasMany(User::class);
     }
-    
+
+    /**
+     * Get all admin users for this tenant via pivot table.
+     * Used for multi-tenant admin assignment.
+     */
+    public function adminUsers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'tenant_user')
+            ->withPivot('role', 'joined_at', 'is_active', 'is_primary', 'permissions')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get active tenant admins.
+     */
+    public function activeAdmins(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->adminUsers()
+            ->wherePivot('is_active', true)
+            ->wherePivot('role', 'tenant_admin');
+    }
+
     public function teams()
     {
         return $this->hasMany(Team::class);

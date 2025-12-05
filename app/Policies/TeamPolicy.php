@@ -16,7 +16,7 @@ class TeamPolicy
     public function viewAny(User $user): bool
     {
         // Super admins and admins can view all teams
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -35,7 +35,7 @@ class TeamPolicy
     public function view(User $user, Team $team): bool
     {
         // Super admins and admins can view all teams
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -82,7 +82,7 @@ class TeamPolicy
     public function create(User $user): bool
     {
         // Super admins and admins can create teams
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -101,7 +101,7 @@ class TeamPolicy
     public function update(User $user, Team $team): bool
     {
         // Super admins and admins can edit all teams
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -127,7 +127,7 @@ class TeamPolicy
     public function delete(User $user, Team $team): bool
     {
         // Super admins and admins can delete all teams
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -147,7 +147,7 @@ class TeamPolicy
     public function manageRoster(User $user, Team $team): bool
     {
         // Super admins and admins can manage all team rosters
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -178,7 +178,7 @@ class TeamPolicy
     public function assignCoaches(User $user, Team $team): bool
     {
         // Super admins and admins can assign coaches to all teams
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -212,7 +212,7 @@ class TeamPolicy
     public function manageSettings(User $user, Team $team): bool
     {
         // Super admins and admins can manage all team settings
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 

@@ -31,7 +31,7 @@ class TournamentAwardPolicy
         }
 
         // Club admins, trainers, and players can view awards
-        return $user->hasAnyRole(['club_admin', 'trainer', 'player', 'admin']);
+        return $user->hasAnyRole(['club_admin', 'trainer', 'player', 'tenant_admin']);
     }
 
     /**
@@ -78,7 +78,7 @@ class TournamentAwardPolicy
         }
 
         // Club admins can create awards
-        return $user->hasAnyRole(['club_admin', 'admin']);
+        return $user->hasAnyRole(['club_admin', 'tenant_admin']);
     }
 
     /**

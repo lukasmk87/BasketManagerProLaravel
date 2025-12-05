@@ -110,7 +110,7 @@ class GymTimeSlotController extends Controller
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
-        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Keine Berechtigung zum Bearbeiten von Zeitslots.'
@@ -343,7 +343,7 @@ class GymTimeSlotController extends Controller
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
-        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Keine Berechtigung zum Bearbeiten von Zeitslots.'
@@ -448,7 +448,7 @@ class GymTimeSlotController extends Controller
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
-        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Keine Berechtigung zum Zuordnen von Teams.'
@@ -509,7 +509,7 @@ class GymTimeSlotController extends Controller
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
-        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Keine Berechtigung zum Entfernen von Team-Zuordnungen.'
@@ -633,7 +633,7 @@ class GymTimeSlotController extends Controller
             $user = Auth::user();
             $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
-            if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+            if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Keine Berechtigung zum Zuordnen von Teams.'
@@ -847,7 +847,7 @@ class GymTimeSlotController extends Controller
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
-        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Keine Berechtigung zum Entfernen von Team-Zuordnungen.'

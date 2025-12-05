@@ -280,12 +280,12 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
         $superAdmin->givePermissionTo(Permission::all());
 
-        // System Administrator Role
-        $admin = Role::firstOrCreate([
-            'name' => 'admin',
+        // Tenant Administrator Role (volle Kontrolle im Tenant inkl. Billing)
+        $tenantAdmin = Role::firstOrCreate([
+            'name' => 'tenant_admin',
             'guard_name' => 'web'
         ]);
-        $admin->givePermissionTo([
+        $tenantAdmin->givePermissionTo([
             // User Management
             'view users', 'create users', 'edit users', 'delete users', 'manage user roles',
             

@@ -28,7 +28,7 @@ class PlayerController extends Controller
         $players = Player::query()
             ->with(['teams.club', 'user'])
             ->join('users', 'players.user_id', '=', 'users.id')
-            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+            ->when($user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) {
                 // Admin users see all players
                 return $query;
             }, function ($query) use ($user) {
@@ -70,7 +70,7 @@ class PlayerController extends Controller
             ->with('club')
             ->select(['id', 'name', 'club_id'])
             ->where('is_active', true)
-            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+            ->when($user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) {
                 // Admin users see all teams
                 return $query;
             }, function ($query) use ($user) {
@@ -254,7 +254,7 @@ class PlayerController extends Controller
                 'update' => auth()->user()->can('update', $player),
                 'delete' => auth()->user()->can('delete', $player),
                 'view_medical' => auth()->user()->can('view', $player) && 
-                    (auth()->user()->hasRole(['admin', 'club_admin', 'trainer']) || auth()->id() === $player->user_id),
+                    (auth()->user()->hasAnyRole(['tenant_admin', 'club_admin', 'trainer']) || auth()->id() === $player->user_id),
             ],
         ]);
     }
@@ -308,7 +308,7 @@ class PlayerController extends Controller
             ->with('club')
             ->select(['id', 'name', 'club_id'])
             ->where('is_active', true)
-            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+            ->when($user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) {
                 // Admin users see all teams
                 return $query;
             }, function ($query) use ($user) {

@@ -52,13 +52,8 @@ class EnsureOnboardingComplete
             return $next($request);
         }
 
-        // Skip for super admins (they don't need onboarding)
-        if ($user->hasRole('super_admin')) {
-            return $next($request);
-        }
-
-        // Skip for admins (system-level users)
-        if ($user->hasRole('admin')) {
+        // Skip for super admins and tenant admins (they don't need onboarding)
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return $next($request);
         }
 

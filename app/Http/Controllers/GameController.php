@@ -26,7 +26,7 @@ class GameController extends Controller
         // Get games based on user permissions
         $games = Game::query()
             ->with(['homeTeam.club', 'awayTeam.club'])
-            ->when($user->hasRole('admin') || $user->hasRole('super_admin'), function ($query) {
+            ->when($user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) {
                 // Admin users see all games
                 return $query;
             }, function ($query) use ($user) {

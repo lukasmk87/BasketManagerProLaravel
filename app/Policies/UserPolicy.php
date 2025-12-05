@@ -28,7 +28,7 @@ class UserPolicy
         }
 
         // Super Admins and Admins have full access
-        if ($user->hasAnyRole(['super_admin', 'admin']) && $user->can('view users')) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin']) && $user->can('view users')) {
             return true;
         }
 
@@ -90,14 +90,14 @@ class UserPolicy
         }
 
         // Super Admins and Admins have full access
-        if ($user->hasAnyRole(['super_admin', 'admin']) && $user->can('edit users')) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin']) && $user->can('edit users')) {
             return true;
         }
 
         // Club admins have restricted access
         if ($user->hasRole('club_admin')) {
-            // Club admins CANNOT edit other admins (super_admin, admin, club_admin)
-            if ($model->hasAnyRole(['super_admin', 'admin', 'club_admin'])) {
+            // Club admins CANNOT edit other admins (super_admin, tenant_admin, club_admin)
+            if ($model->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin'])) {
                 return false;
             }
 
@@ -141,7 +141,7 @@ class UserPolicy
         }
 
         // Super admins and admins with delete permission can delete
-        if ($user->hasAnyRole(['super_admin', 'admin']) && $user->can('delete users')) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin']) && $user->can('delete users')) {
             // Super admins cannot be deleted by regular admins
             if ($model->hasRole('super_admin') && !$user->hasRole('super_admin')) {
                 return false;
@@ -152,7 +152,7 @@ class UserPolicy
         // Club admins can delete users in their clubs
         if ($user->hasRole('club_admin')) {
             // Club admins cannot delete admins or super admins
-            if ($model->hasAnyRole(['super_admin', 'admin', 'club_admin'])) {
+            if ($model->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin'])) {
                 return false;
             }
 
@@ -202,8 +202,8 @@ class UserPolicy
             return false;
         }
 
-        // Regular admins cannot impersonate other admins
-        if ($model->hasRole('admin') && !$user->hasRole('super_admin')) {
+        // Regular tenant_admins cannot impersonate other tenant_admins
+        if ($model->hasRole('tenant_admin') && !$user->hasRole('super_admin')) {
             return false;
         }
 
@@ -231,7 +231,7 @@ class UserPolicy
         }
 
         // Regular admins cannot manage super admin or other admin roles
-        if ($model->hasAnyRole(['super_admin', 'admin'])) {
+        if ($model->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return false;
         }
 
@@ -249,7 +249,7 @@ class UserPolicy
         }
 
         // Admins can view sensitive info
-        if ($user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return true;
         }
 
@@ -417,14 +417,14 @@ class UserPolicy
         }
 
         // Super Admins and Admins can send to anyone
-        if ($user->hasAnyRole(['super_admin', 'admin']) && $user->can('edit users')) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin']) && $user->can('edit users')) {
             return true;
         }
 
         // Club admins have restricted access
         if ($user->hasRole('club_admin')) {
             // Club admins CANNOT send password reset to other admins
-            if ($model->hasAnyRole(['super_admin', 'admin', 'club_admin'])) {
+            if ($model->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin'])) {
                 return false;
             }
 

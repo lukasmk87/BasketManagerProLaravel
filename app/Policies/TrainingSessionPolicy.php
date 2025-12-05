@@ -65,7 +65,7 @@ class TrainingSessionPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create training sessions') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->can('create training sessions') || $user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin']);
     }
 
     /**

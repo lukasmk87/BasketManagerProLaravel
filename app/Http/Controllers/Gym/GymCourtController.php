@@ -81,7 +81,7 @@ class GymCourtController extends Controller
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
-        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Keine Berechtigung zum Bearbeiten von Feldern.'
@@ -140,7 +140,7 @@ class GymCourtController extends Controller
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
-        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Keine Berechtigung zum Erstellen von Feldern.'

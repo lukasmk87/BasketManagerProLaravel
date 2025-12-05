@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 // ============================================
 
 Route::prefix('club-admin/invitations')
-    ->middleware(['auth', 'verified', 'role:super_admin|admin|club_admin'])
+    ->middleware(['auth', 'verified', 'role:super_admin|tenant_admin|club_admin'])
     ->name('club-admin.invitations.')
     ->group(function () {
         // List all invitations

@@ -185,7 +185,7 @@ class EmergencyContactPolicy
         }
 
         // Emergency personnel can access via QR code
-        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             return true;
         }
 
@@ -305,7 +305,7 @@ class EmergencyContactPolicy
         }
 
         // Only admins and club admins can verify emergency contacts
-        return $user->hasAnyRole(['admin', 'super_admin', 'club_admin']);
+        return $user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin']);
     }
 
     /**
@@ -358,7 +358,7 @@ class EmergencyContactPolicy
         }
 
         // Emergency responders and coaches have priority access
-        if ($user->hasAnyRole(['admin', 'super_admin', 'club_admin', 'trainer'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin', 'trainer'])) {
             return true;
         }
 
@@ -371,7 +371,7 @@ class EmergencyContactPolicy
     public function updateProtocols(User $user, EmergencyContact $emergencyContact): bool
     {
         // Only admins and club admins can update emergency protocols
-        if (!$user->hasAnyRole(['admin', 'super_admin', 'club_admin'])) {
+        if (!$user->hasAnyRole(['tenant_admin', 'super_admin', 'club_admin'])) {
             return false;
         }
 

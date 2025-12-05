@@ -15,7 +15,7 @@ class DrillPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('manage training drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->can('manage training drills') || $user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin']);
     }
 
     /**
@@ -39,7 +39,7 @@ class DrillPolicy
         }
 
         // Trainers, club admins and admins can view all drills
-        if ($user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -57,7 +57,7 @@ class DrillPolicy
         }
         
         // Check if user has one of the required roles
-        if ($user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin'])) {
             return true;
         }
         
@@ -78,7 +78,7 @@ class DrillPolicy
      */
     public function updateAny(User $user): bool
     {
-        return $user->can('manage training drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->can('manage training drills') || $user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin']);
     }
 
     /**
@@ -86,7 +86,7 @@ class DrillPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('manage training drills') || $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->can('manage training drills') || $user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin']);
     }
 
     /**
@@ -105,7 +105,7 @@ class DrillPolicy
         }
 
         // Admins can edit all drills
-        if ($user->hasRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -138,7 +138,7 @@ class DrillPolicy
         }
 
         // Admins can delete all drills
-        if ($user->hasRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -166,7 +166,7 @@ class DrillPolicy
         }
 
         // Admins and super admins can review all drills
-        if ($user->hasRole(['admin', 'super_admin'])) {
+        if ($user->hasAnyRole(['tenant_admin', 'super_admin'])) {
             return true;
         }
 
@@ -199,7 +199,7 @@ class DrillPolicy
         }
 
         // Trainers and coaches can rate drills
-        return $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin']);
     }
 
     /**
@@ -213,7 +213,7 @@ class DrillPolicy
         }
 
         // Trainers and coaches can favorite drills
-        return $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin']);
     }
 
     /**
@@ -232,7 +232,7 @@ class DrillPolicy
         }
 
         // Trainers can use drills in training sessions
-        return $user->hasRole(['trainer', 'club_admin', 'admin', 'super_admin']);
+        return $user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin', 'super_admin']);
     }
 
     /**

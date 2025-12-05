@@ -27,7 +27,7 @@ class GameImportController extends Controller
         // Get available teams based on user role
         $teams = collect();
 
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             // Admins see all teams
             $teams = Team::with('club')->where('is_active', true)->get();
         } elseif ($user->hasRole('club_admin')) {
@@ -50,7 +50,7 @@ class GameImportController extends Controller
 
         return Inertia::render('Games/Import/Index', [
             'teams' => $teams,
-            'canImportForAllTeams' => $user->hasRole(['super_admin', 'admin', 'club_admin']),
+            'canImportForAllTeams' => $user->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin']),
         ]);
     }
 
@@ -358,7 +358,7 @@ class GameImportController extends Controller
             ->where('import_source', '!=', 'manual');
 
         // Filter by user permissions
-        if (! $user->hasRole(['super_admin', 'admin'])) {
+        if (! $user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             if ($user->hasRole('club_admin')) {
                 $clubIds = $user->clubs()->pluck('clubs.id');
                 $query->whereHas('homeTeam', function ($q) use ($clubIds) {
@@ -401,7 +401,7 @@ class GameImportController extends Controller
 
         // Get teams for filter dropdown
         $teams = collect();
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             $teams = Team::with('club')->where('is_active', true)->get();
         } elseif ($user->hasRole('club_admin')) {
             $clubIds = $user->clubs()->pluck('clubs.id');
@@ -446,7 +446,7 @@ class GameImportController extends Controller
      */
     private function checkTeamAccess($user, Team $team): void
     {
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return; // Full access
         }
 
@@ -476,7 +476,7 @@ class GameImportController extends Controller
      */
     private function getAvailableTeams($user)
     {
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             // Admins see all teams
             return Team::with('club')->where('is_active', true)->orderBy('name')->get();
         } elseif ($user->hasRole('club_admin')) {

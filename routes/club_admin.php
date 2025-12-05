@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('club-admin')
     ->name('club-admin.')
-    ->middleware(['auth', 'verified', 'role:club_admin|admin|super_admin'])
+    ->middleware(['auth', 'verified', 'role:club_admin|tenant_admin|super_admin'])
     ->group(function () {
 
         // Dashboard (Single Action Controller)
