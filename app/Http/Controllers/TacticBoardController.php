@@ -173,7 +173,7 @@ class TacticBoardController extends Controller
         $plays = $this->playService->getPlays($filters, 100);
 
         // Get user's teams
-        $teams = $request->user()->teams()->get(['basketball_teams.id', 'basketball_teams.name']);
+        $teams = $request->user()->teams()->get(['teams.id', 'teams.name']);
 
         return Inertia::render('TacticBoard/Playbooks/Create', [
             'categories' => $this->playbookService->getCategories(),
@@ -214,7 +214,7 @@ class TacticBoardController extends Controller
         $plays = $this->playService->getPlays($filters, 100);
 
         // Get user's teams
-        $teams = $request->user()->teams()->get(['basketball_teams.id', 'basketball_teams.name']);
+        $teams = $request->user()->teams()->get(['teams.id', 'teams.name']);
 
         return Inertia::render('TacticBoard/Playbooks/Edit', [
             'playbook' => $playbook->load(['createdBy', 'team', 'plays']),

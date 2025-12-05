@@ -44,7 +44,7 @@ class ClubPlayerAdminController extends Controller
             ->with([
                 'user:id,name,email,birth_date',
                 'teams' => fn ($q) => $q->where('club_id', $primaryClub->id)
-                    ->select(['basketball_teams.id', 'basketball_teams.name'])
+                    ->select(['teams.id', 'teams.name'])
                     ->withPivot('jersey_number', 'primary_position'),
             ])
             ->get()

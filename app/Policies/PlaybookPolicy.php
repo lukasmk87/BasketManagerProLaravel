@@ -36,7 +36,7 @@ class PlaybookPolicy
 
         // Team members can view their team's playbooks
         if ($playbook->team_id) {
-            $userTeamIds = $user->teams()->pluck('basketball_teams.id')->toArray();
+            $userTeamIds = $user->teams()->pluck('teams.id')->toArray();
             if (in_array($playbook->team_id, $userTeamIds)) {
                 return true;
             }
@@ -100,7 +100,7 @@ class PlaybookPolicy
 
         // Trainers can edit their team's playbooks
         if ($user->hasRole('trainer') && $playbook->team_id) {
-            $userTeamIds = $user->teams()->where('role', 'trainer')->pluck('basketball_teams.id')->toArray();
+            $userTeamIds = $user->teams()->wherePivot('role', 'trainer')->pluck('teams.id')->toArray();
             return in_array($playbook->team_id, $userTeamIds);
         }
 
