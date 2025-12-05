@@ -30,7 +30,7 @@ class StoreTenantRequest extends FormRequest
             'subdomain' => ['nullable', 'string', 'max:255', 'unique:tenants,subdomain', 'alpha_dash'],
 
             // Billing Information
-            'billing_email' => ['nullable', 'email', 'max:255'],
+            'billing_email' => ['required', 'email', 'max:255'],
             'billing_name' => ['nullable', 'string', 'max:255'],
             'billing_address' => ['nullable', 'string', 'max:500'],
             'vat_number' => ['nullable', 'string', 'max:50'],
@@ -76,6 +76,7 @@ class StoreTenantRequest extends FormRequest
     {
         return [
             'name.required' => 'Der Tenant-Name ist erforderlich.',
+            'billing_email.required' => 'Die Billing-E-Mail-Adresse ist erforderlich.',
             'slug.unique' => 'Dieser Slug ist bereits vergeben.',
             'slug.alpha_dash' => 'Der Slug darf nur Buchstaben, Zahlen, Bindestriche und Unterstriche enthalten.',
             'domain.unique' => 'Diese Domain ist bereits vergeben.',

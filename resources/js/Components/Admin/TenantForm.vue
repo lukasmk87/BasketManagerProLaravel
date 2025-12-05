@@ -147,12 +147,13 @@ const locales = [
 
                 <!-- Billing Email -->
                 <div>
-                    <InputLabel for="billing_email" value="Billing E-Mail" />
+                    <InputLabel for="billing_email" value="Billing E-Mail *" />
                     <TextInput
                         id="billing_email"
                         v-model="form.billing_email"
                         type="email"
                         class="mt-1 block w-full"
+                        required
                     />
                     <InputError :message="form.errors.billing_email" class="mt-2" />
                 </div>

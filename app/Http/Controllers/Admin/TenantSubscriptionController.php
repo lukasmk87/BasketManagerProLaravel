@@ -144,6 +144,12 @@ class TenantSubscriptionController extends Controller
                 $validated['slug'] = Str::slug($validated['name']);
             }
 
+            // Fallback for billing_email if empty (defense in depth)
+            if (empty($validated['billing_email'])) {
+                $domain = $validated['domain'] ?? $validated['subdomain'] ?? 'tenant';
+                $validated['billing_email'] = config('tenant.billing_email', config('mail.from.address', 'admin@' . $domain));
+            }
+
             // Set defaults
             $validated['is_active'] = $validated['is_active'] ?? true;
             $validated['is_suspended'] = $validated['is_suspended'] ?? false;

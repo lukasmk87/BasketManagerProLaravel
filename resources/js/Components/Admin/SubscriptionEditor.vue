@@ -63,6 +63,10 @@ const cancelEditing = () => {
 };
 
 const submitUpdate = () => {
+    if (!props.tenant?.id) {
+        console.error('Tenant ID is required for subscription update');
+        return;
+    }
     form.put(route('admin.tenants.subscription.update', { tenant: props.tenant.id }), {
         onSuccess: () => {
             isEditing.value = false;
@@ -96,7 +100,7 @@ const getPlanBadgeClass = (plan) => {
                         Aktueller Plan für {{ tenant.name }}
                     </p>
                 </div>
-                <PrimaryButton v-if="!isEditing" @click="startEditing" type="button">
+                <PrimaryButton v-if="!isEditing && tenant?.id" @click="startEditing" type="button">
                     Plan ändern
                 </PrimaryButton>
             </div>
