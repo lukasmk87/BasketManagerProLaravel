@@ -49,34 +49,32 @@ class ResolveTenantMiddleware
                 if (app()->environment('staging') && $request->getHost() === 'staging.basketmanager-pro.de') {
                     $tenant = $this->createMockStagingTenant();
                 }
-                // Super-Admins are system users - skip tenant resolution entirely
+                // Super-Admins are system users - operate tenant-independently
                 elseif ($this->isSuperAdmin($request)) {
-                    // Super-Admins operate tenant-independently and see ALL data
-                    // They have tenant_id = NULL in database
-                    // No tenant context is set (app('tenant') = NULL)
+                    // Super-Admins see ALL data across ALL tenants
+                    // Set explicit null context so app('tenant') is defined (not undefined)
+                    app()->instance('tenant', null);
+                    app()->instance('tenant.id', null);
 
-                    // Optional: Check if Super Admin selected a specific tenant filter (session-based)
+                    // Set database session variables to NULL (bypasses RLS filtering)
+                    $this->setSuperAdminDatabaseContext();
+
+                    // Optional: Check if Super Admin selected a specific tenant filter
                     if ($request->hasSession()) {
                         $selectedTenantId = $request->session()->get('super_admin_selected_tenant_id');
                         if ($selectedTenantId) {
                             $selectedTenant = Tenant::where('id', $selectedTenantId)->where('is_active', true)->first();
                             if ($selectedTenant) {
-                                // Set tenant context only for filtering purposes (not permanent binding)
-                                $tenant = $selectedTenant;
-                                // Continue with tenant context setup below
-                            } else {
-                                // Tenant selection is invalid, clear it
-                                $request->session()->forget('super_admin_selected_tenant_id');
+                                // Set tenant context for filtering purposes
+                                $this->setTenantContext($selectedTenant);
                                 return $next($request);
                             }
-                        } else {
-                            // No tenant selected - proceed without tenant context
-                            return $next($request);
+                            // Invalid selection - clear it and continue without tenant
+                            $request->session()->forget('super_admin_selected_tenant_id');
                         }
-                    } else {
-                        // No session available - proceed without tenant context
-                        return $next($request);
                     }
+
+                    return $next($request);
                 } else {
                     // Try to resolve default tenant before returning error
                     $defaultTenant = Tenant::resolveDefaultTenant($request->getHost());
@@ -263,6 +261,28 @@ class ResolveTenantMiddleware
         $pdo = app('db')->connection()->getPdo();
         $stmt = $pdo->prepare("SET @tenant_id = ?");
         $stmt->execute([$tenant->id]);
+    }
+
+    /**
+     * Set database context for Super Admin (no tenant filtering).
+     * Sets session variables to NULL to signal that no tenant filtering should apply.
+     */
+    private function setSuperAdminDatabaseContext(): void
+    {
+        // Skip for SQLite (test environment)
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
+        // Set @tenant_id to NULL - signals no tenant filtering
+        if (config('database.default') === 'mysql') {
+            DB::statement('SET @tenant_id = NULL');
+            DB::statement('SET @current_tenant_id = NULL');
+        }
+
+        if (config('database.default') === 'pgsql') {
+            DB::statement('SET basketmanager.current_tenant_id = NULL');
+        }
     }
 
     /**

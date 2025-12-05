@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -79,6 +80,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Disable data wrapping for JSON Resources (important for Inertia.js)
+        JsonResource::withoutWrapping();
+
         // Skip all boot logic during installation to prevent 500 errors
         // when database tables don't exist yet
         if ($this->isInstalling()) {
