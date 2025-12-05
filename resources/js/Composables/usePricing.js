@@ -95,9 +95,9 @@ export function usePricing() {
      * Get admin price input configuration.
      */
     const adminInputConfig = computed(() => page.props.pricing?.admin_input || {
-        mode: 'net',
-        label: 'Nettopreis (zzgl. MwSt.)',
-        input_is_gross: false,
+        mode: 'gross',
+        label: 'Bruttopreis (inkl. 19% MwSt.)',
+        input_is_gross: true,
     });
 
     /**
