@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Drill;
 use App\Models\Play;
 use App\Models\Playbook;
+use App\Services\TacticBoard\CategoryService;
 use App\Services\TacticBoard\DrillService;
 use App\Services\TacticBoard\PlayFavoriteService;
 use App\Services\TacticBoard\PlayService;
@@ -21,7 +22,8 @@ class TacticBoardController extends Controller
         protected PlaybookService $playbookService,
         protected PlayTemplateService $templateService,
         protected PlayFavoriteService $favoriteService,
-        protected DrillService $drillService
+        protected DrillService $drillService,
+        protected CategoryService $categoryService
     ) {
     }
 
@@ -280,6 +282,45 @@ class TacticBoardController extends Controller
             'courtTypes' => $this->playService->getCourtTypes(),
             'availableTags' => $this->templateService->getTemplateTags(),
             'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Display the categories management page.
+     */
+    public function categories(Request $request): Response
+    {
+        $this->authorize('viewAny', Play::class);
+
+        $filters = [];
+        if ($request->user()->tenant_id) {
+            $filters['tenant_id'] = $request->user()->tenant_id;
+        }
+
+        $categories = $this->categoryService->getCategories($filters);
+
+        // Add usage counts to each category
+        $categoriesWithUsage = $categories->map(function ($category) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'type' => $category->type,
+                'type_display' => $category->type_display,
+                'description' => $category->description,
+                'color' => $category->color,
+                'icon' => $category->icon,
+                'sort_order' => $category->sort_order,
+                'is_system' => $category->is_system,
+                'plays_count' => $category->getPlaysCount(),
+                'drills_count' => $category->getDrillsCount(),
+                'total_usage' => $category->getTotalUsageCount(),
+            ];
+        });
+
+        return Inertia::render('TacticBoard/Categories/Index', [
+            'categories' => $categoriesWithUsage,
+            'stats' => $this->categoryService->getCategoryStatistics($request->user()->tenant_id),
         ]);
     }
 }

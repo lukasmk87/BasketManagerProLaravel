@@ -222,6 +222,9 @@ Route::middleware([
         // Personal Library
         Route::get('/library', [TacticBoardController::class, 'library'])->name('library');
 
+        // Categories Management
+        Route::get('/categories', [TacticBoardController::class, 'categories'])->name('categories');
+
         // Drills (Visual Editor)
         Route::get('/drills', [DrillTacticBoardController::class, 'index'])->name('drills.index');
         Route::get('/drills/create', [DrillTacticBoardController::class, 'create'])->name('drills.create');
