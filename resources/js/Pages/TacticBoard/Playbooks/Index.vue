@@ -34,6 +34,12 @@
                                 Spielzüge
                             </Link>
                             <Link
+                                :href="route('tactic-board.drills.index')"
+                                class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                            >
+                                Übungen
+                            </Link>
+                            <Link
                                 :href="route('tactic-board.playbooks.index')"
                                 class="border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
                             >
