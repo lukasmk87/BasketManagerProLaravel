@@ -311,11 +311,14 @@ class TenantSubscriptionController extends Controller
                 'name', 'slug', 'domain', 'subdomain', 'is_active', 'is_suspended',
             ]);
 
+            // WICHTIG: Alten Plan-ID speichern VOR dem Update
+            $oldSubscriptionPlanId = $tenant->subscription_plan_id;
+
             // Update tenant
             $tenant->update($validated);
 
-            // If subscription plan changed, update limits from plan
-            if (! empty($validated['subscription_plan_id']) && $validated['subscription_plan_id'] !== $tenant->subscription_plan_id) {
+            // If subscription plan changed, update tier and limits from plan
+            if (! empty($validated['subscription_plan_id']) && $validated['subscription_plan_id'] !== $oldSubscriptionPlanId) {
                 $plan = SubscriptionPlan::find($validated['subscription_plan_id']);
                 if ($plan) {
                     $tenant->update([

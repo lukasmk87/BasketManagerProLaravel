@@ -196,7 +196,7 @@ const handleTenantDeleted = () => {
                                             Aktiv
                                         </dt>
                                         <dd class="text-2xl font-semibold text-gray-900">
-                                            {{ tenants.data?.filter(t => t.is_active).length || 0 }}
+                                            {{ tenants.data?.filter(t => t.is_active && !t.is_suspended).length || 0 }}
                                         </dd>
                                     </dl>
                                 </div>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
@@ -34,6 +34,21 @@ const subscriptionTiers = [
     { value: 'professional', label: 'Professional' },
     { value: 'enterprise', label: 'Enterprise' },
 ];
+
+// Watcher: Synchronisiere subscription_tier automatisch wenn ein Plan gewählt wird
+watch(() => props.form.subscription_plan_id, (newPlanId) => {
+    if (newPlanId) {
+        const selectedPlan = props.availablePlans.find(p => p.id === newPlanId);
+        if (selectedPlan && selectedPlan.slug) {
+            props.form.subscription_tier = selectedPlan.slug;
+        }
+    }
+});
+
+// Computed: Prüfe ob ein Plan gewählt ist (um Tier-Dropdown zu deaktivieren)
+const hasPlanSelected = computed(() => {
+    return !!props.form.subscription_plan_id;
+});
 
 const currencies = [
     { value: 'EUR', label: 'EUR (€)' },
@@ -267,13 +282,20 @@ const locales = [
                     <select
                         id="subscription_tier"
                         v-model="form.subscription_tier"
-                        class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                        :disabled="hasPlanSelected"
+                        :class="[
+                            'mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm',
+                            hasPlanSelected ? 'bg-gray-100 cursor-not-allowed' : ''
+                        ]"
                     >
                         <option value="">Bitte wählen...</option>
                         <option v-for="tier in subscriptionTiers" :key="tier.value" :value="tier.value">
                             {{ tier.label }}
                         </option>
                     </select>
+                    <p v-if="hasPlanSelected" class="mt-1 text-xs text-gray-500">
+                        Wird automatisch vom gewählten Plan übernommen
+                    </p>
                     <InputError :message="form.errors.subscription_tier" class="mt-2" />
                 </div>
 
