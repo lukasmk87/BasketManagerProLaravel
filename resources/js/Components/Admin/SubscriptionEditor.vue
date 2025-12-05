@@ -63,7 +63,7 @@ const cancelEditing = () => {
 };
 
 const submitUpdate = () => {
-    form.put(route('admin.tenants.subscription.update', props.tenant.id), {
+    form.put(route('admin.tenants.subscription.update', { tenant: props.tenant.id }), {
         onSuccess: () => {
             isEditing.value = false;
             emit('updated');

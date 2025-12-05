@@ -17,7 +17,7 @@ class SubscriptionPlanSeeder extends Seeder
                 'name' => 'Free',
                 'slug' => 'free',
                 'description' => 'Kostenloser Plan für kleine Vereine zum Testen der Plattform',
-                'price' => 0,
+                'price' => 0, // 0 Cents = €0
                 'currency' => 'EUR',
                 'billing_period' => 'monthly',
                 'trial_days' => 14,
@@ -45,7 +45,7 @@ class SubscriptionPlanSeeder extends Seeder
                 'name' => 'Basic',
                 'slug' => 'basic',
                 'description' => 'Ideal für kleine bis mittelgroße Vereine mit erweiterten Funktionen',
-                'price' => 49,
+                'price' => 4900, // 4900 Cents = €49
                 'currency' => 'EUR',
                 'billing_period' => 'monthly',
                 'trial_days' => 14,
@@ -79,7 +79,7 @@ class SubscriptionPlanSeeder extends Seeder
                 'name' => 'Professional',
                 'slug' => 'professional',
                 'description' => 'Für professionelle Vereine mit umfassenden Anforderungen',
-                'price' => 149,
+                'price' => 14900, // 14900 Cents = €149
                 'currency' => 'EUR',
                 'billing_period' => 'monthly',
                 'trial_days' => 14,
@@ -123,7 +123,7 @@ class SubscriptionPlanSeeder extends Seeder
                 'name' => 'Enterprise',
                 'slug' => 'enterprise',
                 'description' => 'Unbegrenzte Möglichkeiten für große Organisationen und Verbände',
-                'price' => 499,
+                'price' => 49900, // 49900 Cents = €499
                 'currency' => 'EUR',
                 'billing_period' => 'monthly',
                 'trial_days' => 30,
