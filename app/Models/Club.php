@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Contracts\Invoiceable;
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Concerns\HasInvoices;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -15,9 +17,9 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Club extends Model implements HasMedia
+class Club extends Model implements HasMedia, Invoiceable
 {
-    use HasFactory, SoftDeletes, LogsActivity, InteractsWithMedia, BelongsToTenant;
+    use HasFactory, SoftDeletes, LogsActivity, InteractsWithMedia, BelongsToTenant, HasInvoices;
 
     /**
      * The attributes that are mass assignable.
@@ -305,36 +307,22 @@ class Club extends Model implements HasMedia
         return $this->hasMany(ClubSubscriptionEvent::class);
     }
 
-    /**
-     * Get invoices for this club.
-     */
-    public function invoices(): HasMany
-    {
-        return $this->hasMany(ClubInvoice::class);
-    }
-
-    /**
-     * Get pending (unpaid) invoices for this club.
-     */
-    public function pendingInvoices(): HasMany
-    {
-        return $this->invoices()->pending();
-    }
-
-    /**
-     * Get invoice requests for this club.
-     */
-    public function invoiceRequests(): HasMany
-    {
-        return $this->hasMany(ClubInvoiceRequest::class);
-    }
+    // Note: invoices() and invoiceRequests() relations are provided by HasInvoices trait
 
     /**
      * Get pending invoice requests for this club.
      */
-    public function pendingInvoiceRequests(): HasMany
+    public function pendingInvoiceRequests()
     {
         return $this->invoiceRequests()->pending();
+    }
+
+    /**
+     * Get legacy club invoices (for backwards compatibility during migration).
+     */
+    public function legacyInvoices(): HasMany
+    {
+        return $this->hasMany(ClubInvoice::class);
     }
 
     // ============================
@@ -906,9 +894,135 @@ class Club extends Model implements HasMedia
     /**
      * Get the most recent unpaid invoice.
      */
-    public function getLatestUnpaidInvoice(): ?ClubInvoice
+    public function getLatestUnpaidInvoice(): ?Invoice
     {
         return $this->pendingInvoices()->latest('issue_date')->first();
+    }
+
+    // ============================
+    // INVOICEABLE INTERFACE IMPLEMENTATION
+    // ============================
+
+    /**
+     * Get the billing name for invoices.
+     */
+    public function getBillingName(): string
+    {
+        return $this->invoice_billing_name ?? $this->name;
+    }
+
+    /**
+     * Get the billing email for invoices.
+     */
+    public function getBillingEmail(): string
+    {
+        return $this->billing_email ?? $this->email;
+    }
+
+    /**
+     * Get the billing address for invoices.
+     */
+    public function getBillingAddress(): ?array
+    {
+        if ($this->billing_address) {
+            return $this->billing_address;
+        }
+
+        return [
+            'street' => $this->address_street,
+            'city' => $this->address_city,
+            'zip' => $this->address_zip,
+            'country' => $this->address_country,
+        ];
+    }
+
+    /**
+     * Get the VAT number for invoices.
+     */
+    public function getVatNumber(): ?string
+    {
+        return $this->invoice_vat_number;
+    }
+
+    /**
+     * Get the current subscription plan.
+     */
+    public function getSubscriptionPlan(): ?Model
+    {
+        return $this->subscriptionPlan;
+    }
+
+    /**
+     * Get the Stripe customer ID.
+     */
+    public function getStripeCustomerId(): ?string
+    {
+        return $this->stripe_customer_id;
+    }
+
+    /**
+     * Get the tenant ID this club belongs to.
+     */
+    public function getInvoiceableTenantId(): string
+    {
+        return $this->tenant_id;
+    }
+
+    /**
+     * Get the preferred payment method for this club.
+     */
+    public function getPreferredPaymentMethod(): string
+    {
+        return $this->paysViaInvoice() ? 'bank_transfer' : 'stripe';
+    }
+
+    /**
+     * Called when an invoice is paid.
+     */
+    public function onInvoicePaid(Invoice $invoice): void
+    {
+        // Aktiviere Subscription falls pending
+        if ($this->subscription_status === 'pending_payment') {
+            $this->update(['subscription_status' => 'active']);
+        }
+
+        // Logge Event
+        $this->subscriptionEvents()->create([
+            'event_type' => 'invoice_paid',
+            'stripe_subscription_id' => $this->stripe_subscription_id,
+            'plan_id' => $this->club_subscription_plan_id,
+            'metadata' => [
+                'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'amount' => $invoice->gross_amount,
+            ],
+        ]);
+    }
+
+    /**
+     * Called when an invoice becomes overdue.
+     */
+    public function onInvoiceOverdue(Invoice $invoice): void
+    {
+        // Logge Event
+        $this->subscriptionEvents()->create([
+            'event_type' => 'invoice_overdue',
+            'stripe_subscription_id' => $this->stripe_subscription_id,
+            'plan_id' => $this->club_subscription_plan_id,
+            'metadata' => [
+                'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'days_overdue' => $invoice->daysOverdue(),
+            ],
+        ]);
+    }
+
+    /**
+     * Get the display name for this invoiceable type.
+     */
+    public function getInvoiceableTypeName(): string
+    {
+        return 'Club';
     }
 
     // ============================

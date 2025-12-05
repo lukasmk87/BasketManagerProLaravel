@@ -2,7 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Services\Invoice\ClubInvoiceService;
+use App\Models\Invoice;
+use App\Services\Invoice\InvoiceService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -14,6 +15,7 @@ class ProcessOverdueInvoicesCommand extends Command
      * @var string
      */
     protected $signature = 'invoices:process-overdue
+                            {--type= : Filter by type (club, tenant)}
                             {--dry-run : Preview without processing}';
 
     /**
@@ -26,7 +28,7 @@ class ProcessOverdueInvoicesCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(ClubInvoiceService $invoiceService): int
+    public function handle(InvoiceService $invoiceService): int
     {
         $this->info('Processing overdue invoices...');
 
@@ -79,25 +81,31 @@ class ProcessOverdueInvoicesCommand extends Command
     protected function showDryRunPreview(): void
     {
         $now = now();
+        $type = $this->option('type');
+
+        // Build base query with type filter
+        $baseQuery = Invoice::query();
+        if ($type === 'club') {
+            $baseQuery->forClubs();
+        } elseif ($type === 'tenant') {
+            $baseQuery->forTenants();
+        }
 
         // Invoices that would be marked overdue
-        $wouldMarkOverdue = \App\Models\ClubInvoice::sent()
+        $wouldMarkOverdue = (clone $baseQuery)->sent()
             ->where('due_date', '<', $now)
             ->count();
 
         // Invoices eligible for reminders
         $maxReminders = config('invoices.reminders.max_reminders', 3);
-        $wouldSendReminders = \App\Models\ClubInvoice::overdue()
+        $wouldSendReminders = (clone $baseQuery)->overdue()
             ->where('reminder_count', '<', $maxReminders)
             ->count();
 
-        // Clubs that would be suspended
+        // Entities that would be suspended
         $suspendAfterDays = config('invoices.suspension.days_after_due', 30);
-        $wouldSuspend = \App\Models\ClubInvoice::overdue()
+        $wouldSuspend = (clone $baseQuery)->overdue()
             ->whereDate('due_date', '<=', $now->copy()->subDays($suspendAfterDays))
-            ->whereHas('club', function ($query) {
-                $query->where('subscription_status', '!=', 'suspended');
-            })
             ->count();
 
         $this->table(
@@ -112,5 +120,9 @@ class ProcessOverdueInvoicesCommand extends Command
         $this->newLine();
         $this->info("Reminder intervals: " . implode(', ', config('invoices.reminders.intervals', [7, 14, 21])) . " days");
         $this->info("Suspension after: {$suspendAfterDays} days overdue");
+
+        if ($type) {
+            $this->info("Filtered by type: {$type}");
+        }
     }
 }

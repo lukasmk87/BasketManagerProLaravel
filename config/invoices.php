@@ -136,8 +136,43 @@ return [
         'from_address' => env('INVOICE_EMAIL_FROM', env('MAIL_FROM_ADDRESS')),
         'from_name' => env('INVOICE_EMAIL_FROM_NAME', env('MAIL_FROM_NAME')),
         'reply_to' => env('INVOICE_EMAIL_REPLY_TO'),
-        'cc' => env('INVOICE_EMAIL_CC'),
-        'bcc' => env('INVOICE_EMAIL_BCC'),
+        'cc' => array_filter(explode(',', env('INVOICE_EMAIL_CC', ''))),
+        'bcc' => array_filter(explode(',', env('INVOICE_EMAIL_BCC', ''))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Type-Specific Settings
+    |--------------------------------------------------------------------------
+    |
+    | Different settings for Club and Tenant invoices.
+    |
+    */
+
+    'types' => [
+        'club' => [
+            'number_prefix' => env('INVOICE_CLUB_PREFIX', 'CLUB'),
+            'default_payment_method' => env('INVOICE_CLUB_DEFAULT_PAYMENT', 'bank_transfer'),
+        ],
+        'tenant' => [
+            'number_prefix' => env('INVOICE_TENANT_PREFIX', 'TEN'),
+            'default_payment_method' => env('INVOICE_TENANT_DEFAULT_PAYMENT', 'stripe'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Stripe Integration
+    |--------------------------------------------------------------------------
+    |
+    | Settings for Stripe invoice integration.
+    |
+    */
+
+    'stripe' => [
+        'enabled' => env('INVOICE_STRIPE_ENABLED', true),
+        'auto_finalize' => env('INVOICE_STRIPE_AUTO_FINALIZE', true),
+        'send_invoice_email' => env('INVOICE_STRIPE_SEND_EMAIL', true),
     ],
 
 ];

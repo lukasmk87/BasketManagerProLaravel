@@ -1,106 +1,50 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
-import { Link, useForm, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { usePricing } from '@/Composables/usePricing';
 
-const { isSmallBusiness, defaultTaxRate, getSmallBusinessNotice } = usePricing();
+const { defaultTaxRate, getSmallBusinessNotice } = usePricing();
 
 const props = defineProps({
-    type: {
-        type: String,
-        default: 'club',
-    },
-    invoiceable: Object,
-    invoiceables: Array,
+    invoice: Object,
     paymentMethods: Object,
     defaultTaxRate: {
         type: Number,
         default: 19,
     },
-    paymentTermsDays: {
-        type: Number,
-        default: 14,
-    },
 });
 
-const currentType = ref(props.type);
-
 const form = useForm({
-    invoiceable_type: props.type,
-    invoiceable_id: props.invoiceable?.id || '',
-    payment_method: 'bank_transfer',
-    net_amount: '',
-    tax_rate: isSmallBusiness.value ? 0 : props.defaultTaxRate,
-    is_small_business: isSmallBusiness.value,
-    billing_period: '',
-    description: '',
-    line_items: [],
-    billing_name: '',
-    billing_email: '',
-    billing_address: {
+    net_amount: props.invoice.net_amount,
+    tax_rate: props.invoice.tax_rate,
+    is_small_business: props.invoice.is_small_business || false,
+    payment_method: props.invoice.payment_method,
+    billing_period: props.invoice.billing_period || '',
+    description: props.invoice.description || '',
+    line_items: props.invoice.line_items || [],
+    billing_name: props.invoice.billing_name,
+    billing_email: props.invoice.billing_email,
+    billing_address: props.invoice.billing_address || {
         street: '',
         zip: '',
         city: '',
         country: 'Deutschland',
     },
-    vat_number: '',
-    issue_date: new Date().toISOString().split('T')[0],
-    due_date: new Date(Date.now() + props.paymentTermsDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    vat_number: props.invoice.vat_number || '',
+    issue_date: props.invoice.issue_date?.split('T')[0] || '',
+    due_date: props.invoice.due_date?.split('T')[0] || '',
 });
 
-// Initialize form with invoiceable data if provided
-if (props.invoiceable) {
-    fillBillingFromInvoiceable(props.invoiceable);
-}
-
-function fillBillingFromInvoiceable(entity) {
-    if (!entity) return;
-
-    if (currentType.value === 'club') {
-        form.billing_name = entity.invoice_billing_name || entity.name || '';
-        form.billing_email = entity.billing_email || entity.email || '';
-        form.billing_address = entity.billing_address || {
-            street: '',
-            zip: '',
-            city: '',
-            country: 'Deutschland',
-        };
-        form.vat_number = entity.invoice_vat_number || '';
-    } else {
-        // Tenant
-        form.billing_name = entity.billing_contact_name || entity.name || '';
-        form.billing_email = entity.billing_contact_email || entity.billing_email || '';
-        form.billing_address = entity.billing_address || {
-            street: '',
-            zip: '',
-            city: '',
-            country: 'Deutschland',
-        };
-        form.vat_number = entity.vat_number || '';
-    }
-}
-
-const selectedInvoiceable = computed(() => {
-    return props.invoiceables?.find(item => item.id == form.invoiceable_id);
-});
-
-// Change type: navigate to same page with new type parameter
-const changeType = (newType) => {
-    if (newType !== currentType.value) {
-        router.get(route('admin.invoices.create'), { type: newType }, {
-            preserveState: false,
-        });
-    }
+const getTypeLabel = (type) => {
+    return type?.includes('Club') ? 'Club' : 'Tenant';
 };
 
-// Auto-fill billing details when invoiceable changes
-watch(() => form.invoiceable_id, (newId) => {
-    const entity = props.invoiceables?.find(item => item.id == newId);
-    if (entity) {
-        fillBillingFromInvoiceable(entity);
-    }
-});
+const getTypeBadgeClass = (type) => {
+    return type?.includes('Club')
+        ? 'bg-blue-100 text-blue-800'
+        : 'bg-purple-100 text-purple-800';
+};
 
 const taxAmount = computed(() => {
     if (form.is_small_business) return 0;
@@ -149,28 +93,25 @@ const formatCurrency = (amount) => {
     }).format(amount);
 };
 
-const getTypeButtonClass = (type) => {
-    return currentType.value === type
-        ? 'bg-indigo-600 text-white border-indigo-600'
-        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50';
-};
-
 const submit = () => {
-    form.post(route('admin.invoices.store'));
+    form.put(route('admin.invoices.update', props.invoice.id));
 };
 </script>
 
 <template>
-    <AdminLayout title="Neue Rechnung">
+    <AdminLayout title="Rechnung bearbeiten">
         <template #header>
             <div class="flex justify-between items-center">
                 <div>
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                        Neue Rechnung erstellen
+                        Rechnung bearbeiten
                     </h2>
+                    <p class="text-sm text-gray-500 mt-1">
+                        {{ invoice.invoice_number }}
+                    </p>
                 </div>
                 <Link
-                    :href="route('admin.invoices.index')"
+                    :href="route('admin.invoices.show', invoice.id)"
                     class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50"
                 >
                     Abbrechen
@@ -181,83 +122,44 @@ const submit = () => {
         <div class="py-12">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
                 <form @submit.prevent="submit" class="space-y-6">
-                    <!-- Type Selection -->
+                    <!-- Invoiceable Info (Readonly) -->
                     <div class="bg-white shadow sm:rounded-lg">
                         <div class="px-4 py-5 sm:p-6">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Rechnungstyp</h3>
-                            <div class="flex space-x-4">
-                                <button
-                                    type="button"
-                                    @click="changeType('club')"
-                                    :class="[
-                                        'flex-1 py-3 px-4 border rounded-lg font-medium transition-colors',
-                                        getTypeButtonClass('club')
-                                    ]"
-                                >
-                                    <div class="flex items-center justify-center">
-                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                        </svg>
-                                        Club
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Rechnungsempfänger</h3>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <div class="flex items-center">
+                                    <span :class="[getTypeBadgeClass(invoice.invoiceable_type), 'px-2 py-1 text-xs font-semibold rounded-full mr-3']">
+                                        {{ getTypeLabel(invoice.invoiceable_type) }}
+                                    </span>
+                                    <div>
+                                        <div class="font-medium text-gray-900">
+                                            {{ invoice.invoiceable?.name || invoice.billing_name }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ invoice.billing_email }}
+                                        </div>
                                     </div>
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="changeType('tenant')"
-                                    :class="[
-                                        'flex-1 py-3 px-4 border rounded-lg font-medium transition-colors',
-                                        getTypeButtonClass('tenant')
-                                    ]"
-                                >
-                                    <div class="flex items-center justify-center">
-                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
-                                        </svg>
-                                        Tenant
-                                    </div>
-                                </button>
+                                </div>
                             </div>
+                            <p class="mt-2 text-xs text-gray-500">
+                                Der Empfänger kann nicht geändert werden.
+                            </p>
                         </div>
                     </div>
 
-                    <!-- Invoiceable Selection -->
+                    <!-- Payment Method -->
                     <div class="bg-white shadow sm:rounded-lg">
                         <div class="px-4 py-5 sm:p-6">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
-                                {{ currentType === 'club' ? 'Club' : 'Tenant' }} auswählen
-                            </h3>
-                            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">
-                                        {{ currentType === 'club' ? 'Club' : 'Tenant' }} *
-                                    </label>
-                                    <select
-                                        v-model="form.invoiceable_id"
-                                        required
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                    >
-                                        <option value="">Bitte wählen...</option>
-                                        <option v-for="item in invoiceables" :key="item.id" :value="item.id">
-                                            {{ item.name }}
-                                            <template v-if="item.email"> ({{ item.email }})</template>
-                                        </option>
-                                    </select>
-                                    <p v-if="form.errors.invoiceable_id" class="mt-2 text-sm text-red-600">
-                                        {{ form.errors.invoiceable_id }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Zahlungsmethode *</label>
-                                    <select
-                                        v-model="form.payment_method"
-                                        required
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                    >
-                                        <option v-for="(label, value) in paymentMethods" :key="value" :value="value">
-                                            {{ label }}
-                                        </option>
-                                    </select>
-                                </div>
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Zahlungsmethode</h3>
+                            <div class="max-w-xs">
+                                <select
+                                    v-model="form.payment_method"
+                                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                >
+                                    <option v-for="(label, value) in paymentMethods" :key="value" :value="value">
+                                        {{ label }}
+                                    </option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -373,7 +275,7 @@ const submit = () => {
                                     </div>
                                 </div>
                             </div>
-                            <p v-else class="text-sm text-gray-500">Keine Posten hinzugefügt. Klicken Sie auf "Posten hinzufügen".</p>
+                            <p v-else class="text-sm text-gray-500">Keine Posten hinzugefügt.</p>
                         </div>
                     </div>
 
@@ -381,11 +283,6 @@ const submit = () => {
                     <div class="bg-white shadow sm:rounded-lg">
                         <div class="px-4 py-5 sm:p-6">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Beträge</h3>
-
-                            <!-- Kleinunternehmer-Hinweis -->
-                            <div v-if="isSmallBusiness" class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                                <p class="text-sm text-amber-800">{{ getSmallBusinessNotice() }}</p>
-                            </div>
 
                             <div class="grid grid-cols-1 gap-6 sm:grid-cols-4">
                                 <div>
@@ -439,7 +336,7 @@ const submit = () => {
                     <!-- Billing Details -->
                     <div class="bg-white shadow sm:rounded-lg">
                         <div class="px-4 py-5 sm:p-6">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Rechnungsempfänger</h3>
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Rechnungsadresse</h3>
                             <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Name *</label>
@@ -499,7 +396,7 @@ const submit = () => {
                     <!-- Submit -->
                     <div class="flex justify-end space-x-3">
                         <Link
-                            :href="route('admin.invoices.index')"
+                            :href="route('admin.invoices.show', invoice.id)"
                             class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50"
                         >
                             Abbrechen
@@ -509,7 +406,7 @@ const submit = () => {
                             :disabled="form.processing"
                             class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50"
                         >
-                            Rechnung erstellen
+                            Änderungen speichern
                         </button>
                     </div>
                 </form>

@@ -8,10 +8,14 @@ const props = defineProps({
     statistics: Object,
     filters: Object,
     statuses: Object,
+    paymentMethods: Object,
+    invoiceableTypes: Object,
 });
 
 const localFilters = ref({
     status: props.filters?.status || '',
+    type: props.filters?.type || '',
+    payment_method: props.filters?.payment_method || '',
     search: props.filters?.search || '',
     start_date: props.filters?.start_date || '',
     end_date: props.filters?.end_date || '',
@@ -20,6 +24,8 @@ const localFilters = ref({
 const applyFilters = () => {
     router.get(route('admin.invoices.index'), {
         status: localFilters.value.status || undefined,
+        type: localFilters.value.type || undefined,
+        payment_method: localFilters.value.payment_method || undefined,
         search: localFilters.value.search || undefined,
         start_date: localFilters.value.start_date || undefined,
         end_date: localFilters.value.end_date || undefined,
@@ -33,6 +39,8 @@ const applyFilters = () => {
 const resetFilters = () => {
     localFilters.value = {
         status: '',
+        type: '',
+        payment_method: '',
         search: '',
         start_date: '',
         end_date: '',
@@ -41,6 +49,8 @@ const resetFilters = () => {
 };
 
 watch(() => localFilters.value.status, applyFilters);
+watch(() => localFilters.value.type, applyFilters);
+watch(() => localFilters.value.payment_method, applyFilters);
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('de-DE', {
@@ -75,6 +85,26 @@ const getStatusLabel = (status) => {
     };
     return labels[status] || status;
 };
+
+const getTypeBadgeClass = (type) => {
+    return type?.includes('Club')
+        ? 'bg-blue-100 text-blue-800'
+        : 'bg-purple-100 text-purple-800';
+};
+
+const getTypeLabel = (type) => {
+    return type?.includes('Club') ? 'Club' : 'Tenant';
+};
+
+const getPaymentMethodBadgeClass = (method) => {
+    return method === 'stripe'
+        ? 'bg-indigo-100 text-indigo-800'
+        : 'bg-gray-100 text-gray-800';
+};
+
+const getPaymentMethodLabel = (method) => {
+    return method === 'stripe' ? 'Stripe' : 'Bank';
+};
 </script>
 
 <template>
@@ -86,7 +116,7 @@ const getStatusLabel = (status) => {
                         Rechnungsverwaltung
                     </h2>
                     <p class="text-sm text-gray-600 mt-1">
-                        Verwalte Rechnungen für Clubs mit Zahlung auf Rechnung
+                        Verwalte Rechnungen für Clubs und Tenants
                     </p>
                 </div>
                 <div class="flex items-center space-x-3">
@@ -185,16 +215,27 @@ const getStatusLabel = (status) => {
 
                 <!-- Filters -->
                 <div class="bg-white shadow rounded-lg mb-6 p-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Suche</label>
                             <input
                                 v-model="localFilters.search"
                                 type="text"
-                                placeholder="Rechnungsnr., Club..."
+                                placeholder="Rechnungsnr., Name..."
                                 class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 @keyup.enter="applyFilters"
                             />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Typ</label>
+                            <select
+                                v-model="localFilters.type"
+                                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            >
+                                <option value="">Alle</option>
+                                <option value="club">Clubs</option>
+                                <option value="tenant">Tenants</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -204,6 +245,18 @@ const getStatusLabel = (status) => {
                             >
                                 <option value="">Alle</option>
                                 <option v-for="(label, value) in statuses" :key="value" :value="value">
+                                    {{ label }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Zahlung</label>
+                            <select
+                                v-model="localFilters.payment_method"
+                                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            >
+                                <option value="">Alle</option>
+                                <option v-for="(label, value) in paymentMethods" :key="value" :value="value">
                                     {{ label }}
                                 </option>
                             </select>
@@ -250,13 +303,13 @@ const getStatusLabel = (status) => {
                                     Rechnungsnr.
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Club
+                                    Empfänger
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Betrag
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Datum
+                                    Zahlung
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Fällig
@@ -275,10 +328,18 @@ const getStatusLabel = (status) => {
                                     <div class="text-sm font-medium text-gray-900">
                                         {{ invoice.invoice_number }}
                                     </div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ formatDate(invoice.issue_date) }}
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ invoice.club?.name || '-' }}</div>
-                                    <div class="text-sm text-gray-500">{{ invoice.billing_email }}</div>
+                                    <div class="flex items-center">
+                                        <span :class="[getTypeBadgeClass(invoice.invoiceable_type), 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full mr-2']">
+                                            {{ getTypeLabel(invoice.invoiceable_type) }}
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-gray-900 mt-1">{{ invoice.invoiceable?.name || invoice.billing_name }}</div>
+                                    <div class="text-xs text-gray-500">{{ invoice.billing_email }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">
@@ -288,8 +349,10 @@ const getStatusLabel = (status) => {
                                         ({{ formatCurrency(invoice.net_amount) }} netto)
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ formatDate(invoice.issue_date) }}
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span :class="[getPaymentMethodBadgeClass(invoice.payment_method), 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full']">
+                                        {{ getPaymentMethodLabel(invoice.payment_method) }}
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ formatDate(invoice.due_date) }}

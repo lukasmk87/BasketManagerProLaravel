@@ -60,14 +60,34 @@ const getStatusLabel = (status) => {
     return labels[status] || status;
 };
 
+const getTypeBadgeClass = (type) => {
+    return type?.includes('Club')
+        ? 'bg-blue-100 text-blue-800'
+        : 'bg-purple-100 text-purple-800';
+};
+
+const getTypeLabel = (type) => {
+    return type?.includes('Club') ? 'Club' : 'Tenant';
+};
+
+const getPaymentMethodBadgeClass = (method) => {
+    return method === 'stripe'
+        ? 'bg-indigo-100 text-indigo-800'
+        : 'bg-gray-100 text-gray-800';
+};
+
+const getPaymentMethodLabel = (method) => {
+    return method === 'stripe' ? 'Stripe' : 'Banküberweisung';
+};
+
 const sendInvoice = () => {
-    if (confirm('Rechnung jetzt an den Club versenden?')) {
+    if (confirm('Rechnung jetzt an den Empfänger versenden?')) {
         router.post(route('admin.invoices.send', props.invoice.id));
     }
 };
 
 const sendReminder = () => {
-    if (confirm('Zahlungserinnerung an den Club senden?')) {
+    if (confirm('Zahlungserinnerung an den Empfänger senden?')) {
         router.post(route('admin.invoices.reminder', props.invoice.id));
     }
 };
@@ -99,8 +119,11 @@ const cancelInvoice = () => {
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                         Rechnung {{ invoice.invoice_number }}
                     </h2>
-                    <p class="text-sm text-gray-600 mt-1">
-                        {{ invoice.club?.name }}
+                    <p class="text-sm text-gray-600 mt-1 flex items-center space-x-2">
+                        <span :class="[getTypeBadgeClass(invoice.invoiceable_type), 'px-2 py-0.5 text-xs font-medium rounded-full']">
+                            {{ getTypeLabel(invoice.invoiceable_type) }}
+                        </span>
+                        <span>{{ invoice.invoiceable?.name || invoice.billing_name }}</span>
                     </p>
                 </div>
                 <div class="flex items-center space-x-3">
@@ -251,6 +274,45 @@ const cancelInvoice = () => {
                                         <dt class="text-base font-medium text-gray-900">Bruttobetrag</dt>
                                         <dd class="text-base font-medium text-gray-900">{{ formatCurrency(invoice.gross_amount) }}</dd>
                                     </div>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <!-- Payment Method Info -->
+                        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                            <div class="px-4 py-5 sm:px-6">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900">Zahlungsmethode</h3>
+                            </div>
+                            <div class="border-t border-gray-200 px-4 py-5">
+                                <div class="flex items-center space-x-2 mb-3">
+                                    <span :class="[getPaymentMethodBadgeClass(invoice.payment_method), 'px-2.5 py-1 text-sm font-medium rounded-full']">
+                                        {{ getPaymentMethodLabel(invoice.payment_method) }}
+                                    </span>
+                                </div>
+                                <dl class="space-y-2">
+                                    <template v-if="invoice.payment_method === 'stripe'">
+                                        <div v-if="invoice.stripe_invoice_id" class="flex justify-between">
+                                            <dt class="text-sm text-gray-500">Stripe Invoice</dt>
+                                            <dd class="text-sm text-gray-900 font-mono text-xs">{{ invoice.stripe_invoice_id }}</dd>
+                                        </div>
+                                        <div v-if="invoice.stripe_hosted_invoice_url" class="mt-3">
+                                            <a
+                                                :href="invoice.stripe_hosted_invoice_url"
+                                                target="_blank"
+                                                class="inline-flex items-center px-3 py-2 border border-indigo-300 rounded-md text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100"
+                                            >
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                                In Stripe öffnen
+                                            </a>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <p class="text-sm text-gray-600">
+                                            Zahlung per Banküberweisung erwartet.
+                                        </p>
+                                    </template>
                                 </dl>
                             </div>
                         </div>

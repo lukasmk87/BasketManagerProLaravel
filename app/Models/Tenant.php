@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Contracts\Invoiceable;
+use App\Models\Concerns\HasInvoices;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,9 +21,14 @@ use App\Exceptions\TenantTrialExpiredException;
 use App\Exceptions\TenantRateLimitExceededException;
 use App\Exceptions\FeatureNotAvailableException;
 
-class Tenant extends Model
+class Tenant extends Model implements Invoiceable
 {
-    use HasFactory, HasUuids, SoftDeletes, LogsActivity, Billable;
+    use HasFactory, HasUuids, SoftDeletes, LogsActivity, Billable, HasInvoices {
+        HasInvoices::invoices insteadof Billable;
+        HasInvoices::createInvoice insteadof Billable;
+        Billable::invoices as stripeInvoices;
+        Billable::createInvoice as createStripeInvoice;
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -921,5 +928,122 @@ class Tenant extends Model
         return $this->currentUsage()
             ->forMetric($metric)
             ->sum('usage_count');
+    }
+
+    // ============================
+    // INVOICEABLE INTERFACE IMPLEMENTATION
+    // ============================
+
+    /**
+     * Get the billing name for invoices.
+     * Uses billing_contact_name if set, otherwise falls back to billing_name or tenant name.
+     */
+    public function getBillingName(): string
+    {
+        return $this->billing_contact_name ?? $this->billing_name ?? $this->name;
+    }
+
+    /**
+     * Get the billing email for invoices.
+     * Uses billing_contact_email if set, otherwise falls back to billing_email.
+     */
+    public function getBillingEmail(): string
+    {
+        return $this->billing_contact_email ?? $this->billing_email ?? '';
+    }
+
+    /**
+     * Get the billing address for invoices.
+     */
+    public function getBillingAddress(): ?array
+    {
+        return $this->billing_address;
+    }
+
+    /**
+     * Get the VAT number for invoices.
+     */
+    public function getVatNumber(): ?string
+    {
+        return $this->vat_number;
+    }
+
+    /**
+     * Get the current subscription plan.
+     */
+    public function getSubscriptionPlan(): ?Model
+    {
+        return $this->subscriptionPlan;
+    }
+
+    /**
+     * Get the Stripe customer ID.
+     * Uses the Billable trait's stripe_id.
+     */
+    public function getStripeCustomerId(): ?string
+    {
+        return $this->stripe_id;
+    }
+
+    /**
+     * Get the tenant ID this invoiceable belongs to.
+     * For Tenants, this returns their own ID.
+     */
+    public function getInvoiceableTenantId(): string
+    {
+        return $this->id;
+    }
+
+    /**
+     * Get the preferred payment method for this tenant.
+     */
+    public function getPreferredPaymentMethod(): string
+    {
+        return $this->preferred_payment_method ?? ($this->pays_via_invoice ? 'bank_transfer' : 'stripe');
+    }
+
+    /**
+     * Check if this tenant pays via invoice (bank transfer).
+     */
+    public function paysViaInvoice(): bool
+    {
+        return $this->pays_via_invoice ?? false;
+    }
+
+    /**
+     * Called when an invoice is paid.
+     */
+    public function onInvoicePaid(Invoice $invoice): void
+    {
+        // Aktiviere Subscription falls pending
+        if ($this->subscription_status === 'pending_payment') {
+            $this->update(['subscription_status' => 'active']);
+        }
+
+        // Aktualisiere last_payment_at
+        $this->update([
+            'last_payment_at' => now(),
+            'payment_status' => 'paid',
+        ]);
+    }
+
+    /**
+     * Called when an invoice becomes overdue.
+     */
+    public function onInvoiceOverdue(Invoice $invoice): void
+    {
+        // Aktualisiere payment_status
+        $this->update([
+            'payment_status' => 'overdue',
+            'payment_failed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Get the display name for this invoiceable type.
+     */
+    public function getInvoiceableTypeName(): string
+    {
+        return 'Tenant';
     }
 }

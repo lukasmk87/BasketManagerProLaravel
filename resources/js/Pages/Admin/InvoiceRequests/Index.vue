@@ -7,7 +7,9 @@ const props = defineProps({
     requests: Object,
     pendingCount: Number,
     currentStatus: String,
+    currentType: { type: String, default: '' },
     statuses: Object,
+    requestableTypes: Object,
 });
 
 const showApproveModal = ref(false);
@@ -25,6 +27,16 @@ const rejectForm = useForm({
 const changeStatus = (status) => {
     router.get(route('admin.invoice-requests.index'), {
         status: status,
+        type: props.currentType,
+    }, {
+        preserveState: true,
+    });
+};
+
+const changeType = (type) => {
+    router.get(route('admin.invoice-requests.index'), {
+        status: props.currentStatus,
+        type: type,
     }, {
         preserveState: true,
     });
@@ -58,6 +70,16 @@ const getStatusLabel = (status) => {
         rejected: 'Abgelehnt',
     };
     return labels[status] || status;
+};
+
+const getTypeBadgeClass = (type) => {
+    return type?.includes('Club')
+        ? 'bg-blue-100 text-blue-800'
+        : 'bg-purple-100 text-purple-800';
+};
+
+const getTypeLabel = (type) => {
+    return type?.includes('Club') ? 'Club' : 'Tenant';
 };
 
 const openApproveModal = (request) => {
@@ -103,7 +125,7 @@ const rejectRequest = () => {
                         </span>
                     </h2>
                     <p class="text-sm text-gray-600 mt-1">
-                        Clubs, die auf Rechnung zahlen möchten
+                        Anfragen zur Zahlung per Rechnung
                     </p>
                 </div>
                 <Link
@@ -117,25 +139,60 @@ const rejectRequest = () => {
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <!-- Status Filter -->
-                <div class="mb-6">
-                    <div class="flex space-x-4">
-                        <button
-                            v-for="(label, value) in { all: 'Alle', ...statuses }"
-                            :key="value"
-                            @click="changeStatus(value)"
-                            :class="[
-                                'px-4 py-2 rounded-md text-sm font-medium',
-                                currentStatus === value
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300',
-                            ]"
-                        >
-                            {{ label }}
-                            <span v-if="value === 'pending' && pendingCount > 0" class="ml-1">
-                                ({{ pendingCount }})
-                            </span>
-                        </button>
+                <!-- Filters -->
+                <div class="mb-6 space-y-4">
+                    <!-- Type Filter -->
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm font-medium text-gray-700">Typ:</span>
+                        <div class="flex space-x-2">
+                            <button
+                                @click="changeType('')"
+                                :class="[
+                                    'px-3 py-1.5 rounded-md text-sm font-medium',
+                                    !currentType
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300',
+                                ]"
+                            >
+                                Alle
+                            </button>
+                            <button
+                                v-for="(label, value) in requestableTypes"
+                                :key="value"
+                                @click="changeType(value)"
+                                :class="[
+                                    'px-3 py-1.5 rounded-md text-sm font-medium',
+                                    currentType === value
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300',
+                                ]"
+                            >
+                                {{ label }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm font-medium text-gray-700">Status:</span>
+                        <div class="flex space-x-2">
+                            <button
+                                v-for="(label, value) in { all: 'Alle', ...statuses }"
+                                :key="value"
+                                @click="changeStatus(value)"
+                                :class="[
+                                    'px-3 py-1.5 rounded-md text-sm font-medium',
+                                    currentStatus === value
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300',
+                                ]"
+                            >
+                                {{ label }}
+                                <span v-if="value === 'pending' && pendingCount > 0" class="ml-1">
+                                    ({{ pendingCount }})
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -145,7 +202,7 @@ const rejectRequest = () => {
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Club
+                                    Antragsteller
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Plan
@@ -170,7 +227,12 @@ const rejectRequest = () => {
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="request in requests.data" :key="request.id" class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">{{ request.club?.name || '-' }}</div>
+                                    <div class="flex items-center">
+                                        <span :class="[getTypeBadgeClass(request.requestable_type), 'px-2 py-0.5 text-xs font-medium rounded-full mr-2']">
+                                            {{ getTypeLabel(request.requestable_type) }}
+                                        </span>
+                                        <span class="text-sm font-medium text-gray-900">{{ request.requestable?.name || '-' }}</span>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ request.subscription_plan?.name || '-' }}</div>
@@ -266,7 +328,11 @@ const rejectRequest = () => {
                         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Anfrage genehmigen</h3>
                             <p class="text-sm text-gray-500 mb-4">
-                                Für <strong>{{ selectedRequest?.club?.name }}</strong> wird eine Rechnung erstellt und der Club auf Zahlung per Rechnung umgestellt.
+                                Für
+                                <span :class="[getTypeBadgeClass(selectedRequest?.requestable_type), 'px-2 py-0.5 text-xs font-medium rounded-full mx-1']">
+                                    {{ getTypeLabel(selectedRequest?.requestable_type) }}
+                                </span>
+                                <strong>{{ selectedRequest?.requestable?.name }}</strong> wird eine Rechnung erstellt und die Zahlungsart auf Rechnung umgestellt.
                             </p>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Admin-Notizen (optional)</label>

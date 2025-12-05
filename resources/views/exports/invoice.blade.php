@@ -298,8 +298,19 @@
                 @endif
                 <tr>
                     <td class="label">Kundennummer:</td>
-                    <td class="value">{{ $invoice->club_id }}</td>
+                    <td class="value">{{ $invoice->invoiceable_id ?? $invoice->club_id ?? '-' }}</td>
                 </tr>
+                @if(isset($is_tenant) && $is_tenant)
+                <tr>
+                    <td class="label">Kundentyp:</td>
+                    <td class="value">Tenant</td>
+                </tr>
+                @elseif(isset($is_club) && $is_club)
+                <tr>
+                    <td class="label">Kundentyp:</td>
+                    <td class="value">Club</td>
+                </tr>
+                @endif
             </table>
         </div>
 
