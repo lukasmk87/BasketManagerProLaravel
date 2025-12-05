@@ -494,6 +494,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Check if the user is a super admin.
+     *
+     * @deprecated Use UserRoleService::isSuperAdmin() instead
+     */
+    public function isSuperAdmin(): bool
+    {
+        return app(UserRoleService::class)->isSuperAdmin($this);
+    }
+
+    /**
      * Get clubs administered by this user.
      *
      * @deprecated Use UserRoleService::getAdministeredClubs() instead
