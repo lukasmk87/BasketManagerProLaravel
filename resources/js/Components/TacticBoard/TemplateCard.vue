@@ -59,15 +59,17 @@ function handleFavorited(data) {
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
         <!-- Thumbnail -->
         <div class="relative aspect-[4/3] bg-gray-100 cursor-pointer" @click="handlePreview">
-            <TacticBoardViewer
-                v-if="template.play_data"
-                :playData="template.play_data"
-                :readonly="true"
-                :showControls="false"
-                class="w-full h-full"
-            />
-            <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-                <span>Keine Vorschau</span>
+            <div class="w-full h-full pb-14 overflow-hidden flex items-center justify-center">
+                <TacticBoardViewer
+                    v-if="template.play_data"
+                    :playData="template.play_data"
+                    :readonly="true"
+                    :showControls="false"
+                    class="w-full h-full"
+                />
+                <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
+                    <span>Keine Vorschau</span>
+                </div>
             </div>
 
             <!-- Featured Badge -->
@@ -81,6 +83,16 @@ function handleFavorited(data) {
             <!-- Overlay on hover -->
             <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-opacity duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
                 <EyeIcon class="w-8 h-8 text-white" />
+            </div>
+
+            <!-- Name Overlay -->
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                <h3 class="text-white font-medium text-sm truncate">
+                    {{ template.name }}
+                </h3>
+                <span class="text-white/80 text-xs">
+                    {{ template.category_display }}
+                </span>
             </div>
         </div>
 
