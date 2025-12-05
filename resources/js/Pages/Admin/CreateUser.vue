@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -12,6 +12,7 @@ import Checkbox from '@/Components/Checkbox.vue';
 const props = defineProps({
     roles: Array,
     clubs: Array,
+    tenants: Array,
 });
 
 const form = useForm({
@@ -24,6 +25,7 @@ const form = useForm({
     is_active: true,
     roles: [],
     clubs: [],
+    tenants: [],
     send_credentials_email: true,
 });
 
@@ -60,6 +62,24 @@ const toggleClub = (clubId) => {
 const hasClub = (clubId) => {
     return form.clubs.includes(clubId);
 };
+
+const toggleTenant = (tenantId) => {
+    const index = form.tenants.indexOf(tenantId);
+    if (index > -1) {
+        form.tenants.splice(index, 1);
+    } else {
+        form.tenants.push(tenantId);
+    }
+};
+
+const hasTenant = (tenantId) => {
+    return form.tenants.includes(tenantId);
+};
+
+// Zeige Tenant-Auswahl nur wenn tenant_admin Rolle gewählt und Tenants verfügbar
+const showTenantSelection = computed(() => {
+    return form.roles.includes('tenant_admin') && props.tenants && props.tenants.length > 0;
+});
 
 const generateRandomPassword = () => {
     const length = 12;
@@ -282,6 +302,38 @@ const generateRandomPassword = () => {
                                 </div>
                             </div>
                             <InputError class="mt-2" :message="form.errors.clubs" />
+                        </div>
+
+                        <!-- Tenant-Zuordnung (nur bei tenant_admin Rolle) -->
+                        <div class="mb-8" v-if="showTenantSelection">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">
+                                Tenant-Zuordnung *
+                            </h3>
+                            <p class="text-sm text-gray-600 mb-4">
+                                Wählen Sie die Tenants, die dieser Tenant-Admin verwalten soll.
+                            </p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div v-for="tenant in tenants" :key="tenant.id" class="flex items-center">
+                                    <label class="flex items-center cursor-pointer">
+                                        <Checkbox
+                                            :checked="hasTenant(tenant.id)"
+                                            @change="toggleTenant(tenant.id)"
+                                        />
+                                        <span class="ml-2 text-sm text-gray-600">
+                                            {{ tenant.name }}
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <InputError class="mt-2" :message="form.errors.tenants" />
+
+                            <div v-if="form.roles.includes('tenant_admin') && form.tenants.length === 0"
+                                 class="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p class="text-sm text-amber-700">
+                                    <strong>Hinweis:</strong> Für einen Tenant-Admin muss mindestens ein Tenant zugeordnet werden.
+                                </p>
+                            </div>
                         </div>
 
                         <!-- Info Box -->

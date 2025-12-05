@@ -7,6 +7,7 @@ use App\Models\Club;
 use App\Models\Game;
 use App\Models\Player;
 use App\Models\Team;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Settings\SystemSettingsService;
 use Illuminate\Http\RedirectResponse;
@@ -258,9 +259,15 @@ class AdminPanelController extends Controller
             ? Club::allTenants()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'tenant_id'])
             : Club::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
+        // Tenants laden (nur für Super Admin sichtbar, da nur diese tenant_admin erstellen können)
+        $tenants = auth()->user()->hasRole('super_admin')
+            ? Tenant::where('is_active', true)->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return Inertia::render('Admin/CreateUser', [
             'roles' => Role::all(),
             'clubs' => $clubs,
+            'tenants' => $tenants,
         ]);
     }
 
@@ -283,8 +290,20 @@ class AdminPanelController extends Controller
             'roles.*' => 'exists:roles,name',
             'clubs' => 'nullable|array',
             'clubs.*' => 'exists:clubs,id',
+            'tenants' => 'nullable|array',
+            'tenants.*' => 'exists:tenants,id',
             'send_credentials_email' => 'boolean',
         ]);
+
+        // Wenn tenant_admin Rolle gewählt, muss mindestens 1 Tenant zugeordnet werden
+        if (in_array('tenant_admin', $validated['roles'])) {
+            $request->validate([
+                'tenants' => 'required|array|min:1',
+            ], [
+                'tenants.required' => 'Für einen Tenant-Admin muss mindestens ein Tenant zugeordnet werden.',
+                'tenants.min' => 'Für einen Tenant-Admin muss mindestens ein Tenant zugeordnet werden.',
+            ]);
+        }
 
         // Store the plain password before hashing
         $plainPassword = $validated['password'];
@@ -303,6 +322,22 @@ class AdminPanelController extends Controller
                     'joined_at' => now(),
                     'is_active' => true,
                 ]);
+            }
+        }
+
+        // Tenant-Zuordnung für tenant_admin
+        if (in_array('tenant_admin', $validated['roles']) && ! empty($validated['tenants'])) {
+            $tenantService = app(\App\Services\TenantService::class);
+            $isFirst = true;
+
+            foreach ($validated['tenants'] as $tenantId) {
+                $tenant = Tenant::find($tenantId);
+                if ($tenant) {
+                    $tenantService->assignTenantAdmin($tenant, $user, [
+                        'is_primary' => $isFirst,
+                    ]);
+                    $isFirst = false;
+                }
             }
         }
 
@@ -331,10 +366,16 @@ class AdminPanelController extends Controller
             ? Club::allTenants()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'tenant_id'])
             : Club::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
+        // Tenants laden (nur für Super Admin sichtbar)
+        $tenants = auth()->user()->hasRole('super_admin')
+            ? Tenant::where('is_active', true)->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return Inertia::render('Admin/EditUser', [
-            'user' => $user->load(['roles', 'clubs']),
+            'user' => $user->load(['roles', 'clubs', 'administeredTenants']),
             'roles' => Role::all(),
             'clubs' => $clubs,
+            'tenants' => $tenants,
         ]);
     }
 
@@ -353,7 +394,19 @@ class AdminPanelController extends Controller
             'roles.*' => 'exists:roles,name',
             'clubs' => 'nullable|array',
             'clubs.*' => 'exists:clubs,id',
+            'tenants' => 'nullable|array',
+            'tenants.*' => 'exists:tenants,id',
         ]);
+
+        // Wenn tenant_admin Rolle gewählt, muss mindestens 1 Tenant zugeordnet werden
+        if (in_array('tenant_admin', $validated['roles'] ?? [])) {
+            $request->validate([
+                'tenants' => 'required|array|min:1',
+            ], [
+                'tenants.required' => 'Für einen Tenant-Admin muss mindestens ein Tenant zugeordnet werden.',
+                'tenants.min' => 'Für einen Tenant-Admin muss mindestens ein Tenant zugeordnet werden.',
+            ]);
+        }
 
         $user->update([
             'name' => $validated['name'],
@@ -383,6 +436,47 @@ class AdminPanelController extends Controller
                 ];
             }
             $user->clubs()->sync($clubData);
+        }
+
+        // Tenant-Zuordnung aktualisieren (nur für Super Admins)
+        if (auth()->user()->hasRole('super_admin')) {
+            $tenantService = app(\App\Services\TenantService::class);
+
+            if (in_array('tenant_admin', $validated['roles'] ?? [])) {
+                $currentTenantIds = $user->administeredTenants()->pluck('tenants.id')->toArray();
+                $newTenantIds = $validated['tenants'] ?? [];
+
+                // Entfernte Tenants
+                $removedTenants = array_diff($currentTenantIds, $newTenantIds);
+                foreach ($removedTenants as $tenantId) {
+                    $tenant = Tenant::find($tenantId);
+                    if ($tenant) {
+                        $tenantService->removeTenantAdmin($tenant, $user, false);
+                    }
+                }
+
+                // Neue Tenants
+                $addedTenants = array_diff($newTenantIds, $currentTenantIds);
+                $hasPrimary = $user->administeredTenants()
+                    ->wherePivot('is_primary', true)
+                    ->whereNotIn('tenants.id', $removedTenants)
+                    ->exists();
+
+                foreach ($addedTenants as $tenantId) {
+                    $tenant = Tenant::find($tenantId);
+                    if ($tenant) {
+                        $tenantService->assignTenantAdmin($tenant, $user, [
+                            'is_primary' => ! $hasPrimary,
+                        ]);
+                        $hasPrimary = true;
+                    }
+                }
+            } else {
+                // Wenn tenant_admin Rolle entfernt wurde, alle Tenant-Zuordnungen entfernen
+                foreach ($user->administeredTenants as $tenant) {
+                    $tenantService->removeTenantAdmin($tenant, $user, true);
+                }
+            }
         }
 
         return redirect()->route('admin.users')

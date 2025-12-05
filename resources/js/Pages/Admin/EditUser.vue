@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { router, useForm, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -13,6 +13,7 @@ const props = defineProps({
     user: Object,
     roles: Array,
     clubs: Array,
+    tenants: Array,
 });
 
 const page = usePage();
@@ -25,6 +26,7 @@ const form = useForm({
     is_active: props.user.is_active,
     roles: props.user.roles.map(role => role.name),
     clubs: props.user.clubs?.map(club => club.id) || [],
+    tenants: props.user.administered_tenants?.map(tenant => tenant.id) || [],
 });
 
 const submit = () => {
@@ -180,6 +182,24 @@ const hasClub = (clubId) => {
     return form.clubs.includes(clubId);
 };
 
+const toggleTenant = (tenantId) => {
+    const index = form.tenants.indexOf(tenantId);
+    if (index > -1) {
+        form.tenants.splice(index, 1);
+    } else {
+        form.tenants.push(tenantId);
+    }
+};
+
+const hasTenant = (tenantId) => {
+    return form.tenants.includes(tenantId);
+};
+
+// Zeige Tenant-Auswahl nur wenn tenant_admin Rolle gewählt und Tenants verfügbar
+const showTenantSelection = computed(() => {
+    return form.roles.includes('tenant_admin') && props.tenants && props.tenants.length > 0;
+});
+
 const isSuperAdmin = () => {
     const currentUser = page.props.auth?.user;
     return currentUser?.roles?.includes('super_admin');
@@ -310,6 +330,38 @@ const isSuperAdmin = () => {
                                     <strong>Hinweis:</strong> Die Pivot-Rolle wird automatisch basierend auf den Spatie-Rollen gesetzt:
                                     <span v-if="hasRole('club_admin')" class="font-semibold">Admin</span>
                                     <span v-else class="font-semibold">Member</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Tenant-Zuordnung (nur bei tenant_admin Rolle und Super Admin) -->
+                        <div v-if="showTenantSelection" class="mb-8">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">
+                                Tenant-Zuordnung *
+                            </h3>
+                            <p class="text-sm text-gray-600 mb-4">
+                                Wählen Sie die Tenants, die dieser Tenant-Admin verwalten soll.
+                            </p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div v-for="tenant in tenants" :key="tenant.id" class="flex items-center">
+                                    <label class="flex items-center cursor-pointer">
+                                        <Checkbox
+                                            :checked="hasTenant(tenant.id)"
+                                            @change="toggleTenant(tenant.id)"
+                                        />
+                                        <span class="ml-2 text-sm text-gray-600">
+                                            {{ tenant.name }}
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <InputError class="mt-2" :message="form.errors.tenants" />
+
+                            <div v-if="form.roles.includes('tenant_admin') && form.tenants.length === 0"
+                                 class="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p class="text-sm text-amber-700">
+                                    <strong>Hinweis:</strong> Für einen Tenant-Admin muss mindestens ein Tenant zugeordnet werden.
                                 </p>
                             </div>
                         </div>
