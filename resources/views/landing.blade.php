@@ -125,7 +125,8 @@
                     <a href="#pricing" class="text-gray-700 hover:text-orange-600 font-medium">Preise</a>
                     <a href="#testimonials" class="text-gray-700 hover:text-orange-600 font-medium">Referenzen</a>
                     <a href="#faq" class="text-gray-700 hover:text-orange-600 font-medium">FAQ</a>
-                    
+                    <a href="{{ route('enterprise') }}" class="text-orange-600 hover:text-orange-700 font-medium">Enterprise</a>
+
                     @auth
                         <a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-orange-600 font-medium">Dashboard</a>
                     @else
@@ -152,6 +153,7 @@
                 <a href="#pricing" class="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">Preise</a>
                 <a href="#testimonials" class="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">Referenzen</a>
                 <a href="#faq" class="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">FAQ</a>
+                <a href="{{ route('enterprise') }}" class="block px-3 py-2 text-orange-600 hover:text-orange-700 font-medium">Enterprise</a>
                 @auth
                     <a href="{{ route('dashboard') }}" class="block px-3 py-2 text-gray-700 hover:text-orange-600 font-medium">Dashboard</a>
                 @else

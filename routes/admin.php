@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\ClubTransferController;
 use App\Http\Controllers\Admin\ClubSubscriptionPlanController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\InvoiceRequestController;
+use App\Http\Controllers\Admin\EnterpriseLeadController;
+use App\Http\Controllers\Admin\EnterprisePageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -82,4 +84,20 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('invoice-requests/{invoiceRequest}', [InvoiceRequestController::class, 'show'])->name('invoice-requests.show');
     Route::post('invoice-requests/{invoiceRequest}/approve', [InvoiceRequestController::class, 'approve'])->name('invoice-requests.approve');
     Route::post('invoice-requests/{invoiceRequest}/reject', [InvoiceRequestController::class, 'reject'])->name('invoice-requests.reject');
+
+    // Enterprise Leads Management (Super Admin only)
+    Route::resource('enterprise-leads', EnterpriseLeadController::class)
+        ->except(['create', 'store', 'edit'])
+        ->parameters(['enterprise-leads' => 'enterpriseLead']);
+
+    // Enterprise Page Content Management (Super Admin only)
+    Route::prefix('enterprise-page')->name('enterprise-page.')->group(function () {
+        Route::get('/', [EnterprisePageController::class, 'index'])->name('index');
+        Route::get('/{section}/edit', [EnterprisePageController::class, 'edit'])->name('edit');
+        Route::put('/{section}', [EnterprisePageController::class, 'update'])->name('update');
+        Route::post('/{section}/publish', [EnterprisePageController::class, 'publish'])->name('publish');
+        Route::post('/{section}/unpublish', [EnterprisePageController::class, 'unpublish'])->name('unpublish');
+        Route::get('/{section}/preview', [EnterprisePageController::class, 'preview'])->name('preview');
+        Route::post('/{section}/copy-locale', [EnterprisePageController::class, 'copyToLocale'])->name('copy-locale');
+    });
 });

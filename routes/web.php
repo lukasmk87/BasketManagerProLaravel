@@ -7,6 +7,8 @@ use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TacticBoardController;
 use App\Http\Controllers\DrillTacticBoardController;
+use App\Http\Controllers\EnterpriseController;
+use App\Http\Controllers\EnterpriseLeadController;
 
 // Define supported locales
 $supportedLocales = config('localization.supported_locales', ['de', 'en']);
@@ -46,6 +48,16 @@ Route::get('/welcome', function () {
 Route::get('/roadmap', function () {
     return view('roadmap');
 })->name('roadmap');
+
+// Enterprise Marketing Page (White-Label / Verbände)
+Route::get('/enterprise', [EnterpriseController::class, 'index'])->name('enterprise');
+Route::post('/enterprise/contact', [EnterpriseLeadController::class, 'store'])
+    ->name('enterprise.contact')
+    ->middleware('throttle:5,1');
+
+// SEO-friendly redirects for enterprise page
+Route::redirect('/white-label', '/enterprise', 301);
+Route::redirect('/fuer-verbaende', '/enterprise', 301);
 
 // CSRF Token Endpoint (for frontend token refresh)
 Route::get('/api/csrf-token', function () {
