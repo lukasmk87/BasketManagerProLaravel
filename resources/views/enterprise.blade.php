@@ -50,7 +50,7 @@
     <!-- Custom Styles -->
     <style>
         .gradient-bg {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
         }
         .gradient-text {
             background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
@@ -61,8 +61,9 @@
         .enterprise-pattern {
             background-image:
                 radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
-                radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.1) 2px, transparent 2px);
-            background-size: 100px 100px;
+                radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+                linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            background-size: 100px 100px, 100px 100px, 100%;
         }
         .animate-fade-in-up {
             animation: fadeInUp 1s ease-out forwards;
@@ -176,7 +177,7 @@
                 @foreach($content['hero']['stats'] ?? [] as $stat)
                 <div class="text-white">
                     <div class="text-3xl md:text-4xl font-bold">{{ $stat['value'] }}</div>
-                    <div class="text-white/80">{{ $stat['label'] }}</div>
+                    <div class="text-white/90">{{ $stat['label'] }}</div>
                 </div>
                 @endforeach
             </div>

@@ -26,7 +26,8 @@
       "Bash(npm uninstall:*)",
       "Bash(wc:*)",
       "Bash(xargs sed:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:starting5.eu)"
     ],
     "deny": [],
     "ask": []

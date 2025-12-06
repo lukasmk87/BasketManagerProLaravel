@@ -52,7 +52,7 @@
     <!-- Custom Styles -->
     <style>
         .gradient-bg {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
         }
         .gradient-text {
             background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
@@ -61,10 +61,11 @@
             background-clip: text;
         }
         .basketball-pattern {
-            background-image: 
-                radial-gradient(circle at 25px 25px, rgba(249, 115, 22, 0.1) 2px, transparent 2px),
-                radial-gradient(circle at 75px 75px, rgba(249, 115, 22, 0.1) 2px, transparent 2px);
-            background-size: 100px 100px;
+            background-image:
+                radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+                radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+                linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            background-size: 100px 100px, 100px 100px, 100%;
         }
         .animate-bounce-slow {
             animation: bounce 3s infinite;
@@ -168,10 +169,10 @@
     <section class="gradient-bg pt-20 pb-16 basketball-pattern">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center animate-fade-in-up">
-                <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+                <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
                     {!! nl2br(e($content['hero']['headline'] ?? 'Die All-in-One Basketball Vereinsverwaltung')) !!}
                 </h1>
-                <p class="text-xl md:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto">
+                <p class="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
                     {{ $content['hero']['subheadline'] ?? 'Professionelles Team-Management, Live-Scoring, Training-Tools und mehr. 20% günstiger als die Konkurrenz. GDPR-konform und Made in Germany.' }}
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -188,21 +189,21 @@
 
             <!-- Hero Stats -->
             <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-                <div class="text-gray-900">
+                <div class="text-white">
                     <div class="text-3xl md:text-4xl font-bold">{{ $content['hero']['stats']['clubs'] ?? '500+' }}</div>
-                    <div class="text-gray-600">{{ $content['hero']['stats_labels']['clubs'] ?? 'Vereine' }}</div>
+                    <div class="text-white/80">{{ $content['hero']['stats_labels']['clubs'] ?? 'Vereine' }}</div>
                 </div>
-                <div class="text-gray-900">
+                <div class="text-white">
                     <div class="text-3xl md:text-4xl font-bold">{{ $content['hero']['stats']['teams'] ?? '2.000+' }}</div>
-                    <div class="text-gray-600">{{ $content['hero']['stats_labels']['teams'] ?? 'Teams' }}</div>
+                    <div class="text-white/80">{{ $content['hero']['stats_labels']['teams'] ?? 'Teams' }}</div>
                 </div>
-                <div class="text-gray-900">
+                <div class="text-white">
                     <div class="text-3xl md:text-4xl font-bold">{{ $content['hero']['stats']['players'] ?? '15.000+' }}</div>
-                    <div class="text-gray-600">{{ $content['hero']['stats_labels']['players'] ?? 'Spieler' }}</div>
+                    <div class="text-white/80">{{ $content['hero']['stats_labels']['players'] ?? 'Spieler' }}</div>
                 </div>
-                <div class="text-gray-900">
+                <div class="text-white">
                     <div class="text-3xl md:text-4xl font-bold">{{ $content['hero']['stats']['uptime'] ?? '99,9%' }}</div>
-                    <div class="text-gray-600">{{ $content['hero']['stats_labels']['uptime'] ?? 'Verfügbarkeit' }}</div>
+                    <div class="text-white/80">{{ $content['hero']['stats_labels']['uptime'] ?? 'Verfügbarkeit' }}</div>
                 </div>
             </div>
         </div>
@@ -562,7 +563,7 @@
             <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">
                 Bereit für die Zukunft der Basketball-Vereinsverwaltung?
             </h2>
-            <p class="text-xl text-orange-100 mb-8">
+            <p class="text-xl text-white/90 mb-8">
                 Schließen Sie sich über 500 Vereinen an und digitalisieren Sie Ihre Vereinsarbeit noch heute.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -574,7 +575,7 @@
                 </a>
             </div>
             
-            <div class="mt-8 text-orange-100 text-sm">
+            <div class="mt-8 text-white/90 text-sm">
                 ✅ Keine Kreditkarte erforderlich &nbsp;•&nbsp; ✅ Setup in unter 5 Minuten &nbsp;•&nbsp; ✅ Deutscher Support
             </div>
         </div>
