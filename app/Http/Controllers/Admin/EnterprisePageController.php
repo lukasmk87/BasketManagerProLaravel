@@ -146,6 +146,22 @@ class EnterprisePageController extends Controller
         $tenantId = $this->getTenantId();
         $locale = $request->input('locale', 'de');
 
+        // If content was sent with the request, save and publish in one step
+        if ($request->has('content')) {
+            $validated = $this->validateSectionContent($request, $section);
+            $this->enterprisePageService->saveContent(
+                $section,
+                $validated['content'],
+                $tenantId,
+                $locale,
+                true  // publish immediately
+            );
+
+            return redirect()->route('admin.enterprise-page.index', ['locale' => $locale])
+                ->with('success', 'Inhalte wurden erfolgreich veröffentlicht.');
+        }
+
+        // Fallback: Publish existing draft
         $success = $this->enterprisePageService->publishContent($section, $tenantId, $locale);
 
         if ($success) {
