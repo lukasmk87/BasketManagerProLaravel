@@ -26,6 +26,8 @@ class ClubSubscriptionPlanResource extends JsonResource
             'trial_period_days' => $this->trial_period_days,
             'is_active' => (bool) $this->is_active,
             'is_default' => (bool) $this->is_default,
+            'is_featured' => (bool) $this->is_featured,
+            'is_publicly_available' => (bool) ($this->is_active && $this->is_featured),
             'sort_order' => (int) $this->sort_order,
             'color' => $this->color,
             'icon' => $this->icon,

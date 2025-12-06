@@ -119,16 +119,48 @@ class ClubSubscriptionPlanPolicy
 
     /**
      * Determine whether the user can assign the plan to clubs.
+     * Featured plans can be assigned during onboarding.
+     * Non-featured plans require admin privileges.
      */
     public function assignToClub(User $user, ClubSubscriptionPlan $plan): bool
     {
-        // Must be able to update plans
-        if (!$this->update($user, $plan)) {
+        // Featured plans can be assigned by anyone with edit clubs permission
+        if ($plan->is_featured && $plan->is_active) {
+            return $user->can('edit clubs');
+        }
+
+        // Non-featured plans require admin privileges
+        if (!$user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             return false;
         }
 
-        // Must have permission to update clubs
+        // Tenant admin can only assign plans from their tenant
+        if ($user->hasRole('tenant_admin') && !$user->hasRole('super_admin')) {
+            $tenantIds = $user->getAdministeredTenantIds();
+            if (!in_array($plan->tenant_id, $tenantIds)) {
+                return false;
+            }
+        }
+
         return $user->can('edit clubs');
+    }
+
+    /**
+     * Determine whether the user can toggle the featured status of a plan.
+     */
+    public function toggleFeatured(User $user, ClubSubscriptionPlan $plan): bool
+    {
+        // Only super admin or tenant admin of the plan's tenant
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
+        if ($user->hasRole('tenant_admin')) {
+            $tenantIds = $user->getAdministeredTenantIds();
+            return in_array($plan->tenant_id, $tenantIds);
+        }
+
+        return false;
     }
 
     /**

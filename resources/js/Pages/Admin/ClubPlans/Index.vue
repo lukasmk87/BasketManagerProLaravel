@@ -52,6 +52,7 @@ const formatLimit = (value) => {
 const stats = computed(() => ({
     total: props.plans.length,
     active: props.plans.filter(p => p.is_active).length,
+    featured: props.plans.filter(p => p.is_featured).length,
     tenants: Object.keys(props.plansByTenant).length,
 }));
 </script>
@@ -245,18 +246,32 @@ const stats = computed(() => ({
                                     {{ plan.clubs_count || 0 }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span
-                                        v-if="plan.is_active"
-                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
-                                    >
-                                        Aktiv
-                                    </span>
-                                    <span
-                                        v-else
-                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800"
-                                    >
-                                        Inaktiv
-                                    </span>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span
+                                            v-if="plan.is_active"
+                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
+                                        >
+                                            Aktiv
+                                        </span>
+                                        <span
+                                            v-else
+                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800"
+                                        >
+                                            Inaktiv
+                                        </span>
+                                        <span
+                                            v-if="plan.is_featured"
+                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800"
+                                        >
+                                            Featured
+                                        </span>
+                                        <span
+                                            v-if="plan.is_default"
+                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"
+                                        >
+                                            Standard
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <Link

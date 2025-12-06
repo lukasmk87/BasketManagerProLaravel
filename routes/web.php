@@ -25,6 +25,9 @@ Route::get('/', function () {
 
     $content = $landingPageService->getAllContent($tenantId);
 
+    // Override pricing section with featured plans (with fallback to static content)
+    $content['pricing'] = $landingPageService->getPricingContent($tenantId);
+
     // Show landing page for guests with dynamic content
     return view('landing', [
         'content' => $content,

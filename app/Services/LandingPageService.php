@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\ClubSubscriptionPlan;
 use App\Models\LandingPageContent;
 use App\Models\Tenant;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -663,5 +665,104 @@ class LandingPageService
                 'cache_key' => $cacheKey,
             ]);
         }
+    }
+
+    // =============================
+    // FEATURED PLANS METHODS
+    // =============================
+
+    /**
+     * Get featured subscription plans for the landing page pricing section.
+     *
+     * @param int|null $tenantId The tenant ID
+     * @return Collection
+     */
+    public function getFeaturedPlans(?int $tenantId = null): Collection
+    {
+        $query = ClubSubscriptionPlan::publiclyAvailable()
+            ->orderBy('sort_order')
+            ->orderBy('price');
+
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Transform subscription plans for landing page display.
+     *
+     * @param Collection $plans The plans collection
+     * @return array
+     */
+    public function transformPlansForLandingPage(Collection $plans): array
+    {
+        return $plans->map(function ($plan) {
+            return [
+                'id' => $plan->id,
+                'name' => $plan->name,
+                'slug' => $plan->slug,
+                'price' => $plan->price,
+                'formatted_price' => $plan->formatted_price,
+                'currency' => $plan->currency,
+                'billing_interval' => $plan->billing_interval,
+                'description' => $plan->description,
+                'features' => $this->getLocalizedFeatures($plan->getFeaturesList()),
+                'limits' => $plan->getLimitsList(),
+                'color' => $plan->color,
+                'icon' => $plan->icon,
+                'is_default' => $plan->is_default,
+                'trial_period_days' => $plan->trial_period_days,
+                'cta_text' => 'Jetzt starten',
+                'cta_link' => route('register') . '?plan=' . $plan->slug,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get pricing content for landing page with fallback to featured plans.
+     *
+     * @param int|null $tenantId The tenant ID
+     * @param string $locale The locale
+     * @return array
+     */
+    public function getPricingContent(?int $tenantId = null, string $locale = 'de'): array
+    {
+        // Try to get featured plans from database
+        $featuredPlans = $this->getFeaturedPlans($tenantId);
+
+        // If we have featured plans, use them
+        if ($featuredPlans->isNotEmpty()) {
+            $staticContent = $this->getContent('pricing', $tenantId, $locale);
+
+            return [
+                'headline' => $staticContent['headline'] ?? 'Transparent und fair',
+                'subheadline' => $staticContent['subheadline'] ?? 'Wähle den Plan, der zu deinem Verein passt',
+                'plans' => $this->transformPlansForLandingPage($featuredPlans),
+                'source' => 'featured_plans',
+            ];
+        }
+
+        // Fallback to static content from LandingPageContent
+        $content = $this->getContent('pricing', $tenantId, $locale);
+        $content['source'] = 'static_content';
+
+        return $content;
+    }
+
+    /**
+     * Get localized feature names.
+     *
+     * @param array $features The feature slugs
+     * @return array
+     */
+    private function getLocalizedFeatures(array $features): array
+    {
+        $featureLabels = config('club_plans.available_features', []);
+
+        return array_map(function ($feature) use ($featureLabels) {
+            return $featureLabels[$feature] ?? ucfirst(str_replace('_', ' ', $feature));
+        }, $features);
     }
 }

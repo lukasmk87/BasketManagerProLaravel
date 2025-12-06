@@ -39,6 +39,7 @@ class UpdateClubPlanRequest extends FormRequest
             'trial_period_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'is_active' => ['boolean'],
             'is_default' => ['boolean'],
+            'is_featured' => ['boolean'],
             'sort_order' => ['integer', 'min:0'],
             'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'icon' => ['nullable', 'string', 'max:50'],

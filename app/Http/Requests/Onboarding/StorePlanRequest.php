@@ -26,7 +26,9 @@ class StorePlanRequest extends FormRequest
                 'required',
                 'string',
                 Rule::exists('club_subscription_plans', 'id')->where(function ($query) {
-                    $query->where('is_active', true);
+                    // Only allow publicly available plans (active + featured)
+                    $query->where('is_active', true)
+                          ->where('is_featured', true);
                 }),
             ],
             'billing_interval' => ['nullable', 'string', Rule::in(['monthly', 'yearly'])],

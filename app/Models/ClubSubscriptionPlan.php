@@ -30,6 +30,7 @@ class ClubSubscriptionPlan extends Model
         'limits',
         'is_active',
         'is_default',
+        'is_featured',
         'sort_order',
         'color',
         'icon',
@@ -51,6 +52,7 @@ class ClubSubscriptionPlan extends Model
         'limits' => 'array',
         'is_active' => 'boolean',
         'is_default' => 'boolean',
+        'is_featured' => 'boolean',
         'sort_order' => 'integer',
         // Stripe integration casts
         'is_stripe_synced' => 'boolean',
@@ -136,6 +138,32 @@ class ClubSubscriptionPlan extends Model
     public function scopeForTenant($query, $tenantId)
     {
         return $query->where('tenant_id', $tenantId);
+    }
+
+    /**
+     * Scope a query to only include featured plans.
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
+    }
+
+    /**
+     * Scope a query to only include non-featured plans.
+     */
+    public function scopeNotFeatured($query)
+    {
+        return $query->where('is_featured', false);
+    }
+
+    /**
+     * Scope a query to only include publicly available plans (active + featured).
+     * These are shown on the landing page and available for new club registration.
+     */
+    public function scopePubliclyAvailable($query)
+    {
+        return $query->where('is_active', true)
+                     ->where('is_featured', true);
     }
 
     // =============================
@@ -351,5 +379,13 @@ class ClubSubscriptionPlan extends Model
     public function hasTrialPeriod(): bool
     {
         return $this->trial_period_days > 0;
+    }
+
+    /**
+     * Check if plan is publicly available (active + featured).
+     */
+    public function isPubliclyAvailable(): bool
+    {
+        return $this->is_active && $this->is_featured;
     }
 }

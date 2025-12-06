@@ -38,10 +38,11 @@ class OnboardingService
 
     /**
      * Get available subscription plans for a tenant.
+     * Only returns featured plans that are publicly available for new club registration.
      */
     public function getAvailablePlans(?Tenant $tenant = null): array
     {
-        $query = ClubSubscriptionPlan::where('is_active', true)
+        $query = ClubSubscriptionPlan::publiclyAvailable()
             ->orderBy('sort_order')
             ->orderBy('price');
 

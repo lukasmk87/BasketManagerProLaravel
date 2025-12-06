@@ -19,6 +19,7 @@ return [
             'color' => '#6c757d',
             'icon' => 'shield',
             'is_default' => true,
+            'is_featured' => true, // Auf Landingpage anzeigen
             'features' => [
                 'basic_team_management',
                 'basic_player_profiles',
@@ -41,6 +42,7 @@ return [
             'billing_interval' => 'monthly',
             'color' => '#007bff',
             'icon' => 'star',
+            'is_featured' => true, // Auf Landingpage anzeigen
             'features' => [
                 'basic_team_management',
                 'basic_player_profiles',
@@ -70,6 +72,7 @@ return [
             'billing_interval' => 'monthly',
             'color' => '#ffc107',
             'icon' => 'crown',
+            'is_featured' => true, // Auf Landingpage anzeigen
             'features' => [
                 'basic_team_management',
                 'basic_player_profiles',
@@ -103,6 +106,7 @@ return [
             'billing_interval' => 'monthly',
             'color' => '#28a745',
             'icon' => 'building',
+            'is_featured' => false, // Nur durch Admin zuweisbar
             'features' => [
                 'basic_team_management',
                 'basic_player_profiles',

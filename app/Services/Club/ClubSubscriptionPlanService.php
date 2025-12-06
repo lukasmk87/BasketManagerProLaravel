@@ -5,6 +5,8 @@ namespace App\Services\Club;
 use App\Models\Club;
 use App\Models\ClubSubscriptionPlan;
 use App\Models\Tenant;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 
 class ClubSubscriptionPlanService
@@ -91,5 +93,58 @@ class ClubSubscriptionPlanService
     public function getClubUsageStats(Club $club): array
     {
         return $club->getSubscriptionLimits();
+    }
+
+    /**
+     * Get publicly available plans (featured + active) for a tenant.
+     * These are shown on the landing page and available for new club registration.
+     */
+    public function getPublicPlans(Tenant $tenant): Collection
+    {
+        return ClubSubscriptionPlan::forTenant($tenant->id)
+            ->publiclyAvailable()
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get();
+    }
+
+    /**
+     * Get all active plans (including non-featured) for admin use.
+     */
+    public function getAllPlansForAdmin(Tenant $tenant): Collection
+    {
+        return ClubSubscriptionPlan::forTenant($tenant->id)
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get();
+    }
+
+    /**
+     * Check if a user can assign a specific plan to a club.
+     * Featured plans can be assigned by anyone (during onboarding).
+     * Non-featured plans can only be assigned by Super Admin or Tenant Admin.
+     */
+    public function canAssignPlan(User $user, ClubSubscriptionPlan $plan): bool
+    {
+        // Featured plans can be assigned by anyone (during onboarding)
+        if ($plan->is_featured && $plan->is_active) {
+            return true;
+        }
+
+        // Non-featured plans require admin privileges
+        return $user->hasRole(['super_admin', 'tenant_admin']);
+    }
+
+    /**
+     * Get featured plans for a tenant's landing page.
+     */
+    public function getFeaturedPlans(Tenant $tenant): Collection
+    {
+        return ClubSubscriptionPlan::forTenant($tenant->id)
+            ->publiclyAvailable()
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get();
     }
 }

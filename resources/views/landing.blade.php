@@ -299,110 +299,120 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                    Transparente Preise - 20% günstiger
+                    {{ $content['pricing']['headline'] ?? 'Transparente Preise - 20% günstiger' }}
                 </h2>
                 <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Faire Preise ohne versteckte Kosten. Alle Features in jedem Plan. 30 Tage kostenlos testen.
+                    {{ $content['pricing']['subheadline'] ?? 'Faire Preise ohne versteckte Kosten. Alle Features in jedem Plan. 30 Tage kostenlos testen.' }}
                 </p>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Starter -->
-                <div class="pricing-card bg-white border-2 border-gray-200 rounded-xl p-8 text-center">
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">Starter</h3>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold text-gray-900">7,99€</span>
-                        <span class="text-gray-600">/Monat</span>
+
+            @php
+                // Check if we have dynamic plans from featured plans or fall back to static items
+                $plans = $content['pricing']['plans'] ?? $content['pricing']['items'] ?? [];
+                $planCount = count($plans);
+                $gridCols = $planCount <= 3 ? $planCount : 4;
+            @endphp
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-{{ $gridCols }} gap-8">
+                @foreach($plans as $index => $plan)
+                    @php
+                        // Determine if this plan is the "popular" or "default" one
+                        $isPopular = $plan['popular'] ?? $plan['is_default'] ?? false;
+                        $isFree = (float)($plan['price'] ?? 0) === 0.0;
+
+                        // Card styling based on popularity
+                        $cardClass = $isPopular
+                            ? 'bg-orange-50 border-2 border-orange-500'
+                            : 'bg-white border-2 border-gray-200';
+
+                        // Button styling
+                        $buttonClass = $isPopular
+                            ? 'bg-orange-600 text-white hover:bg-orange-700'
+                            : 'bg-gray-900 text-white hover:bg-gray-800';
+
+                        // Get price display
+                        $priceDisplay = $plan['formatted_price'] ?? ($plan['price'] ?? '0') . ' EUR';
+                        if ($isFree) {
+                            $priceDisplay = 'Kostenlos';
+                        }
+
+                        // Get billing interval
+                        $interval = $plan['billing_interval'] ?? $plan['period'] ?? 'Monat';
+                        if ($interval === 'monthly') $interval = 'Monat';
+                        if ($interval === 'yearly') $interval = 'Jahr';
+
+                        // Get features (handle both formats)
+                        $features = $plan['features'] ?? [];
+
+                        // Get limits for display
+                        $limits = $plan['limits'] ?? [];
+                        $maxTeams = $limits['max_teams'] ?? null;
+                        $maxPlayers = $limits['max_players'] ?? null;
+
+                        // CTA
+                        $ctaText = $plan['cta_text'] ?? 'Jetzt starten';
+                        $ctaLink = $plan['cta_link'] ?? route('register') . '?plan=' . ($plan['slug'] ?? 'free');
+                    @endphp
+
+                    <div class="pricing-card {{ $cardClass }} rounded-xl p-8 text-center relative hover:shadow-lg transition-shadow duration-300">
+                        @if($isPopular)
+                            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                <span class="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-bold">Empfohlen</span>
+                            </div>
+                        @endif
+
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">{{ $plan['name'] ?? 'Plan' }}</h3>
+
+                        @if(!empty($plan['description']))
+                            <p class="text-gray-500 text-sm mb-4">{{ $plan['description'] }}</p>
+                        @endif
+
+                        <div class="mb-6">
+                            <span class="text-4xl font-bold text-gray-900">{{ $priceDisplay }}</span>
+                            @if(!$isFree && $priceDisplay !== 'Custom')
+                                <span class="text-gray-600">/{{ $interval }}</span>
+                            @endif
+                        </div>
+
+                        @if(!empty($plan['trial_period_days']) && $plan['trial_period_days'] > 0)
+                            <p class="text-sm text-green-600 mb-4">{{ $plan['trial_period_days'] }} Tage kostenlos testen</p>
+                        @endif
+
+                        <ul class="space-y-3 text-gray-600 mb-8 text-left">
+                            {{-- Show limits first if available --}}
+                            @if($maxTeams !== null)
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-2">✓</span>
+                                    {{ $maxTeams == -1 ? 'Unbegrenzte' : $maxTeams }} Teams
+                                </li>
+                            @endif
+                            @if($maxPlayers !== null)
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-2">✓</span>
+                                    {{ $maxPlayers == -1 ? 'Unbegrenzte' : $maxPlayers }} Spieler
+                                </li>
+                            @endif
+
+                            {{-- Show features --}}
+                            @foreach(array_slice($features, 0, 5) as $feature)
+                                <li class="flex items-center">
+                                    <span class="text-green-500 mr-2">✓</span>
+                                    {{ $feature }}
+                                </li>
+                            @endforeach
+                        </ul>
+
+                        <a href="{{ $ctaLink }}" class="w-full {{ $buttonClass }} py-3 rounded-lg font-bold transition-colors block">
+                            {{ $ctaText }}
+                        </a>
                     </div>
-                    <ul class="space-y-3 text-gray-600 mb-8">
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 1 Team</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 25 Spieler</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Live-Scoring</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Basis Statistiken</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Mobile App</li>
-                    </ul>
-                    <a href="{{ route('register') }}" class="w-full bg-gray-900 text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-colors block">
-                        Kostenlos starten
-                    </a>
-                </div>
-                
-                <!-- Club (Most Popular) -->
-                <div class="pricing-card bg-orange-50 border-2 border-orange-500 rounded-xl p-8 text-center relative">
-                    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                        <span class="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-bold">Beliebt</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">Club</h3>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold text-gray-900">29,99€</span>
-                        <span class="text-gray-600">/Monat</span>
-                    </div>
-                    <ul class="space-y-3 text-gray-600 mb-8">
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 5 Teams</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 125 Spieler</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Training Management</li>
-                        <li class="flex items-center justify-center">
-                            <span class="text-orange-500 mr-2">🎬</span>
-                            <span>Video-Analyse</span>
-                            <span class="future-badge">AB Q2 2026</span>
-                        </li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Turniere</li>
-                    </ul>
-                    <a href="{{ route('register') }}" class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 transition-colors block">
-                        Kostenlos starten
-                    </a>
-                </div>
-                
-                <!-- Professional -->
-                <div class="pricing-card bg-white border-2 border-gray-200 rounded-xl p-8 text-center">
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">Professional</h3>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold text-gray-900">59,99€</span>
-                        <span class="text-gray-600">/Monat</span>
-                    </div>
-                    <ul class="space-y-3 text-gray-600 mb-8">
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 15 Teams</li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 375 Spieler</li>
-                        <li class="flex items-center justify-center">
-                            <span class="text-orange-500 mr-2">🎬</span>
-                            <span>Video-Analyse</span>
-                            <span class="future-badge">AB Q2 2026</span>
-                        </li>
-                        <li class="flex items-center justify-center">
-                            <span class="text-purple-500 mr-2">🤖</span>
-                            <span>ML Analytics</span>
-                            <span class="future-badge">AB Q3 2026</span>
-                        </li>
-                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> API Zugang</li>
-                    </ul>
-                    <a href="{{ route('register') }}" class="w-full bg-gray-900 text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-colors block">
-                        Kostenlos starten
-                    </a>
-                </div>
-                
-                <!-- Enterprise -->
-                <div class="pricing-card bg-gray-900 text-white rounded-xl p-8 text-center">
-                    <h3 class="text-xl font-bold mb-4">Enterprise</h3>
-                    <div class="mb-6">
-                        <span class="text-4xl font-bold">Custom</span>
-                        <div class="text-gray-300 text-sm">individuell</div>
-                    </div>
-                    <ul class="space-y-3 text-gray-300 mb-8">
-                        <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Unbegrenzte Teams</li>
-                        <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Unbegrenzte Spieler</li>
-                        <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> White-Label</li>
-                        <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> On-Premise</li>
-                        <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Dedizierter Support</li>
-                    </ul>
-                    <a href="mailto:enterprise@basketmanager-pro.de" class="w-full bg-white text-gray-900 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors block">
-                        Kontakt aufnehmen
-                    </a>
-                </div>
+                @endforeach
             </div>
-            
+
             <!-- Money Back Guarantee -->
             <div class="text-center mt-12">
                 <p class="text-gray-600">
-                    💰 <strong>30 Tage Geld-zurück-Garantie</strong> • Keine Einrichtungsgebühr • Jederzeit kündbar
+                    30 Tage Geld-zurück-Garantie • Keine Einrichtungsgebühr • Jederzeit kündbar
                 </p>
             </div>
         </div>

@@ -34,6 +34,7 @@ const form = useForm({
     trial_period_days: 14,
     is_active: true,
     is_default: false,
+    is_featured: true,
     sort_order: 0,
     color: '#6366F1',
     icon: '',
@@ -255,6 +256,14 @@ const savePlan = () => {
                                             class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                         />
                                         <span class="ml-2 text-sm text-gray-700">Standard</span>
+                                    </label>
+                                    <label class="flex items-center" title="Featured Pläne werden auf der Landingpage angezeigt und sind bei der Registrierung auswählbar">
+                                        <input
+                                            v-model="form.is_featured"
+                                            type="checkbox"
+                                            class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                                        />
+                                        <span class="ml-2 text-sm text-gray-700">Featured</span>
                                     </label>
                                 </div>
                             </div>
