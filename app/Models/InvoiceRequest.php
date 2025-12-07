@@ -7,7 +7,6 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -42,7 +41,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class InvoiceRequest extends Model
 {
-    use HasFactory, SoftDeletes, BelongsToTenant;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $table = 'invoice_requests';
 
@@ -57,6 +56,7 @@ class InvoiceRequest extends Model
         'billing_email',
         'billing_address',
         'vat_number',
+        'billing_interval',
         'notes',
         'requested_by',
         'processed_by',
@@ -76,11 +76,14 @@ class InvoiceRequest extends Model
 
     // Status constants
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_APPROVED = 'approved';
+
     public const STATUS_REJECTED = 'rejected';
 
     // Requestable type constants
     public const TYPE_CLUB = 'App\\Models\\Club';
+
     public const TYPE_TENANT = 'App\\Models\\Tenant';
 
     /**

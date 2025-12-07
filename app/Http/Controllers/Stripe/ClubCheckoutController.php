@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Stripe;
 
 use App\Http\Controllers\Controller;
 use App\Models\Club;
-use App\Models\ClubInvoiceRequest;
 use App\Models\ClubSubscriptionPlan;
+use App\Models\InvoiceRequest;
 use App\Services\Stripe\ClubSubscriptionCheckoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -233,8 +233,9 @@ class ClubCheckoutController extends Controller
             }
 
             // Check if there's already a pending request
-            $existingRequest = ClubInvoiceRequest::where('club_id', $club->id)
-                ->where('status', 'pending')
+            $existingRequest = InvoiceRequest::where('requestable_type', Club::class)
+                ->where('requestable_id', $club->id)
+                ->pending()
                 ->exists();
 
             if ($existingRequest) {
@@ -244,16 +245,18 @@ class ClubCheckoutController extends Controller
             }
 
             // Create invoice request
-            ClubInvoiceRequest::create([
+            InvoiceRequest::create([
                 'tenant_id' => $club->tenant_id,
-                'club_id' => $club->id,
-                'club_subscription_plan_id' => $plan->id,
+                'requestable_type' => Club::class,
+                'requestable_id' => $club->id,
+                'subscription_plan_type' => ClubSubscriptionPlan::class,
+                'subscription_plan_id' => $plan->id,
                 'billing_name' => $validated['billing_name'],
                 'billing_email' => $validated['billing_email'],
                 'billing_address' => $validated['billing_address'] ?? null,
                 'vat_number' => $validated['vat_number'] ?? null,
                 'billing_interval' => $validated['billing_interval'],
-                'status' => 'pending',
+                'status' => InvoiceRequest::STATUS_PENDING,
                 'requested_by' => auth()->id(),
             ]);
 
@@ -272,7 +275,7 @@ class ClubCheckoutController extends Controller
             ]);
 
             return redirect()->back()->withErrors([
-                'general' => 'Die Anfrage konnte nicht erstellt werden: ' . $e->getMessage(),
+                'general' => 'Die Anfrage konnte nicht erstellt werden: '.$e->getMessage(),
             ]);
         }
     }
