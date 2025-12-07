@@ -20,6 +20,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    seasons: {
+        type: Array,
+        default: () => [],
+    },
     age_groups: {
         type: Array,
         default: () => [],
@@ -32,7 +36,7 @@ const props = defineProps({
 
 const form = useForm({
     name: props.team.name,
-    season: props.team.season,
+    season_id: props.team.season_id || '',
     league: props.team.league || '',
     age_group: props.team.age_group || '',
     gender: props.team.gender,
@@ -84,15 +88,30 @@ const submit = () => {
 
                         <!-- Season -->
                         <div>
-                            <InputLabel for="season" value="Saison *" />
-                            <TextInput
-                                id="season"
-                                v-model="form.season"
-                                type="text"
-                                class="mt-1 block w-full"
+                            <InputLabel for="season_id" value="Saison *" />
+                            <select
+                                id="season_id"
+                                v-model="form.season_id"
+                                class="mt-1 block w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm"
                                 required
-                            />
-                            <InputError :message="form.errors.season" class="mt-2" />
+                                :disabled="seasons.length === 0"
+                            >
+                                <option value="">Saison auswählen</option>
+                                <option v-for="season in seasons" :key="season.id" :value="season.id">
+                                    {{ season.name }}
+                                    <template v-if="season.is_current"> (Aktiv)</template>
+                                    <template v-else-if="season.status === 'draft'"> (Entwurf)</template>
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.season_id" class="mt-2" />
+
+                            <!-- No seasons available message -->
+                            <div v-if="seasons.length === 0" class="mt-2 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
+                                <p class="text-yellow-800 text-sm">
+                                    <strong>Keine Saisons verfügbar:</strong>
+                                    Bitte erstellen Sie zuerst eine Saison für diesen Club.
+                                </p>
+                            </div>
                         </div>
 
                         <!-- League -->

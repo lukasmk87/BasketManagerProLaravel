@@ -105,17 +105,30 @@
 
                             <!-- Season -->
                             <div>
-                                <InputLabel for="season" value="Saison*" />
-                                <TextInput
-                                    id="season"
-                                    v-model="form.season"
-                                    type="text"
-                                    class="mt-1 block w-full"
-                                    placeholder="2023/2024"
-                                    maxlength="9"
+                                <InputLabel for="season_id" value="Saison*" />
+                                <select
+                                    id="season_id"
+                                    v-model="form.season_id"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                     required
-                                />
-                                <InputError :message="form.errors.season" class="mt-2" />
+                                    :disabled="!form.club_id || availableSeasons.length === 0"
+                                >
+                                    <option value="">{{ !form.club_id ? 'Zuerst Verein wählen' : 'Saison auswählen' }}</option>
+                                    <option v-for="season in availableSeasons" :key="season.id" :value="season.id">
+                                        {{ season.name }}
+                                        <template v-if="season.is_current"> (Aktiv)</template>
+                                        <template v-else-if="season.status === 'draft'"> (Entwurf)</template>
+                                    </option>
+                                </select>
+                                <InputError :message="form.errors.season_id" class="mt-2" />
+
+                                <!-- No seasons available message -->
+                                <div v-if="form.club_id && availableSeasons.length === 0" class="mt-2 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
+                                    <p class="text-yellow-800 text-sm">
+                                        <strong>Keine Saisons verfügbar:</strong>
+                                        Für diesen Verein wurden noch keine Saisons erstellt.
+                                    </p>
+                                </div>
                             </div>
 
                             <!-- League -->
@@ -483,13 +496,15 @@ import CoachesTab from '@/Components/Teams/CoachesTab.vue'
 const props = defineProps({
     team: Object,
     clubs: Array,
+    seasons: Array,
+    seasonsByClub: Object,
     can: Object,
 })
 
 const form = useForm({
     name: props.team.name || '',
     club_id: props.team.club_id || '',
-    season: props.team.season || '',
+    season_id: props.team.season_id || '',
     league: props.team.league || '',
     division: props.team.division || '',
     age_group: props.team.age_group || '',
@@ -499,6 +514,36 @@ const form = useForm({
     max_players: props.team.max_players || 15,
     min_players: props.team.min_players || 8,
     description: props.team.description || '',
+})
+
+// Get available seasons for selected club
+const availableSeasons = computed(() => {
+    if (!form.club_id) return []
+
+    // Use seasons prop if club_id matches team's club
+    if (form.club_id === props.team.club_id && props.seasons) {
+        return props.seasons
+    }
+
+    // Use seasonsByClub for other clubs
+    if (props.seasonsByClub && props.seasonsByClub[form.club_id]) {
+        return props.seasonsByClub[form.club_id]
+    }
+
+    return []
+})
+
+// Watch club_id to reset season when club changes
+watch(() => form.club_id, (newClubId, oldClubId) => {
+    if (oldClubId && newClubId !== oldClubId) {
+        form.season_id = ''
+        // Auto-select current season if available
+        const seasons = props.seasonsByClub?.[newClubId] || []
+        const currentSeason = seasons.find(s => s.is_current)
+        if (currentSeason) {
+            form.season_id = currentSeason.id
+        }
+    }
 })
 
 const deleteForm = useForm({})

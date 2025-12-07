@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ClubAdmin\StoreClubTeamRequest;
 use App\Http\Requests\ClubAdmin\UpdateClubTeamRequest;
 use App\Models\BasketballTeam;
+use App\Models\Season;
 use App\Services\TeamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -91,12 +92,21 @@ class ClubTeamAdminController extends Controller
             })
             ->get(['id', 'name']);
 
+        // Load seasons for this club (active/draft only)
+        $seasons = Season::where('club_id', $primaryClub->id)
+            ->whereIn('status', ['draft', 'active'])
+            ->orderByDesc('is_current')
+            ->orderByDesc('start_date')
+            ->get(['id', 'name', 'status', 'is_current'])
+            ->toArray();
+
         return Inertia::render('ClubAdmin/Teams/Create', [
             'club' => [
                 'id' => $primaryClub->id,
                 'name' => $primaryClub->name,
             ],
             'coaches' => $coaches,
+            'seasons' => $seasons,
             'age_groups' => ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'U20', 'Senior', 'Sonstige'],
             'genders' => [
                 ['value' => 'male', 'label' => 'Männlich'],
@@ -121,17 +131,25 @@ class ClubTeamAdminController extends Controller
         $primaryClub = $adminClubs->first();
         $validated = $request->validated();
 
+        // Get season name from season_id for backward compatibility
+        $seasonName = '';
+        if (isset($validated['season_id'])) {
+            $season = Season::find($validated['season_id']);
+            $seasonName = $season?->name ?? '';
+        }
+
         try {
-            $team = $this->teamService->createTeam(
-                club: $primaryClub,
-                name: $validated['name'],
-                season: $validated['season'],
-                league: $validated['league'] ?? null,
-                ageGroup: $validated['age_group'] ?? null,
-                gender: $validated['gender'],
-                headCoachId: $validated['head_coach_id'] ?? null,
-                isActive: $validated['is_active'] ?? true
-            );
+            $team = $this->teamService->createTeam([
+                'club_id' => $primaryClub->id,
+                'name' => $validated['name'],
+                'season_id' => $validated['season_id'] ?? null,
+                'season' => $seasonName,
+                'league' => $validated['league'] ?? null,
+                'age_group' => $validated['age_group'] ?? null,
+                'gender' => $validated['gender'],
+                'head_coach_id' => $validated['head_coach_id'] ?? null,
+                'is_active' => $validated['is_active'] ?? true,
+            ]);
 
             Log::info('Club admin created team', [
                 'club_admin_id' => $user->id,
@@ -182,6 +200,17 @@ class ClubTeamAdminController extends Controller
             })
             ->get(['id', 'name']);
 
+        // Load seasons for this club (include current season even if completed)
+        $seasons = Season::where('club_id', $teamClub->id)
+            ->where(function ($query) use ($team) {
+                $query->whereIn('status', ['draft', 'active'])
+                    ->orWhere('id', $team->season_id);
+            })
+            ->orderByDesc('is_current')
+            ->orderByDesc('start_date')
+            ->get(['id', 'name', 'status', 'is_current'])
+            ->toArray();
+
         return Inertia::render('ClubAdmin/Teams/Edit', [
             'club' => [
                 'id' => $teamClub->id,
@@ -191,6 +220,7 @@ class ClubTeamAdminController extends Controller
                 'id' => $team->id,
                 'name' => $team->name,
                 'season' => $team->season,
+                'season_id' => $team->season_id,
                 'league' => $team->league,
                 'age_group' => $team->age_group,
                 'gender' => $team->gender,
@@ -198,6 +228,7 @@ class ClubTeamAdminController extends Controller
                 'is_active' => $team->is_active,
             ],
             'coaches' => $coaches,
+            'seasons' => $seasons,
             'age_groups' => ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'U20', 'Senior', 'Sonstige'],
             'genders' => [
                 ['value' => 'male', 'label' => 'Männlich'],
@@ -229,10 +260,18 @@ class ClubTeamAdminController extends Controller
 
         $validated = $request->validated();
 
+        // Get season name from season_id for backward compatibility
+        $seasonName = '';
+        if (isset($validated['season_id'])) {
+            $season = Season::find($validated['season_id']);
+            $seasonName = $season?->name ?? '';
+        }
+
         try {
             $team->update([
                 'name' => $validated['name'],
-                'season' => $validated['season'],
+                'season_id' => $validated['season_id'] ?? null,
+                'season' => $seasonName,
                 'league' => $validated['league'] ?? null,
                 'age_group' => $validated['age_group'] ?? null,
                 'gender' => $validated['gender'],

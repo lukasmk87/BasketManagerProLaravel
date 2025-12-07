@@ -47,6 +47,7 @@ class Team extends JetstreamTeam implements HasMedia
         'division',
         'league',
         'season',
+        'season_id',
         'season_start',
         'season_end',
         'primary_color',
@@ -145,6 +146,15 @@ class Team extends JetstreamTeam implements HasMedia
     public function club(): BelongsTo
     {
         return $this->belongsTo(Club::class);
+    }
+
+    /**
+     * Get the season this team belongs to.
+     * Note: Named seasonRelation() to avoid conflict with 'season' string attribute.
+     */
+    public function seasonRelation(): BelongsTo
+    {
+        return $this->belongsTo(Season::class, 'season_id');
     }
 
     /**

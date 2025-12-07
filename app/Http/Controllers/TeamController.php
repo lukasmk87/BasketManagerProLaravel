@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Team;
 use App\Models\Club;
 use App\Models\Player;
+use App\Models\Season;
 use App\Models\User;
 use App\Models\TeamCoach;
 use App\Services\TeamService;
@@ -105,6 +106,17 @@ class TeamController extends Controller
             ];
         })->toArray();
 
+        // Load seasons for all accessible clubs (active/draft only)
+        $seasonsByClub = [];
+        foreach ($clubs as $club) {
+            $seasonsByClub[$club->id] = Season::where('club_id', $club->id)
+                ->whereIn('status', ['draft', 'active'])
+                ->orderByDesc('is_current')
+                ->orderByDesc('start_date')
+                ->get(['id', 'name', 'status', 'is_current'])
+                ->toArray();
+        }
+
         // Debug logging - Before returning response
         \Log::info('Teams Create - Clubs loaded', [
             'clubs_count' => count($clubsArray),
@@ -116,6 +128,7 @@ class TeamController extends Controller
 
         $response_data = [
             'clubs' => $clubsArray,
+            'seasonsByClub' => $seasonsByClub,
         ];
 
         // Debug logging - Response data that will be sent
@@ -161,7 +174,7 @@ class TeamController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'club_id' => 'required|exists:clubs,id',
-                'season' => 'required|string|max:9',
+                'season_id' => 'required|exists:seasons,id',
                 'league' => 'nullable|string|max:255',
                 'division' => 'nullable|string|max:255',
                 'age_group' => 'nullable|in:u8,u10,u12,u14,u16,u18,u20,senior,masters,veterans',
@@ -169,7 +182,13 @@ class TeamController extends Controller
                 'is_active' => 'boolean',
                 'description' => 'nullable|string|max:1000',
             ]);
-            
+
+            // Populate season string from season_id for backward compatibility
+            if (isset($validated['season_id'])) {
+                $season = Season::find($validated['season_id']);
+                $validated['season'] = $season?->name ?? '';
+            }
+
             \Log::info('Teams Store - Validation passed', [
                 'validated_data' => $validated,
             ]);
@@ -318,9 +337,33 @@ class TeamController extends Controller
                 ];
             })->values()->toArray();
 
+        // Load seasons for the team's club (include current season even if completed)
+        $seasons = Season::where('club_id', $team->club_id)
+            ->where(function ($query) use ($team) {
+                $query->whereIn('status', ['draft', 'active'])
+                    ->orWhere('id', $team->season_id);
+            })
+            ->orderByDesc('is_current')
+            ->orderByDesc('start_date')
+            ->get(['id', 'name', 'status', 'is_current'])
+            ->toArray();
+
+        // Load seasons for all clubs (for club switching)
+        $seasonsByClub = [];
+        foreach ($clubs as $club) {
+            $seasonsByClub[$club->id] = Season::where('club_id', $club->id)
+                ->whereIn('status', ['draft', 'active'])
+                ->orderByDesc('is_current')
+                ->orderByDesc('start_date')
+                ->get(['id', 'name', 'status', 'is_current'])
+                ->toArray();
+        }
+
         return Inertia::render('Teams/Edit', [
             'team' => $teamData,
             'clubs' => $clubs->toArray(),
+            'seasons' => $seasons,
+            'seasonsByClub' => $seasonsByClub,
         ]);
     }
 
@@ -334,7 +377,7 @@ class TeamController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'club_id' => 'required|exists:clubs,id',
-            'season' => 'required|string|max:9',
+            'season_id' => 'required|exists:seasons,id',
             'league' => 'nullable|string|max:255',
             'division' => 'nullable|string|max:255',
             'age_group' => 'nullable|in:u8,u10,u12,u14,u16,u18,u20,senior,masters,veterans',
@@ -345,6 +388,12 @@ class TeamController extends Controller
             'min_players' => 'required|integer|min:3|max:15',
             'description' => 'nullable|string|max:1000',
         ]);
+
+        // Populate season string from season_id for backward compatibility
+        if (isset($validated['season_id'])) {
+            $season = Season::find($validated['season_id']);
+            $validated['season'] = $season?->name ?? '';
+        }
 
         $this->teamService->updateTeam($team, $validated);
 

@@ -41,6 +41,11 @@ const props = defineProps({
             is_over_limit: false,
         }),
     },
+    // Current season
+    current_season: {
+        type: Object,
+        default: null,
+    },
     error: {
         type: String,
         default: null,
@@ -136,7 +141,7 @@ const storageLinkColor = computed(() => {
                 <!-- Dashboard Content (only shown when club is available) -->
                 <template v-if="club">
                 <!-- Statistics Cards -->
-                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                     <!-- Total Teams -->
                     <div class="bg-white overflow-hidden shadow-lg rounded-lg hover:shadow-xl transition-shadow">
                         <div class="p-5">
@@ -308,6 +313,47 @@ const storageLinkColor = computed(() => {
                             </Link>
                         </div>
                     </div>
+
+                    <!-- Current Season -->
+                    <div class="bg-white overflow-hidden shadow-lg rounded-lg hover:shadow-xl transition-shadow">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-orange-500 rounded-md p-3">
+                                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">
+                                            Aktuelle Saison
+                                        </dt>
+                                        <dd class="flex items-baseline">
+                                            <div class="text-2xl font-semibold text-gray-900">
+                                                {{ current_season?.name || 'Keine' }}
+                                            </div>
+                                            <div v-if="current_season?.status" class="ml-2">
+                                                <span v-if="current_season.status === 'active'" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                    Aktiv
+                                                </span>
+                                                <span v-else-if="current_season.status === 'draft'" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                    Entwurf
+                                                </span>
+                                            </div>
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-5 py-3">
+                            <Link v-if="current_season" :href="route('club.seasons.index', { club: club.id })" class="text-sm font-medium text-orange-600 hover:text-orange-800">
+                                Saisons verwalten →
+                            </Link>
+                            <Link v-else :href="route('club.seasons.index', { club: club.id })" class="text-sm font-medium text-orange-600 hover:text-orange-800">
+                                Saison erstellen →
+                            </Link>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Quick Actions -->
@@ -316,7 +362,7 @@ const storageLinkColor = computed(() => {
                         <h3 class="text-lg font-semibold text-gray-900">Schnellzugriff</h3>
                     </div>
                     <div class="p-6">
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
                             <Link :href="route('web.teams.create')" class="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                 <svg class="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -343,6 +389,13 @@ const storageLinkColor = computed(() => {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span class="text-sm font-medium text-gray-900">Neues Spiel</span>
+                            </Link>
+
+                            <Link :href="route('club.seasons.index', { club: club.id })" class="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <svg class="w-8 h-8 text-amber-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="text-sm font-medium text-gray-900">Saisons</span>
                             </Link>
 
                             <Link :href="route('club-admin.reports')" class="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Club;
 use App\Models\Game;
 use App\Models\Player;
+use App\Models\Season;
 use App\Services\Club\ClubStatisticsService;
 use App\Services\ClubUsageTrackingService;
 use Illuminate\Support\Facades\Auth;
@@ -110,6 +111,11 @@ class ClubAdminDashboardController extends Controller
 
             $storageUsage = $this->getClubStorageUsage($primaryClub);
 
+            // Load current season
+            $currentSeason = Season::where('club_id', $primaryClub->id)
+                ->where('is_current', true)
+                ->first(['id', 'name', 'status', 'start_date', 'end_date']);
+
             return Inertia::render('ClubAdmin/Dashboard', [
                 'club' => [
                     'id' => $primaryClub->id,
@@ -137,6 +143,7 @@ class ClubAdminDashboardController extends Controller
                     'logo_url' => $club->logo_url,
                 ]),
                 'storage_usage' => $storageUsage,
+                'current_season' => $currentSeason,
             ]);
 
         } catch (\Exception $e) {

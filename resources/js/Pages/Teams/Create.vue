@@ -88,17 +88,30 @@
 
                             <!-- Season -->
                             <div>
-                                <InputLabel for="season" value="Saison*" />
-                                <TextInput
-                                    id="season"
-                                    v-model="form.season"
-                                    type="text"
-                                    class="mt-1 block w-full"
-                                    placeholder="2023/2024"
-                                    maxlength="9"
+                                <InputLabel for="season_id" value="Saison*" />
+                                <select
+                                    id="season_id"
+                                    v-model="form.season_id"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                     required
-                                />
-                                <InputError :message="form.errors.season" class="mt-2" />
+                                    :disabled="!form.club_id || availableSeasons.length === 0"
+                                >
+                                    <option value="">{{ !form.club_id ? 'Zuerst Verein wählen' : 'Saison auswählen' }}</option>
+                                    <option v-for="season in availableSeasons" :key="season.id" :value="season.id">
+                                        {{ season.name }}
+                                        <template v-if="season.is_current"> (Aktiv)</template>
+                                        <template v-else-if="season.status === 'draft'"> (Entwurf)</template>
+                                    </option>
+                                </select>
+                                <InputError :message="form.errors.season_id" class="mt-2" />
+
+                                <!-- No seasons available message -->
+                                <div v-if="form.club_id && availableSeasons.length === 0" class="mt-2 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
+                                    <p class="text-yellow-800 text-sm">
+                                        <strong>Keine Saisons verfügbar:</strong>
+                                        Für diesen Verein wurden noch keine Saisons erstellt.
+                                    </p>
+                                </div>
                             </div>
 
                             <!-- League -->
@@ -226,6 +239,10 @@ const props = defineProps({
         type: Array,
         default: () => []
     },
+    seasonsByClub: {
+        type: Object,
+        default: () => ({})
+    },
 })
 
 // Reactive clubs data with fallback loading
@@ -307,7 +324,7 @@ onMounted(() => {
 const form = useForm({
     name: '',
     club_id: '',
-    season: '',
+    season_id: '',
     league: '',
     division: '',
     age_group: '',
@@ -316,6 +333,25 @@ const form = useForm({
     description: '',
 })
 
+// Get available seasons for selected club
+const availableSeasons = computed(() => {
+    if (!form.club_id || !props.seasonsByClub[form.club_id]) {
+        return []
+    }
+    return props.seasonsByClub[form.club_id]
+})
+
+// Watch club_id to reset and auto-select season
+watch(() => form.club_id, (newClubId) => {
+    form.season_id = ''
+    if (newClubId && props.seasonsByClub[newClubId]) {
+        // Auto-select current season if available
+        const currentSeason = props.seasonsByClub[newClubId].find(s => s.is_current)
+        if (currentSeason) {
+            form.season_id = currentSeason.id
+        }
+    }
+})
 
 const submit = () => {
     form.post(route('web.teams.store'))
