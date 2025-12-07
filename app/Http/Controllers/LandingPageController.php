@@ -13,8 +13,7 @@ class LandingPageController extends Controller
 {
     public function __construct(
         private LandingPageService $landingPageService
-    ) {
-    }
+    ) {}
 
     /**
      * Display a listing of all landing page sections (Admin).
@@ -64,7 +63,7 @@ class LandingPageController extends Controller
     public function edit(Request $request, string $section): Response
     {
         // Authorization handled by route middleware: role:admin|super_admin
-        if (!in_array($section, LandingPageContent::SECTIONS)) {
+        if (! in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
 
@@ -75,7 +74,7 @@ class LandingPageController extends Controller
         $draft = $this->landingPageService->getDraft($section, $tenantId, $currentLocale);
 
         // If no draft exists, get published content to use as starting point
-        if (!$draft) {
+        if (! $draft) {
             $publishedContent = $this->landingPageService->getContent($section, $tenantId, $currentLocale);
             $draft = new LandingPageContent([
                 'section' => $section,
@@ -111,7 +110,7 @@ class LandingPageController extends Controller
     public function update(Request $request, string $section)
     {
         // Authorization handled by route middleware: role:admin|super_admin
-        if (!in_array($section, LandingPageContent::SECTIONS)) {
+        if (! in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
 
@@ -140,12 +139,24 @@ class LandingPageController extends Controller
     public function publish(Request $request, string $section)
     {
         // Authorization handled by route middleware: role:admin|super_admin
-        if (!in_array($section, LandingPageContent::SECTIONS)) {
+        if (! in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
 
         $tenantId = $this->getTenantId();
         $locale = $request->input('locale', 'de');
+
+        // If content was sent with the request, save it first before publishing
+        if ($request->has('content')) {
+            $validated = $this->validateSectionContent($request, $section);
+            $this->landingPageService->saveContent(
+                $section,
+                $validated['content'],
+                $tenantId,
+                $locale,
+                false  // Don't publish here, publishContent() will do it
+            );
+        }
 
         $success = $this->landingPageService->publishContent($section, $tenantId, $locale);
 
@@ -164,7 +175,7 @@ class LandingPageController extends Controller
     public function unpublish(Request $request, string $section)
     {
         // Authorization handled by route middleware: role:admin|super_admin
-        if (!in_array($section, LandingPageContent::SECTIONS)) {
+        if (! in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
 
@@ -188,7 +199,7 @@ class LandingPageController extends Controller
     public function preview(Request $request, string $section): Response
     {
         // Authorization handled by route middleware: role:admin|super_admin
-        if (!in_array($section, LandingPageContent::SECTIONS)) {
+        if (! in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
 
@@ -215,7 +226,7 @@ class LandingPageController extends Controller
     public function copyToLocale(Request $request, string $section)
     {
         // Authorization handled by route middleware: role:admin|super_admin
-        if (!in_array($section, LandingPageContent::SECTIONS)) {
+        if (! in_array($section, LandingPageContent::SECTIONS)) {
             abort(404, 'Section not found');
         }
 
@@ -251,7 +262,7 @@ class LandingPageController extends Controller
      */
     private function getLocaleStatus(?LandingPageContent $draft): string
     {
-        if (!$draft) {
+        if (! $draft) {
             return 'not_configured';
         }
 
