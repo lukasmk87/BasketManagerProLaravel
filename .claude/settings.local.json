@@ -31,7 +31,11 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "Bash(./vendor/bin/pint:*)",
-      "Bash(composer dump-autoload:*)"
+      "Bash(composer dump-autoload:*)",
+      "Bash(du:*)",
+      "Bash(convert:*)",
+      "Bash(php -m:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

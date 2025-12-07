@@ -231,13 +231,13 @@ const getFeatureList = (plan) => {
         </div>
 
         <!-- Plan Cards -->
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div class="flex flex-wrap justify-center gap-4 mb-8">
             <div
                 v-for="plan in sortedPlans"
                 :key="plan.id"
                 @click="selectPlan(plan.id)"
                 :class="[
-                    'relative rounded-lg border-2 p-4 cursor-pointer transition-all',
+                    'relative rounded-lg border-2 p-4 cursor-pointer transition-all w-full md:w-[calc(50%-0.5rem)] lg:w-56',
                     selectedPlanId === plan.id
                         ? 'border-orange-500 ring-2 ring-orange-500 ring-opacity-50'
                         : 'border-gray-200 hover:border-gray-300'
