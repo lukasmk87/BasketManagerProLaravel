@@ -5,11 +5,11 @@ namespace App\Policies;
 use App\Models\Team;
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesUsers;
-use Illuminate\Auth\Access\Response;
 
 class TeamPolicy
 {
     use AuthorizesUsers;
+
     /**
      * Determine whether the user can view any models.
      */
@@ -41,7 +41,8 @@ class TeamPolicy
 
         // Club admins can view teams in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('id')->toArray();
+            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($team->club_id, $userClubIds);
         }
 
@@ -52,7 +53,8 @@ class TeamPolicy
 
         // Coaches can view teams they coach
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+            $coachTeamIds = $user->coachedTeams()->pluck('teams.id')->toArray();
+
             return in_array($team->id, $coachTeamIds);
         }
 
@@ -64,6 +66,7 @@ class TeamPolicy
                 ->pluck('playerProfile.team_id')
                 ->filter()
                 ->toArray();
+
             return in_array($team->id, $childTeamIds);
         }
 
@@ -107,13 +110,15 @@ class TeamPolicy
 
         // Club admins can edit teams in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('id')->toArray();
+            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($team->club_id, $userClubIds);
         }
 
         // Head coaches can edit their teams
         if ($user->hasRole('trainer')) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+            $coachTeamIds = $user->coachedTeams()->pluck('teams.id')->toArray();
+
             return in_array($team->id, $coachTeamIds);
         }
 
@@ -133,7 +138,8 @@ class TeamPolicy
 
         // Club admins can delete teams in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('id')->toArray();
+            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($team->club_id, $userClubIds);
         }
 
@@ -153,13 +159,15 @@ class TeamPolicy
 
         // Club admins can manage rosters in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('id')->toArray();
+            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($team->club_id, $userClubIds);
         }
 
         // Head coaches can manage their team rosters
         if ($user->hasRole('trainer')) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+            $coachTeamIds = $user->coachedTeams()->pluck('teams.id')->toArray();
+
             return in_array($team->id, $coachTeamIds);
         }
 
@@ -184,7 +192,8 @@ class TeamPolicy
 
         // Club admins can assign coaches in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('id')->toArray();
+            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($team->club_id, $userClubIds);
         }
 
@@ -218,13 +227,15 @@ class TeamPolicy
 
         // Club admins can manage settings for teams in their clubs
         if ($user->hasRole('club_admin')) {
-            $userClubIds = $user->clubs()->pluck('id')->toArray();
+            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($team->club_id, $userClubIds);
         }
 
         // Head coaches can manage their team settings
         if ($user->hasRole('trainer')) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+            $coachTeamIds = $user->coachedTeams()->pluck('teams.id')->toArray();
+
             return in_array($team->id, $coachTeamIds);
         }
 
@@ -238,7 +249,7 @@ class TeamPolicy
     public function exportData(User $user, Team $team): bool
     {
         // Must have export permission
-        if (!$user->can('export statistics')) {
+        if (! $user->can('export statistics')) {
             return false;
         }
 
@@ -268,7 +279,7 @@ class TeamPolicy
     public function viewActivityLog(User $user, Team $team): bool
     {
         // Must have activity log permission
-        if (!$user->can('view activity logs')) {
+        if (! $user->can('view activity logs')) {
             return false;
         }
 
@@ -282,7 +293,7 @@ class TeamPolicy
     public function manageMedia(User $user, Team $team): bool
     {
         // Must have media management permission
-        if (!$user->can('manage media library')) {
+        if (! $user->can('manage media library')) {
             return false;
         }
 

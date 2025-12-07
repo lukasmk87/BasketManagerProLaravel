@@ -117,7 +117,16 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center">
-                        <span class="text-2xl font-bold gradient-text">🏀 {{ app_name() }}</span>
+                        <span class="text-2xl font-bold gradient-text flex items-center gap-2">
+                            <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="24" cy="24" r="22" fill="#f97316"/>
+                                <line x1="4" y1="24" x2="44" y2="24" stroke="#333" stroke-width="1.5"/>
+                                <line x1="24" y1="4" x2="24" y2="44" stroke="#333" stroke-width="1.5"/>
+                                <path d="M 12 6 Q 6 24 12 42" stroke="#333" stroke-width="1.5" fill="none"/>
+                                <path d="M 36 6 Q 42 24 36 42" stroke="#333" stroke-width="1.5" fill="none"/>
+                            </svg>
+                            {{ app_name() }}
+                        </span>
                     </div>
                 </div>
                 
@@ -587,7 +596,16 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
                     <div class="flex items-center mb-4">
-                        <span class="text-2xl font-bold gradient-text">🏀 {{ app_name() }}</span>
+                        <span class="text-2xl font-bold gradient-text flex items-center gap-2">
+                            <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="24" cy="24" r="22" fill="#f97316"/>
+                                <line x1="4" y1="24" x2="44" y2="24" stroke="#333" stroke-width="1.5"/>
+                                <line x1="24" y1="4" x2="24" y2="44" stroke="#333" stroke-width="1.5"/>
+                                <path d="M 12 6 Q 6 24 12 42" stroke="#333" stroke-width="1.5" fill="none"/>
+                                <path d="M 36 6 Q 42 24 36 42" stroke="#333" stroke-width="1.5" fill="none"/>
+                            </svg>
+                            {{ app_name() }}
+                        </span>
                     </div>
                     <p class="text-gray-400 mb-4">
                         Die moderne All-in-One Basketball Vereinsverwaltung. Made in Germany.
