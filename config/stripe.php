@@ -90,22 +90,74 @@ return [
     */
     'multi_tenant' => [
         'mode' => env('STRIPE_TENANT_MODE', 'shared'), // 'shared' or 'separate'
-        
+
         // For shared mode - single Stripe account for all tenants
         'shared' => [
             'api_key' => env('STRIPE_KEY'),
             'secret' => env('STRIPE_SECRET'),
             'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         ],
-        
+
         // For separate mode - each tenant has their own Stripe account
         'separate' => [
             'client_id' => env('STRIPE_CONNECT_CLIENT_ID'),
             'platform_fee_percentage' => env('STRIPE_PLATFORM_FEE', 2.5), // 2.5% platform fee
         ],
-        
+
         // Customer ID prefix for tenant isolation in shared mode
         'customer_prefix' => true, // Prefixes customer IDs with tenant ID
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Stripe Connect Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for Stripe Connect integration allowing tenants to
+    | receive payments from their clubs with platform fees.
+    |
+    */
+    'connect' => [
+        // Account type: 'express' (recommended) or 'standard'
+        'account_type' => env('STRIPE_CONNECT_ACCOUNT_TYPE', 'express'),
+
+        // Platform Client ID (for OAuth)
+        'client_id' => env('STRIPE_CONNECT_CLIENT_ID'),
+
+        // Default application fee percentage
+        'default_application_fee_percent' => env('STRIPE_CONNECT_FEE_PERCENT', 2.5),
+
+        // Fixed fee per transaction (in EUR)
+        'default_application_fee_fixed' => env('STRIPE_CONNECT_FEE_FIXED', 0),
+
+        // Webhook secret for Connect-specific events
+        'webhook_secret' => env('STRIPE_CONNECT_WEBHOOK_SECRET'),
+
+        // Payout settings
+        'payout' => [
+            'schedule' => env('STRIPE_CONNECT_PAYOUT_SCHEDULE', 'daily'),
+            'delay_days' => env('STRIPE_CONNECT_PAYOUT_DELAY', 7),
+        ],
+
+        // Supported countries for Express accounts
+        'supported_countries' => ['DE', 'AT', 'CH'],
+
+        // Required capabilities for Express accounts
+        'required_capabilities' => [
+            'card_payments',
+            'transfers',
+        ],
+
+        // Connect-specific webhook events
+        'webhook_events' => [
+            'account.updated',
+            'account.application.authorized',
+            'account.application.deauthorized',
+            'capability.updated',
+            'payout.paid',
+            'payout.failed',
+            'payout.created',
+        ],
     ],
 
     /*

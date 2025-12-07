@@ -12,7 +12,8 @@ class ClubSubscriptionCheckoutService
 {
     public function __construct(
         private StripeClientManager $clientManager,
-        private ClubStripeCustomerService $customerService
+        private ClubStripeCustomerService $customerService,
+        private ?StripeConnectCheckoutService $connectCheckoutService = null
     ) {}
 
     /**
@@ -39,6 +40,38 @@ class ClubSubscriptionCheckoutService
             throw new \Exception('Plan is not synced with Stripe');
         }
 
+        // Check if tenant has active Stripe Connect - route payments through Connect
+        $tenant = $club->tenant;
+        if ($tenant && $tenant->hasActiveStripeConnect() && $this->connectCheckoutService) {
+            Log::info('Using Stripe Connect for club checkout', [
+                'club_id' => $club->id,
+                'tenant_id' => $tenant->id,
+                'connect_account' => $tenant->stripe_connect_account_id,
+            ]);
+
+            return $this->connectCheckoutService->createConnectedCheckoutSession(
+                $club,
+                $plan,
+                $options['success_url'] ?? $this->getDefaultSuccessUrl($club),
+                $options['cancel_url'] ?? $this->getDefaultCancelUrl($club),
+                $options
+            );
+        }
+
+        // Fallback: Use platform account (existing logic)
+        return $this->createPlatformCheckoutSession($club, $plan, $options);
+    }
+
+    /**
+     * Create checkout session using platform Stripe account.
+     *
+     * @throws \Exception
+     */
+    protected function createPlatformCheckoutSession(
+        Club $club,
+        ClubSubscriptionPlan $plan,
+        array $options = []
+    ): Session {
         // Get billing interval
         $billingInterval = $options['billing_interval'] ?? 'monthly';
         $priceId = $billingInterval === 'yearly'

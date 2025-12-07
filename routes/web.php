@@ -488,3 +488,6 @@ foreach ($supportedLocales as $locale) {
         }
     });
 }
+
+// Stripe Connect Routes
+require __DIR__.'/stripe_connect.php';

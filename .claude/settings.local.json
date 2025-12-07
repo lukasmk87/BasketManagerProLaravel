@@ -27,7 +27,10 @@
       "Bash(wc:*)",
       "Bash(xargs sed:*)",
       "WebSearch",
-      "WebFetch(domain:starting5.eu)"
+      "WebFetch(domain:starting5.eu)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(./vendor/bin/pint:*)"
     ],
     "deny": [],
     "ask": []

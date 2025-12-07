@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Contracts\Invoiceable;
+use App\Exceptions\FeatureNotAvailableException;
+use App\Exceptions\TenantSuspendedException;
+use App\Exceptions\TenantTrialExpiredException;
 use App\Models\Concerns\HasInvoices;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,14 +19,10 @@ use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use App\Exceptions\TenantSuspendedException;
-use App\Exceptions\TenantTrialExpiredException;
-use App\Exceptions\TenantRateLimitExceededException;
-use App\Exceptions\FeatureNotAvailableException;
 
 class Tenant extends Model implements Invoiceable
 {
-    use HasFactory, HasUuids, SoftDeletes, LogsActivity, Billable, HasInvoices {
+    use Billable, HasFactory, HasInvoices, HasUuids, LogsActivity, SoftDeletes {
         HasInvoices::invoices insteadof Billable;
         HasInvoices::createInvoice insteadof Billable;
         Billable::invoices as stripeInvoices;
@@ -96,6 +95,14 @@ class Tenant extends Model implements Invoiceable
         'payment_status',
         'payment_failed_at',
         'last_payment_at',
+        // Stripe Connect fields
+        'stripe_connect_account_id',
+        'stripe_connect_status',
+        'stripe_connect_charges_enabled',
+        'stripe_connect_payouts_enabled',
+        'stripe_connect_details_submitted',
+        'stripe_connect_connected_at',
+        'stripe_connect_last_webhook_at',
     ];
 
     /**
@@ -137,6 +144,12 @@ class Tenant extends Model implements Invoiceable
         'current_storage_gb' => 'decimal:2',
         'total_revenue' => 'decimal:2',
         'monthly_recurring_revenue' => 'decimal:2',
+        // Stripe Connect casts
+        'stripe_connect_charges_enabled' => 'boolean',
+        'stripe_connect_payouts_enabled' => 'boolean',
+        'stripe_connect_details_submitted' => 'boolean',
+        'stripe_connect_connected_at' => 'datetime',
+        'stripe_connect_last_webhook_at' => 'datetime',
     ];
 
     /**
@@ -148,25 +161,25 @@ class Tenant extends Model implements Invoiceable
             if (empty($tenant->slug)) {
                 $tenant->slug = Str::slug($tenant->name);
             }
-            
+
             if (empty($tenant->api_key)) {
-                $tenant->api_key = 'tk_' . Str::random(32);
+                $tenant->api_key = 'tk_'.Str::random(32);
             }
-            
+
             if (empty($tenant->api_secret)) {
-                $tenant->api_secret = Crypt::encryptString('ts_' . Str::random(48));
+                $tenant->api_secret = Crypt::encryptString('ts_'.Str::random(48));
             }
-            
+
             if (empty($tenant->webhook_secret)) {
-                $tenant->webhook_secret = Crypt::encryptString('whsec_' . Str::random(32));
+                $tenant->webhook_secret = Crypt::encryptString('whsec_'.Str::random(32));
             }
-            
+
             // Set default trial period (14 days)
             if (empty($tenant->trial_ends_at) && $tenant->subscription_tier === 'free') {
                 $tenant->trial_ends_at = now()->addDays(14);
             }
         });
-        
+
         static::updated(function ($tenant) {
             // Clear tenant cache when updated
             Cache::forget("tenant:id:{$tenant->id}");
@@ -185,7 +198,7 @@ class Tenant extends Model implements Invoiceable
             ->logOnly(['name', 'subscription_tier', 'is_active', 'is_suspended'])
             ->logOnlyDirty()
             ->useLogName('tenant')
-            ->setDescriptionForEvent(fn(string $eventName) => "Tenant has been {$eventName}");
+            ->setDescriptionForEvent(fn (string $eventName) => "Tenant has been {$eventName}");
     }
 
     /**
@@ -195,39 +208,39 @@ class Tenant extends Model implements Invoiceable
     {
         $domain = $request->getHost();
         $tenant = static::resolveFromDomain($domain);
-        
-        if (!$tenant) {
+
+        if (! $tenant) {
             // Try to resolve from subdomain
             $subdomain = explode('.', $domain)[0];
             $tenant = static::resolveFromSubdomain($subdomain);
         }
-        
-        if (!$tenant) {
+
+        if (! $tenant) {
             return null;
         }
-        
+
         // Security validations
-        if (!$tenant->is_active) {
-            throw new TenantSuspendedException('Tenant account is suspended: ' . $tenant->suspension_reason);
+        if (! $tenant->is_active) {
+            throw new TenantSuspendedException('Tenant account is suspended: '.$tenant->suspension_reason);
         }
-        
+
         if ($tenant->is_suspended) {
             throw new TenantSuspendedException('Tenant account is temporarily suspended');
         }
-        
+
         // Check trial expiration
-        if ($tenant->isTrialExpired() && !$tenant->hasActiveSubscription()) {
+        if ($tenant->isTrialExpired() && ! $tenant->hasActiveSubscription()) {
             throw new TenantTrialExpiredException('Trial period has expired. Please upgrade your subscription.');
         }
-        
+
         // Check IP restrictions
-        if (!$tenant->isIpAllowed($request->ip())) {
+        if (! $tenant->isIpAllowed($request->ip())) {
             abort(403, 'Access denied from this IP address');
         }
-        
+
         // Update last activity
         $tenant->update(['last_activity_at' => now()]);
-        
+
         return $tenant;
     }
 
@@ -239,9 +252,9 @@ class Tenant extends Model implements Invoiceable
         return Cache::remember(
             "tenant:domain:{$domain}",
             3600,
-            fn() => static::where('domain', $domain)
-                         ->where('is_active', true)
-                         ->first()
+            fn () => static::where('domain', $domain)
+                ->where('is_active', true)
+                ->first()
         );
     }
 
@@ -253,9 +266,9 @@ class Tenant extends Model implements Invoiceable
         return Cache::remember(
             "tenant:subdomain:{$subdomain}",
             3600,
-            fn() => static::where('subdomain', $subdomain)
-                         ->where('is_active', true)
-                         ->first()
+            fn () => static::where('subdomain', $subdomain)
+                ->where('is_active', true)
+                ->first()
         );
     }
 
@@ -267,9 +280,9 @@ class Tenant extends Model implements Invoiceable
         return Cache::remember(
             "tenant:slug:{$slug}",
             3600,
-            fn() => static::where('slug', $slug)
-                         ->where('is_active', true)
-                         ->first()
+            fn () => static::where('slug', $slug)
+                ->where('is_active', true)
+                ->first()
         );
     }
 
@@ -301,7 +314,7 @@ class Tenant extends Model implements Invoiceable
             return Cache::remember(
                 'tenant:default:first_active',
                 3600,
-                fn() => static::where('is_active', true)->first()
+                fn () => static::where('is_active', true)->first()
             );
         }
 
@@ -315,14 +328,14 @@ class Tenant extends Model implements Invoiceable
     {
         // Check subscription tier features
         $tierFeatures = config("tenants.tiers.{$this->subscription_tier}.features", []);
-        
+
         if (in_array($feature, $tierFeatures)) {
             return true;
         }
-        
+
         // Check custom features
         $customFeatures = $this->features ?? [];
-        
+
         return in_array($feature, $customFeatures);
     }
 
@@ -331,7 +344,7 @@ class Tenant extends Model implements Invoiceable
      */
     public function enforceFeatureAccess(string $feature): void
     {
-        if (!$this->hasFeature($feature)) {
+        if (! $this->hasFeature($feature)) {
             throw new FeatureNotAvailableException(
                 "Feature '{$feature}' is not available for subscription tier '{$this->subscription_tier}'"
             );
@@ -388,7 +401,7 @@ class Tenant extends Model implements Invoiceable
      */
     public function hasActiveSubscription(): bool
     {
-        return $this->subscription_tier !== 'free' || 
+        return $this->subscription_tier !== 'free' ||
                ($this->trial_ends_at && $this->trial_ends_at->isFuture());
     }
 
@@ -398,14 +411,14 @@ class Tenant extends Model implements Invoiceable
     public function isIpAllowed(string $ip): bool
     {
         $blockedIps = $this->blocked_ips ?? [];
-        
+
         // Check if IP is blocked
         foreach ($blockedIps as $blockedIp) {
             if ($this->ipMatches($ip, $blockedIp)) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -418,23 +431,25 @@ class Tenant extends Model implements Invoiceable
         if ($ip === $pattern) {
             return true;
         }
-        
+
         // Wildcard match (e.g., 192.168.1.*)
         if (strpos($pattern, '*') !== false) {
             $pattern = str_replace('*', '.*', $pattern);
-            return preg_match('/^' . $pattern . '$/', $ip);
+
+            return preg_match('/^'.$pattern.'$/', $ip);
         }
-        
+
         // CIDR match (e.g., 192.168.1.0/24)
         if (strpos($pattern, '/') !== false) {
-            list($subnet, $bits) = explode('/', $pattern);
+            [$subnet, $bits] = explode('/', $pattern);
             $subnet = ip2long($subnet);
             $ip = ip2long($ip);
             $mask = -1 << (32 - $bits);
             $subnet &= $mask;
+
             return ($ip & $mask) == $subnet;
         }
-        
+
         return false;
     }
 
@@ -452,7 +467,7 @@ class Tenant extends Model implements Invoiceable
     public function updateSettings(array $settings): void
     {
         $this->update([
-            'settings' => array_merge($this->settings ?? [], $settings)
+            'settings' => array_merge($this->settings ?? [], $settings),
         ]);
     }
 
@@ -483,17 +498,17 @@ class Tenant extends Model implements Invoiceable
                     'port' => $this->database_port ?? config('database.connections.mysql.port'),
                     'database' => $this->database_name,
                     'username' => config('database.connections.mysql.username'),
-                    'password' => $this->database_password ? 
-                        Crypt::decryptString($this->database_password) : 
+                    'password' => $this->database_password ?
+                        Crypt::decryptString($this->database_password) :
                         config('database.connections.mysql.password'),
                     'charset' => 'utf8mb4',
                     'collation' => 'utf8mb4_unicode_ci',
                     'prefix' => '',
                     'strict' => true,
                     'engine' => null,
-                ]
+                ],
             ]);
-            
+
             DB::setDefaultConnection('tenant');
         }
     }
@@ -517,19 +532,19 @@ class Tenant extends Model implements Invoiceable
         if ($this->domain) {
             return "https://{$this->domain}";
         }
-        
+
         if ($this->subdomain) {
             $baseDomain = config('app.base_domain', 'basketmanager-pro.com');
+
             return "https://{$this->subdomain}.{$baseDomain}";
         }
-        
+
         return url("/tenant/{$this->slug}");
     }
 
     /**
      * Relationships
      */
-    
     public function users()
     {
         return $this->hasMany(User::class);
@@ -585,37 +600,37 @@ class Tenant extends Model implements Invoiceable
     {
         return $this->hasMany(Club::class);
     }
-    
+
     public function subscriptions()
     {
         return $this->hasMany(Subscription::class);
     }
-    
+
     public function apiUsage()
     {
         return $this->hasMany(ApiUsageTracking::class);
     }
-    
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-    
+
     public function onboarder()
     {
         return $this->belongsTo(User::class, 'onboarded_by');
     }
-    
+
     public function webhookEvents()
     {
         return $this->hasMany(WebhookEvent::class);
     }
-    
+
     public function dbbIntegrations()
     {
         return $this->hasMany(DBBIntegration::class);
     }
-    
+
     public function fibaIntegrations()
     {
         return $this->hasMany(FIBAIntegration::class);
@@ -663,7 +678,7 @@ class Tenant extends Model implements Invoiceable
     /**
      * Stripe Integration Methods
      */
-    
+
     /**
      * Get Stripe configuration for this tenant.
      */
@@ -685,7 +700,7 @@ class Tenant extends Model implements Invoiceable
     {
         $currentConfig = $this->getStripeConfig();
         $newConfig = array_merge($currentConfig, $config);
-        
+
         $this->updateSettings(['stripe' => $newConfig]);
     }
 
@@ -695,8 +710,8 @@ class Tenant extends Model implements Invoiceable
     public function hasValidStripeConfig(): bool
     {
         $config = $this->getStripeConfig();
-        
-        return !empty($config['publishable_key']) && !empty($config['secret_key']);
+
+        return ! empty($config['publishable_key']) && ! empty($config['secret_key']);
     }
 
     /**
@@ -713,7 +728,7 @@ class Tenant extends Model implements Invoiceable
     public function canUsePaymentFeature(string $feature): bool
     {
         $tierFeatures = config("stripe.subscriptions.features.{$this->subscription_tier}", []);
-        
+
         return in_array($feature, $tierFeatures) || $this->hasFeature($feature);
     }
 
@@ -723,7 +738,7 @@ class Tenant extends Model implements Invoiceable
     public function getPaymentLimits(): array
     {
         $baseLimits = $this->getTierLimits();
-        
+
         return array_merge($baseLimits, [
             'monthly_payment_volume' => $this->getMonthlyPaymentVolumeLimit(),
             'transaction_fee_percentage' => $this->getTransactionFeePercentage(),
@@ -736,7 +751,7 @@ class Tenant extends Model implements Invoiceable
      */
     private function getMonthlyPaymentVolumeLimit(): int
     {
-        return match($this->subscription_tier) {
+        return match ($this->subscription_tier) {
             'free' => 1000, // €1,000
             'basic' => 10000, // €10,000
             'professional' => 100000, // €100,000
@@ -751,7 +766,7 @@ class Tenant extends Model implements Invoiceable
     private function getTransactionFeePercentage(): float
     {
         // Platform fee for shared Stripe account mode
-        return match($this->subscription_tier) {
+        return match ($this->subscription_tier) {
             'free' => 3.5,
             'basic' => 2.9,
             'professional' => 2.4,
@@ -766,8 +781,8 @@ class Tenant extends Model implements Invoiceable
     private function getSupportedPaymentMethods(): array
     {
         $allMethods = ['card', 'sepa_debit', 'sofort', 'paypal', 'apple_pay', 'google_pay'];
-        
-        return match($this->subscription_tier) {
+
+        return match ($this->subscription_tier) {
             'free' => ['card'],
             'basic' => ['card', 'sepa_debit', 'paypal'],
             'professional' => ['card', 'sepa_debit', 'sofort', 'paypal', 'apple_pay', 'google_pay'],
@@ -782,8 +797,8 @@ class Tenant extends Model implements Invoiceable
     public function calculateSubscriptionCost(): array
     {
         $tierConfig = config("tenants.tiers.{$this->subscription_tier}");
-        
-        if (!$tierConfig || $this->subscription_tier === 'free') {
+
+        if (! $tierConfig || $this->subscription_tier === 'free') {
             return [
                 'base_amount' => 0,
                 'tax_amount' => 0,
@@ -791,14 +806,14 @@ class Tenant extends Model implements Invoiceable
                 'currency' => 'EUR',
             ];
         }
-        
+
         $baseAmount = $tierConfig['price'];
         $currency = $tierConfig['currency'];
         $taxRate = $this->getTaxRate();
-        
+
         $taxAmount = round($baseAmount * ($taxRate / 100), 2);
         $totalAmount = $baseAmount + $taxAmount;
-        
+
         return [
             'base_amount' => $baseAmount,
             'tax_amount' => $taxAmount,
@@ -815,7 +830,7 @@ class Tenant extends Model implements Invoiceable
     {
         $taxRates = config('stripe.tax.rates', []);
         $countryCode = strtolower($this->country_code);
-        
+
         return $taxRates[$countryCode] ?? 19.0; // Default to German VAT
     }
 
@@ -828,12 +843,12 @@ class Tenant extends Model implements Invoiceable
         if ($this->trial_ends_at && $this->trial_ends_at->isPast()) {
             return false;
         }
-        
+
         // Must be on free tier
         if ($this->subscription_tier !== 'free') {
             return false;
         }
-        
+
         return true;
     }
 
@@ -842,14 +857,14 @@ class Tenant extends Model implements Invoiceable
      */
     public function startTrial(int $days = 14): void
     {
-        if (!$this->isEligibleForTrial()) {
+        if (! $this->isEligibleForTrial()) {
             throw new \Exception('Tenant is not eligible for trial');
         }
-        
+
         $this->update([
             'trial_ends_at' => now()->addDays($days),
         ]);
-        
+
         Log::info('Trial started for tenant', [
             'tenant_id' => $this->id,
             'trial_days' => $days,
@@ -862,17 +877,17 @@ class Tenant extends Model implements Invoiceable
      */
     public function upgradeTo(string $tier): void
     {
-        if (!in_array($tier, ['basic', 'professional', 'enterprise'])) {
+        if (! in_array($tier, ['basic', 'professional', 'enterprise'])) {
             throw new \Exception("Invalid subscription tier: {$tier}");
         }
-        
+
         $oldTier = $this->subscription_tier;
-        
+
         $this->update([
             'subscription_tier' => $tier,
             'trial_ends_at' => null, // Remove trial when upgrading to paid
         ]);
-        
+
         // Update limits based on new tier
         $newLimits = config("tenants.tiers.{$tier}.limits");
         $this->update([
@@ -881,7 +896,7 @@ class Tenant extends Model implements Invoiceable
             'max_storage_gb' => $newLimits['storage_gb'],
             'max_api_calls_per_hour' => $newLimits['api_calls_per_hour'],
         ]);
-        
+
         Log::info('Tenant upgraded', [
             'tenant_id' => $this->id,
             'old_tier' => $oldTier,
@@ -894,30 +909,30 @@ class Tenant extends Model implements Invoiceable
      */
     public function downgradeTo(string $tier): void
     {
-        if (!in_array($tier, ['free', 'basic', 'professional'])) {
+        if (! in_array($tier, ['free', 'basic', 'professional'])) {
             throw new \Exception("Invalid subscription tier: {$tier}");
         }
-        
+
         $oldTier = $this->subscription_tier;
-        
+
         $this->update([
             'subscription_tier' => $tier,
         ]);
-        
+
         // Update limits based on new tier
         if ($tier !== 'free') {
             $newLimits = config("tenants.tiers.{$tier}.limits");
         } else {
             $newLimits = config('tenants.defaults');
         }
-        
+
         $this->update([
             'max_users' => $newLimits['users'] ?? 10,
             'max_teams' => $newLimits['teams'] ?? 5,
             'max_storage_gb' => $newLimits['storage_gb'] ?? 5,
             'max_api_calls_per_hour' => $newLimits['api_calls_per_hour'] ?? 100,
         ]);
-        
+
         Log::info('Tenant downgraded', [
             'tenant_id' => $this->id,
             'old_tier' => $oldTier,
@@ -1066,5 +1081,146 @@ class Tenant extends Model implements Invoiceable
     public function getInvoiceableTypeName(): string
     {
         return 'Tenant';
+    }
+
+    // ============================
+    // STRIPE CONNECT METHODS
+    // ============================
+
+    /**
+     * Check if tenant has an active Stripe Connect account.
+     */
+    public function hasActiveStripeConnect(): bool
+    {
+        return $this->stripe_connect_status === 'active'
+            && $this->stripe_connect_account_id !== null;
+    }
+
+    /**
+     * Get the Stripe Connect account ID.
+     */
+    public function getStripeConnectAccountId(): ?string
+    {
+        return $this->stripe_connect_account_id;
+    }
+
+    /**
+     * Check if Stripe Connect is fully ready (charges and payouts enabled).
+     */
+    public function isStripeConnectReady(): bool
+    {
+        return $this->hasActiveStripeConnect()
+            && $this->stripe_connect_charges_enabled
+            && $this->stripe_connect_payouts_enabled;
+    }
+
+    /**
+     * Check if tenant is in Connect onboarding process.
+     */
+    public function isStripeConnectPending(): bool
+    {
+        return $this->stripe_connect_status === 'pending';
+    }
+
+    /**
+     * Check if tenant's Connect account is restricted.
+     */
+    public function isStripeConnectRestricted(): bool
+    {
+        return $this->stripe_connect_status === 'restricted';
+    }
+
+    /**
+     * Get Connect settings for this tenant.
+     */
+    public function connectSettings()
+    {
+        return $this->hasOne(StripeConnectSettings::class);
+    }
+
+    /**
+     * Get Connect transfers for this tenant.
+     */
+    public function connectTransfers()
+    {
+        return $this->hasMany(StripeConnectTransfer::class);
+    }
+
+    /**
+     * Get the application fee percentage for this tenant.
+     * Uses tenant-specific settings or falls back to platform defaults.
+     */
+    public function getApplicationFeePercent(): float
+    {
+        $settings = $this->connectSettings;
+
+        if ($settings) {
+            return (float) $settings->application_fee_percent;
+        }
+
+        // Fallback to platform default
+        return (float) config('stripe.connect.default_application_fee_percent', 2.5);
+    }
+
+    /**
+     * Get the fixed application fee for this tenant.
+     */
+    public function getApplicationFeeFixed(): float
+    {
+        $settings = $this->connectSettings;
+
+        if ($settings) {
+            return (float) $settings->application_fee_fixed;
+        }
+
+        return 0.00;
+    }
+
+    /**
+     * Calculate application fee for a given amount (in cents).
+     */
+    public function calculateApplicationFee(int $amountInCents): int
+    {
+        $percentFee = (int) round($amountInCents * ($this->getApplicationFeePercent() / 100));
+        $fixedFee = (int) round($this->getApplicationFeeFixed() * 100); // Convert to cents
+
+        return $percentFee + $fixedFee;
+    }
+
+    /**
+     * Update Connect status from Stripe account data.
+     */
+    public function updateConnectStatus(array $accountData): void
+    {
+        $status = 'pending';
+
+        if (($accountData['charges_enabled'] ?? false) && ($accountData['payouts_enabled'] ?? false)) {
+            $status = 'active';
+        } elseif ($accountData['requirements']['disabled_reason'] ?? null) {
+            $status = 'restricted';
+        }
+
+        $this->update([
+            'stripe_connect_status' => $status,
+            'stripe_connect_charges_enabled' => $accountData['charges_enabled'] ?? false,
+            'stripe_connect_payouts_enabled' => $accountData['payouts_enabled'] ?? false,
+            'stripe_connect_details_submitted' => $accountData['details_submitted'] ?? false,
+            'stripe_connect_last_webhook_at' => now(),
+        ]);
+    }
+
+    /**
+     * Disconnect Stripe Connect account.
+     */
+    public function disconnectStripeConnect(): void
+    {
+        $this->update([
+            'stripe_connect_account_id' => null,
+            'stripe_connect_status' => 'not_connected',
+            'stripe_connect_charges_enabled' => false,
+            'stripe_connect_payouts_enabled' => false,
+            'stripe_connect_details_submitted' => false,
+            'stripe_connect_connected_at' => null,
+        ]);
     }
 }
