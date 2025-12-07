@@ -417,7 +417,7 @@ class Team extends JetstreamTeam implements HasMedia
      */
     public function getWinPercentageAttribute(): float
     {
-        if ($this->games_played === 0) {
+        if (!$this->games_played) {
             return 0.0;
         }
 
