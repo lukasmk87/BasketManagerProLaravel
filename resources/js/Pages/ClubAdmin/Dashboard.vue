@@ -346,10 +346,10 @@ const storageLinkColor = computed(() => {
                             </div>
                         </div>
                         <div class="bg-gray-50 px-5 py-3">
-                            <Link v-if="current_season" :href="route('club.seasons.index', { club: club.id })" class="text-sm font-medium text-orange-600 hover:text-orange-800">
+                            <Link v-if="current_season" :href="route('club-admin.seasons.index')" class="text-sm font-medium text-orange-600 hover:text-orange-800">
                                 Saisons verwalten →
                             </Link>
-                            <Link v-else :href="route('club.seasons.index', { club: club.id })" class="text-sm font-medium text-orange-600 hover:text-orange-800">
+                            <Link v-else :href="route('club-admin.seasons.create')" class="text-sm font-medium text-orange-600 hover:text-orange-800">
                                 Saison erstellen →
                             </Link>
                         </div>
@@ -391,7 +391,7 @@ const storageLinkColor = computed(() => {
                                 <span class="text-sm font-medium text-gray-900">Neues Spiel</span>
                             </Link>
 
-                            <Link :href="route('club.seasons.index', { club: club.id })" class="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            <Link :href="route('club-admin.seasons.index')" class="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                 <svg class="w-8 h-8 text-amber-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>

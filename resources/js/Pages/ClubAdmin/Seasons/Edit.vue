@@ -42,10 +42,7 @@ const isCompleted = computed(() => {
 });
 
 const submit = () => {
-    form.put(route('club.seasons.update', {
-        club: props.club.id,
-        season: props.season.id
-    }), {
+    form.put(route('club-admin.seasons.update', props.season.id), {
         preserveScroll: true,
         onSuccess: () => {
             // Success message will be shown via Laravel flash
@@ -54,18 +51,12 @@ const submit = () => {
 };
 
 const handleBack = () => {
-    router.visit(route('club.seasons.show', {
-        club: props.club.id,
-        season: props.season.id
-    }));
+    router.visit(route('club-admin.seasons.show', props.season.id));
 };
 
 const handleDelete = () => {
     if (confirm(`Möchten Sie die Saison "${props.season.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden!`)) {
-        router.delete(route('club.seasons.destroy', {
-            club: props.club.id,
-            season: props.season.id
-        }));
+        router.delete(route('club-admin.seasons.destroy', props.season.id));
     }
 };
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\ClubAdmin\ClubFinancialController;
 use App\Http\Controllers\ClubAdmin\ClubMemberController;
 use App\Http\Controllers\ClubAdmin\ClubPlayerAdminController;
 use App\Http\Controllers\ClubAdmin\ClubReportsController;
+use App\Http\Controllers\ClubAdmin\ClubSeasonController;
 use App\Http\Controllers\ClubAdmin\ClubSettingsController;
 use App\Http\Controllers\ClubAdmin\ClubSubscriptionAdminController;
 use App\Http\Controllers\ClubAdmin\ClubTeamAdminController;
@@ -67,6 +68,28 @@ Route::prefix('club-admin')
                 ->name('edit');
             Route::put('/{team}', [ClubTeamAdminController::class, 'update'])
                 ->name('update');
+        });
+
+        // Seasons Management
+        Route::prefix('seasons')->name('seasons.')->group(function () {
+            Route::get('/', [ClubSeasonController::class, 'index'])
+                ->name('index');
+            Route::get('/create', [ClubSeasonController::class, 'create'])
+                ->name('create');
+            Route::post('/', [ClubSeasonController::class, 'store'])
+                ->name('store');
+            Route::get('/{season}', [ClubSeasonController::class, 'show'])
+                ->name('show');
+            Route::get('/{season}/edit', [ClubSeasonController::class, 'edit'])
+                ->name('edit');
+            Route::put('/{season}', [ClubSeasonController::class, 'update'])
+                ->name('update');
+            Route::delete('/{season}', [ClubSeasonController::class, 'destroy'])
+                ->name('destroy');
+            Route::post('/{season}/activate', [ClubSeasonController::class, 'activate'])
+                ->name('activate');
+            Route::post('/{season}/complete', [ClubSeasonController::class, 'complete'])
+                ->name('complete');
         });
 
         // Players Management

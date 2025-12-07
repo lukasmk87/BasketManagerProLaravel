@@ -84,22 +84,16 @@ const formatDate = (dateString) => {
 };
 
 const handleBack = () => {
-    router.visit(route('club.seasons.dashboard', { club: props.club.id }));
+    router.visit(route('club-admin.seasons.index'));
 };
 
 const handleEdit = () => {
-    router.visit(route('club.seasons.edit', {
-        club: props.club.id,
-        season: props.season.id
-    }));
+    router.visit(route('club-admin.seasons.edit', props.season.id));
 };
 
 const handleActivate = () => {
     if (confirm(`Möchten Sie die Saison "${props.season.name}" wirklich aktivieren?`)) {
-        router.post(route('club.seasons.activate', {
-            club: props.club.id,
-            season: props.season.id
-        }), {}, {
+        router.post(route('club-admin.seasons.activate', props.season.id), {}, {
             preserveScroll: true
         });
     }
@@ -107,10 +101,7 @@ const handleActivate = () => {
 
 const handleComplete = () => {
     if (confirm(`Möchten Sie die Saison "${props.season.name}" wirklich abschließen?`)) {
-        router.post(route('club.seasons.complete', {
-            club: props.club.id,
-            season: props.season.id
-        }), {
+        router.post(route('club-admin.seasons.complete', props.season.id), {
             create_snapshots: true
         }, {
             preserveScroll: true
@@ -120,10 +111,7 @@ const handleComplete = () => {
 
 const handleDelete = () => {
     if (confirm(`Möchten Sie die Saison "${props.season.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden!`)) {
-        router.delete(route('club.seasons.destroy', {
-            club: props.club.id,
-            season: props.season.id
-        }));
+        router.delete(route('club-admin.seasons.destroy', props.season.id));
     }
 };
 </script>

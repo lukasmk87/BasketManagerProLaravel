@@ -27,22 +27,22 @@ const formatDate = (dateString) => {
 };
 
 const handleView = (season) => {
-    router.visit(route('club.seasons.show', { club: props.club.id, season: season.id }));
+    router.visit(route('club-admin.seasons.show', season.id));
 };
 
 const handleEdit = (season) => {
-    router.visit(route('club.seasons.edit', { club: props.club.id, season: season.id }));
+    router.visit(route('club-admin.seasons.edit', season.id));
 };
 
 const handleActivate = (season) => {
     if (confirm(`Möchten Sie die Saison "${season.name}" wirklich aktivieren?`)) {
-        router.post(route('club.seasons.activate', { club: props.club.id, season: season.id }));
+        router.post(route('club-admin.seasons.activate', season.id));
     }
 };
 
 const handleComplete = (season) => {
     if (confirm(`Möchten Sie die Saison "${season.name}" wirklich abschließen?`)) {
-        router.post(route('club.seasons.complete', { club: props.club.id, season: season.id }), {
+        router.post(route('club-admin.seasons.complete', season.id), {
             create_snapshots: true
         });
     }
@@ -50,7 +50,7 @@ const handleComplete = (season) => {
 
 const handleDelete = (season) => {
     if (confirm(`Möchten Sie die Saison "${season.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden!`)) {
-        router.delete(route('club.seasons.destroy', { club: props.club.id, season: season.id }));
+        router.delete(route('club-admin.seasons.destroy', season.id));
     }
 };
 </script>
@@ -73,10 +73,10 @@ const handleDelete = (season) => {
                     </div>
                     <div class="mt-4 flex md:mt-0 md:ml-4">
                         <Link
-                            :href="route('club.seasons.dashboard', { club: club.id })"
-                            class="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            :href="route('club-admin.seasons.create')"
+                            class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
-                            Dashboard-Ansicht
+                            Neue Saison
                         </Link>
                     </div>
                 </div>
