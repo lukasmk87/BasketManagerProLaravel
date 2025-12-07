@@ -1,8 +1,11 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import InputLabel from '@/Components/InputLabel.vue';
+import TextInput from '@/Components/TextInput.vue';
+import InputError from '@/Components/InputError.vue';
 import VoucherInput from '@/Components/Club/VoucherInput.vue';
 import { usePricing } from '@/Composables/usePricing';
 
@@ -29,12 +32,46 @@ const selectedPlanId = ref(props.freePlanId);
 const billingInterval = ref('monthly');
 const voucherCode = ref('');
 const validatedVoucher = ref(null);
+const paymentMethod = ref('stripe');
 
 const form = useForm({
     plan_id: props.freePlanId,
     billing_interval: 'monthly',
     voucher_code: '',
+    payment_method: 'stripe',
+    billing_name: '',
+    billing_email: '',
+    billing_address: {
+        street: '',
+        postal_code: '',
+        city: '',
+        country: 'DE',
+    },
+    vat_number: '',
 });
+
+// Reset payment method to stripe when selecting free plan
+watch(selectedPlanId, (newPlanId) => {
+    const plan = props.availablePlans.find(p => p.id === newPlanId);
+    if (plan && parseFloat(plan.price) === 0) {
+        paymentMethod.value = 'stripe';
+        form.payment_method = 'stripe';
+    }
+});
+
+const countries = [
+    { code: 'DE', name: 'Deutschland' },
+    { code: 'AT', name: '\u00d6sterreich' },
+    { code: 'CH', name: 'Schweiz' },
+    { code: 'LI', name: 'Liechtenstein' },
+    { code: 'LU', name: 'Luxemburg' },
+    { code: 'BE', name: 'Belgien' },
+    { code: 'NL', name: 'Niederlande' },
+    { code: 'FR', name: 'Frankreich' },
+    { code: 'IT', name: 'Italien' },
+    { code: 'PL', name: 'Polen' },
+    { code: 'CZ', name: 'Tschechien' },
+];
 
 const handleVoucherValidated = (voucher) => {
     validatedVoucher.value = voucher;
@@ -92,6 +129,7 @@ const smallBusinessNotice = computed(() => getSmallBusinessNotice());
 const submit = () => {
     form.plan_id = selectedPlanId.value;
     form.billing_interval = billingInterval.value;
+    form.payment_method = paymentMethod.value;
 
     form.post(route('onboarding.plan.store'), {
         preserveScroll: true,
@@ -100,6 +138,14 @@ const submit = () => {
         },
     });
 };
+
+const showPaymentMethodSelection = computed(() => {
+    return selectedPlan.value && parseFloat(selectedPlan.value.price) > 0;
+});
+
+const showInvoiceForm = computed(() => {
+    return showPaymentMethodSelection.value && paymentMethod.value === 'invoice';
+});
 
 const selectPlan = (planId) => {
     selectedPlanId.value = planId;
@@ -272,6 +318,163 @@ const getFeatureList = (plan) => {
             <p class="text-sm text-amber-800">{{ smallBusinessNotice }}</p>
         </div>
 
+        <!-- Payment Method Selection (only for paid plans) -->
+        <div v-if="showPaymentMethodSelection" class="mb-8">
+            <div class="max-w-xl mx-auto">
+                <h3 class="text-lg font-medium text-gray-900 mb-4 text-center">Zahlungsmethode</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <button
+                        type="button"
+                        @click="paymentMethod = 'stripe'"
+                        :class="[
+                            'relative rounded-lg border-2 p-4 text-left transition-all',
+                            paymentMethod === 'stripe'
+                                ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-500 ring-opacity-50'
+                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                        ]"
+                    >
+                        <div class="flex items-center">
+                            <div :class="[
+                                'w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center',
+                                paymentMethod === 'stripe' ? 'border-orange-500' : 'border-gray-300'
+                            ]">
+                                <div v-if="paymentMethod === 'stripe'" class="w-2.5 h-2.5 rounded-full bg-orange-500"></div>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-900">Karte / SEPA</div>
+                                <div class="text-sm text-gray-500">Sofortige Zahlung via Stripe</div>
+                            </div>
+                        </div>
+                    </button>
+                    <button
+                        type="button"
+                        @click="paymentMethod = 'invoice'"
+                        :class="[
+                            'relative rounded-lg border-2 p-4 text-left transition-all',
+                            paymentMethod === 'invoice'
+                                ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-500 ring-opacity-50'
+                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                        ]"
+                    >
+                        <div class="flex items-center">
+                            <div :class="[
+                                'w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center',
+                                paymentMethod === 'invoice' ? 'border-orange-500' : 'border-gray-300'
+                            ]">
+                                <div v-if="paymentMethod === 'invoice'" class="w-2.5 h-2.5 rounded-full bg-orange-500"></div>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-900">Per Rechnung</div>
+                                <div class="text-sm text-gray-500">Zahlung per Banküberweisung</div>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Billing Form -->
+        <div v-if="showInvoiceForm" class="mb-8">
+            <div class="max-w-xl mx-auto bg-gray-50 rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Rechnungsdaten</h3>
+                <div class="space-y-4">
+                    <!-- Billing Name -->
+                    <div>
+                        <InputLabel for="billing_name" value="Rechnungsempfänger *" />
+                        <TextInput
+                            id="billing_name"
+                            v-model="form.billing_name"
+                            type="text"
+                            class="mt-1 block w-full"
+                            placeholder="Firmenname oder Name"
+                        />
+                        <InputError :message="form.errors.billing_name" class="mt-1" />
+                    </div>
+
+                    <!-- Billing Email -->
+                    <div>
+                        <InputLabel for="billing_email" value="Rechnungs-E-Mail *" />
+                        <TextInput
+                            id="billing_email"
+                            v-model="form.billing_email"
+                            type="email"
+                            class="mt-1 block w-full"
+                            placeholder="rechnung@beispiel.de"
+                        />
+                        <InputError :message="form.errors.billing_email" class="mt-1" />
+                    </div>
+
+                    <!-- Street -->
+                    <div>
+                        <InputLabel for="billing_street" value="Straße und Hausnummer *" />
+                        <TextInput
+                            id="billing_street"
+                            v-model="form.billing_address.street"
+                            type="text"
+                            class="mt-1 block w-full"
+                            placeholder="Musterstraße 123"
+                        />
+                        <InputError :message="form.errors['billing_address.street']" class="mt-1" />
+                    </div>
+
+                    <!-- Postal Code & City -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <InputLabel for="billing_postal_code" value="PLZ *" />
+                            <TextInput
+                                id="billing_postal_code"
+                                v-model="form.billing_address.postal_code"
+                                type="text"
+                                class="mt-1 block w-full"
+                                placeholder="12345"
+                            />
+                            <InputError :message="form.errors['billing_address.postal_code']" class="mt-1" />
+                        </div>
+                        <div class="col-span-2">
+                            <InputLabel for="billing_city" value="Stadt *" />
+                            <TextInput
+                                id="billing_city"
+                                v-model="form.billing_address.city"
+                                type="text"
+                                class="mt-1 block w-full"
+                                placeholder="Musterstadt"
+                            />
+                            <InputError :message="form.errors['billing_address.city']" class="mt-1" />
+                        </div>
+                    </div>
+
+                    <!-- Country -->
+                    <div>
+                        <InputLabel for="billing_country" value="Land *" />
+                        <select
+                            id="billing_country"
+                            v-model="form.billing_address.country"
+                            class="mt-1 block w-full border-gray-300 focus:border-orange-500 focus:ring-orange-500 rounded-md shadow-sm"
+                        >
+                            <option v-for="country in countries" :key="country.code" :value="country.code">
+                                {{ country.name }}
+                            </option>
+                        </select>
+                        <InputError :message="form.errors['billing_address.country']" class="mt-1" />
+                    </div>
+
+                    <!-- VAT Number (optional) -->
+                    <div>
+                        <InputLabel for="vat_number" value="USt-IdNr. (optional)" />
+                        <TextInput
+                            id="vat_number"
+                            v-model="form.vat_number"
+                            type="text"
+                            class="mt-1 block w-full"
+                            placeholder="DE123456789"
+                        />
+                        <InputError :message="form.errors.vat_number" class="mt-1" />
+                        <p class="mt-1 text-xs text-gray-500">Nur für Unternehmen mit gültiger USt-IdNr.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Buttons -->
         <div class="flex justify-center space-x-4">
             <SecondaryButton
@@ -289,6 +492,7 @@ const getFeatureList = (plan) => {
             >
                 <span v-if="form.processing">Wird verarbeitet...</span>
                 <span v-else-if="isFreePlan">Mit Free Plan starten</span>
+                <span v-else-if="paymentMethod === 'invoice'">Plan mit Rechnung auswählen</span>
                 <span v-else>Plan auswählen & bezahlen</span>
             </PrimaryButton>
         </div>

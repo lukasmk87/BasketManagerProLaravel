@@ -6,6 +6,7 @@ use App\Http\Requests\Onboarding\StoreClubRequest;
 use App\Http\Requests\Onboarding\StorePlanRequest;
 use App\Http\Requests\Onboarding\StoreTeamRequest;
 use App\Models\Club;
+use App\Models\ClubInvoiceRequest;
 use App\Models\ClubSubscriptionPlan;
 use App\Services\OnboardingService;
 use App\Services\Stripe\ClubSubscriptionCheckoutService;
@@ -164,7 +165,46 @@ class OnboardingController extends Controller
                     ->with('success', 'Plan erfolgreich gewählt! Jetzt erstelle dein erstes Team.');
             }
 
-            // Paid plan - create Stripe checkout session and redirect
+            // Invoice payment - assign plan immediately and create invoice request
+            if (($validated['payment_method'] ?? 'stripe') === 'invoice') {
+                // Check for existing pending invoice request
+                $existingRequest = ClubInvoiceRequest::where('club_id', $club->id)
+                    ->where('status', 'pending')
+                    ->exists();
+
+                if ($existingRequest) {
+                    return back()->withErrors([
+                        'error' => 'Es existiert bereits eine ausstehende Rechnungsanfrage für diesen Club.',
+                    ]);
+                }
+
+                // Assign plan immediately
+                $club->update(['club_subscription_plan_id' => $plan->id]);
+
+                // Create invoice request
+                ClubInvoiceRequest::create([
+                    'tenant_id' => $club->tenant_id,
+                    'club_id' => $club->id,
+                    'club_subscription_plan_id' => $plan->id,
+                    'billing_name' => $validated['billing_name'],
+                    'billing_email' => $validated['billing_email'],
+                    'billing_address' => $validated['billing_address'] ?? null,
+                    'vat_number' => $validated['vat_number'] ?? null,
+                    'billing_interval' => $validated['billing_interval'] ?? 'monthly',
+                    'status' => 'pending',
+                ]);
+
+                Log::info('Onboarding: Invoice payment requested', [
+                    'user_id' => $user->id,
+                    'club_id' => $club->id,
+                    'plan_id' => $plan->id,
+                ]);
+
+                return redirect()->route('onboarding.index')
+                    ->with('success', 'Plan gewählt! Deine Rechnung wird erstellt und per E-Mail versendet.');
+            }
+
+            // Stripe payment - create checkout session and redirect
             $session = $this->checkoutService->createCheckoutSession(
                 $club,
                 $paidPlan,
