@@ -24,15 +24,16 @@ class OnboardingService
     public function getAgeGroups(): array
     {
         return [
-            'U8' => 'U8 (unter 8 Jahre)',
-            'U10' => 'U10 (unter 10 Jahre)',
-            'U12' => 'U12 (unter 12 Jahre)',
-            'U14' => 'U14 (unter 14 Jahre)',
-            'U16' => 'U16 (unter 16 Jahre)',
-            'U18' => 'U18 (unter 18 Jahre)',
-            'U20' => 'U20 (unter 20 Jahre)',
-            'Herren' => 'Herren',
-            'Damen' => 'Damen',
+            'u8' => 'U8 (unter 8 Jahre)',
+            'u10' => 'U10 (unter 10 Jahre)',
+            'u12' => 'U12 (unter 12 Jahre)',
+            'u14' => 'U14 (unter 14 Jahre)',
+            'u16' => 'U16 (unter 16 Jahre)',
+            'u18' => 'U18 (unter 18 Jahre)',
+            'u20' => 'U20 (unter 20 Jahre)',
+            'senior:male' => 'Herren',
+            'senior:female' => 'Damen',
+            'senior:mixed' => 'Mixed (Erwachsene)',
         ];
     }
 
@@ -129,17 +130,25 @@ class OnboardingService
             ? "{$currentYear}/" . ($currentYear + 1)
             : ($currentYear - 1) . "/{$currentYear}";
 
+        // Parse combined age_group keys (e.g., 'senior:male' -> age_group='senior', gender='male')
+        $ageGroup = $data['age_group'];
+        $gender = $data['gender'] ?? 'mixed';
+
+        if (str_contains($ageGroup, ':')) {
+            [$ageGroup, $gender] = explode(':', $ageGroup);
+        }
+
         // Prepare team data
         $teamData = [
             'name' => $data['name'],
             'club_id' => $club->id,
-            'age_group' => $data['age_group'],
-            'gender' => $data['gender'] ?? 'mixed',
+            'age_group' => $ageGroup,
+            'gender' => $gender,
             'season' => $season,
             'is_active' => true,
         ];
 
-        $team = $this->teamService->createTeam($teamData);
+        $team = $this->teamService->createTeam($teamData, skipLimitCheck: true);
 
         // Assign trainer role if not already assigned
         if (!$user->hasRole('trainer')) {

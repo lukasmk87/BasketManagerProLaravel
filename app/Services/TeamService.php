@@ -17,7 +17,7 @@ class TeamService
     /**
      * Create a new team.
      */
-    public function createTeam(array $data): Team
+    public function createTeam(array $data, bool $skipLimitCheck = false): Team
     {
         Log::info("TeamService::createTeam - Starting team creation", [
             'input_data' => $data,
@@ -26,9 +26,11 @@ class TeamService
             'session_exists' => session()->getId() ?? 'no_session',
         ]);
 
-        // Check team limit BEFORE starting transaction
+        // Check team limit BEFORE starting transaction (unless skipped for onboarding)
         $limitEnforcement = App::make(LimitEnforcementService::class);
-        $limitEnforcement->enforceTeamLimit();
+        if (!$skipLimitCheck) {
+            $limitEnforcement->enforceTeamLimit();
+        }
 
         DB::beginTransaction();
 

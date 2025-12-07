@@ -124,7 +124,7 @@ const handleFileChange = (event) => {
                     :disabled="form.processing"
                 >
                     <span v-if="form.processing">Wird erstellt...</span>
-                    <span v-else>Weiter zum Team</span>
+                    <span v-else>Weiter zum Plan</span>
                 </PrimaryButton>
             </div>
         </form>

@@ -25,7 +25,7 @@ class StoreTeamRequest extends FormRequest
             'age_group' => [
                 'required',
                 'string',
-                Rule::in(['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'U20', 'Herren', 'Damen']),
+                Rule::in(['u8', 'u10', 'u12', 'u14', 'u16', 'u18', 'u20', 'senior:male', 'senior:female', 'senior:mixed']),
             ],
             'gender' => ['nullable', 'string', Rule::in(['male', 'female', 'mixed'])],
         ];

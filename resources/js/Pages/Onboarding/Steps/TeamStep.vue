@@ -120,7 +120,7 @@ const genderOptions = [
                     :disabled="form.processing"
                 >
                     <span v-if="form.processing">Wird erstellt...</span>
-                    <span v-else>Weiter zum Plan</span>
+                    <span v-else>Los geht's</span>
                 </PrimaryButton>
             </div>
         </form>
