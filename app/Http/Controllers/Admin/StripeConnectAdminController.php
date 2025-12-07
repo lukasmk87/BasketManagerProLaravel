@@ -8,6 +8,7 @@ use App\Models\StripeConnectTransfer;
 use App\Models\Tenant;
 use App\Services\Stripe\StripeConnectService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -15,15 +16,54 @@ use Inertia\Response;
 
 class StripeConnectAdminController extends Controller
 {
-    public function __construct(
-        protected StripeConnectService $connectService
-    ) {}
+    protected ?StripeConnectService $connectService = null;
+
+    public function __construct()
+    {
+        // Service wird nur geladen wenn Stripe konfiguriert ist
+    }
+
+    /**
+     * Get the StripeConnectService (lazy loaded).
+     */
+    protected function getConnectService(): StripeConnectService
+    {
+        if ($this->connectService === null) {
+            $this->connectService = app(StripeConnectService::class);
+        }
+
+        return $this->connectService;
+    }
+
+    /**
+     * Check if Stripe is configured.
+     */
+    protected function isStripeConfigured(): bool
+    {
+        return ! empty(config('stripe.secret'));
+    }
 
     /**
      * Display overview of all connected accounts.
      */
     public function index(): Response
     {
+        // Prüfe ob Stripe konfiguriert ist
+        if (! $this->isStripeConfigured()) {
+            return Inertia::render('Admin/StripeConnect/Index', [
+                'configurationRequired' => true,
+                'tenants' => [],
+                'stats' => [
+                    'total_connected' => 0,
+                    'pending_onboarding' => 0,
+                    'restricted' => 0,
+                    'monthly_fees' => 0,
+                    'monthly_fees_formatted' => '0,00 EUR',
+                ],
+                'platformSettings' => null,
+            ]);
+        }
+
         $tenants = Tenant::query()
             ->whereNotNull('stripe_connect_account_id')
             ->orWhere('stripe_connect_status', '!=', 'not_connected')
@@ -77,6 +117,14 @@ class StripeConnectAdminController extends Controller
      */
     public function show(Tenant $tenant): Response
     {
+        // Prüfe ob Stripe konfiguriert ist
+        if (! $this->isStripeConfigured()) {
+            return Inertia::render('Admin/StripeConnect/Show', [
+                'configurationRequired' => true,
+                'tenant' => ['id' => $tenant->id, 'name' => $tenant->name],
+            ]);
+        }
+
         $data = [
             'tenant' => [
                 'id' => $tenant->id,
@@ -95,14 +143,14 @@ class StripeConnectAdminController extends Controller
 
         // Get balance and payouts if connected
         if ($tenant->hasActiveStripeConnect()) {
-            $data['balance'] = $this->connectService->getAccountBalance($tenant);
+            $data['balance'] = $this->getConnectService()->getAccountBalance($tenant);
             $data['recentPayouts'] = array_map(fn ($payout) => [
                 'id' => $payout->id,
                 'amount' => $payout->amount,
                 'currency' => $payout->currency,
                 'status' => $payout->status,
                 'arrival_date' => date('Y-m-d', $payout->arrival_date),
-            ], $this->connectService->getRecentPayouts($tenant, 10));
+            ], $this->getConnectService()->getRecentPayouts($tenant, 10));
         }
 
         // Recent transfers
@@ -195,7 +243,7 @@ class StripeConnectAdminController extends Controller
     /**
      * Update platform-wide fee settings.
      */
-    public function updatePlatformFee(Request $request): JsonResponse
+    public function updatePlatformFee(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'application_fee_percent' => 'required|numeric|min:0|max:50',
@@ -218,10 +266,7 @@ class StripeConnectAdminController extends Controller
             $settings->update($validated);
         }
 
-        return response()->json([
-            'message' => 'Platform-Gebühren wurden aktualisiert',
-            'settings' => $settings,
-        ]);
+        return back()->with('success', 'Platform-Gebühren wurden aktualisiert');
     }
 
     /**
@@ -229,6 +274,12 @@ class StripeConnectAdminController extends Controller
      */
     public function refreshTenantStatus(Tenant $tenant): JsonResponse
     {
+        if (! $this->isStripeConfigured()) {
+            return response()->json([
+                'error' => 'Stripe ist nicht konfiguriert. Bitte STRIPE_SECRET in der .env setzen.',
+            ], 503);
+        }
+
         if (! $tenant->stripe_connect_account_id) {
             return response()->json([
                 'error' => 'Tenant hat keinen verbundenen Stripe Account',
@@ -236,7 +287,7 @@ class StripeConnectAdminController extends Controller
         }
 
         try {
-            $this->connectService->refreshAccountStatus($tenant);
+            $this->getConnectService()->refreshAccountStatus($tenant);
             $tenant->refresh();
 
             return response()->json([

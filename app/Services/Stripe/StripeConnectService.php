@@ -10,12 +10,24 @@ use Stripe\StripeClient;
 
 class StripeConnectService
 {
-    protected StripeClient $stripe;
+    protected ?StripeClient $stripe = null;
 
     public function __construct(
         protected StripeClientManager $clientManager
     ) {
-        $this->stripe = $clientManager->getDefaultClient();
+        // Lazy loading - Client wird erst bei Bedarf initialisiert
+    }
+
+    /**
+     * Get Stripe client (lazy loaded).
+     */
+    protected function getStripeClient(): StripeClient
+    {
+        if ($this->stripe === null) {
+            $this->stripe = $this->clientManager->getDefaultClient();
+        }
+
+        return $this->stripe;
     }
 
     /**
@@ -24,7 +36,7 @@ class StripeConnectService
     public function createExpressAccount(Tenant $tenant): Account
     {
         try {
-            $account = $this->stripe->accounts->create([
+            $account = $this->getStripeClient()->accounts->create([
                 'type' => 'express',
                 'country' => $tenant->country_code ?? 'DE',
                 'email' => $tenant->billing_email,
@@ -84,7 +96,7 @@ class StripeConnectService
         }
 
         try {
-            $accountLink = $this->stripe->accountLinks->create([
+            $accountLink = $this->getStripeClient()->accountLinks->create([
                 'account' => $tenant->stripe_connect_account_id,
                 'refresh_url' => $refreshUrl,
                 'return_url' => $returnUrl,
@@ -113,7 +125,7 @@ class StripeConnectService
         }
 
         try {
-            return $this->stripe->accounts->retrieve($tenant->stripe_connect_account_id);
+            return $this->getStripeClient()->accounts->retrieve($tenant->stripe_connect_account_id);
         } catch (ApiErrorException $e) {
             Log::error('Failed to retrieve Stripe Connect account', [
                 'tenant_id' => $tenant->id,
@@ -189,7 +201,7 @@ class StripeConnectService
         }
 
         try {
-            $loginLink = $this->stripe->accounts->createLoginLink(
+            $loginLink = $this->getStripeClient()->accounts->createLoginLink(
                 $tenant->stripe_connect_account_id
             );
 
@@ -215,7 +227,7 @@ class StripeConnectService
 
         try {
             // Revoke platform's access (deauthorize)
-            $this->stripe->oauth->deauthorize([
+            $this->getStripeClient()->oauth->deauthorize([
                 'client_id' => config('stripe.connect.client_id', config('stripe.client_id')),
                 'stripe_user_id' => $tenant->stripe_connect_account_id,
             ]);
@@ -266,7 +278,7 @@ class StripeConnectService
         }
 
         try {
-            $balance = $this->stripe->balance->retrieve(
+            $balance = $this->getStripeClient()->balance->retrieve(
                 [],
                 ['stripe_account' => $tenant->stripe_connect_account_id]
             );
@@ -313,7 +325,7 @@ class StripeConnectService
         }
 
         try {
-            $payouts = $this->stripe->payouts->all(
+            $payouts = $this->getStripeClient()->payouts->all(
                 ['limit' => $limit],
                 ['stripe_account' => $tenant->stripe_connect_account_id]
             );
@@ -335,7 +347,7 @@ class StripeConnectService
     public function getAllConnectedAccounts(int $limit = 100): array
     {
         try {
-            $accounts = $this->stripe->accounts->all([
+            $accounts = $this->getStripeClient()->accounts->all([
                 'limit' => $limit,
             ]);
 

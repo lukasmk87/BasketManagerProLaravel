@@ -7,6 +7,10 @@ const props = defineProps({
     tenants: Array,
     stats: Object,
     platformSettings: Object,
+    configurationRequired: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const showSettingsModal = ref(false);
@@ -85,6 +89,7 @@ const refreshTenantStatus = async (tenantId) => {
                     Stripe Connect Verwaltung
                 </h2>
                 <button
+                    v-if="!configurationRequired"
                     @click="showSettingsModal = true"
                     class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition"
                 >
@@ -99,8 +104,33 @@ const refreshTenantStatus = async (tenantId) => {
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <!-- Configuration Required Warning -->
+                <div v-if="configurationRequired" class="mb-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div>
+                            <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+                                Stripe-Konfiguration erforderlich
+                            </h3>
+                            <p class="mt-1 text-yellow-700 dark:text-yellow-300">
+                                Stripe Connect ist nicht konfiguriert. Bitte setzen Sie die folgenden Umgebungsvariablen in der <code class="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">.env</code> Datei:
+                            </p>
+                            <ul class="mt-3 list-disc list-inside text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+                                <li><code class="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">STRIPE_KEY</code> - Publishable Key (pk_...)</li>
+                                <li><code class="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">STRIPE_SECRET</code> - Secret Key (sk_...)</li>
+                                <li><code class="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">STRIPE_CONNECT_CLIENT_ID</code> - Connect Client ID (ca_...)</li>
+                            </ul>
+                            <p class="mt-3 text-sm text-yellow-600 dark:text-yellow-400">
+                                Diese Werte finden Sie im <a href="https://dashboard.stripe.com/apikeys" target="_blank" class="underline hover:text-yellow-800 dark:hover:text-yellow-200">Stripe Dashboard</a> unter Developers → API keys.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div v-if="!configurationRequired" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg p-6">
                         <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Verbundene Accounts</div>
                         <div class="mt-2 text-3xl font-bold text-green-600">{{ stats.total_connected }}</div>
@@ -120,7 +150,7 @@ const refreshTenantStatus = async (tenantId) => {
                 </div>
 
                 <!-- Platform Settings Summary -->
-                <div v-if="platformSettings" class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 mb-8">
+                <div v-if="!configurationRequired && platformSettings" class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 mb-8">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
                             <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,7 +168,7 @@ const refreshTenantStatus = async (tenantId) => {
                 </div>
 
                 <!-- Tenants Table -->
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                <div v-if="!configurationRequired" class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
                     <div class="p-6">
                         <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
                             Verbundene Tenants
