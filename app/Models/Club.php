@@ -325,6 +325,37 @@ class Club extends Model implements HasMedia, Invoiceable
         return $this->hasMany(ClubInvoice::class);
     }
 
+    /**
+     * Get all voucher redemptions for this club.
+     */
+    public function voucherRedemptions(): HasMany
+    {
+        return $this->hasMany(VoucherRedemption::class);
+    }
+
+    /**
+     * Get the currently active voucher redemption (not fully applied).
+     */
+    public function activeVoucherRedemption(): ?VoucherRedemption
+    {
+        return $this->voucherRedemptions()
+            ->where('is_fully_applied', false)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Check if club has an active voucher discount.
+     */
+    public function hasActiveVoucher(): bool
+    {
+        return $this->activeVoucherRedemption() !== null;
+    }
+
     // ============================
     // SCOPES
     // ============================

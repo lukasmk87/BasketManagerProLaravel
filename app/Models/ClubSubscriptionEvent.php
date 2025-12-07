@@ -74,6 +74,7 @@ class ClubSubscriptionEvent extends Model
     public const TYPE_PAYMENT_SUCCEEDED = 'payment_succeeded';
     public const TYPE_PAYMENT_FAILED = 'payment_failed';
     public const TYPE_PAYMENT_RECOVERED = 'payment_recovered';
+    public const TYPE_VOUCHER_REDEEMED = 'voucher_redeemed';
 
     // Cancellation reason constants
     public const REASON_VOLUNTARY = 'voluntary';

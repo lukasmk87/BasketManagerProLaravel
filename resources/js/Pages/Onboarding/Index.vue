@@ -128,6 +128,7 @@ const goBack = () => {
                             v-else-if="currentStep === 2"
                             :available-plans="availablePlans"
                             :free-plan-id="freePlanId"
+                            :club="club"
                             @complete="handlePlanSelected"
                             @back="goBack"
                         />

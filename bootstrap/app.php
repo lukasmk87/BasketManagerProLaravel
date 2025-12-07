@@ -65,6 +65,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/admin.php'));
 
+            // Tenant Admin routes (tenant-level administration)
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/tenant_admin.php'));
+
             // Register API routes LAST to avoid conflicts with web routes
             \Illuminate\Support\Facades\Route::prefix('api')
                 ->middleware('api')

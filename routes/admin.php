@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\InvoiceRequestController;
 use App\Http\Controllers\Admin\EnterpriseLeadController;
 use App\Http\Controllers\Admin\EnterprisePageController;
+use App\Http\Controllers\Admin\VoucherController;
 
 /*
 |--------------------------------------------------------------------------
@@ -100,4 +101,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/{section}/preview', [EnterprisePageController::class, 'preview'])->name('preview');
         Route::post('/{section}/copy-locale', [EnterprisePageController::class, 'copyToLocale'])->name('copy-locale');
     });
+
+    // Voucher Management (Super Admin)
+    Route::resource('vouchers', VoucherController::class);
+    Route::post('vouchers/{voucher}/toggle-active', [VoucherController::class, 'toggleActive'])
+        ->name('vouchers.toggle-active');
 });

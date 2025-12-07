@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import VoucherInput from '@/Components/Club/VoucherInput.vue';
 import { usePricing } from '@/Composables/usePricing';
 
 const { formatPrice: formatPriceWithSettings, getPriceLabel, getSmallBusinessNotice, pricingSettings } = usePricing();
@@ -16,17 +17,50 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    club: {
+        type: Object,
+        default: null,
+    },
 });
 
 const emit = defineEmits(['complete', 'back']);
 
 const selectedPlanId = ref(props.freePlanId);
 const billingInterval = ref('monthly');
+const voucherCode = ref('');
+const validatedVoucher = ref(null);
 
 const form = useForm({
     plan_id: props.freePlanId,
     billing_interval: 'monthly',
+    voucher_code: '',
 });
+
+const handleVoucherValidated = (voucher) => {
+    validatedVoucher.value = voucher;
+    form.voucher_code = voucher.code;
+};
+
+const handleVoucherCleared = () => {
+    validatedVoucher.value = null;
+    form.voucher_code = '';
+};
+
+const getDiscountedPrice = (originalPrice) => {
+    if (!validatedVoucher.value || parseFloat(originalPrice) === 0) {
+        return null;
+    }
+
+    if (validatedVoucher.value.type === 'percent') {
+        const discount = parseFloat(originalPrice) * (validatedVoucher.value.discount_percent / 100);
+        return parseFloat(originalPrice) - discount;
+    } else if (validatedVoucher.value.type === 'fixed_amount') {
+        const discounted = parseFloat(originalPrice) - validatedVoucher.value.discount_amount;
+        return Math.max(0, discounted);
+    }
+
+    return null;
+};
 
 const sortedPlans = computed(() => {
     return [...props.availablePlans].sort((a, b) => a.price - b.price);
@@ -135,6 +169,21 @@ const getFeatureList = (plan) => {
             </div>
         </div>
 
+        <!-- Voucher Input -->
+        <div v-if="club" class="max-w-md mx-auto mb-8">
+            <div class="bg-gray-50 rounded-lg p-4">
+                <VoucherInput
+                    :club-id="club.id"
+                    :plan-id="selectedPlanId"
+                    v-model="voucherCode"
+                    label="Haben Sie einen Voucher-Code?"
+                    placeholder="VOUCHER123..."
+                    @voucher-validated="handleVoucherValidated"
+                    @voucher-cleared="handleVoucherCleared"
+                />
+            </div>
+        </div>
+
         <!-- Plan Cards -->
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
             <div
@@ -175,7 +224,15 @@ const getFeatureList = (plan) => {
 
                 <!-- Price -->
                 <div class="mb-4">
-                    <span class="text-2xl font-bold text-gray-900">
+                    <template v-if="getDiscountedPrice(plan.price) !== null">
+                        <span class="text-lg text-gray-400 line-through mr-2">
+                            {{ formatPrice(plan.price, plan.currency) }}
+                        </span>
+                        <span class="text-2xl font-bold text-green-600">
+                            {{ formatPrice(getDiscountedPrice(plan.price), plan.currency) }}
+                        </span>
+                    </template>
+                    <span v-else class="text-2xl font-bold text-gray-900">
                         {{ formatPrice(plan.price, plan.currency) }}
                     </span>
                     <span v-if="parseFloat(plan.price) > 0" class="text-gray-500 text-sm">

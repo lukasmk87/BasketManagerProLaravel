@@ -3,6 +3,7 @@
 use App\Http\Controllers\Stripe\ClubCheckoutController;
 use App\Http\Controllers\Stripe\ClubBillingController;
 use App\Http\Controllers\Webhooks\ClubSubscriptionWebhookController;
+use App\Http\Controllers\Club\VoucherController as ClubVoucherController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -82,6 +83,22 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // Legacy club.subscription.swap route for backward compatibility
     Route::post('/club/{club}/subscription/swap', [ClubBillingController::class, 'swapPlan'])
         ->name('club.subscription.swap');
+
+    // ============================
+    // VOUCHER REDEMPTION
+    // ============================
+    Route::prefix('club/{club}/vouchers')->name('club.vouchers.')->group(function () {
+        Route::post('/validate', [ClubVoucherController::class, 'validateCode'])
+            ->name('validate');
+        Route::post('/redeem', [ClubVoucherController::class, 'redeem'])
+            ->name('redeem');
+        Route::get('/active', [ClubVoucherController::class, 'active'])
+            ->name('active');
+        Route::get('/history', [ClubVoucherController::class, 'history'])
+            ->name('history');
+        Route::post('/preview-discount', [ClubVoucherController::class, 'previewDiscount'])
+            ->name('preview-discount');
+    });
 });
 
 // Webhook routes (no authentication required)

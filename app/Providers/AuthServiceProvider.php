@@ -43,6 +43,8 @@ use App\Models\PlayFavorite;
 use App\Policies\PlayFavoritePolicy;
 use App\Models\Playbook;
 use App\Policies\PlaybookPolicy;
+use App\Models\Voucher;
+use App\Policies\VoucherPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -72,6 +74,7 @@ class AuthServiceProvider extends ServiceProvider
         Play::class => PlayPolicy::class,
         PlayFavorite::class => PlayFavoritePolicy::class,
         Playbook::class => PlaybookPolicy::class,
+        Voucher::class => VoucherPolicy::class,
     ];
 
     /**

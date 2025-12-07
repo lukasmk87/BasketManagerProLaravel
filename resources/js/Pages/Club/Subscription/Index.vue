@@ -8,6 +8,7 @@ import BillingIntervalToggle from '@/Components/Club/Subscription/BillingInterva
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import PlanSwapModal from '@/Components/Club/Subscription/PlanSwapModal.vue';
 import PaymentMethodSelector from '@/Components/Checkout/PaymentMethodSelector.vue';
+import VoucherInput from '@/Components/Club/VoucherInput.vue';
 import { useStripe } from '@/Composables/core/useStripe.js';
 import { useTranslations } from '@/Composables/core/useTranslations';
 
@@ -48,6 +49,10 @@ const props = defineProps({
         type: Number,
         default: 0,
     },
+    active_voucher: {
+        type: Object,
+        default: null,
+    },
 });
 
 const { redirectToCheckout, formatAmount } = useStripe();
@@ -64,6 +69,43 @@ const currentBillingInterval = ref('monthly'); // Track current subscription's b
 const paymentMethod = ref('card');
 const invoiceData = ref({});
 const loadingInvoiceRequest = ref(false);
+const voucherCode = ref('');
+const validatedVoucher = ref(null);
+const redeemingVoucher = ref(false);
+
+const handleVoucherValidated = (voucher) => {
+    validatedVoucher.value = voucher;
+};
+
+const handleVoucherCleared = () => {
+    validatedVoucher.value = null;
+    voucherCode.value = '';
+};
+
+const redeemVoucher = async () => {
+    if (!validatedVoucher.value || redeemingVoucher.value) return;
+
+    redeemingVoucher.value = true;
+
+    try {
+        await axios.post(route('club.vouchers.redeem', props.club.id), {
+            code: validatedVoucher.value.code,
+        });
+
+        // Reload page to show updated voucher status
+        router.reload({
+            onFinish: () => {
+                redeemingVoucher.value = false;
+                voucherCode.value = '';
+                validatedVoucher.value = null;
+            },
+        });
+    } catch (error) {
+        console.error('Voucher redemption failed:', error);
+        alert(error.response?.data?.message || 'Fehler beim Einlösen des Vouchers');
+        redeemingVoucher.value = false;
+    }
+};
 
 // Computed
 const sortedPlans = computed(() => {
@@ -230,6 +272,80 @@ const getLimitColor = (percentage) => {
                     @manage-billing="openBillingPortal"
                     @cancel-subscription="confirmCancelSubscription"
                 />
+
+                <!-- Active Voucher Display -->
+                <div v-if="active_voucher" class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-semibold text-gray-900">Aktiver Voucher</h3>
+                                <p class="text-sm text-gray-600">{{ active_voucher.voucher_name }}</p>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        {{ active_voucher.discount_label }}
+                                    </span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        {{ active_voucher.months_applied }} / {{ active_voucher.duration_months }} Monate
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">Bisherige Ersparnis</p>
+                            <p class="text-xl font-bold text-green-600">{{ active_voucher.total_discount }} EUR</p>
+                        </div>
+                    </div>
+                    <div v-if="active_voucher.months_remaining > 0" class="mt-4 pt-4 border-t">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-500">Verbleibende Rabattmonate</span>
+                            <span class="font-medium text-gray-900">{{ active_voucher.months_remaining }}</span>
+                        </div>
+                        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                            <div
+                                class="bg-green-500 h-2 rounded-full"
+                                :style="{ width: (active_voucher.months_applied / active_voucher.duration_months * 100) + '%' }"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voucher Input (only if no active voucher) -->
+                <div v-else class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Voucher einlösen</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Haben Sie einen Voucher-Code? Geben Sie ihn hier ein, um einen Rabatt auf Ihr Abonnement zu erhalten.
+                    </p>
+                    <div class="max-w-md">
+                        <VoucherInput
+                            :club-id="club.id"
+                            :plan-id="current_plan?.id"
+                            v-model="voucherCode"
+                            label="Voucher-Code"
+                            placeholder="CODE eingeben..."
+                            @voucher-validated="handleVoucherValidated"
+                            @voucher-cleared="handleVoucherCleared"
+                        />
+                        <button
+                            v-if="validatedVoucher"
+                            @click="redeemVoucher"
+                            :disabled="redeemingVoucher"
+                            class="mt-4 w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <svg v-if="redeemingVoucher" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            {{ redeemingVoucher ? 'Wird eingelöst...' : 'Voucher einlösen' }}
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Usage Statistics -->
                 <div v-if="subscription_limits && Object.keys(subscription_limits).length > 0" class="bg-white rounded-lg shadow-lg p-6">

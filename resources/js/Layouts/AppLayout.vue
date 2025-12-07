@@ -140,6 +140,13 @@ const switchLanguage = (locale) => {
                                     Club Admin
                                 </NavLink>
 
+                                <!-- Tenant Admin Vouchers (nur für tenant_admin Rolle) -->
+                                <NavLink v-if="$page.props.auth.user?.roles && $page.props.auth.user.roles.includes('tenant_admin')"
+                                         :href="route('tenant-admin.vouchers.index')"
+                                         :active="route().current('tenant-admin.vouchers.*')">
+                                    Vouchers
+                                </NavLink>
+
                                 <!-- Admin Dropdown (nur für Admins) -->
                                 <div v-if="$page.props.auth.user?.roles && ($page.props.auth.user.roles.includes('admin') || $page.props.auth.user.roles.includes('super_admin'))" class="relative">
                                     <Dropdown align="bottom" width="48">
