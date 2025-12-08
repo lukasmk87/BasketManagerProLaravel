@@ -81,7 +81,7 @@ class DatabaseSeeder extends Seeder
                 'language' => 'de',
             ]
         );
-        $admin->assignRole('admin');
+        $admin->assignRole('tenant_admin');
 
         // Club admin user
         $clubAdmin = User::firstOrCreate(
