@@ -252,7 +252,7 @@ const submit = () => {
         }
 
     router.post(
-        route(routeName, props.team.id),
+        route(routeName, { team: props.team.slug }),
         data,
         {
             preserveState: true,

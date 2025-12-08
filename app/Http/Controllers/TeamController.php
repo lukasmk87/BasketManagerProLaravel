@@ -599,15 +599,19 @@ class TeamController extends Controller
         }
 
         // Get users with 'trainer' role in this club WITH all their roles
+        // Supports BOTH Spatie Permission roles AND club_user pivot roles
         try {
             $coaches = $club->users()
-                ->whereHas('roles', function ($q) {
-                    $q->where('name', 'trainer');
+                ->where(function ($query) {
+                    // Spatie Permission System: User hat globale 'trainer' Rolle
+                    $query->whereHas('roles', fn ($q) => $q->where('name', 'trainer'))
+                          // ODER Club-User Pivot: User ist als 'trainer' im Club registriert
+                        ->orWhere('club_user.role', 'trainer');
                 })
-                ->where('is_active', true)
+                ->wherePivot('is_active', true)  // Explizit Pivot-Tabelle für is_active
                 ->with('roles:id,name')  // Load all system roles
-                ->select('id', 'name', 'email')
-                ->orderBy('name')
+                ->select('users.id', 'users.name', 'users.email')  // Explizite Tabellen-Qualifikation
+                ->orderBy('users.name')
                 ->get()
                 ->map(function ($user) {
                     return [
@@ -625,11 +629,15 @@ class TeamController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error loading available coaches', [
                 'club_id' => $club->id,
-                'user_id' => $user->id,
+                'user_id' => $user->id ?? 'N/A',
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json(['error' => 'Fehler beim Laden der Trainer'], 500);
+            return response()->json([
+                'error' => 'Fehler beim Laden der Trainer',
+                'coaches' => [],  // Fallback leeres Array
+            ], 500);
         }
     }
 
