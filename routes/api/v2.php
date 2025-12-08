@@ -281,12 +281,12 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     // Route::post('gym-time-slots/{timeSlot}/generate-bookings', [\App\Http\Controllers\Api\GymTimeSlotController::class, 'generateBookings']);
 
     // Booking Management
-    // TODO: Implement GymBookingController
-    // Route::apiResource('gym-bookings', \App\Http\Controllers\Api\GymBookingController::class);
-    // Route::post('gym-bookings/{booking}/release', [\App\Http\Controllers\Api\GymBookingController::class, 'release']);
-    // Route::post('gym-bookings/{booking}/cancel', [\App\Http\Controllers\Api\GymBookingController::class, 'cancel']);
-    // Route::post('gym-bookings/{booking}/request', [\App\Http\Controllers\Api\GymBookingController::class, 'requestBooking']);
-    // Route::get('gym-bookings/available-for-team/{team}', [\App\Http\Controllers\Api\GymBookingController::class, 'availableForTeam']);
+    Route::post('gym-bookings/{gymBooking}/release', [\App\Http\Controllers\Api\GymBookingController::class, 'release'])
+        ->name('gym-bookings.release');
+    Route::post('gym-bookings/{gymBooking}/cancel', [\App\Http\Controllers\Api\GymBookingController::class, 'cancel'])
+        ->name('gym-bookings.cancel');
+    Route::get('gym-bookings/for-team', [\App\Http\Controllers\Api\GymBookingController::class, 'forTeam'])
+        ->name('gym-bookings.for-team');
 
     // Booking Request Management
     Route::apiResource('gym-booking-requests', \App\Http\Controllers\Api\GymBookingRequestController::class);

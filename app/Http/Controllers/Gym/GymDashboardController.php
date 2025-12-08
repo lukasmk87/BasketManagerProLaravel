@@ -36,12 +36,14 @@ class GymDashboardController extends Controller
         $gymHalls = collect();
         if ($userClub) {
             $gymHalls = GymHall::where('club_id', $userClub->id)
+                ->withCount(['timeSlots', 'bookings'])
                 ->with(['timeSlots', 'bookings.team'])
                 ->orderBy('name')
                 ->get();
         } elseif ($isAdmin) {
             // Super Admin without club: Load all halls from all clubs
-            $gymHalls = GymHall::with(['timeSlots', 'bookings.team', 'club:id,name'])
+            $gymHalls = GymHall::withCount(['timeSlots', 'bookings'])
+                ->with(['timeSlots', 'bookings.team', 'club:id,name'])
                 ->orderBy('name')
                 ->get();
         }

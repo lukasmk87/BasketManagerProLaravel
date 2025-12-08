@@ -2,9 +2,11 @@
 
 namespace App\Services\Gym;
 
+use App\Models\GymBooking;
 use App\Models\GymCourt;
 use App\Models\GymTimeSlot;
 use App\Models\GymTimeSlotTeamAssignment;
+use App\Models\Season;
 use App\Models\Team;
 use App\Models\User;
 use Carbon\Carbon;
@@ -115,7 +117,7 @@ class GymTimeSlotAssignmentService
             $endCarbon = Carbon::createFromTimeString($endTime);
             $duration = $startCarbon->diffInMinutes($endCarbon);
 
-            return $timeSlot->teamAssignments()->create([
+            $assignment = $timeSlot->teamAssignments()->create([
                 'uuid' => Str::uuid(),
                 'gym_time_slot_id' => $timeSlot->id,
                 'team_id' => $team->id,
@@ -130,6 +132,11 @@ class GymTimeSlotAssignmentService
                 'assigned_at' => now(),
                 'valid_from' => now()->toDateString(),
             ]);
+
+            // Automatisch Buchungen bis zum Saison-Ende generieren
+            $this->generateBookingsForAssignment($assignment, $assignedBy);
+
+            return $assignment;
         });
     }
 
@@ -425,5 +432,131 @@ class GymTimeSlotAssignmentService
 
             return $updated;
         });
+    }
+
+    // ============================
+    // BOOKING GENERATION FROM ASSIGNMENTS
+    // ============================
+
+    /**
+     * Generiert Buchungen für eine Team-Zuordnung bis zum Saison-Ende.
+     */
+    public function generateBookingsForAssignment(
+        GymTimeSlotTeamAssignment $assignment,
+        User $bookedBy,
+        ?Carbon $startDate = null,
+        ?Carbon $endDate = null
+    ): int {
+        $startDate = $startDate ?? Carbon::now()->startOfWeek();
+        $endDate = $endDate ?? $this->getSeasonEndDate($assignment);
+
+        if (! $endDate) {
+            // Fallback: 12 Wochen wenn keine Saison gefunden
+            $endDate = Carbon::now()->addWeeks(12)->endOfWeek();
+        }
+
+        $created = 0;
+        $current = $startDate->copy();
+        $dayOfWeek = $assignment->day_of_week;
+
+        while ($current->lte($endDate)) {
+            // Prüfe ob der Wochentag passt
+            if (strtolower($current->format('l')) === $dayOfWeek) {
+                // Prüfe Gültigkeitszeitraum
+                if ($this->isDateInAssignmentRange($assignment, $current)) {
+                    // Prüfe ob Buchung bereits existiert
+                    if (! $this->hasBookingForDate($assignment, $current)) {
+                        $this->createBookingFromAssignment($assignment, $current, $bookedBy);
+                        $created++;
+                    }
+                }
+            }
+            $current->addDay();
+        }
+
+        return $created;
+    }
+
+    /**
+     * Ermittelt das Saison-Ende für eine Zuordnung.
+     */
+    protected function getSeasonEndDate(GymTimeSlotTeamAssignment $assignment): ?Carbon
+    {
+        // Hole den Club über TimeSlot -> GymHall -> Club
+        $clubId = $assignment->gymTimeSlot?->gymHall?->club_id;
+
+        if (! $clubId) {
+            return null;
+        }
+
+        // Finde die aktuelle Saison des Clubs
+        $season = Season::where('club_id', $clubId)
+            ->where('is_current', true)
+            ->first();
+
+        if (! $season) {
+            // Fallback: Aktive Saison
+            $season = Season::where('club_id', $clubId)
+                ->where('status', 'active')
+                ->first();
+        }
+
+        return $season?->end_date;
+    }
+
+    /**
+     * Prüft ob ein Datum im Gültigkeitszeitraum der Zuordnung liegt.
+     */
+    protected function isDateInAssignmentRange(GymTimeSlotTeamAssignment $assignment, Carbon $date): bool
+    {
+        // Prüfe valid_from
+        if ($assignment->valid_from && $date->lt($assignment->valid_from)) {
+            return false;
+        }
+
+        // Prüfe valid_until
+        if ($assignment->valid_until && $date->gt($assignment->valid_until)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Prüft ob bereits eine Buchung für dieses Datum existiert.
+     */
+    protected function hasBookingForDate(GymTimeSlotTeamAssignment $assignment, Carbon $date): bool
+    {
+        return GymBooking::where('gym_time_slot_id', $assignment->gym_time_slot_id)
+            ->where('team_id', $assignment->team_id)
+            ->where('booking_date', $date->toDateString())
+            ->where('start_time', $assignment->start_time)
+            ->where('end_time', $assignment->end_time)
+            ->exists();
+    }
+
+    /**
+     * Erstellt eine Buchung aus einer Zuordnung für ein bestimmtes Datum.
+     */
+    protected function createBookingFromAssignment(
+        GymTimeSlotTeamAssignment $assignment,
+        Carbon $date,
+        User $bookedBy
+    ): GymBooking {
+        return GymBooking::create([
+            'uuid' => Str::uuid(),
+            'gym_time_slot_id' => $assignment->gym_time_slot_id,
+            'team_id' => $assignment->team_id,
+            'booking_date' => $date->toDateString(),
+            'start_time' => $assignment->start_time,
+            'end_time' => $assignment->end_time,
+            'status' => 'reserved',
+            'booking_type' => 'regular',
+            'booked_by_user_id' => $bookedBy->id,
+            'metadata' => [
+                'generated_from_assignment' => $assignment->id,
+                'generated_at' => now()->toIso8601String(),
+            ],
+        ]);
     }
 }
