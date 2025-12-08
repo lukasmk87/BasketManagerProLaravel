@@ -639,4 +639,10 @@ onMounted(async () => {
 watch(() => props.initialTimeSlots, async () => {
     await loadTimeSlots()
 }, { deep: true })
+
+// Expose methods and state for parent component access
+defineExpose({
+    hasChanges,
+    saveTimeSlots
+})
 </script>

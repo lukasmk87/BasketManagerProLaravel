@@ -161,7 +161,7 @@
                     <div class="border-b border-gray-200 mb-6">
                         <nav class="-mb-px flex space-x-8">
                             <button
-                                @click="activeTab = 'schedule'"
+                                @click="changeTab('schedule')"
                                 :class="[
                                     'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
                                     activeTab === 'schedule'
@@ -172,7 +172,7 @@
                                 Öffnungszeiten
                             </button>
                             <button
-                                @click="activeTab = 'teams'"
+                                @click="changeTab('teams')"
                                 :class="[
                                     'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
                                     activeTab === 'teams'
@@ -183,7 +183,7 @@
                                 Team-Zuordnungen
                             </button>
                             <button
-                                @click="activeTab = 'courts'"
+                                @click="changeTab('courts')"
                                 :class="[
                                     'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
                                     activeTab === 'courts'
@@ -198,6 +198,7 @@
 
                     <!-- Schedule Tab -->
                     <GymTimeSlotManager
+                        ref="timeSlotManagerRef"
                         v-if="selectedScheduleHall.id && activeTab === 'schedule'"
                         :gym-hall-id="selectedScheduleHall.id"
                         :initial-time-slots="selectedScheduleHall.time_slots || []"
@@ -274,6 +275,9 @@ const showScheduleModal = ref(false)
 const selectedScheduleHall = ref(null)
 const activeTab = ref('schedule')
 
+// Component refs
+const timeSlotManagerRef = ref(null)
+
 // Methods
 const editHall = (hall) => {
     selectedHall.value = hall
@@ -295,9 +299,23 @@ const viewSchedule = (hall) => {
     showScheduleModal.value = true
 }
 
-const closeScheduleModal = () => {
+const closeScheduleModal = async () => {
+    // Auto-save when closing modal if there are unsaved changes
+    if (activeTab.value === 'schedule' && timeSlotManagerRef.value?.hasChanges) {
+        await timeSlotManagerRef.value.saveTimeSlots()
+    }
     selectedScheduleHall.value = null
     showScheduleModal.value = false
+    activeTab.value = 'schedule' // Reset tab for next opening
+}
+
+// Tab change with auto-save
+const changeTab = async (newTab) => {
+    // Auto-save when leaving schedule tab if there are unsaved changes
+    if (activeTab.value === 'schedule' && newTab !== 'schedule' && timeSlotManagerRef.value?.hasChanges) {
+        await timeSlotManagerRef.value.saveTimeSlots()
+    }
+    activeTab.value = newTab
 }
 
 const getHallAddress = (hall) => {

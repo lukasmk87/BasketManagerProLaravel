@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
-use Carbon\Carbon;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class GymTimeSlotTeamAssignment extends Model
 {
@@ -107,20 +107,20 @@ class GymTimeSlotTeamAssignment extends Model
 
     public function scopeInTimeRange($query, string $startTime, string $endTime)
     {
-        return $query->where(function($q) use ($startTime, $endTime) {
+        return $query->where(function ($q) use ($startTime, $endTime) {
             $q->where('start_time', '<', $endTime)
-              ->where('end_time', '>', $startTime);
+                ->where('end_time', '>', $startTime);
         });
     }
 
-    public function scopeInDateRange($query, Carbon $from, Carbon $until = null)
+    public function scopeInDateRange($query, Carbon $from, ?Carbon $until = null)
     {
         $query->where('valid_from', '<=', $from);
-        
+
         if ($until) {
             $query->where(function ($q) use ($until) {
                 $q->whereNull('valid_until')
-                  ->orWhere('valid_until', '>=', $until);
+                    ->orWhere('valid_until', '>=', $until);
             });
         }
 
@@ -133,7 +133,14 @@ class GymTimeSlotTeamAssignment extends Model
 
     public function getTimeRangeAttribute(): string
     {
-        return $this->start_time->format('H:i') . ' - ' . $this->end_time->format('H:i');
+        $startTime = $this->start_time instanceof \Carbon\Carbon
+            ? $this->start_time->format('H:i')
+            : $this->start_time;
+        $endTime = $this->end_time instanceof \Carbon\Carbon
+            ? $this->end_time->format('H:i')
+            : $this->end_time;
+
+        return $startTime.' - '.$endTime;
     }
 
     public function getDayNameAttribute(): string
@@ -153,9 +160,13 @@ class GymTimeSlotTeamAssignment extends Model
 
     public function overlapsWithTime(string $startTime, string $endTime): bool
     {
-        $thisStart = $this->start_time->format('H:i');
-        $thisEnd = $this->end_time->format('H:i');
-        
+        $thisStart = $this->start_time instanceof \Carbon\Carbon
+            ? $this->start_time->format('H:i')
+            : $this->start_time;
+        $thisEnd = $this->end_time instanceof \Carbon\Carbon
+            ? $this->end_time->format('H:i')
+            : $this->end_time;
+
         return $thisStart < $endTime && $thisEnd > $startTime;
     }
 
@@ -171,9 +182,9 @@ class GymTimeSlotTeamAssignment extends Model
             ->where('team_id', $teamId)
             ->where('day_of_week', $dayOfWeek)
             ->where('status', 'active')
-            ->where(function($q) use ($startTime, $endTime) {
+            ->where(function ($q) use ($startTime, $endTime) {
                 $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
+                    ->where('end_time', '>', $startTime);
             });
 
         if ($excludeId) {
@@ -195,9 +206,9 @@ class GymTimeSlotTeamAssignment extends Model
             ->where('gym_court_id', $gymCourtId)
             ->where('day_of_week', $dayOfWeek)
             ->where('status', 'active')
-            ->where(function($q) use ($startTime, $endTime) {
+            ->where(function ($q) use ($startTime, $endTime) {
                 $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
+                    ->where('end_time', '>', $startTime);
             });
 
         if ($excludeId) {
@@ -217,9 +228,9 @@ class GymTimeSlotTeamAssignment extends Model
         $query = static::where('gym_time_slot_id', $gymTimeSlotId)
             ->where('day_of_week', $dayOfWeek)
             ->where('status', 'active')
-            ->where(function($q) use ($startTime, $endTime) {
+            ->where(function ($q) use ($startTime, $endTime) {
                 $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
+                    ->where('end_time', '>', $startTime);
             })
             ->with(['team']);
 
@@ -228,12 +239,19 @@ class GymTimeSlotTeamAssignment extends Model
         }
 
         return $query->get()->map(function ($assignment) {
+            $startTime = $assignment->start_time instanceof \Carbon\Carbon
+                ? $assignment->start_time->format('H:i')
+                : $assignment->start_time;
+            $endTime = $assignment->end_time instanceof \Carbon\Carbon
+                ? $assignment->end_time->format('H:i')
+                : $assignment->end_time;
+
             return [
                 'id' => $assignment->id,
                 'team_name' => $assignment->team->name,
                 'time_range' => $assignment->time_range,
-                'start_time' => $assignment->start_time->format('H:i'),
-                'end_time' => $assignment->end_time->format('H:i'),
+                'start_time' => $startTime,
+                'end_time' => $endTime,
                 'court_name' => $assignment->gymCourt?->name ?? null,
                 'court_id' => $assignment->gym_court_id,
             ];
@@ -248,7 +266,7 @@ class GymTimeSlotTeamAssignment extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'team_id', 'day_of_week', 'start_time', 'end_time', 'status'
+                'team_id', 'day_of_week', 'start_time', 'end_time', 'status',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();

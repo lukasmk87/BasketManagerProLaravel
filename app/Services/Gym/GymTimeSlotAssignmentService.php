@@ -190,12 +190,19 @@ class GymTimeSlotAssignmentService
             ->orderBy('start_time')
             ->get()
             ->map(function ($assignment) {
+                $startTime = $assignment->start_time instanceof \Carbon\Carbon
+                    ? $assignment->start_time->format('H:i')
+                    : $assignment->start_time;
+                $endTime = $assignment->end_time instanceof \Carbon\Carbon
+                    ? $assignment->end_time->format('H:i')
+                    : $assignment->end_time;
+
                 return [
                     'id' => $assignment->id,
                     'team_id' => $assignment->team_id,
                     'team_name' => $assignment->team->name,
-                    'start_time' => $assignment->start_time->format('H:i'),
-                    'end_time' => $assignment->end_time->format('H:i'),
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
                     'duration_minutes' => $assignment->duration_minutes,
                     'notes' => $assignment->notes,
                     'gym_court_id' => $assignment->gym_court_id,
@@ -224,12 +231,19 @@ class GymTimeSlotAssignmentService
             ->with(['team'])
             ->get()
             ->map(function ($assignment) {
+                $assignmentStartTime = $assignment->start_time instanceof \Carbon\Carbon
+                    ? $assignment->start_time->format('H:i')
+                    : $assignment->start_time;
+                $assignmentEndTime = $assignment->end_time instanceof \Carbon\Carbon
+                    ? $assignment->end_time->format('H:i')
+                    : $assignment->end_time;
+
                 return [
                     'id' => $assignment->id,
                     'team_id' => $assignment->team_id,
                     'team_name' => $assignment->team->name,
-                    'start_time' => $assignment->start_time->format('H:i'),
-                    'end_time' => $assignment->end_time->format('H:i'),
+                    'start_time' => $assignmentStartTime,
+                    'end_time' => $assignmentEndTime,
                 ];
             })
             ->toArray();
@@ -316,11 +330,18 @@ class GymTimeSlotAssignmentService
                     'time_slot_title' => $firstAssignment->gymTimeSlot->title ?? 'Unbenannt',
                     'gym_hall_name' => $firstAssignment->gymTimeSlot->gymHall->name ?? 'Unbekannt',
                     'assignments' => $assignments->map(function ($assignment) {
+                        $startTime = $assignment->start_time instanceof \Carbon\Carbon
+                            ? $assignment->start_time->format('H:i')
+                            : $assignment->start_time;
+                        $endTime = $assignment->end_time instanceof \Carbon\Carbon
+                            ? $assignment->end_time->format('H:i')
+                            : $assignment->end_time;
+
                         return [
                             'id' => $assignment->id,
                             'day_of_week' => $assignment->day_of_week,
-                            'start_time' => $assignment->start_time->format('H:i'),
-                            'end_time' => $assignment->end_time->format('H:i'),
+                            'start_time' => $startTime,
+                            'end_time' => $endTime,
                             'duration_minutes' => $assignment->duration_minutes,
                             'valid_from' => $assignment->valid_from,
                             'valid_until' => $assignment->valid_until,
