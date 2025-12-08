@@ -2,18 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\Player;
-use App\Models\User;
-use App\Models\Team;
 use App\Models\EmergencyContact;
+use App\Models\Player;
+use App\Models\Team;
+use App\Models\User;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\App;
-use Carbon\Carbon;
 
 class PlayerService
 {
-
     /**
      * Create a new player.
      */
@@ -27,28 +25,28 @@ class PlayerService
 
         try {
             // Validate user exists
-            if (!isset($data['user_id'])) {
+            if (! isset($data['user_id'])) {
                 throw new \InvalidArgumentException('Benutzer-ID ist erforderlich.');
             }
             $user = User::findOrFail($data['user_id']);
-            
+
             // Validate team exists if provided
             $team = null;
-            if (!empty($data['team_id'])) {
+            if (! empty($data['team_id'])) {
                 $team = Team::findOrFail($data['team_id']);
-                
+
                 // Check if team can accept new players
-                if (!$team->canAcceptNewPlayer()) {
+                if (! $team->canAcceptNewPlayer()) {
                     throw new \InvalidArgumentException('Team kann keine neuen Spieler aufnehmen.');
                 }
 
                 // Validate jersey number uniqueness within team
-                if (!empty($data['jersey_number'])) {
+                if (! empty($data['jersey_number'])) {
                     $existingPlayer = $team->players()
                         ->where('player_team.jersey_number', $data['jersey_number'])
                         ->wherePivot('status', 'active')
                         ->first();
-                    
+
                     if ($existingPlayer) {
                         throw new \InvalidArgumentException("Trikotnummer {$data['jersey_number']} ist bereits vergeben.");
                     }
@@ -57,7 +55,7 @@ class PlayerService
                 // Check if user is already on another active team in the same league/season
                 $player = $user->playerProfile;
                 $existingMembership = null;
-                
+
                 if ($player && $player->status === 'active') {
                     $existingMembership = $player->teams()
                         ->where('teams.season', $team->season)
@@ -120,7 +118,7 @@ class PlayerService
             if ($team) {
                 $team->members()->attach($user->id, [
                     'role' => 'player',
-                    'joined_at' => now()
+                    'joined_at' => now(),
                 ]);
             }
 
@@ -136,19 +134,19 @@ class PlayerService
             // Resource-Tracking NACH erfolgreichem Commit
             $limitEnforcement->trackResourceCreation('player');
 
-            Log::info("Player created successfully", [
+            Log::info('Player created successfully', [
                 'player_id' => $player->id,
                 'user_id' => $user->id,
-                'team_id' => $player->team_id
+                'team_id' => $player->team_id,
             ]);
 
             return $player->fresh(['user', 'team.club', 'emergencyContacts']);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Failed to create player", [
+            Log::error('Failed to create player', [
                 'error' => $e->getMessage(),
-                'data' => $data
+                'data' => $data,
             ]);
             throw $e;
         }
@@ -162,36 +160,69 @@ class PlayerService
         DB::beginTransaction();
 
         try {
+            // Define field categories
+            $userFields = ['first_name', 'last_name', 'email', 'phone', 'birth_date', 'gender'];
+            $pivotFields = [
+                'jersey_number', 'primary_position', 'secondary_positions',
+                'is_starter', 'is_captain', 'status', 'contract_start',
+                'contract_end', 'registration_number',
+            ];
+
+            // Track the team for pivot updates
+            $targetTeamId = $data['team_id'] ?? $player->team_id;
+
             // Handle team transfer if team_id is changing
-            if (isset($data['team_id']) && (int)$data['team_id'] !== (int)$player->team_id) {
+            if (isset($data['team_id']) && (int) $data['team_id'] !== (int) $player->team_id) {
                 $newTeam = Team::findOrFail($data['team_id']);
-                
+
                 // Provide more detailed error message for team capacity issues
-                if (!$newTeam->canAcceptNewPlayer()) {
+                if (! $newTeam->canAcceptNewPlayer()) {
                     $reasons = $newTeam->getCannotAcceptPlayerReasons();
                     $reasonText = implode(', ', $reasons);
                     throw new \InvalidArgumentException("Ziel-Team kann keine neuen Spieler aufnehmen. Grund: {$reasonText}");
                 }
-                
+
                 $this->transferPlayer($player, $newTeam);
-                unset($data['team_id']); // Remove from update data as it's handled by transfer
+                $targetTeamId = $newTeam->id;
             }
 
             // Validate jersey number uniqueness if changing
-            if (isset($data['jersey_number']) && $data['jersey_number'] !== $player->jersey_number && $player->team) {
-                $existingPlayer = $player->team->players()
+            $currentJerseyNumber = $player->teams()
+                ->where('teams.id', $targetTeamId)
+                ->first()?->pivot?->jersey_number;
+
+            if (isset($data['jersey_number']) && $data['jersey_number'] !== $currentJerseyNumber) {
+                $existingPlayer = Player::query()
+                    ->join('player_team', 'players.id', '=', 'player_team.player_id')
+                    ->where('player_team.team_id', $targetTeamId)
                     ->where('player_team.jersey_number', $data['jersey_number'])
-                    ->wherePivot('status', 'active')
+                    ->where('player_team.is_active', true)
                     ->where('players.id', '!=', $player->id)
                     ->first();
-                
+
                 if ($existingPlayer) {
                     throw new \InvalidArgumentException("Trikotnummer {$data['jersey_number']} ist bereits vergeben.");
                 }
             }
 
-            // Update player data
-            $player->update($data);
+            // 1. Update User fields if present
+            $userData = array_intersect_key($data, array_flip($userFields));
+            if (! empty($userData) && $player->user) {
+                $player->user->update($userData);
+            }
+
+            // 2. Update pivot table fields if present
+            $pivotData = array_intersect_key($data, array_flip($pivotFields));
+            if (! empty($pivotData) && $targetTeamId) {
+                $player->teams()->updateExistingPivot($targetTeamId, $pivotData);
+            }
+
+            // 3. Update only Player-specific fields
+            $excludeFields = array_merge($userFields, $pivotFields, ['team_id', 'emergency_contacts']);
+            $playerData = array_diff_key($data, array_flip($excludeFields));
+            if (! empty($playerData)) {
+                $player->update($playerData);
+            }
 
             // Update emergency contacts if provided
             if (isset($data['emergency_contacts'])) {
@@ -200,19 +231,19 @@ class PlayerService
 
             DB::commit();
 
-            Log::info("Player updated successfully", [
+            Log::info('Player updated successfully', [
                 'player_id' => $player->id,
-                'updated_fields' => array_keys($data)
+                'updated_fields' => array_keys($data),
             ]);
 
-            return $player->fresh(['user', 'team.club', 'emergencyContacts']);
+            return $player->fresh(['user', 'teams.club', 'emergencyContacts']);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Failed to update player", [
+            Log::error('Failed to update player', [
                 'player_id' => $player->id,
                 'error' => $e->getMessage(),
-                'data' => $data
+                'data' => $data,
             ]);
             throw $e;
         }
@@ -228,34 +259,34 @@ class PlayerService
         try {
             // Check if player has active games or statistics
             $hasActiveGames = $player->gameActions()->exists();
-            
+
             if ($hasActiveGames) {
                 // Soft delete to preserve historical data
                 $player->update([
                     'status' => 'inactive',
                     'left_at' => now(),
                 ]);
-                
+
                 // Remove from team members but keep player record
                 if ($player->team) {
                     $player->team->members()->detach($player->user_id);
                 }
-                
-                Log::info("Player soft deleted (has game history)", [
-                    'player_id' => $player->id
+
+                Log::info('Player soft deleted (has game history)', [
+                    'player_id' => $player->id,
                 ]);
             } else {
                 // Hard delete if no game history
                 $player->emergencyContacts()->delete();
-                
+
                 if ($player->team) {
                     $player->team->members()->detach($player->user_id);
                 }
-                
+
                 $player->delete();
-                
-                Log::info("Player hard deleted (no game history)", [
-                    'player_id' => $player->id
+
+                Log::info('Player hard deleted (no game history)', [
+                    'player_id' => $player->id,
                 ]);
             }
 
@@ -269,9 +300,9 @@ class PlayerService
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Failed to delete player", [
+            Log::error('Failed to delete player', [
                 'player_id' => $player->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -284,9 +315,9 @@ class PlayerService
     {
         // Use provided season, or fallback to current season
         $season = $season ?? config('basketball.season.current');
-        
+
         $stats = App::make(StatisticsService::class)->getPlayerSeasonStats($player, $season);
-        
+
         // Add player-specific calculations
         $basicStats = [
             'games_played' => $player->games_played,
@@ -345,16 +376,16 @@ class PlayerService
         try {
             // Calculate new totals
             $updates = [];
-            
+
             // Games and minutes
             if (isset($gameStats['minutes_played'])) {
                 $updates['minutes_played'] = $player->minutes_played + $gameStats['minutes_played'];
             }
-            
+
             if (isset($gameStats['game_started']) && $gameStats['game_started']) {
                 $updates['games_started'] = $player->games_started + 1;
             }
-            
+
             $updates['games_played'] = $player->games_played + 1;
 
             // Scoring
@@ -362,25 +393,25 @@ class PlayerService
                 $updates['field_goals_made'] = $player->field_goals_made + $gameStats['field_goals_made'];
                 $updates['points_scored'] = $player->points_scored + ($gameStats['field_goals_made'] * 2);
             }
-            
+
             if (isset($gameStats['field_goals_attempted'])) {
                 $updates['field_goals_attempted'] = $player->field_goals_attempted + $gameStats['field_goals_attempted'];
             }
-            
+
             if (isset($gameStats['three_pointers_made'])) {
                 $updates['three_pointers_made'] = $player->three_pointers_made + $gameStats['three_pointers_made'];
                 $updates['points_scored'] = ($updates['points_scored'] ?? $player->points_scored) + $gameStats['three_pointers_made']; // Additional point for 3-pointers
             }
-            
+
             if (isset($gameStats['three_pointers_attempted'])) {
                 $updates['three_pointers_attempted'] = $player->three_pointers_attempted + $gameStats['three_pointers_attempted'];
             }
-            
+
             if (isset($gameStats['free_throws_made'])) {
                 $updates['free_throws_made'] = $player->free_throws_made + $gameStats['free_throws_made'];
                 $updates['points_scored'] = ($updates['points_scored'] ?? $player->points_scored) + $gameStats['free_throws_made'];
             }
-            
+
             if (isset($gameStats['free_throws_attempted'])) {
                 $updates['free_throws_attempted'] = $player->free_throws_attempted + $gameStats['free_throws_attempted'];
             }
@@ -389,13 +420,13 @@ class PlayerService
             if (isset($gameStats['rebounds_offensive'])) {
                 $updates['rebounds_offensive'] = $player->rebounds_offensive + $gameStats['rebounds_offensive'];
             }
-            
+
             if (isset($gameStats['rebounds_defensive'])) {
                 $updates['rebounds_defensive'] = $player->rebounds_defensive + $gameStats['rebounds_defensive'];
             }
-            
-            $updates['rebounds_total'] = 
-                ($updates['rebounds_offensive'] ?? $player->rebounds_offensive) + 
+
+            $updates['rebounds_total'] =
+                ($updates['rebounds_offensive'] ?? $player->rebounds_offensive) +
                 ($updates['rebounds_defensive'] ?? $player->rebounds_defensive);
 
             // Other stats
@@ -413,17 +444,17 @@ class PlayerService
 
             DB::commit();
 
-            Log::info("Player statistics updated successfully", [
+            Log::info('Player statistics updated successfully', [
                 'player_id' => $player->id,
-                'game_stats' => $gameStats
+                'game_stats' => $gameStats,
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Failed to update player statistics", [
+            Log::error('Failed to update player statistics', [
                 'player_id' => $player->id,
                 'error' => $e->getMessage(),
-                'game_stats' => $gameStats
+                'game_stats' => $gameStats,
             ]);
             throw $e;
         }
@@ -438,9 +469,9 @@ class PlayerService
 
         try {
             $oldTeam = $player->team;
-            
+
             // Check if new team can accept the player
-            if (!$newTeam->canAcceptNewPlayer()) {
+            if (! $newTeam->canAcceptNewPlayer()) {
                 $reasons = $newTeam->getCannotAcceptPlayerReasons();
                 $reasonText = implode(', ', $reasons);
                 throw new \InvalidArgumentException("Ziel-Team kann keine neuen Spieler aufnehmen. Grund: {$reasonText}");
@@ -452,15 +483,15 @@ class PlayerService
                     ->where('player_team.jersey_number', $player->jersey_number)
                     ->wherePivot('status', 'active')
                     ->first();
-                
+
                 if ($existingPlayer) {
                     // Clear jersey number for transfer - will need to be reassigned
                     $player->update(['jersey_number' => null]);
-                    
-                    Log::warning("Jersey number cleared due to conflict during transfer", [
+
+                    Log::warning('Jersey number cleared due to conflict during transfer', [
                         'player_id' => $player->id,
                         'old_jersey' => $player->jersey_number,
-                        'conflicting_player_id' => $existingPlayer->id
+                        'conflicting_player_id' => $existingPlayer->id,
                     ]);
                 }
             }
@@ -478,28 +509,28 @@ class PlayerService
             if ($oldTeam) {
                 $oldTeam->members()->detach($player->user_id);
             }
-            
+
             $newTeam->members()->attach($player->user_id, [
                 'role' => 'player',
-                'joined_at' => now()
+                'joined_at' => now(),
             ]);
 
             DB::commit();
 
-            Log::info("Player transferred successfully", [
+            Log::info('Player transferred successfully', [
                 'player_id' => $player->id,
                 'old_team_id' => $oldTeam?->id,
-                'new_team_id' => $newTeam->id
+                'new_team_id' => $newTeam->id,
             ]);
 
             return true;
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Failed to transfer player", [
+            Log::error('Failed to transfer player', [
                 'player_id' => $player->id,
                 'new_team_id' => $newTeam->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -511,7 +542,7 @@ class PlayerService
     public function generatePlayerReport(Player $player): array
     {
         $currentSeason = $player->team?->season ?? date('Y');
-        
+
         return [
             'player_info' => [
                 'id' => $player->id,
@@ -608,7 +639,7 @@ class PlayerService
     {
         // Delete existing contacts
         $player->emergencyContacts()->delete();
-        
+
         // Create new contacts
         foreach ($contactsData as $contactData) {
             $this->createEmergencyContact($player, $contactData);

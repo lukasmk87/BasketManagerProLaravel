@@ -542,6 +542,13 @@ class GymTimeSlotController extends Controller
         $user = Auth::user();
         $userClub = $user->currentTeam?->club ?? $user->clubs()->first();
 
+        if (! $userClub) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kein Verein gefunden.',
+            ], 404);
+        }
+
         $team = Team::where('id', $teamId)
             ->where('club_id', $userClub->id)
             ->firstOrFail();
@@ -562,11 +569,11 @@ class GymTimeSlotController extends Controller
                     'start_time' => $slot->start_time?->format('H:i'),
                     'end_time' => $slot->end_time?->format('H:i'),
                     'slot_type' => $slot->slot_type,
-                    'gym_hall' => [
+                    'gym_hall' => $slot->gymHall ? [
                         'id' => $slot->gymHall->id,
                         'name' => $slot->gymHall->name,
                         'address' => $slot->gymHall->address,
-                    ],
+                    ] : null,
                 ];
             }),
         ]);
