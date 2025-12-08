@@ -5,11 +5,11 @@ namespace App\Policies;
 use App\Models\Game;
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesUsers;
-use Illuminate\Auth\Access\Response;
 
 class GamePolicy
 {
     use AuthorizesUsers;
+
     /**
      * Determine whether the user can view any models.
      */
@@ -28,11 +28,17 @@ class GamePolicy
             return true;
         }
 
+        // Club admins can view all games of their club's teams
+        if ($user->hasRole('club_admin')) {
+            return $this->userBelongsToGameClub($user, $game);
+        }
+
         // Players can view games their team participates in
         if ($user->isPlayer()) {
             $playerTeamId = $user->playerProfile?->team_id;
+
             return $playerTeamId && (
-                $game->home_team_id === $playerTeamId || 
+                $game->home_team_id === $playerTeamId ||
                 $game->away_team_id === $playerTeamId
             );
         }
@@ -40,7 +46,8 @@ class GamePolicy
         // Coaches can view games of teams they coach
         if ($user->isCoach()) {
             $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return !empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
+
+            return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
 
         // Parents can view games of their children's teams
@@ -51,23 +58,41 @@ class GamePolicy
                 ->pluck('playerProfile.team_id')
                 ->filter()
                 ->toArray();
-            return !empty(array_intersect($childTeamIds, [$game->home_team_id, $game->away_team_id]));
+
+            return ! empty(array_intersect($childTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
 
         // Club members can view games involving their club's teams
+        return $this->userBelongsToGameClub($user, $game);
+    }
+
+    /**
+     * Check if user belongs to a club that participates in the game.
+     */
+    private function userBelongsToGameClub(User $user, Game $game): bool
+    {
         $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-        if (!empty($userClubIds)) {
-            $gameClubIds = [];
-            if ($game->homeTeam) {
-                $gameClubIds[] = $game->homeTeam->club_id;
-            }
-            if ($game->awayTeam) {
-                $gameClubIds[] = $game->awayTeam->club_id;
-            }
-            return !empty(array_intersect($userClubIds, $gameClubIds));
+        if (empty($userClubIds)) {
+            return false;
         }
 
-        return false;
+        // Ensure relations are loaded
+        if (! $game->relationLoaded('homeTeam')) {
+            $game->load('homeTeam');
+        }
+        if (! $game->relationLoaded('awayTeam')) {
+            $game->load('awayTeam');
+        }
+
+        $gameClubIds = [];
+        if ($game->homeTeam) {
+            $gameClubIds[] = $game->homeTeam->club_id;
+        }
+        if ($game->awayTeam) {
+            $gameClubIds[] = $game->awayTeam->club_id;
+        }
+
+        return ! empty(array_intersect($userClubIds, $gameClubIds));
     }
 
     /**
@@ -98,13 +123,15 @@ class GamePolicy
             if ($game->awayTeam) {
                 $gameClubIds[] = $game->awayTeam->club_id;
             }
-            return !empty(array_intersect($userClubIds, $gameClubIds));
+
+            return ! empty(array_intersect($userClubIds, $gameClubIds));
         }
 
         // Coaches can edit games of teams they coach
         if ($user->hasRole('trainer')) {
             $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return !empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
+
+            return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
 
         return false;
@@ -121,7 +148,7 @@ class GamePolicy
         }
 
         // Only users with delete permission can delete games
-        if (!$user->can('delete games')) {
+        if (! $user->can('delete games')) {
             return false;
         }
 
@@ -135,7 +162,8 @@ class GamePolicy
             if ($game->awayTeam) {
                 $gameClubIds[] = $game->awayTeam->club_id;
             }
-            return !empty(array_intersect($userClubIds, $gameClubIds));
+
+            return ! empty(array_intersect($userClubIds, $gameClubIds));
         }
 
         return true; // For admins and super_admins
@@ -147,19 +175,20 @@ class GamePolicy
     public function score(User $user, Game $game): bool
     {
         // Must have scoring permission
-        if (!$user->can('score games')) {
+        if (! $user->can('score games')) {
             return false;
         }
 
         // Game must be live or ready to start
-        if (!in_array($game->status, ['scheduled', 'live', 'halftime'])) {
+        if (! in_array($game->status, ['scheduled', 'live', 'halftime'])) {
             return false;
         }
 
         // Coaches can score games of teams they coach
         if ($user->isCoach()) {
             $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return !empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
+
+            return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
 
         // Scorers can score any game
@@ -195,7 +224,7 @@ class GamePolicy
     public function manageOfficials(User $user, Game $game): bool
     {
         // Must have official management permission
-        if (!$user->can('manage game officials')) {
+        if (! $user->can('manage game officials')) {
             return false;
         }
 
@@ -209,7 +238,8 @@ class GamePolicy
             if ($game->awayTeam) {
                 $gameClubIds[] = $game->awayTeam->club_id;
             }
-            return !empty(array_intersect($userClubIds, $gameClubIds));
+
+            return ! empty(array_intersect($userClubIds, $gameClubIds));
         }
 
         return true; // For admins and super_admins
@@ -226,14 +256,15 @@ class GamePolicy
         }
 
         // Must have publish permission
-        if (!$user->can('publish game results')) {
+        if (! $user->can('publish game results')) {
             return false;
         }
 
         // Coaches can publish results for games they coached
         if ($user->isCoach()) {
             $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return !empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
+
+            return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
 
         // Club admins can publish results for their club's games
@@ -246,7 +277,8 @@ class GamePolicy
             if ($game->awayTeam) {
                 $gameClubIds[] = $game->awayTeam->club_id;
             }
-            return !empty(array_intersect($userClubIds, $gameClubIds));
+
+            return ! empty(array_intersect($userClubIds, $gameClubIds));
         }
 
         return true; // For admins and super_admins
@@ -258,7 +290,7 @@ class GamePolicy
     public function controlGame(User $user, Game $game): bool
     {
         // Must have scoring permission to control game flow
-        if (!$this->score($user, $game)) {
+        if (! $this->score($user, $game)) {
             return false;
         }
 
@@ -270,7 +302,8 @@ class GamePolicy
         // Coaches can control in absence of referees
         if ($user->isCoach()) {
             $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return !empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
+
+            return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
 
         return true; // For admins, super_admins, and scorers
@@ -282,7 +315,7 @@ class GamePolicy
     public function exportData(User $user, Game $game): bool
     {
         // Must have export permission
-        if (!$user->can('export statistics')) {
+        if (! $user->can('export statistics')) {
             return false;
         }
 
@@ -305,19 +338,20 @@ class GamePolicy
     public function editStatistics(User $user, Game $game): bool
     {
         // Must have statistics editing permission
-        if (!$user->can('edit player statistics')) {
+        if (! $user->can('edit player statistics')) {
             return false;
         }
 
         // Only for finished games or by scorers during live games
-        if ($game->status === 'live' && !$this->score($user, $game)) {
+        if ($game->status === 'live' && ! $this->score($user, $game)) {
             return false;
         }
 
         // Coaches can edit statistics for their team's games
         if ($user->isCoach()) {
             $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return !empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
+
+            return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
 
         return true; // For admins, super_admins, and scorers
@@ -348,7 +382,7 @@ class GamePolicy
         }
 
         // Must have edit permission
-        if (!$this->update($user, $game)) {
+        if (! $this->update($user, $game)) {
             return false;
         }
 
@@ -361,7 +395,7 @@ class GamePolicy
     public function manageMedia(User $user, Game $game): bool
     {
         // Must have media management permission
-        if (!$user->can('manage media library')) {
+        if (! $user->can('manage media library')) {
             return false;
         }
 
@@ -375,7 +409,7 @@ class GamePolicy
     public function viewActivityLog(User $user, Game $game): bool
     {
         // Must have activity log permission
-        if (!$user->can('view activity logs')) {
+        if (! $user->can('view activity logs')) {
             return false;
         }
 
@@ -405,7 +439,7 @@ class GamePolicy
     public function accessEmergencyProcedures(User $user, Game $game): bool
     {
         // Must have emergency access permission
-        if (!$user->can('access emergency information')) {
+        if (! $user->can('access emergency information')) {
             return false;
         }
 
@@ -419,7 +453,7 @@ class GamePolicy
     public function generateQRCodes(User $user, Game $game): bool
     {
         // Must have emergency QR code permission
-        if (!$user->can('generate emergency qr codes')) {
+        if (! $user->can('generate emergency qr codes')) {
             return false;
         }
 

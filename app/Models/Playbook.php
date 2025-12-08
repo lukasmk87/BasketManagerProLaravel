@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Str;
 
 class Playbook extends Model
@@ -23,6 +23,7 @@ class Playbook extends Model
         'description',
         'category',
         'is_default',
+        'status',
     ];
 
     protected $casts = [
@@ -91,6 +92,7 @@ class Playbook extends Model
         if ($tenantId) {
             return $query->where('tenant_id', $tenantId);
         }
+
         return $query->whereNull('tenant_id');
     }
 
@@ -102,6 +104,11 @@ class Playbook extends Model
     public function scopeDefault($query)
     {
         return $query->where('is_default', true);
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published');
     }
 
     // Accessors
@@ -144,7 +151,7 @@ class Playbook extends Model
         $this->reorderPlays();
     }
 
-    public function reorderPlays(array $playIds = null): void
+    public function reorderPlays(?array $playIds = null): void
     {
         if ($playIds) {
             foreach ($playIds as $index => $playId) {
@@ -163,7 +170,7 @@ class Playbook extends Model
     {
         $duplicate = $this->replicate();
         $duplicate->uuid = (string) Str::uuid();
-        $duplicate->name = $this->name . ' (Kopie)';
+        $duplicate->name = $this->name.' (Kopie)';
         $duplicate->created_by_user_id = $userId ?? auth()->id();
         $duplicate->is_default = false;
         $duplicate->save();

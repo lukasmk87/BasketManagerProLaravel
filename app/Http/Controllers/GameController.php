@@ -22,10 +22,15 @@ class GameController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $status = $request->query('status', 'all');
 
         // Get games based on user permissions
         $games = Game::query()
             ->with(['homeTeam.club', 'awayTeam.club'])
+            // Status filter
+            ->when($status !== 'all', function ($query) use ($status) {
+                return $query->where('status', $status);
+            })
             ->when($user->hasAnyRole(['tenant_admin', 'super_admin']), function ($query) {
                 // Admin users see all games
                 return $query;
@@ -48,7 +53,8 @@ class GameController extends Controller
                 });
             })
             ->orderBy('scheduled_at', 'desc')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         // Add display names for external teams (when home_team_id or away_team_id is null)
         $games->getCollection()->transform(function ($game) {
@@ -60,6 +66,9 @@ class GameController extends Controller
 
         return Inertia::render('Games/Index', [
             'games' => $games,
+            'filters' => [
+                'status' => $status,
+            ],
             'can' => [
                 'create' => $user->can('create', Game::class),
             ],

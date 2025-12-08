@@ -311,7 +311,7 @@ class DashboardController extends Controller
             $coachedTeams = $user->coachedTeams()
                 ->with([
                     'club:id,name',
-                    'players:id,user_id' => fn ($q) => $q->with('user:id,name'),
+                    'players' => fn ($q) => $q->with('user:id,name'),
                 ])
                 ->withCount(['players'])
                 ->get();
@@ -324,7 +324,7 @@ class DashboardController extends Controller
                 $assistantCoachedTeams = Team::whereIn('id', $assistantTeamIds)
                     ->with([
                         'club:id,name',
-                        'players:id,user_id' => fn ($q) => $q->with('user:id,name'),
+                        'players' => fn ($q) => $q->with('user:id,name'),
                     ])
                     ->withCount(['players'])
                     ->get();
@@ -368,14 +368,20 @@ class DashboardController extends Controller
                             'points_per_game' => $player->points_per_game ?? 0,
                         ];
                     }),
-                'upcoming_games' => $primaryTeam->allGames()
+                'upcoming_games' => Game::where(function ($q) use ($primaryTeam) {
+                    $q->where('home_team_id', $primaryTeam->id)
+                        ->orWhere('away_team_id', $primaryTeam->id);
+                })
                     ->with(['homeTeam:id,name', 'awayTeam:id,name'])
                     ->where('scheduled_at', '>', now())
                     ->where('status', 'scheduled')
                     ->orderBy('scheduled_at')
                     ->limit(5)
                     ->get(),
-                'recent_games' => $primaryTeam->allGames()
+                'recent_games' => Game::where(function ($q) use ($primaryTeam) {
+                    $q->where('home_team_id', $primaryTeam->id)
+                        ->orWhere('away_team_id', $primaryTeam->id);
+                })
                     ->with(['homeTeam:id,name', 'awayTeam:id,name'])
                     ->where('status', 'finished')
                     ->orderBy('scheduled_at', 'desc')

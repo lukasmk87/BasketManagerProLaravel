@@ -36,16 +36,48 @@
                 <div class="mb-6">
                     <div class="border-b border-gray-200">
                         <nav class="-mb-px flex space-x-8">
-                            <button class="border-indigo-500 text-indigo-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                            <button
+                                @click="filterGames('all')"
+                                :class="[
+                                    'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                    activeFilter === 'all'
+                                        ? 'border-indigo-500 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ]"
+                            >
                                 Alle
                             </button>
-                            <button class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                            <button
+                                @click="filterGames('scheduled')"
+                                :class="[
+                                    'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                    activeFilter === 'scheduled'
+                                        ? 'border-indigo-500 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ]"
+                            >
                                 Geplant
                             </button>
-                            <button class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                            <button
+                                @click="filterGames('in_progress')"
+                                :class="[
+                                    'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                    activeFilter === 'in_progress'
+                                        ? 'border-indigo-500 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ]"
+                            >
                                 Live
                             </button>
-                            <button class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                            <button
+                                @click="filterGames('finished')"
+                                :class="[
+                                    'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                                    activeFilter === 'finished'
+                                        ? 'border-indigo-500 text-indigo-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ]"
+                            >
                                 Beendet
                             </button>
                         </nav>
@@ -246,18 +278,29 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useForm, Link } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { useForm, Link, router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 import DangerButton from '@/Components/DangerButton.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 
-defineProps({
+const props = defineProps({
     games: Object,
     can: Object,
+    filters: Object,
 })
+
+// Tab Filter
+const activeFilter = computed(() => props.filters?.status || 'all')
+
+const filterGames = (status) => {
+    router.get(route('web.games.index'), { status }, {
+        preserveState: true,
+        preserveScroll: true,
+    })
+}
 
 // Delete functionality
 const confirmingGameDeletion = ref(false)
