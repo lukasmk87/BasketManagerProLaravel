@@ -668,9 +668,10 @@ class GymHallController extends Controller
                 });
             })
             ->whereBetween('booking_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
-            ->with(['gymTimeSlot.gymHall:id,name', 'team:id,name'])
+            ->with(['gymTimeSlot:id,gym_hall_id,start_time,end_time', 'gymTimeSlot.gymHall:id,name', 'team:id,name'])
             ->get()
-            ->groupBy('booking_date');
+            ->groupBy(fn($booking) => $booking->gymTimeSlot->gym_hall_id)
+            ->map(fn($hallBookings) => $hallBookings->groupBy(fn($b) => $b->booking_date->format('Y-m-d')));
 
         return response()->json([
             'success' => true,
