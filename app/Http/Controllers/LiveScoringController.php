@@ -23,7 +23,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -69,15 +68,6 @@ class LiveScoringController extends Controller
      */
     public function show(Game $game): Response
     {
-        // DEBUG: Log that we passed the middleware
-        $user = auth()->user();
-        Log::info('LiveScoringController::show() - Middleware passed', [
-            'user_id' => $user->id,
-            'user_name' => $user->name,
-            'game_id' => $game->id,
-            'has_score_games_permission' => $user->can('score games'),
-        ]);
-
         $this->authorize('score', $game);
 
         $game->load([
