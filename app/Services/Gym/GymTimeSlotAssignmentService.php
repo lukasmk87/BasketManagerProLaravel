@@ -550,6 +550,7 @@ class GymTimeSlotAssignmentService
             'booking_date' => $date->toDateString(),
             'start_time' => $assignment->start_time,
             'end_time' => $assignment->end_time,
+            'duration_minutes' => $assignment->duration_minutes,
             'status' => 'reserved',
             'booking_type' => 'regular',
             'booked_by_user_id' => $bookedBy->id,
