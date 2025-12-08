@@ -53,6 +53,9 @@
                                         <h4 class="text-lg font-semibold text-gray-900">
                                             {{ hall.name }}
                                         </h4>
+                                        <p v-if="hall.hall_number" class="text-xs text-blue-600 font-mono mt-0.5">
+                                            Nr. {{ hall.hall_number }}
+                                        </p>
                                         <p v-if="hall.description" class="text-sm text-gray-600 mt-1">
                                             {{ hall.description }}
                                         </p>

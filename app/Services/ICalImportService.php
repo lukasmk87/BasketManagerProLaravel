@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Game;
+use App\Models\GymHall;
 use App\Models\Team;
+use App\Services\Gym\GameHallBookingService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +13,13 @@ use Sabre\VObject;
 
 class ICalImportService
 {
+    protected ?GameHallBookingService $gameHallBookingService = null;
+
+    public function __construct(?GameHallBookingService $gameHallBookingService = null)
+    {
+        $this->gameHallBookingService = $gameHallBookingService ?? app(GameHallBookingService::class);
+    }
+
     /**
      * Parse an iCAL file and extract game information.
      */
@@ -267,7 +276,21 @@ class ICalImportService
                     $createData['home_team_name'] = $gameData['home_team_raw'];
                 }
 
-                Game::create($createData);
+                // Match venue code to gym hall (only for home games)
+                if ($isHomeGame && ! empty($gameData['venue_code'])) {
+                    $gymHall = $this->matchVenueCodeToGymHall($gameData['venue_code'], $team->club_id);
+                    if ($gymHall) {
+                        $createData['gym_hall_id'] = $gymHall->id;
+                    }
+                }
+
+                $game = Game::create($createData);
+
+                // Create hall booking if gym hall was matched
+                if ($game->gym_hall_id) {
+                    $this->createHallBookingForGame($game);
+                }
+
                 $importedCount++;
 
             } catch (\Exception $e) {
@@ -368,6 +391,12 @@ class ICalImportService
 
             $exists = $this->gameExists($team->id, $gameData['external_game_id'], $gameData['scheduled_at']);
 
+            // Check for gym hall match (only for home games)
+            $gymHall = null;
+            if ($isHomeGame && ! empty($gameData['venue_code'])) {
+                $gymHall = $this->matchVenueCodeToGymHall($gameData['venue_code'], $team->club_id);
+            }
+
             return [
                 'home_team_display' => $isHomeGame ? $team->name : $gameData['home_team_raw'],
                 'away_team_display' => $isAwayGame ? $team->name : $gameData['away_team_raw'],
@@ -381,6 +410,9 @@ class ICalImportService
                 'game_type' => $gameType,
                 'can_import' => ! $exists,
                 'external_game_id' => $gameData['external_game_id'],
+                'gym_hall_id' => $gymHall?->id,
+                'gym_hall_name' => $gymHall?->name,
+                'gym_hall_matched' => $gymHall !== null,
             ];
         })->filter();
     }
@@ -471,7 +503,22 @@ class ICalImportService
                     }
                 }
 
-                Game::create($createData);
+                // Match venue code to gym hall (only for home games)
+                if ($isHomeGame && ! empty($gameData['venue_code'])) {
+                    $selectedTeam = Team::find($selectedTeamId);
+                    $gymHall = $this->matchVenueCodeToGymHall($gameData['venue_code'], $selectedTeam?->club_id);
+                    if ($gymHall) {
+                        $createData['gym_hall_id'] = $gymHall->id;
+                    }
+                }
+
+                $game = Game::create($createData);
+
+                // Create hall booking if gym hall was matched
+                if ($game->gym_hall_id) {
+                    $this->createHallBookingForGame($game);
+                }
+
                 $importedCount++;
 
             } catch (\Exception $e) {
@@ -520,6 +567,9 @@ class ICalImportService
             $awayTeamDisplay = ! $isHomeGame ? $selectedTeam->name :
                 ($awayTeamMapped && $awayTeamMapped != $selectedTeamId ? Team::find($awayTeamMapped)->name : $gameData['away_team_raw']);
 
+            // Check for gym hall match
+            $gymHall = $this->matchVenueCodeToGymHall($gameData['venue_code'], $selectedTeam->club_id ?? null);
+
             return [
                 'home_team_display' => $homeTeamDisplay,
                 'away_team_display' => $awayTeamDisplay,
@@ -533,7 +583,46 @@ class ICalImportService
                 'game_type' => $gameType,
                 'can_import' => ! $exists,
                 'external_game_id' => $gameData['external_game_id'],
+                'gym_hall_id' => $gymHall?->id,
+                'gym_hall_name' => $gymHall?->name,
+                'gym_hall_matched' => $gymHall !== null,
             ];
         })->filter();
+    }
+
+    /**
+     * Match a venue code to a gym hall.
+     */
+    public function matchVenueCodeToGymHall(?string $venueCode, ?int $clubId = null): ?GymHall
+    {
+        if (empty($venueCode)) {
+            return null;
+        }
+
+        return $this->gameHallBookingService->matchVenueCodeToGymHall($venueCode, $clubId);
+    }
+
+    /**
+     * Create hall booking for an imported game.
+     */
+    protected function createHallBookingForGame(Game $game): void
+    {
+        if (! $game->gym_hall_id) {
+            return;
+        }
+
+        try {
+            $this->gameHallBookingService->createBookingForGame($game);
+            Log::info('Hall booking created for imported game', [
+                'game_id' => $game->id,
+                'gym_hall_id' => $game->gym_hall_id,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create hall booking for imported game', [
+                'game_id' => $game->id,
+                'gym_hall_id' => $game->gym_hall_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

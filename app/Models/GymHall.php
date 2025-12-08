@@ -22,6 +22,7 @@ class GymHall extends Model implements HasMedia
         'uuid',
         'club_id',
         'name',
+        'hall_number',
         'slug',
         'hall_type',
         'court_count',

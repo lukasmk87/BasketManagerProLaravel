@@ -10,18 +10,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
-use Carbon\Carbon;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class GymBooking extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'uuid',
         'gym_time_slot_id',
         'team_id',
+        'game_id',
         'booked_by_user_id',
         'booking_date',
         'start_time',
@@ -29,6 +29,7 @@ class GymBooking extends Model
         'duration_minutes',
         'status',
         'booking_type',
+        'priority',
         'original_team_id',
         'substitute_team_id',
         'release_reason',
@@ -68,6 +69,7 @@ class GymBooking extends Model
         'payment_required' => 'boolean',
         'participants_count' => 'integer',
         'participant_list' => 'array',
+        'priority' => 'integer',
         'notifications_sent' => 'array',
         'metadata' => 'array',
         'court_ids' => 'array',
@@ -130,6 +132,14 @@ class GymBooking extends Model
         return $this->belongsTo(User::class, 'cancelled_by_user_id');
     }
 
+    /**
+     * Get the game associated with this booking.
+     */
+    public function game(): BelongsTo
+    {
+        return $this->belongsTo(Game::class);
+    }
+
     public function requests(): HasMany
     {
         return $this->hasMany(GymBookingRequest::class);
@@ -150,7 +160,7 @@ class GymBooking extends Model
             GymHall::class,
             GymTimeSlot::class,
             'id',                // Foreign key on GymTimeSlot table
-            'id',                // Foreign key on GymHall table  
+            'id', // Foreign key on GymHall table
             'gym_time_slot_id',  // Local key on GymBooking table
             'gym_hall_id'        // Local key on GymTimeSlot table
         );
@@ -194,7 +204,7 @@ class GymBooking extends Model
     {
         return $query->whereBetween('booking_date', [
             now()->startOfWeek(),
-            now()->endOfWeek()
+            now()->endOfWeek(),
         ]);
     }
 
@@ -206,19 +216,19 @@ class GymBooking extends Model
     public function scopeAvailableForBooking($query)
     {
         return $query->where('status', 'released')
-                    ->where('booking_date', '>=', now()->toDateString());
+            ->where('booking_date', '>=', now()->toDateString());
     }
 
     public function scopeForCourt($query, $courtId)
     {
-        return $query->whereHas('courts', function($q) use ($courtId) {
+        return $query->whereHas('courts', function ($q) use ($courtId) {
             $q->where('gym_hall_courts.id', $courtId);
         });
     }
 
     public function scopeUsingCourts($query, array $courtIds)
     {
-        return $query->whereHas('courts', function($q) use ($courtIds) {
+        return $query->whereHas('courts', function ($q) use ($courtIds) {
             $q->whereIn('gym_hall_courts.id', $courtIds);
         });
     }
@@ -233,18 +243,42 @@ class GymBooking extends Model
         return $query->where('is_partial_court', false);
     }
 
+    /**
+     * Scope a query to only include game bookings.
+     */
+    public function scopeGames($query)
+    {
+        return $query->whereNotNull('game_id');
+    }
+
+    /**
+     * Scope a query to only include training bookings.
+     */
+    public function scopeTrainings($query)
+    {
+        return $query->whereNull('game_id');
+    }
+
+    /**
+     * Scope a query to order by priority (high priority first).
+     */
+    public function scopeByPriority($query)
+    {
+        return $query->orderByDesc('priority');
+    }
+
     // ============================
     // ACCESSORS & MUTATORS
     // ============================
 
     public function getDateTimeAttribute(): string
     {
-        return $this->booking_date->format('d.m.Y') . ' ' . $this->start_time->format('H:i');
+        return $this->booking_date->format('d.m.Y').' '.$this->start_time->format('H:i');
     }
 
     public function getTimeRangeAttribute(): string
     {
-        return $this->start_time->format('H:i') . ' - ' . $this->end_time->format('H:i');
+        return $this->start_time->format('H:i').' - '.$this->end_time->format('H:i');
     }
 
     public function getIsUpcomingAttribute(): bool
@@ -264,21 +298,21 @@ class GymBooking extends Model
 
     public function getCanBeReleasedAttribute(): bool
     {
-        return $this->status === 'reserved' && 
-               $this->is_upcoming && 
+        return $this->status === 'reserved' &&
+               $this->is_upcoming &&
                $this->gymTimeSlot->allows_substitution;
     }
 
     public function getCanBeCancelledAttribute(): bool
     {
-        return in_array($this->status, ['reserved', 'confirmed', 'requested']) && 
+        return in_array($this->status, ['reserved', 'confirmed', 'requested']) &&
                $this->is_upcoming;
     }
 
     public function getIsSubstituteBookingAttribute(): bool
     {
-        return $this->booking_type === 'substitute' || 
-               (!is_null($this->substitute_team_id) && $this->substitute_team_id !== $this->team_id);
+        return $this->booking_type === 'substitute' ||
+               (! is_null($this->substitute_team_id) && $this->substitute_team_id !== $this->team_id);
     }
 
     public function getHasPendingRequestsAttribute(): bool
@@ -293,29 +327,29 @@ class GymBooking extends Model
 
     public function getCourtNamesAttribute(): string
     {
-        if (!$this->has_courts) {
+        if (! $this->has_courts) {
             return 'Alle Courts';
         }
-        
+
         return $this->courts->pluck('court_name')->join(', ');
     }
 
     public function getCourtIdentifiersAttribute(): string
     {
-        if (!$this->has_courts) {
+        if (! $this->has_courts) {
             return 'Gesamt';
         }
-        
+
         return $this->courts->pluck('court_identifier')->join(', ');
     }
 
     public function getDisplayCourtInfoAttribute(): string
     {
-        if (!$this->has_courts) {
-            return $this->gymHall?->name . ' (Gesamt)';
+        if (! $this->has_courts) {
+            return $this->gymHall?->name.' (Gesamt)';
         }
-        
-        return $this->gymHall?->name . ' - ' . $this->court_identifiers;
+
+        return $this->gymHall?->name.' - '.$this->court_identifiers;
     }
 
     public function getIsMultiCourtBookingAttribute(): bool
@@ -323,13 +357,29 @@ class GymBooking extends Model
         return $this->courts()->count() > 1;
     }
 
+    /**
+     * Check if this booking is for a game.
+     */
+    public function getIsGameBookingAttribute(): bool
+    {
+        return $this->game_id !== null;
+    }
+
+    /**
+     * Check if this booking is for training.
+     */
+    public function getIsTrainingBookingAttribute(): bool
+    {
+        return $this->game_id === null;
+    }
+
     // ============================
     // HELPER METHODS
     // ============================
 
-    public function releaseTime(User $releasedBy, string $reason = null): bool
+    public function releaseTime(User $releasedBy, ?string $reason = null): bool
     {
-        if (!$this->can_be_released) {
+        if (! $this->can_be_released) {
             return false;
         }
 
@@ -342,11 +392,11 @@ class GymBooking extends Model
         ]);
 
         $this->notifyAvailableTeams();
-        
+
         return true;
     }
 
-    public function requestBooking(Team $requestingTeam, User $requestedBy, string $message = null, array $details = []): GymBookingRequest
+    public function requestBooking(Team $requestingTeam, User $requestedBy, ?string $message = null, array $details = []): GymBookingRequest
     {
         return $this->requests()->create([
             'uuid' => Str::uuid(),
@@ -361,9 +411,9 @@ class GymBooking extends Model
         ]);
     }
 
-    public function confirmBooking(User $confirmedBy, Team $newTeam = null): bool
+    public function confirmBooking(User $confirmedBy, ?Team $newTeam = null): bool
     {
-        if (!in_array($this->status, ['released', 'requested'])) {
+        if (! in_array($this->status, ['released', 'requested'])) {
             return false;
         }
 
@@ -391,9 +441,9 @@ class GymBooking extends Model
         return true;
     }
 
-    public function cancelBooking(User $cancelledBy, string $reason = null): bool
+    public function cancelBooking(User $cancelledBy, ?string $reason = null): bool
     {
-        if (!$this->can_be_cancelled) {
+        if (! $this->can_be_cancelled) {
             return false;
         }
 
@@ -427,7 +477,7 @@ class GymBooking extends Model
 
         // Check user permissions for this booking
         $userTeam = $user->teams()->where('team_id', $this->team_id)->first();
-        $isTeamMember = !is_null($userTeam);
+        $isTeamMember = ! is_null($userTeam);
         $isTrainerOrAssistant = $isTeamMember && in_array($userTeam->pivot->role ?? '', ['trainer', 'assistant_coach']);
 
         if ($this->can_be_released && $isTrainerOrAssistant) {
@@ -438,7 +488,7 @@ class GymBooking extends Model
             $actions[] = 'cancel';
         }
 
-        if ($this->status === 'released' && !$isTeamMember) {
+        if ($this->status === 'released' && ! $isTeamMember) {
             $actions[] = 'request';
         }
 
@@ -476,8 +526,8 @@ class GymBooking extends Model
                 'release_notification' => [
                     'sent_at' => now(),
                     'teams_notified' => $availableTeams->pluck('id')->toArray(),
-                ]
-            ])
+                ],
+            ]),
         ]);
     }
 
@@ -485,10 +535,10 @@ class GymBooking extends Model
     {
         $hourlyRate = $this->gymTimeSlot->cost_per_hour ?? $this->gymTimeSlot->gymHall->hourly_rate ?? 0;
         $hours = $this->duration_minutes / 60;
-        
+
         // Adjust cost based on court percentage if partial court
         $courtMultiplier = $this->is_partial_court ? ($this->court_percentage / 100) : 1.0;
-        
+
         return round($hourlyRate * $hours * $courtMultiplier, 2);
     }
 
@@ -517,12 +567,12 @@ class GymBooking extends Model
 
             // Sync courts
             $this->courts()->sync($courtIds);
-            
+
             // Update booking data
             $this->update([
                 'court_ids' => $courtIds,
                 'is_partial_court' => count($courtIds) < $this->gymTimeSlot->gymHall->court_count,
-                'court_percentage' => (count($courtIds) / max($this->gymTimeSlot->gymHall->court_count, 1)) * 100
+                'court_percentage' => (count($courtIds) / max($this->gymTimeSlot->gymHall->court_count, 1)) * 100,
             ]);
 
             return true;
@@ -538,7 +588,7 @@ class GymBooking extends Model
         }
 
         // Check date and time overlap
-        if (!$this->hasTimeOverlap($otherBooking)) {
+        if (! $this->hasTimeOverlap($otherBooking)) {
             return false;
         }
 
@@ -546,7 +596,7 @@ class GymBooking extends Model
         $myCourts = $this->courts->pluck('id')->toArray();
         $otherCourts = $otherBooking->courts->pluck('id')->toArray();
 
-        return !empty(array_intersect($myCourts, $otherCourts));
+        return ! empty(array_intersect($myCourts, $otherCourts));
     }
 
     private function hasTimeOverlap(GymBooking $otherBooking): bool
@@ -566,8 +616,8 @@ class GymBooking extends Model
     private function hasCourtConflicts(array $courtIds): bool
     {
         $conflictingBookings = GymBooking::whereHas('courts', function ($query) use ($courtIds) {
-                $query->whereIn('gym_hall_courts.id', $courtIds);
-            })
+            $query->whereIn('gym_hall_courts.id', $courtIds);
+        })
             ->where('booking_date', $this->booking_date)
             ->where('id', '!=', $this->id)
             ->where(function ($query) {
@@ -575,7 +625,7 @@ class GymBooking extends Model
                 $myEnd = $this->end_time;
                 $query->where(function ($q) use ($myStart, $myEnd) {
                     $q->where('start_time', '<', $myEnd)
-                      ->where('end_time', '>', $myStart);
+                        ->where('end_time', '>', $myStart);
                 });
             })
             ->whereIn('status', ['reserved', 'confirmed'])
@@ -587,7 +637,7 @@ class GymBooking extends Model
     public function getAvailableCourts(): \Illuminate\Database\Eloquent\Collection
     {
         $gymHall = $this->gymTimeSlot->gymHall;
-        
+
         return $gymHall->getAvailableCourtsByTime(
             $this->booking_date->setTimeFrom($this->start_time),
             $this->duration_minutes
@@ -597,12 +647,13 @@ class GymBooking extends Model
     public function canUseAllCourts(): bool
     {
         $gymHall = $this->gymTimeSlot->gymHall;
+
         return $gymHall->supports_parallel_bookings;
     }
 
     public function optimizeCourtSelection(): array
     {
-        if (!$this->canUseAllCourts()) {
+        if (! $this->canUseAllCourts()) {
             return [];
         }
 
@@ -636,7 +687,7 @@ class GymBooking extends Model
         return LogOptions::defaults()
             ->logOnly([
                 'status', 'team_id', 'substitute_team_id', 'released_at',
-                'confirmed_at', 'cancelled_at'
+                'confirmed_at', 'cancelled_at',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();

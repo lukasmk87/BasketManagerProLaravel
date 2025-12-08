@@ -20,15 +20,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Game extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes, LogsActivity, InteractsWithMedia;
+    use HasFactory, InteractsWithMedia, LogsActivity, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -45,6 +45,7 @@ class Game extends Model implements HasMedia
         'venue',
         'venue_address',
         'venue_code',
+        'gym_hall_id',
         'import_source',
         'external_game_id',
         'import_metadata',
@@ -215,6 +216,14 @@ class Game extends Model implements HasMedia
     }
 
     /**
+     * Get the gym hall where this game is played.
+     */
+    public function gymHall(): BelongsTo
+    {
+        return $this->belongsTo(GymHall::class);
+    }
+
+    /**
      * Get the user who verified the stats.
      */
     public function statsVerifiedBy(): BelongsTo
@@ -293,7 +302,7 @@ class Game extends Model implements HasMedia
         if ($this->home_team_name) {
             return $this->home_team_name;
         }
-        
+
         return $this->homeTeam ? $this->homeTeam->name : 'Unbekanntes Team';
     }
 
@@ -305,7 +314,7 @@ class Game extends Model implements HasMedia
         if ($this->away_team_name) {
             return $this->away_team_name;
         }
-        
+
         return $this->awayTeam ? $this->awayTeam->name : 'Unbekanntes Team';
     }
 
@@ -314,7 +323,7 @@ class Game extends Model implements HasMedia
      */
     public function isAwayTeamExternal(): bool
     {
-        return $this->away_team_id === null && !empty($this->away_team_name);
+        return $this->away_team_id === null && ! empty($this->away_team_name);
     }
 
     /**
@@ -322,7 +331,7 @@ class Game extends Model implements HasMedia
      */
     public function isHomeTeamExternal(): bool
     {
-        return $this->home_team_id === null && !empty($this->home_team_name);
+        return $this->home_team_id === null && ! empty($this->home_team_name);
     }
 
     /**
@@ -420,9 +429,9 @@ class Game extends Model implements HasMedia
     {
         return $query->where(function ($q) {
             $q->whereNull('away_team_id')->whereNotNull('away_team_name')
-              ->orWhere(function ($subQ) {
-                  $subQ->whereNull('home_team_id')->whereNotNull('home_team_name');
-              });
+                ->orWhere(function ($subQ) {
+                    $subQ->whereNull('home_team_id')->whereNotNull('home_team_name');
+                });
         });
     }
 
@@ -432,7 +441,7 @@ class Game extends Model implements HasMedia
     public function scopeInternalOnly($query)
     {
         return $query->whereNotNull('home_team_id')
-                    ->whereNotNull('away_team_id');
+            ->whereNotNull('away_team_id');
     }
 
     /**
@@ -468,7 +477,7 @@ class Game extends Model implements HasMedia
      */
     public function getDurationAttribute(): ?int
     {
-        if (!$this->actual_start_time || !$this->actual_end_time) {
+        if (! $this->actual_start_time || ! $this->actual_end_time) {
             return null;
         }
 
@@ -516,7 +525,7 @@ class Game extends Model implements HasMedia
      */
     public function getIsTieAttribute(): bool
     {
-        return $this->status === 'finished' && 
+        return $this->status === 'finished' &&
                $this->home_team_score === $this->away_team_score;
     }
 
@@ -525,7 +534,7 @@ class Game extends Model implements HasMedia
      */
     public function getFormattedTimeRemainingAttribute(): string
     {
-        if (!$this->time_remaining_seconds) {
+        if (! $this->time_remaining_seconds) {
             return '00:00';
         }
 
@@ -556,7 +565,7 @@ class Game extends Model implements HasMedia
      */
     public function getAttendancePercentageAttribute(): ?float
     {
-        if (!$this->capacity || !$this->attendance) {
+        if (! $this->capacity || ! $this->attendance) {
             return null;
         }
 
@@ -863,7 +872,7 @@ class Game extends Model implements HasMedia
      */
     public function canBeStarted(): bool
     {
-        return $this->status === 'scheduled' && 
+        return $this->status === 'scheduled' &&
                $this->scheduled_at <= now()->addMinutes(30);
     }
 
@@ -877,7 +886,7 @@ class Game extends Model implements HasMedia
         } elseif ($this->away_team_id === $team->id) {
             return $this->homeTeam;
         }
-        
+
         throw new \InvalidArgumentException('Team is not participating in this game');
     }
 
@@ -960,11 +969,11 @@ class Game extends Model implements HasMedia
      */
     public function isRegistrationOpen(): bool
     {
-        if (!$this->allow_player_registrations) {
+        if (! $this->allow_player_registrations) {
             return false;
         }
 
-        if (!in_array($this->status, ['scheduled'])) {
+        if (! in_array($this->status, ['scheduled'])) {
             return false;
         }
 
@@ -976,7 +985,7 @@ class Game extends Model implements HasMedia
      */
     public function isLineupChangesAllowed(): bool
     {
-        if (!in_array($this->status, ['scheduled'])) {
+        if (! in_array($this->status, ['scheduled'])) {
             return false;
         }
 
@@ -989,6 +998,7 @@ class Game extends Model implements HasMedia
     public function hasRosterCapacity(?int $additionalPlayers = 1): bool
     {
         $currentParticipants = $this->participations()->count();
+
         return ($currentParticipants + $additionalPlayers) <= $this->max_roster_size;
     }
 
@@ -998,6 +1008,7 @@ class Game extends Model implements HasMedia
     public function getAvailableRosterSpots(): int
     {
         $currentParticipants = $this->participations()->count();
+
         return max(0, $this->max_roster_size - $currentParticipants);
     }
 
@@ -1039,6 +1050,7 @@ class Game extends Model implements HasMedia
     public function hasMinimumRoster(): bool
     {
         $participants = $this->participations()->count();
+
         return $participants >= $this->min_roster_size;
     }
 
@@ -1158,7 +1170,7 @@ class Game extends Model implements HasMedia
         return LogOptions::defaults()
             ->logOnly([
                 'status', 'home_team_score', 'away_team_score',
-                'scheduled_at', 'venue', 'result'
+                'scheduled_at', 'venue', 'result',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();

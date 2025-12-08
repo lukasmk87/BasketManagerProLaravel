@@ -103,6 +103,18 @@
                                 />
                             </div>
                             <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Hallennummer</label>
+                                <input
+                                    v-model="form.hall_number"
+                                    type="text"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                    placeholder="z.B. 502A160"
+                                />
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Wird für den automatischen Spielplan-Import verwendet
+                                </p>
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Kapazität</label>
                                 <input
                                     v-model.number="form.capacity"
@@ -598,6 +610,7 @@ const page = usePage()
 const form = ref({
     club_id: null,
     name: '',
+    hall_number: '',
     description: '',
     address_street: '',
     address_city: '',
@@ -959,6 +972,7 @@ watch(() => props.gymHall, (newGymHall) => {
         form.value = {
             club_id: newGymHall.club_id,
             name: newGymHall.name || '',
+            hall_number: newGymHall.hall_number || '',
             description: newGymHall.description || '',
             address_street: newGymHall.address_street || '',
             address_city: newGymHall.address_city || '',
