@@ -119,6 +119,7 @@ class GameHallBookingService
 
     /**
      * Resolve a training conflict by moving the training to an alternative slot.
+     * Priorität: Fallback-Halle → Gleiche Halle → Stornieren
      */
     public function resolveTrainingConflict(GymBooking $trainingBooking, Game $game): bool
     {
@@ -132,24 +133,41 @@ class GameHallBookingService
             return false;
         }
 
-        // Try to find an alternative slot
+        $conflictDate = Carbon::parse($trainingBooking->booking_date);
+
+        // 1. Prüfe ob die Original-Halle eine Fallback-Konfiguration hat
+        $originalHall = $trainingBooking->gymTimeSlot?->gymHall;
+
+        if ($originalHall && $originalHall->hasFallbackConfiguration()) {
+            Log::info('GameHallBookingService: Checking fallback hall configuration', [
+                'booking_id' => $trainingBooking->id,
+                'original_hall_id' => $originalHall->id,
+                'fallback_hall_id' => $originalHall->fallback_gym_hall_id,
+            ]);
+
+            // Versuche Fallback-Slot zu finden
+            $fallbackSlot = $this->findFallbackSlot($originalHall, $conflictDate);
+
+            if ($fallbackSlot) {
+                return $this->moveTrainingToFallbackSlot($trainingBooking, $fallbackSlot);
+            }
+        }
+
+        // 2. Fallback auf bestehende Logik: Alternative in gleicher Halle suchen
         $assignment = $this->findTeamAssignmentForBooking($trainingBooking);
         if (! $assignment) {
             // No assignment found, just cancel the training
             return $this->cancelTrainingBooking($trainingBooking, $game);
         }
 
-        $alternativeSlot = $this->findAlternativeSlot(
-            $assignment,
-            Carbon::parse($trainingBooking->booking_date)
-        );
+        $alternativeSlot = $this->findAlternativeSlot($assignment, $conflictDate);
 
         if ($alternativeSlot) {
             // Move training to alternative slot
             return $this->moveTrainingToAlternativeSlot($trainingBooking, $alternativeSlot);
         }
 
-        // No alternative found, cancel the training
+        // 3. Nichts gefunden → Training stornieren
         return $this->cancelTrainingBooking($trainingBooking, $game);
     }
 
@@ -198,6 +216,239 @@ class GameHallBookingService
 
         // No alternative slot available on the same day
         return null;
+    }
+
+    // ============================
+    // FALLBACK HALL METHODS
+    // ============================
+
+    /**
+     * Findet einen Slot in der Ausweichhalle.
+     * 1. Prüft erst die vordefinierte Zeit
+     * 2. Falls belegt: Sucht andere freie Slots in Ausweichhalle
+     */
+    public function findFallbackSlot(GymHall $originalHall, Carbon $conflictDate): ?array
+    {
+        $fallbackConfig = $originalHall->getFallbackTimeSlot();
+
+        if (! $fallbackConfig) {
+            return null;
+        }
+
+        $fallbackHall = $fallbackConfig['gym_hall'];
+
+        if (! $fallbackHall || ! $fallbackHall->is_active) {
+            Log::warning('GameHallBookingService: Fallback hall not found or inactive', [
+                'original_hall_id' => $originalHall->id,
+                'fallback_hall_id' => $fallbackConfig['gym_hall_id'],
+            ]);
+
+            return null;
+        }
+
+        // Berechne Ausweichdatum basierend auf konfiguriertem Wochentag
+        $fallbackDate = $this->calculateFallbackDate(
+            $conflictDate,
+            $fallbackConfig['day_of_week']
+        );
+
+        // 1. Prüfe vordefinierte Zeit
+        $predefinedSlot = $this->checkPredefinedFallbackSlot(
+            $fallbackHall,
+            $fallbackDate,
+            $fallbackConfig['start_time'],
+            $fallbackConfig['end_time']
+        );
+
+        if ($predefinedSlot) {
+            Log::info('GameHallBookingService: Predefined fallback slot available', [
+                'fallback_hall_id' => $fallbackHall->id,
+                'date' => $fallbackDate->toDateString(),
+            ]);
+
+            return $predefinedSlot;
+        }
+
+        // 2. Suche andere freie Slots in Ausweichhalle
+        $alternativeSlot = $this->findAlternativeSlotInFallbackHall(
+            $fallbackHall,
+            $conflictDate
+        );
+
+        if ($alternativeSlot) {
+            Log::info('GameHallBookingService: Alternative fallback slot found', [
+                'fallback_hall_id' => $fallbackHall->id,
+                'date' => $alternativeSlot['date'],
+            ]);
+
+            return $alternativeSlot;
+        }
+
+        Log::info('GameHallBookingService: No fallback slot available', [
+            'original_hall_id' => $originalHall->id,
+            'fallback_hall_id' => $fallbackHall->id,
+        ]);
+
+        return null;
+    }
+
+    /**
+     * Berechnet das nächste Datum für den angegebenen Wochentag.
+     * Wenn der Wochentag bereits vergangen ist, wird die nächste Woche genommen.
+     */
+    protected function calculateFallbackDate(Carbon $conflictDate, string $dayOfWeek): Carbon
+    {
+        $dayMap = [
+            'monday' => Carbon::MONDAY,
+            'tuesday' => Carbon::TUESDAY,
+            'wednesday' => Carbon::WEDNESDAY,
+            'thursday' => Carbon::THURSDAY,
+            'friday' => Carbon::FRIDAY,
+            'saturday' => Carbon::SATURDAY,
+            'sunday' => Carbon::SUNDAY,
+        ];
+
+        $targetDay = $dayMap[strtolower($dayOfWeek)] ?? Carbon::MONDAY;
+
+        // Suche den nächsten passenden Tag ab dem Konfliktdatum
+        $fallbackDate = $conflictDate->copy();
+
+        // Wenn wir am selben Wochentag sind, nutze diesen Tag
+        if ($fallbackDate->dayOfWeek === $targetDay) {
+            return $fallbackDate;
+        }
+
+        // Sonst suche den nächsten passenden Tag
+        return $fallbackDate->next($targetDay);
+    }
+
+    /**
+     * Prüft ob die vordefinierte Fallback-Zeit frei ist.
+     */
+    protected function checkPredefinedFallbackSlot(
+        GymHall $fallbackHall,
+        Carbon $fallbackDate,
+        string $startTime,
+        string $endTime
+    ): ?array {
+        $conflicts = $this->checkForConflicts(
+            $fallbackHall,
+            $fallbackDate->toDateString(),
+            $startTime,
+            $endTime
+        );
+
+        if ($conflicts->isEmpty()) {
+            // Suche passenden TimeSlot in der Ausweichhalle
+            $timeSlot = $this->findOrCreateTimeSlot(
+                $fallbackHall,
+                $fallbackDate->toDateString(),
+                $startTime,
+                $endTime
+            );
+
+            return [
+                'gym_hall' => $fallbackHall,
+                'time_slot' => $timeSlot,
+                'date' => $fallbackDate->toDateString(),
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'is_predefined' => true,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Sucht freie Slots in der Ausweichhalle innerhalb der nächsten 7 Tage.
+     */
+    protected function findAlternativeSlotInFallbackHall(
+        GymHall $fallbackHall,
+        Carbon $conflictDate
+    ): ?array {
+        // Suche in den nächsten 7 Tagen
+        for ($i = 0; $i < 7; $i++) {
+            $searchDate = $conflictDate->copy()->addDays($i);
+            $dayOfWeek = strtolower($searchDate->englishDayOfWeek);
+
+            // Hole alle aktiven TimeSlots für diesen Tag
+            $availableSlots = GymTimeSlot::where('gym_hall_id', $fallbackHall->id)
+                ->where('day_of_week', $dayOfWeek)
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($availableSlots as $slot) {
+                $slotStartTime = $slot->start_time instanceof Carbon
+                    ? $slot->start_time->format('H:i')
+                    : $slot->start_time;
+                $slotEndTime = $slot->end_time instanceof Carbon
+                    ? $slot->end_time->format('H:i')
+                    : $slot->end_time;
+
+                $conflicts = $this->checkForConflicts(
+                    $fallbackHall,
+                    $searchDate->toDateString(),
+                    $slotStartTime,
+                    $slotEndTime
+                );
+
+                if ($conflicts->isEmpty()) {
+                    return [
+                        'gym_hall' => $fallbackHall,
+                        'time_slot' => $slot,
+                        'date' => $searchDate->toDateString(),
+                        'start_time' => $slotStartTime,
+                        'end_time' => $slotEndTime,
+                        'is_predefined' => false,
+                    ];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Verschiebt ein Training in die Ausweichhalle.
+     */
+    protected function moveTrainingToFallbackSlot(GymBooking $booking, array $fallbackSlot): bool
+    {
+        try {
+            $oldSlot = $booking->gymTimeSlot;
+            $oldHall = $oldSlot?->gymHall;
+
+            $booking->update([
+                'gym_time_slot_id' => $fallbackSlot['time_slot']?->id,
+                'booking_date' => $fallbackSlot['date'],
+                'start_time' => $fallbackSlot['start_time'],
+                'end_time' => $fallbackSlot['end_time'],
+                'duration_minutes' => $this->calculateDuration(
+                    $fallbackSlot['start_time'],
+                    $fallbackSlot['end_time']
+                ),
+                'booking_notes' => ($booking->booking_notes ?? '').
+                    "\n[Automatisch verschoben von {$oldHall?->name} ({$oldSlot?->start_time}-{$oldSlot?->end_time}) ".
+                    "in Ausweichhalle {$fallbackSlot['gym_hall']->name} wegen Spielkonflikt]",
+            ]);
+
+            Log::info('GameHallBookingService: Training moved to fallback hall', [
+                'booking_id' => $booking->id,
+                'from_hall_id' => $oldHall?->id,
+                'to_hall_id' => $fallbackSlot['gym_hall']->id,
+                'new_date' => $fallbackSlot['date'],
+                'new_time' => "{$fallbackSlot['start_time']}-{$fallbackSlot['end_time']}",
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('GameHallBookingService: Failed to move training to fallback hall', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**

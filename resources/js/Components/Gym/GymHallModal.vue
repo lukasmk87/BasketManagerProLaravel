@@ -51,6 +51,23 @@
                     >
                         Plätze verwalten
                     </button>
+                    <button
+                        v-if="gymHall"
+                        @click="activeTab = 'fallback'"
+                        type="button"
+                        :class="[
+                            activeTab === 'fallback'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                            'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
+                        ]"
+                    >
+                        Ausweichhalle
+                        <span
+                            v-if="gymHall.fallback_gym_hall_id"
+                            class="ml-1 inline-flex items-center justify-center w-2 h-2 bg-green-500 rounded-full"
+                        ></span>
+                    </button>
                 </nav>
             </div>
 
@@ -540,6 +557,169 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Fallback Hall Tab -->
+            <div v-if="activeTab === 'fallback' && gymHall">
+                <div class="space-y-6">
+                    <!-- Info Box -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                                <h4 class="text-sm font-medium text-blue-900">Automatische Ausweichbuchung</h4>
+                                <p class="mt-1 text-sm text-blue-700">
+                                    Wenn ein Spiel während der regulären Trainingszeit stattfindet, wird das Training
+                                    automatisch in die hier konfigurierte Ausweichhalle zur angegebenen Zeit verschoben.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Configuration Display -->
+                    <div v-if="gymHall.fallback_gym_hall_id" class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <div>
+                                <h4 class="text-sm font-medium text-green-900">Aktuelle Konfiguration</h4>
+                                <p class="mt-1 text-sm text-green-700">
+                                    {{ gymHall.fallback_time_range || 'Ausweichhalle konfiguriert' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fallback Hall Selection -->
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-4">Ausweichhalle konfigurieren</h4>
+
+                        <div class="space-y-4">
+                            <!-- Hall Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Ausweichhalle</label>
+                                <select
+                                    v-model="fallbackForm.fallback_gym_hall_id"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                    :disabled="loadingFallbackHalls"
+                                >
+                                    <option :value="null">-- Keine Ausweichhalle --</option>
+                                    <option
+                                        v-for="hall in availableFallbackHalls"
+                                        :key="hall.id"
+                                        :value="hall.id"
+                                        :disabled="!hall.can_be_selected"
+                                    >
+                                        {{ hall.name }}
+                                        <template v-if="hall.hall_number"> ({{ hall.hall_number }})</template>
+                                        <template v-if="!hall.can_be_selected"> - Zirkuläre Referenz</template>
+                                    </option>
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Wählen Sie die Halle, in die Trainings bei Spielkonflikten verschoben werden sollen.
+                                </p>
+                            </div>
+
+                            <!-- Day and Time Configuration (only show if hall selected) -->
+                            <div v-if="fallbackForm.fallback_gym_hall_id" class="border-t border-gray-200 pt-4">
+                                <h5 class="text-sm font-medium text-gray-700 mb-3">Vordefinierte Ausweichzeit</h5>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <!-- Day Selection -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Wochentag *</label>
+                                        <select
+                                            v-model="fallbackForm.fallback_day_of_week"
+                                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                            required
+                                        >
+                                            <option :value="null" disabled>-- Tag wählen --</option>
+                                            <option value="monday">Montag</option>
+                                            <option value="tuesday">Dienstag</option>
+                                            <option value="wednesday">Mittwoch</option>
+                                            <option value="thursday">Donnerstag</option>
+                                            <option value="friday">Freitag</option>
+                                            <option value="saturday">Samstag</option>
+                                            <option value="sunday">Sonntag</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Start Time -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Von *</label>
+                                        <input
+                                            v-model="fallbackForm.fallback_start_time"
+                                            type="time"
+                                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                            required
+                                        />
+                                    </div>
+
+                                    <!-- End Time -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Bis *</label>
+                                        <input
+                                            v-model="fallbackForm.fallback_end_time"
+                                            type="time"
+                                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <p class="mt-2 text-xs text-gray-500">
+                                    Diese Zeit wird bevorzugt für die Ausweichbuchung verwendet. Falls sie belegt ist,
+                                    werden automatisch andere freie Zeiten in der Ausweichhalle gesucht.
+                                </p>
+                            </div>
+
+                            <!-- Warning for removing configuration -->
+                            <div v-if="gymHall.fallback_gym_hall_id && !fallbackForm.fallback_gym_hall_id" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <div class="flex">
+                                    <svg class="h-5 w-5 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    <div>
+                                        <h4 class="text-sm font-medium text-yellow-800">Ausweichkonfiguration wird entfernt</h4>
+                                        <p class="mt-1 text-sm text-yellow-700">
+                                            Trainings werden bei Spielkonflikten nicht mehr automatisch in eine Ausweichhalle verschoben.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Messages -->
+                    <div v-if="fallbackErrors.length > 0" class="bg-red-50 border border-red-200 rounded-md p-4">
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                            <div>
+                                <h3 class="text-sm font-medium text-red-800">Fehler:</h3>
+                                <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+                                    <li v-for="error in fallbackErrors" :key="error">{{ error }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <div class="flex justify-end pt-4 border-t border-gray-200">
+                        <button
+                            @click="saveFallbackConfiguration"
+                            type="button"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50"
+                            :disabled="savingFallback || !isFallbackFormValid"
+                        >
+                            {{ savingFallback ? 'Speichere...' : 'Ausweichkonfiguration speichern' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
         </template>
 
         <template #footer>
@@ -655,6 +835,18 @@ const hallTimeSlots = ref([])
 const initializingCourts = ref(false)
 const selectedClubId = ref(null)
 
+// Fallback Hall State
+const availableFallbackHalls = ref([])
+const loadingFallbackHalls = ref(false)
+const savingFallback = ref(false)
+const fallbackErrors = ref([])
+const fallbackForm = ref({
+    fallback_gym_hall_id: null,
+    fallback_day_of_week: null,
+    fallback_start_time: '',
+    fallback_end_time: ''
+})
+
 // Check if user is Admin/Superadmin and should see club selector
 const showClubSelector = computed(() => {
     const user = page.props.auth?.user
@@ -671,6 +863,20 @@ const facilitiesArray = computed(() => {
 
 const equipmentArray = computed(() => {
     return Object.keys(equipmentCheckboxes.value).filter(key => equipmentCheckboxes.value[key])
+})
+
+// Validate fallback form - either no hall selected, or all fields filled
+const isFallbackFormValid = computed(() => {
+    const form = fallbackForm.value
+    // No hall selected - valid (removing config)
+    if (!form.fallback_gym_hall_id) {
+        return true
+    }
+    // Hall selected - all fields required
+    return form.fallback_day_of_week &&
+           form.fallback_start_time &&
+           form.fallback_end_time &&
+           form.fallback_start_time < form.fallback_end_time
 })
 
 // Methods
@@ -913,11 +1119,76 @@ const initializeCourts = async () => {
 const getHallTypeDisplay = (hallType) => {
     const types = {
         'single': 'Einfachhalle',
-        'double': 'Doppelhalle', 
+        'double': 'Doppelhalle',
         'triple': 'Dreifachhalle',
         'multi': 'Mehrfachhalle'
     }
     return types[hallType] || hallType
+}
+
+// Load available fallback halls for this gym hall
+const loadAvailableFallbackHalls = async (hallId) => {
+    if (!hallId) return
+
+    loadingFallbackHalls.value = true
+    fallbackErrors.value = []
+
+    try {
+        const response = await window.axios.get(`/api/v2/gym-halls/${hallId}/available-fallback-halls`, {
+            withCredentials: true
+        })
+
+        if (response.data.success) {
+            availableFallbackHalls.value = response.data.data.available_halls || []
+        }
+    } catch (error) {
+        console.error('Error loading available fallback halls:', error)
+        fallbackErrors.value = ['Fehler beim Laden der verfügbaren Ausweichhallen.']
+    } finally {
+        loadingFallbackHalls.value = false
+    }
+}
+
+// Save fallback configuration
+const saveFallbackConfiguration = async () => {
+    if (!props.gymHall?.id) return
+
+    savingFallback.value = true
+    fallbackErrors.value = []
+
+    try {
+        const data = {
+            fallback_gym_hall_id: fallbackForm.value.fallback_gym_hall_id,
+            fallback_day_of_week: fallbackForm.value.fallback_gym_hall_id ? fallbackForm.value.fallback_day_of_week : null,
+            fallback_start_time: fallbackForm.value.fallback_gym_hall_id ? fallbackForm.value.fallback_start_time : null,
+            fallback_end_time: fallbackForm.value.fallback_gym_hall_id ? fallbackForm.value.fallback_end_time : null,
+        }
+
+        const response = await window.axios.put(`/api/v2/gym-halls/${props.gymHall.id}`, data, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            withCredentials: true
+        })
+
+        if (response.status >= 200 && response.status < 300) {
+            emit('updated')
+            // Show success message briefly then close or stay
+            fallbackErrors.value = []
+        }
+    } catch (error) {
+        console.error('Error saving fallback configuration:', error)
+        if (error.response?.data?.errors) {
+            fallbackErrors.value = Object.values(error.response.data.errors).flat()
+        } else if (error.response?.data?.message) {
+            fallbackErrors.value = [error.response.data.message]
+        } else {
+            fallbackErrors.value = ['Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.']
+        }
+    } finally {
+        savingFallback.value = false
+    }
 }
 
 const resetForm = () => {
@@ -964,6 +1235,16 @@ const resetForm = () => {
     activeTab.value = 'details'
     hallTimeSlots.value = []
     selectedClubId.value = null
+
+    // Reset fallback form
+    availableFallbackHalls.value = []
+    fallbackErrors.value = []
+    fallbackForm.value = {
+        fallback_gym_hall_id: null,
+        fallback_day_of_week: null,
+        fallback_start_time: '',
+        fallback_end_time: ''
+    }
 }
 
 // Watch for gymHall changes to populate form
@@ -1017,10 +1298,27 @@ watch(() => props.gymHall, (newGymHall) => {
         if (newGymHall.club_id) {
             selectedClubId.value = newGymHall.club_id
         }
-        
+
         // Load time slots for existing hall
         if (newGymHall.id) {
             loadHallTimeSlots(newGymHall.id)
+            loadAvailableFallbackHalls(newGymHall.id)
+        }
+
+        // Initialize fallback form from gym hall data
+        fallbackForm.value = {
+            fallback_gym_hall_id: newGymHall.fallback_gym_hall_id || null,
+            fallback_day_of_week: newGymHall.fallback_day_of_week || null,
+            fallback_start_time: newGymHall.fallback_start_time
+                ? (typeof newGymHall.fallback_start_time === 'string'
+                    ? newGymHall.fallback_start_time.substring(0, 5)
+                    : newGymHall.fallback_start_time)
+                : '',
+            fallback_end_time: newGymHall.fallback_end_time
+                ? (typeof newGymHall.fallback_end_time === 'string'
+                    ? newGymHall.fallback_end_time.substring(0, 5)
+                    : newGymHall.fallback_end_time)
+                : ''
         }
     } else {
         resetForm()

@@ -52,6 +52,10 @@ class GymHall extends Model implements HasMedia
         'access_instructions',
         'special_rules',
         'metadata',
+        'fallback_gym_hall_id',
+        'fallback_day_of_week',
+        'fallback_start_time',
+        'fallback_end_time',
     ];
 
     protected $casts = [
@@ -73,6 +77,8 @@ class GymHall extends Model implements HasMedia
         'is_active' => 'boolean',
         'requires_key' => 'boolean',
         'metadata' => 'array',
+        'fallback_start_time' => 'datetime:H:i',
+        'fallback_end_time' => 'datetime:H:i',
     ];
 
     protected static function boot()
@@ -128,6 +134,22 @@ class GymHall extends Model implements HasMedia
             'id',
             'id'
         );
+    }
+
+    /**
+     * Ausweichhalle für diese Halle.
+     */
+    public function fallbackHall(): BelongsTo
+    {
+        return $this->belongsTo(GymHall::class, 'fallback_gym_hall_id');
+    }
+
+    /**
+     * Hallen, die diese Halle als Ausweich nutzen.
+     */
+    public function primaryHalls(): HasMany
+    {
+        return $this->hasMany(GymHall::class, 'fallback_gym_hall_id');
     }
 
     // ============================
@@ -454,6 +476,75 @@ class GymHall extends Model implements HasMedia
             ->count();
 
         return round(($bookedSlots / $totalSlots) * 100, 1);
+    }
+
+    // ============================
+    // FALLBACK HALL METHODS
+    // ============================
+
+    /**
+     * Prüft ob eine vollständige Ausweich-Konfiguration vorliegt.
+     */
+    public function hasFallbackConfiguration(): bool
+    {
+        return $this->fallback_gym_hall_id !== null
+            && $this->fallback_day_of_week !== null
+            && $this->fallback_start_time !== null
+            && $this->fallback_end_time !== null;
+    }
+
+    /**
+     * Gibt die Fallback-Slot-Konfiguration als Array zurück.
+     */
+    public function getFallbackTimeSlot(): ?array
+    {
+        if (!$this->hasFallbackConfiguration()) {
+            return null;
+        }
+
+        return [
+            'gym_hall' => $this->fallbackHall,
+            'gym_hall_id' => $this->fallback_gym_hall_id,
+            'day_of_week' => $this->fallback_day_of_week,
+            'start_time' => $this->fallback_start_time instanceof \Carbon\Carbon
+                ? $this->fallback_start_time->format('H:i')
+                : $this->fallback_start_time,
+            'end_time' => $this->fallback_end_time instanceof \Carbon\Carbon
+                ? $this->fallback_end_time->format('H:i')
+                : $this->fallback_end_time,
+        ];
+    }
+
+    /**
+     * Formatierte Anzeige der Ausweichzeit (z.B. "Dienstag 19:00-21:00 in Halle B").
+     */
+    public function getFallbackTimeRangeAttribute(): ?string
+    {
+        if (!$this->hasFallbackConfiguration()) {
+            return null;
+        }
+
+        $dayNames = [
+            'monday' => 'Montag',
+            'tuesday' => 'Dienstag',
+            'wednesday' => 'Mittwoch',
+            'thursday' => 'Donnerstag',
+            'friday' => 'Freitag',
+            'saturday' => 'Samstag',
+            'sunday' => 'Sonntag',
+        ];
+
+        $dayName = $dayNames[$this->fallback_day_of_week] ?? $this->fallback_day_of_week;
+        $startTime = $this->fallback_start_time instanceof \Carbon\Carbon
+            ? $this->fallback_start_time->format('H:i')
+            : $this->fallback_start_time;
+        $endTime = $this->fallback_end_time instanceof \Carbon\Carbon
+            ? $this->fallback_end_time->format('H:i')
+            : $this->fallback_end_time;
+
+        $hallName = $this->fallbackHall?->name ?? 'Unbekannte Halle';
+
+        return "{$dayName} {$startTime}-{$endTime} in {$hallName}";
     }
 
     // ============================

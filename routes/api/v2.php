@@ -258,7 +258,10 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     // Time Grid
     Route::get('gym-halls/{gymHall}/time-grid', [\App\Http\Controllers\Api\GymHallController::class, 'getTimeGrid']);
     Route::put('gym-halls/{gymHall}/court-settings', [\App\Http\Controllers\Api\GymHallController::class, 'updateCourtSettings']);
-    
+
+    // Fallback Hall Configuration
+    Route::get('gym-halls/{gymHall}/available-fallback-halls', [\App\Http\Controllers\Api\GymHallController::class, 'availableFallbackHalls']);
+
     // Hall Time Slots Management (Custom Times) → GymTimeSlotController (REFACTOR-006)
     Route::get('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'getHallTimeSlots']);
     Route::put('gym-halls/{hallId}/time-slots', [\App\Http\Controllers\Gym\GymTimeSlotController::class, 'updateHallTimeSlots']);

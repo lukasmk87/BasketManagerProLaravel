@@ -101,7 +101,22 @@ class GymHallController extends Controller
             'requires_key' => 'boolean',
             'access_instructions' => 'nullable|string',
             'special_rules' => 'nullable|string',
+            // Fallback-Felder
+            'fallback_gym_hall_id' => 'nullable|exists:gym_halls,id|different:id',
+            'fallback_day_of_week' => 'nullable|required_with:fallback_gym_hall_id|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'fallback_start_time' => 'nullable|required_with:fallback_gym_hall_id|date_format:H:i',
+            'fallback_end_time' => 'nullable|required_with:fallback_gym_hall_id|date_format:H:i|after:fallback_start_time',
         ]);
+
+        // Prüfe auf zirkuläre Referenz bei Ausweichhalle
+        if ($request->filled('fallback_gym_hall_id')) {
+            $fallbackHall = GymHall::find($request->input('fallback_gym_hall_id'));
+            if ($fallbackHall && $fallbackHall->fallback_gym_hall_id) {
+                // Prüfe ob die Ausweichhalle uns als Ausweich hat (würde Zirkularität erzeugen)
+                // Bei store gibt es noch keine ID, also kann keine Zirkularität entstehen
+                // Diese Prüfung ist hier nur zur Sicherheit
+            }
+        }
 
         $this->authorize('create', [GymHall::class, $request->input('club_id')]);
 
@@ -134,7 +149,11 @@ class GymHallController extends Controller
             'is_active',
             'requires_key',
             'access_instructions',
-            'special_rules'
+            'special_rules',
+            'fallback_gym_hall_id',
+            'fallback_day_of_week',
+            'fallback_start_time',
+            'fallback_end_time',
         ]))->filter(function ($value, $key) {
             // Keep boolean values even if false, but filter out null/empty strings
             if ($key === 'supports_parallel_bookings' || $key === 'requires_key' || $key === 'is_active') {
@@ -300,11 +319,66 @@ class GymHallController extends Controller
             'requires_key' => 'boolean',
             'access_instructions' => 'nullable|string',
             'special_rules' => 'nullable|string',
+            // Fallback-Felder
+            'fallback_gym_hall_id' => [
+                'nullable',
+                'exists:gym_halls,id',
+                Rule::notIn([$gymHall->id]), // Kann nicht auf sich selbst verweisen
+            ],
+            'fallback_day_of_week' => 'nullable|required_with:fallback_gym_hall_id|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'fallback_start_time' => 'nullable|required_with:fallback_gym_hall_id|date_format:H:i',
+            'fallback_end_time' => 'nullable|required_with:fallback_gym_hall_id|date_format:H:i|after:fallback_start_time',
         ]);
+
+        // Prüfe auf zirkuläre Referenz bei Ausweichhalle
+        if ($request->filled('fallback_gym_hall_id')) {
+            $fallbackHall = GymHall::find($request->input('fallback_gym_hall_id'));
+            if ($fallbackHall && $fallbackHall->fallback_gym_hall_id === $gymHall->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Zirkuläre Referenz: Die gewählte Ausweichhalle hat bereits diese Halle als Ausweich konfiguriert.',
+                    'errors' => [
+                        'fallback_gym_hall_id' => ['Zirkuläre Referenz nicht erlaubt.']
+                    ]
+                ], 422);
+            }
+        }
 
         $this->authorize('update', $gymHall);
 
-        $gymHall->update($request->all());
+        $gymHall->update($request->only([
+            'name',
+            'description',
+            'hall_type',
+            'court_count',
+            'supports_parallel_bookings',
+            'min_booking_duration_minutes',
+            'booking_increment_minutes',
+            'address_street',
+            'address_city',
+            'address_zip',
+            'address_country',
+            'latitude',
+            'longitude',
+            'capacity',
+            'facilities',
+            'equipment',
+            'opening_time',
+            'closing_time',
+            'operating_hours',
+            'hourly_rate',
+            'contact_name',
+            'contact_phone',
+            'contact_email',
+            'is_active',
+            'requires_key',
+            'access_instructions',
+            'special_rules',
+            'fallback_gym_hall_id',
+            'fallback_day_of_week',
+            'fallback_start_time',
+            'fallback_end_time',
+        ]));
 
         return response()->json([
             'success' => true,
@@ -930,6 +1004,73 @@ class GymHallController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Fehler beim Laden des Zeitrasters.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available fallback halls for a gym hall.
+     * Returns all other active halls from the same club that can be used as fallback.
+     */
+    public function availableFallbackHalls(GymHall $gymHall): JsonResponse
+    {
+        try {
+            $this->authorize('view', $gymHall);
+
+            // Hole alle anderen aktiven Hallen des gleichen Clubs
+            $availableHalls = GymHall::where('club_id', $gymHall->club_id)
+                ->where('id', '!=', $gymHall->id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+                ->map(function ($hall) use ($gymHall) {
+                    // Prüfe ob diese Halle bereits uns als Ausweich hat (würde Zirkularität erzeugen)
+                    $wouldCreateCircular = $hall->fallback_gym_hall_id === $gymHall->id;
+
+                    return [
+                        'id' => $hall->id,
+                        'name' => $hall->name,
+                        'hall_number' => $hall->hall_number,
+                        'hall_type' => $hall->hall_type,
+                        'address_city' => $hall->address_city,
+                        'capacity' => $hall->capacity,
+                        'has_fallback_configured' => $hall->hasFallbackConfiguration(),
+                        'would_create_circular' => $wouldCreateCircular,
+                        'can_be_selected' => !$wouldCreateCircular,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'current_hall' => [
+                        'id' => $gymHall->id,
+                        'name' => $gymHall->name,
+                        'current_fallback_id' => $gymHall->fallback_gym_hall_id,
+                        'current_fallback_config' => $gymHall->hasFallbackConfiguration()
+                            ? $gymHall->fallback_time_range
+                            : null,
+                    ],
+                    'available_halls' => $availableHalls,
+                    'total' => $availableHalls->count(),
+                    'selectable_count' => $availableHalls->where('can_be_selected', true)->count(),
+                ]
+            ]);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keine Berechtigung für diese Halle.'
+            ], 403);
+        } catch (\Exception $e) {
+            \Log::error('Error getting available fallback halls: ' . $e->getMessage(), [
+                'gym_hall_id' => $gymHall->id ?? 'unknown',
+                'user_id' => auth()->id(),
+                'exception' => $e
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Laden der verfügbaren Ausweichhallen.'
             ], 500);
         }
     }
