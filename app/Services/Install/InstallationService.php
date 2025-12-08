@@ -3,9 +3,11 @@
 namespace App\Services\Install;
 
 use App\Models\Club;
+use App\Models\Season;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\TenantLimitsService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -89,7 +91,7 @@ class InstallationService
                     'message' => 'Database connection failed. Please verify your database credentials in the Environment step.',
                     'output' => array_merge($output, [
                         '❌ Cannot connect to database',
-                        '💡 Error: ' . $e->getMessage(),
+                        '💡 Error: '.$e->getMessage(),
                         '',
                         '📝 Please check:',
                         '  - Database host and port are correct',
@@ -110,7 +112,7 @@ class InstallationService
                     $databaseList = collect($databases)->pluck('Database')->toArray();
                     $exists = in_array($dbName, $databaseList);
 
-                    if (!$exists) {
+                    if (! $exists) {
                         return [
                             'success' => false,
                             'message' => "Database '{$dbName}' does not exist. Please create it first.",
@@ -137,7 +139,7 @@ class InstallationService
                             'message' => "Cannot access database '{$dbName}'. It may not exist or you don't have permission.",
                             'output' => array_merge($output, [
                                 "❌ Cannot access database '{$dbName}'",
-                                '💡 Error: ' . $useEx->getMessage(),
+                                '💡 Error: '.$useEx->getMessage(),
                             ]),
                         ];
                     }
@@ -168,7 +170,7 @@ class InstallationService
                 'message' => 'Migration failed: '.$e->getMessage(),
                 'output' => array_merge($output ?? [], [
                     '❌ Migration failed',
-                    '💡 Error: ' . $e->getMessage(),
+                    '💡 Error: '.$e->getMessage(),
                 ]),
             ];
         }
@@ -293,6 +295,9 @@ class InstallationService
                 ],
             ]);
 
+            // Create initial season for the club
+            $this->createInitialSeason($club);
+
             // Super Admin bleibt club-unabhängig (keine club_user Verknüpfung)
             // Super Admin kann später manuell Clubs beitreten
 
@@ -380,5 +385,24 @@ class InstallationService
         // Clear caches
         Artisan::call('config:clear');
         Artisan::call('cache:clear');
+    }
+
+    /**
+     * Create initial season for a club
+     */
+    private function createInitialSeason(Club $club): void
+    {
+        $currentYear = (int) now()->format('Y');
+        $seasonName = $currentYear.'/'.($currentYear + 1);
+
+        Season::create([
+            'club_id' => $club->id,
+            'name' => $seasonName,
+            'start_date' => Carbon::create($currentYear, 9, 1),
+            'end_date' => Carbon::create($currentYear + 1, 6, 30),
+            'status' => 'active',
+            'is_current' => true,
+            'description' => 'Automatisch erstellte Saison bei Installation',
+        ]);
     }
 }

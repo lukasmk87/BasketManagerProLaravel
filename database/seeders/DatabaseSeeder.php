@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
         // Temporarily set Carbon locale to English for database operations
         $originalLocale = Carbon::getLocale();
         Carbon::setLocale('en');
-        
+
         try {
             // Create roles and permissions first
             $this->call(RoleAndPermissionSeeder::class);
@@ -25,9 +25,12 @@ class DatabaseSeeder extends Seeder
             // Create tenants first (needed for multi-tenant setup)
             $this->call(TenantSeeder::class);
 
+            // Create default season for all clubs
+            $this->call(SeasonSeeder::class);
+
             // Create legal pages (privacy, terms, imprint, gdpr)
             $this->call(LegalPagesSeeder::class);
-            
+
             // Basic test user
             User::firstOrCreate(
                 ['email' => 'test@example.com'],
@@ -39,10 +42,10 @@ class DatabaseSeeder extends Seeder
 
             // Basketball-specific test users for manual testing
             $this->createBasketballTestUsers();
-            
+
             // Create test basketball entities
             $this->createBasketballTestData();
-            
+
         } finally {
             // Restore original Carbon locale
             Carbon::setLocale($originalLocale);
@@ -132,7 +135,7 @@ class DatabaseSeeder extends Seeder
         $trainer = \App\Models\User::where('email', 'trainer@basketmanager.test')->first();
         $player = \App\Models\User::where('email', 'player@basketmanager.test')->first();
 
-        if (!$admin || !$clubAdmin || !$trainer || !$player) {
+        if (! $admin || ! $clubAdmin || ! $trainer || ! $player) {
             return; // Skip if users don't exist
         }
 
@@ -197,7 +200,7 @@ class DatabaseSeeder extends Seeder
                 'games_started' => 0,
                 'minutes_played' => 0,
                 'points_scored' => 0,
-            ]
+            ],
         ]);
 
         // Create club memberships (sync to avoid duplicates)
@@ -213,10 +216,10 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ],
             $player->id => [
-                'role' => 'player', 
+                'role' => 'player',
                 'joined_at' => now()->toDateString(),
                 'is_active' => true,
-            ]
+            ],
         ]);
     }
 }
