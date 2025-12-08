@@ -368,9 +368,11 @@ class DashboardController extends Controller
                             'points_per_game' => $player->points_per_game ?? 0,
                         ];
                     }),
-                'upcoming_games' => Game::where(function ($q) use ($primaryTeam) {
-                    $q->where('home_team_id', $primaryTeam->id)
-                        ->orWhere('away_team_id', $primaryTeam->id);
+                // Alle Teams des Trainers für Spiel-Abfragen
+                'upcoming_games' => Game::where(function ($q) use ($allTeams) {
+                    $teamIds = $allTeams->pluck('id')->toArray();
+                    $q->whereIn('home_team_id', $teamIds)
+                        ->orWhereIn('away_team_id', $teamIds);
                 })
                     ->with(['homeTeam:id,name', 'awayTeam:id,name'])
                     ->where('scheduled_at', '>', now())
@@ -378,9 +380,10 @@ class DashboardController extends Controller
                     ->orderBy('scheduled_at')
                     ->limit(5)
                     ->get(),
-                'recent_games' => Game::where(function ($q) use ($primaryTeam) {
-                    $q->where('home_team_id', $primaryTeam->id)
-                        ->orWhere('away_team_id', $primaryTeam->id);
+                'recent_games' => Game::where(function ($q) use ($allTeams) {
+                    $teamIds = $allTeams->pluck('id')->toArray();
+                    $q->whereIn('home_team_id', $teamIds)
+                        ->orWhereIn('away_team_id', $teamIds);
                 })
                     ->with(['homeTeam:id,name', 'awayTeam:id,name'])
                     ->where('status', 'finished')
