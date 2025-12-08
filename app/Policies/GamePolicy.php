@@ -6,6 +6,7 @@ use App\Models\Game;
 use App\Models\Team;
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesUsers;
+use Illuminate\Support\Facades\Log;
 
 class GamePolicy
 {
@@ -197,32 +198,71 @@ class GamePolicy
      */
     public function score(User $user, Game $game): bool
     {
+        // DEBUG: Log all relevant data
+        $coachTeamIds = $this->getAllCoachedTeamIds($user);
+        $roles = $user->roles->pluck('name')->toArray();
+
+        Log::info('GamePolicy::score() DEBUG', [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'user_roles' => $roles,
+            'has_score_games_permission' => $user->can('score games'),
+            'is_coach' => $user->isCoach(),
+            'coached_team_ids' => $coachTeamIds,
+            'game_id' => $game->id,
+            'game_status' => $game->status,
+            'home_team_id' => $game->home_team_id,
+            'away_team_id' => $game->away_team_id,
+            'intersection' => array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]),
+        ]);
+
         // Must have scoring permission
         if (! $user->can('score games')) {
+            Log::warning('GamePolicy::score() DENIED - no score games permission', ['user_id' => $user->id]);
+
             return false;
         }
 
         // Game must be live or ready to start
         if (! in_array($game->status, ['scheduled', 'live', 'halftime'])) {
+            Log::warning('GamePolicy::score() DENIED - wrong game status', [
+                'user_id' => $user->id,
+                'game_id' => $game->id,
+                'status' => $game->status,
+            ]);
+
             return false;
         }
 
         // Coaches can score games of teams they coach (head + assistant)
         if ($user->isCoach()) {
-            $coachTeamIds = $this->getAllCoachedTeamIds($user);
+            $result = ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
+            Log::info('GamePolicy::score() Coach check', [
+                'user_id' => $user->id,
+                'result' => $result,
+                'coached_teams' => $coachTeamIds,
+                'game_teams' => [$game->home_team_id, $game->away_team_id],
+            ]);
 
-            return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
+            return $result;
         }
 
         // Scorers can score any game
         if ($user->hasRole('scorer')) {
+            Log::info('GamePolicy::score() ALLOWED - is scorer', ['user_id' => $user->id]);
+
             return true;
         }
 
         // Referees can score games they officiate
         if ($user->hasRole('referee')) {
-            return $game->referees()->where('user_id', $user->id)->exists();
+            $isAssigned = $game->referees()->where('user_id', $user->id)->exists();
+            Log::info('GamePolicy::score() Referee check', ['user_id' => $user->id, 'is_assigned' => $isAssigned]);
+
+            return $isAssigned;
         }
+
+        Log::info('GamePolicy::score() ALLOWED - fallback (admin/super_admin)', ['user_id' => $user->id]);
 
         return true; // For admins and super_admins
     }
