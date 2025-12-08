@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Team;
 use App\Models\Club;
 use App\Models\Player;
 use App\Models\Season;
-use App\Models\User;
+use App\Models\Team;
 use App\Models\TeamCoach;
+use App\Models\User;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +26,7 @@ class TeamController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        
+
         // Get teams based on user permissions
         $teams = Team::query()
             ->with(['club', 'headCoach'])
@@ -40,7 +40,7 @@ class TeamController extends Controller
                     $q->whereHas('club.users', function ($subQ) use ($user) {
                         $subQ->where('user_id', $user->id);
                     })->orWhere('head_coach_id', $user->id)
-                    ->orWhereJsonContains('assistant_coaches', $user->id);
+                        ->orWhereJsonContains('assistant_coaches', $user->id);
                 });
             })
             ->orderBy('name')
@@ -60,7 +60,7 @@ class TeamController extends Controller
     public function create(): Response
     {
         // Check if user is authenticated
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
 
@@ -73,16 +73,16 @@ class TeamController extends Controller
                 'user_email' => auth()->user()?->email,
                 'user_roles' => auth()->user()?->getRoleNames()->toArray() ?? [],
                 'user_permissions' => auth()->user()?->getAllPermissions()->pluck('name')->toArray() ?? [],
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return redirect()->route('dashboard')->withErrors([
-                'authorization' => 'Sie haben keine Berechtigung, Teams zu erstellen. Bitte wenden Sie sich an den Administrator.'
+                'authorization' => 'Sie haben keine Berechtigung, Teams zu erstellen. Bitte wenden Sie sich an den Administrator.',
             ]);
         }
 
         $user = auth()->user();
-        
+
         $clubs = Club::query()
             ->select(['id', 'name'])
             ->where('is_active', true)
@@ -123,7 +123,7 @@ class TeamController extends Controller
             'clubs' => $clubsArray,
             'user_id' => auth()->id(),
             'user_roles' => auth()->user()->getRoleNames()->toArray(),
-            'user_permissions' => auth()->user()->getAllPermissions()->pluck('name')->toArray()
+            'user_permissions' => auth()->user()->getAllPermissions()->pluck('name')->toArray(),
         ]);
 
         $response_data = [
@@ -134,7 +134,7 @@ class TeamController extends Controller
         // Debug logging - Response data that will be sent
         \Log::info('Teams Create - Response data', [
             'response_data' => $response_data,
-            'clubs_in_response' => $response_data['clubs']
+            'clubs_in_response' => $response_data['clubs'],
         ]);
 
         return Inertia::render('Teams/Create', $response_data);
@@ -157,7 +157,7 @@ class TeamController extends Controller
 
         try {
             $this->authorize('create', Team::class);
-            
+
             \Log::info('Teams Store - Authorization passed', [
                 'user_id' => auth()->id(),
             ]);
@@ -202,7 +202,7 @@ class TeamController extends Controller
 
         try {
             $team = $this->teamService->createTeam($validated);
-            
+
             \Log::info('Teams Store - Team created successfully', [
                 'team_id' => $team->id,
                 'team_name' => $team->name,
@@ -211,17 +211,17 @@ class TeamController extends Controller
 
             return redirect()->route('web.teams.show', $team)
                 ->with('success', 'Team wurde erfolgreich erstellt.');
-                
+
         } catch (\Exception $e) {
             \Log::error('Teams Store - Team creation failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'validated_data' => $validated,
             ]);
-            
+
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['error' => 'Team konnte nicht erstellt werden: ' . $e->getMessage()]);
+                ->withErrors(['error' => 'Team konnte nicht erstellt werden: '.$e->getMessage()]);
         }
     }
 
@@ -240,7 +240,7 @@ class TeamController extends Controller
             'user_agent' => request()->userAgent(),
             'method' => request()->method(),
         ]);
-        
+
         $this->authorize('view', $team);
 
         $team->load([
@@ -248,7 +248,7 @@ class TeamController extends Controller
             'headCoach',
             'players.user',
             'homeGames.awayTeam',
-            'awayGames.homeTeam'
+            'awayGames.homeTeam',
         ]);
 
         $teamStats = $this->teamService->getTeamStatistics($team);
@@ -257,9 +257,10 @@ class TeamController extends Controller
         $teamData = $team->toArray();
         $teamData['club'] = $team->club?->toArray();
         $teamData['head_coach'] = $team->headCoach?->toArray();
-        $teamData['players'] = $team->players->map(function($player) {
+        $teamData['players'] = $team->players->map(function ($player) {
             $playerData = $player->toArray();
             $playerData['user'] = $player->user?->toArray();
+
             return $playerData;
         })->toArray();
 
@@ -267,7 +268,7 @@ class TeamController extends Controller
             'team_id' => $team->id,
             'inertia_page' => 'Teams/Show',
         ]);
-        
+
         return Inertia::render('Teams/Show', [
             'team' => $teamData,
             'statistics' => $teamStats,
@@ -288,11 +289,11 @@ class TeamController extends Controller
         // Load players and NEW coaches relationships from team_coaches table
         $team->load([
             'players.user',
-            'teamCoaches.user.roles' // Load coaches with their system roles
+            'teamCoaches.user.roles', // Load coaches with their system roles
         ]);
 
         $user = auth()->user();
-        
+
         $clubs = Club::query()
             ->select(['id', 'name'])
             ->where('is_active', true)
@@ -310,17 +311,18 @@ class TeamController extends Controller
 
         // Format team data to match the show() method structure
         $teamData = $team->toArray();
-        $teamData['players'] = $team->players->map(function($player) {
+        $teamData['players'] = $team->players->map(function ($player) {
             $playerData = $player->toArray();
             $playerData['user'] = $player->user?->toArray();
+
             return $playerData;
         })->toArray();
 
         // Add coaches data from NEW team_coaches table with system roles
         // Filter out coaches with deleted users to prevent null pointer errors
         $teamData['coaches'] = $team->teamCoaches
-            ->filter(fn($teamCoach) => $teamCoach->user !== null)
-            ->map(function($teamCoach) {
+            ->filter(fn ($teamCoach) => $teamCoach->user !== null)
+            ->map(function ($teamCoach) {
                 return [
                     'id' => $teamCoach->user->id,
                     'name' => $teamCoach->user->name,
@@ -442,9 +444,9 @@ class TeamController extends Controller
                         'status' => $player->pivot->status,
                         'joined_at' => $player->pivot->joined_at,
                         'notes' => $player->pivot->notes,
-                    ]
+                    ],
                 ];
-            })
+            }),
         ]);
     }
 
@@ -491,7 +493,7 @@ class TeamController extends Controller
 
                 if ($existingJersey) {
                     return redirect()->back()->withErrors([
-                        'jersey_number' => "Trikotnummer {$validated['jersey_number']} ist bereits vergeben."
+                        'jersey_number' => "Trikotnummer {$validated['jersey_number']} ist bereits vergeben.",
                     ]);
                 }
             }
@@ -510,7 +512,7 @@ class TeamController extends Controller
         $this->authorize('update', $team);
 
         // Check if player is actually in this team
-        if (!$team->players()->where('player_id', $player->id)->exists()) {
+        if (! $team->players()->where('player_id', $player->id)->exists()) {
             return response()->json(['error' => 'Spieler ist nicht in diesem Team.'], 404);
         }
 
@@ -536,7 +538,7 @@ class TeamController extends Controller
 
             if ($existingJersey) {
                 return response()->json([
-                    'error' => "Trikotnummer {$validated['jersey_number']} ist bereits vergeben."
+                    'error' => "Trikotnummer {$validated['jersey_number']} ist bereits vergeben.",
                 ], 422);
             }
         }
@@ -555,7 +557,7 @@ class TeamController extends Controller
     {
         $this->authorize('update', $team);
 
-        if (!$team->players()->where('player_id', $player->id)->exists()) {
+        if (! $team->players()->where('player_id', $player->id)->exists()) {
             return response()->json(['error' => 'Spieler ist nicht in diesem Team.'], 404);
         }
 
@@ -574,12 +576,26 @@ class TeamController extends Controller
      */
     public function getAvailableCoaches(Request $request, Club $club)
     {
-        // Authorization: User must be able to assign coaches
-        $this->authorize('assignCoaches', Team::class);
+        // Authorization: User must be able to view available coaches for this club
+        $user = $request->user();
+
+        // Super admins und tenant admins können immer zugreifen
+        if (! $user->hasAnyRole(['super_admin', 'tenant_admin'])) {
+            // Club admins müssen zum Club gehören
+            if ($user->hasRole('club_admin')) {
+                $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+                if (! in_array($club->id, $userClubIds)) {
+                    abort(403);
+                }
+            } elseif (! $user->can('assign team coaches')) {
+                // Andere Benutzer brauchen die spezifische Berechtigung
+                abort(403);
+            }
+        }
 
         // Get users with 'trainer' role in this club WITH all their roles
         $coaches = $club->users()
-            ->whereHas('roles', function($q) {
+            ->whereHas('roles', function ($q) {
                 $q->where('name', 'trainer');
             })
             ->where('is_active', true)
@@ -587,7 +603,7 @@ class TeamController extends Controller
             ->select('id', 'name', 'email')
             ->orderBy('name')
             ->get()
-            ->map(function($user) {
+            ->map(function ($user) {
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -624,7 +640,7 @@ class TeamController extends Controller
             'guest' => 'Gast',
         ];
 
-        return $roles->map(fn($role) => $labels[$role->name] ?? $role->name)->toArray();
+        return $roles->map(fn ($role) => $labels[$role->name] ?? $role->name)->toArray();
     }
 
     /**
@@ -647,20 +663,20 @@ class TeamController extends Controller
         $user = User::findOrFail($validated['user_id']);
 
         // Validate user has trainer role
-        if (!$user->hasRole('trainer')) {
+        if (! $user->hasRole('trainer')) {
             return back()->withErrors([
-                'user_id' => 'Der ausgewählte Benutzer hat keine Trainer-Rolle.'
+                'user_id' => 'Der ausgewählte Benutzer hat keine Trainer-Rolle.',
             ]);
         }
 
         // Validate user belongs to same club
-        if (!$user->clubs()->where('club_id', $team->club_id)->exists()) {
+        if (! $user->clubs()->where('club_id', $team->club_id)->exists()) {
             return back()->withErrors([
-                'user_id' => 'Der Trainer gehört nicht zum gleichen Club.'
+                'user_id' => 'Der Trainer gehört nicht zum gleichen Club.',
             ]);
         }
 
-        DB::transaction(function() use ($team, $user, $validated) {
+        DB::transaction(function () use ($team, $user, $validated) {
             // Update legacy field for backward compatibility
             $team->head_coach_id = $user->id;
             $team->save();
@@ -713,16 +729,16 @@ class TeamController extends Controller
 
         if ($validated['action'] === 'add') {
             // Validate user has trainer role
-            if (!$user->hasRole('trainer')) {
+            if (! $user->hasRole('trainer')) {
                 return back()->withErrors([
-                    'user_id' => 'Der ausgewählte Benutzer hat keine Trainer-Rolle.'
+                    'user_id' => 'Der ausgewählte Benutzer hat keine Trainer-Rolle.',
                 ]);
             }
 
             // Validate user belongs to same club
-            if (!$user->clubs()->where('club_id', $team->club_id)->exists()) {
+            if (! $user->clubs()->where('club_id', $team->club_id)->exists()) {
                 return back()->withErrors([
-                    'user_id' => 'Der Trainer gehört nicht zum gleichen Club.'
+                    'user_id' => 'Der Trainer gehört nicht zum gleichen Club.',
                 ]);
             }
 
@@ -735,14 +751,14 @@ class TeamController extends Controller
 
             if ($existingCoach) {
                 return back()->withErrors([
-                    'user_id' => 'Dieser Trainer ist bereits als Co-Trainer diesem Team zugeordnet.'
+                    'user_id' => 'Dieser Trainer ist bereits als Co-Trainer diesem Team zugeordnet.',
                 ]);
             }
 
-            DB::transaction(function() use ($team, $user, $validated) {
+            DB::transaction(function () use ($team, $user, $validated) {
                 // Update legacy field (assistant_coaches array)
                 $assistants = $team->assistant_coaches ?? [];
-                if (!in_array($user->id, $assistants)) {
+                if (! in_array($user->id, $assistants)) {
                     $assistants[] = $user->id;
                     $team->assistant_coaches = $assistants;
                     $team->save();
@@ -765,7 +781,7 @@ class TeamController extends Controller
 
         } else {
             // Remove assistant coach
-            DB::transaction(function() use ($team, $user) {
+            DB::transaction(function () use ($team, $user) {
                 // Update legacy field
                 $assistants = $team->assistant_coaches ?? [];
                 if (($key = array_search($user->id, $assistants)) !== false) {
@@ -800,9 +816,9 @@ class TeamController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$teamCoach) {
+        if (! $teamCoach) {
             return back()->withErrors([
-                'error' => 'Dieser Benutzer ist kein aktiver Trainer dieses Teams.'
+                'error' => 'Dieser Benutzer ist kein aktiver Trainer dieses Teams.',
             ]);
         }
 

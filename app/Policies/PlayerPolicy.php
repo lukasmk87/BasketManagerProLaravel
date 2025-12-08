@@ -5,11 +5,23 @@ namespace App\Policies;
 use App\Models\Player;
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesUsers;
-use Illuminate\Auth\Access\Response;
 
 class PlayerPolicy
 {
     use AuthorizesUsers;
+
+    /**
+     * Check if any of the player's teams are in the given team IDs.
+     */
+    private function playerBelongsToTeams(Player $player, array $teamIds): bool
+    {
+        if (empty($teamIds)) {
+            return false;
+        }
+
+        return $player->teams()->whereIn('basketball_teams.id', $teamIds)->exists();
+    }
+
     /**
      * Determine whether the user can view any models.
      */
@@ -34,14 +46,18 @@ class PlayerPolicy
         }
 
         // Players can view teammates
-        if ($user->isPlayer() && $user->playerProfile?->team_id === $player->team_id) {
-            return true;
+        if ($user->isPlayer() && $user->playerProfile) {
+            $userTeamIds = $user->playerProfile->teams()->pluck('basketball_teams.id')->toArray();
+            if ($this->playerBelongsToTeams($player, $userTeamIds)) {
+                return true;
+            }
         }
 
         // Coaches can view players in their teams
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return in_array($player->team_id, $coachTeamIds);
+            $coachTeamIds = $user->allCoachedTeams()->pluck('id')->toArray();
+
+            return $this->playerBelongsToTeams($player, $coachTeamIds);
         }
 
         // Parents can view their children
@@ -52,6 +68,7 @@ class PlayerPolicy
                 ->pluck('playerProfile.id')
                 ->filter()
                 ->toArray();
+
             return in_array($player->id, $childPlayerIds);
         }
 
@@ -89,13 +106,15 @@ class PlayerPolicy
         // Club admins can edit players in their clubs
         if ($user->hasRole('club_admin') && $player->team) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($player->team->club_id, $userClubIds);
         }
 
         // Coaches can edit players in their teams
         if ($user->hasRole('trainer')) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return in_array($player->team_id, $coachTeamIds);
+            $coachTeamIds = $user->allCoachedTeams()->pluck('id')->toArray();
+
+            return $this->playerBelongsToTeams($player, $coachTeamIds);
         }
 
         return false;
@@ -112,13 +131,14 @@ class PlayerPolicy
         }
 
         // Only users with delete permission can delete players
-        if (!$user->can('delete players')) {
+        if (! $user->can('delete players')) {
             return false;
         }
 
         // Club admins can delete players in their clubs
         if ($user->hasRole('club_admin') && $player->team) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($player->team->club_id, $userClubIds);
         }
 
@@ -145,14 +165,15 @@ class PlayerPolicy
     public function editStatistics(User $user, Player $player): bool
     {
         // Check general permission
-        if (!$user->can('edit player statistics')) {
+        if (! $user->can('edit player statistics')) {
             return false;
         }
 
         // Coaches can edit statistics for their players
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return in_array($player->team_id, $coachTeamIds);
+            $coachTeamIds = $user->allCoachedTeams()->pluck('id')->toArray();
+
+            return $this->playerBelongsToTeams($player, $coachTeamIds);
         }
 
         // Scorers can edit statistics during games
@@ -169,13 +190,14 @@ class PlayerPolicy
     public function manageContracts(User $user, Player $player): bool
     {
         // Check general permission
-        if (!$user->can('manage player contracts')) {
+        if (! $user->can('manage player contracts')) {
             return false;
         }
 
         // Club admins can manage contracts for players in their clubs
         if ($user->hasRole('club_admin') && $player->team) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($player->team->club_id, $userClubIds);
         }
 
@@ -193,14 +215,15 @@ class PlayerPolicy
         }
 
         // Must have permission to view player medical info
-        if (!$user->can('view player medical info')) {
+        if (! $user->can('view player medical info')) {
             return false;
         }
 
         // Coaches can view medical info for their players
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return in_array($player->team_id, $coachTeamIds);
+            $coachTeamIds = $user->allCoachedTeams()->pluck('id')->toArray();
+
+            return $this->playerBelongsToTeams($player, $coachTeamIds);
         }
 
         // Parents can view their child's medical info
@@ -211,6 +234,7 @@ class PlayerPolicy
                 ->pluck('playerProfile.id')
                 ->filter()
                 ->toArray();
+
             return in_array($player->id, $childPlayerIds);
         }
 
@@ -228,14 +252,15 @@ class PlayerPolicy
         }
 
         // Must have permission to edit player medical info
-        if (!$user->can('edit player medical info')) {
+        if (! $user->can('edit player medical info')) {
             return false;
         }
 
         // Coaches can edit medical info for their players
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return in_array($player->team_id, $coachTeamIds);
+            $coachTeamIds = $user->allCoachedTeams()->pluck('id')->toArray();
+
+            return $this->playerBelongsToTeams($player, $coachTeamIds);
         }
 
         // Parents can edit their child's medical info
@@ -246,6 +271,7 @@ class PlayerPolicy
                 ->pluck('playerProfile.id')
                 ->filter()
                 ->toArray();
+
             return in_array($player->id, $childPlayerIds);
         }
 
@@ -263,13 +289,14 @@ class PlayerPolicy
         }
 
         // Must have edit permission
-        if (!$user->can('edit players')) {
+        if (! $user->can('edit players')) {
             return false;
         }
 
         // Club admins can transfer players within or out of their clubs
         if ($user->hasRole('club_admin') && $player->team) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($player->team->club_id, $userClubIds);
         }
 
@@ -282,13 +309,15 @@ class PlayerPolicy
     public function assignJerseyNumber(User $user, Player $player): bool
     {
         // Must be able to edit the player
-        if (!$this->update($user, $player)) {
+        if (! $this->update($user, $player)) {
             return false;
         }
 
         // Team managers can assign jersey numbers
         if ($user->hasRole('team_manager')) {
-            return $user->managedTeams()->where('id', $player->team_id)->exists();
+            $managedTeamIds = $user->managedTeams()->pluck('id')->toArray();
+
+            return $this->playerBelongsToTeams($player, $managedTeamIds);
         }
 
         return true;
@@ -305,13 +334,14 @@ class PlayerPolicy
         }
 
         // Must have edit permission
-        if (!$user->can('edit players')) {
+        if (! $user->can('edit players')) {
             return false;
         }
 
         // Club admins can change status for players in their clubs
         if ($user->hasRole('club_admin') && $player->team) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($player->team->club_id, $userClubIds);
         }
 
@@ -329,7 +359,7 @@ class PlayerPolicy
         }
 
         // Must have export permission
-        if (!$user->can('export statistics')) {
+        if (! $user->can('export statistics')) {
             return false;
         }
 
@@ -348,7 +378,7 @@ class PlayerPolicy
         }
 
         // Must have activity log permission
-        if (!$user->can('view activity logs')) {
+        if (! $user->can('view activity logs')) {
             return false;
         }
 
@@ -383,7 +413,7 @@ class PlayerPolicy
         }
 
         // Must have media management permission
-        if (!$user->can('manage media library')) {
+        if (! $user->can('manage media library')) {
             return false;
         }
 
@@ -402,14 +432,15 @@ class PlayerPolicy
         }
 
         // Must have emergency contact permission
-        if (!$user->can('view emergency contacts')) {
+        if (! $user->can('view emergency contacts')) {
             return false;
         }
 
         // Coaches can view emergency contacts for their players
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
-            return in_array($player->team_id, $coachTeamIds);
+            $coachTeamIds = $user->allCoachedTeams()->pluck('id')->toArray();
+
+            return $this->playerBelongsToTeams($player, $coachTeamIds);
         }
 
         // Parents can view their child's emergency contacts
@@ -420,6 +451,7 @@ class PlayerPolicy
                 ->pluck('playerProfile.id')
                 ->filter()
                 ->toArray();
+
             return in_array($player->id, $childPlayerIds);
         }
 
@@ -437,7 +469,7 @@ class PlayerPolicy
         }
 
         // Must have emergency contact edit permission
-        if (!$user->can('edit emergency contacts')) {
+        if (! $user->can('edit emergency contacts')) {
             return false;
         }
 
@@ -449,6 +481,7 @@ class PlayerPolicy
                 ->pluck('playerProfile.id')
                 ->filter()
                 ->toArray();
+
             return in_array($player->id, $childPlayerIds);
         }
 
@@ -461,7 +494,7 @@ class PlayerPolicy
     public function viewPending(User $user): bool
     {
         // Check permission
-        if (!$user->can('assign pending players')) {
+        if (! $user->can('assign pending players')) {
             return false;
         }
 
@@ -475,12 +508,12 @@ class PlayerPolicy
     public function assignToTeam(User $user, Player $player): bool
     {
         // Check permission
-        if (!$user->can('assign pending players')) {
+        if (! $user->can('assign pending players')) {
             return false;
         }
 
         // Player must be pending assignment
-        if (!$player->pending_team_assignment) {
+        if (! $player->pending_team_assignment) {
             return false;
         }
 
@@ -494,11 +527,12 @@ class PlayerPolicy
             // Get the club ID from the player's registration invitation
             $playerClubId = $player->registeredViaInvitation?->club_id;
 
-            if (!$playerClubId) {
+            if (! $playerClubId) {
                 return false;
             }
 
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+
             return in_array($playerClubId, $userClubIds);
         }
 
