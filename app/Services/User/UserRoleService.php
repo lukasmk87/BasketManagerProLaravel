@@ -28,7 +28,7 @@ class UserRoleService
      */
     public function isCoach(User $user): bool
     {
-        return $user->hasAnyRole(['trainer', 'club_admin', 'tenant_admin']);
+        return $user->hasAnyRole(['trainer', 'assistant_coach', 'club_admin', 'tenant_admin']);
     }
 
     /**
@@ -142,8 +142,7 @@ class UserRoleService
      * - Tenant Admin: Alle Clubs in eigenen Tenants
      * - Club Admin: Clubs mit pivot role 'admin' oder 'owner'
      *
-     * @param bool $asQuery Wenn true, wird Query Builder zurückgegeben
-     * @return Builder|Collection
+     * @param  bool  $asQuery  Wenn true, wird Query Builder zurückgegeben
      */
     public function getAdministeredClubs(User $user, bool $asQuery = true): Builder|Collection
     {
@@ -152,6 +151,7 @@ class UserRoleService
             if ($asQuery) {
                 return Club::query();
             }
+
             return Club::all();
         }
 
@@ -162,6 +162,7 @@ class UserRoleService
             if ($asQuery) {
                 return $query;
             }
+
             return $query->get();
         }
 
@@ -190,6 +191,7 @@ class UserRoleService
         // Tenant Admin hat Zugriff auf alle Clubs in ihren Tenants
         if ($user->hasRole('tenant_admin')) {
             $tenantIds = $user->getAdministeredTenantIds();
+
             return Club::whereIn('tenant_id', $tenantIds)->pluck('id')->toArray();
         }
 
@@ -203,8 +205,7 @@ class UserRoleService
     /**
      * Liefert die Tenants, die der User administriert.
      *
-     * @param bool $asQuery Wenn true, wird Query Builder zurückgegeben
-     * @return Builder|Collection
+     * @param  bool  $asQuery  Wenn true, wird Query Builder zurückgegeben
      */
     public function getAdministeredTenants(User $user, bool $asQuery = true): Builder|Collection
     {
@@ -213,6 +214,7 @@ class UserRoleService
             if ($asQuery) {
                 return Tenant::query();
             }
+
             return Tenant::all();
         }
 
@@ -222,6 +224,7 @@ class UserRoleService
             if ($asQuery) {
                 return $query;
             }
+
             return $query->get();
         }
 
@@ -229,6 +232,7 @@ class UserRoleService
         if ($asQuery) {
             return Tenant::whereRaw('1 = 0'); // Leere Query
         }
+
         return collect();
     }
 
@@ -245,6 +249,7 @@ class UserRoleService
         // Tenant Admin hat Zugriff auf alle Teams in ihren Tenants
         if ($user->hasRole('tenant_admin')) {
             $tenantIds = $user->getAdministeredTenantIds();
+
             return in_array($team->tenant_id, $tenantIds);
         }
 
@@ -313,6 +318,7 @@ class UserRoleService
         // Tenant Admin hat Zugriff auf alle Teams in eigenen Tenants
         if ($user->hasRole('tenant_admin')) {
             $tenantIds = $user->getAdministeredTenantIds();
+
             return Team::whereIn('tenant_id', $tenantIds)->get();
         }
 
@@ -353,6 +359,7 @@ class UserRoleService
         // Tenant Admin hat Zugriff auf alle Clubs in eigenen Tenants
         if ($user->hasRole('tenant_admin')) {
             $tenantIds = $user->getAdministeredTenantIds();
+
             return Club::whereIn('tenant_id', $tenantIds)->get();
         }
 
@@ -373,6 +380,7 @@ class UserRoleService
         // Tenant Admin hat Zugriff auf alle Clubs in eigenen Tenants
         if ($user->hasRole('tenant_admin')) {
             $tenantIds = $user->getAdministeredTenantIds();
+
             return in_array($club->tenant_id, $tenantIds);
         }
 
@@ -390,12 +398,13 @@ class UserRoleService
             'tenant_admin' => 9,
             'club_admin' => 8,
             'trainer' => 7,
-            'team_manager' => 6,
-            'scorer' => 5,
-            'referee' => 4,
-            'player' => 3,
-            'parent' => 2,
-            'guest' => 1,
+            'assistant_coach' => 6,
+            'team_manager' => 5,
+            'scorer' => 4,
+            'referee' => 3,
+            'player' => 2,
+            'parent' => 1,
+            'guest' => 0,
         ];
 
         $userRoles = $user->roles->pluck('name')->toArray();
@@ -419,12 +428,13 @@ class UserRoleService
     public function hasRoleOrHigher(User $user, string $minimumRole): bool
     {
         $roleHierarchy = [
-            'guest' => 1,
-            'parent' => 2,
-            'player' => 3,
-            'referee' => 4,
-            'scorer' => 5,
-            'team_manager' => 6,
+            'guest' => 0,
+            'parent' => 1,
+            'player' => 2,
+            'referee' => 3,
+            'scorer' => 4,
+            'team_manager' => 5,
+            'assistant_coach' => 6,
             'trainer' => 7,
             'club_admin' => 8,
             'tenant_admin' => 9,
@@ -449,11 +459,11 @@ class UserRoleService
     }
 
     /**
-     * Prüft ob der User Staff-Mitglied ist (Admin, Club Admin, Trainer, Team Manager).
+     * Prüft ob der User Staff-Mitglied ist (Admin, Club Admin, Trainer, Assistant Coach, Team Manager).
      */
     public function isStaff(User $user): bool
     {
-        return $user->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin', 'trainer', 'team_manager']);
+        return $user->hasAnyRole(['super_admin', 'tenant_admin', 'club_admin', 'trainer', 'assistant_coach', 'team_manager']);
     }
 
     /**

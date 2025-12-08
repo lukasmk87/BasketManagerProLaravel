@@ -509,26 +509,26 @@ const homeTeamName = computed(() => {
     if (props.game.home_team_name) {
         return props.game.home_team_name
     }
-    return props.game.homeTeam?.name || 'Unbekanntes Team'
+    return props.game.home_team?.name || 'Unbekanntes Team'
 })
 
 const awayTeamName = computed(() => {
     if (props.game.away_team_name) {
         return props.game.away_team_name
     }
-    return props.game.awayTeam?.name || 'Unbekanntes Team'
+    return props.game.away_team?.name || 'Unbekanntes Team'
 })
 
 const homeClubName = computed(() => {
-    if (props.game.homeTeam?.club?.name) {
-        return props.game.homeTeam.club.name
+    if (props.game.home_team?.club?.name) {
+        return props.game.home_team.club.name
     }
     return ''
 })
 
 const awayClubName = computed(() => {
-    if (props.game.awayTeam?.club?.name) {
-        return props.game.awayTeam.club.name
+    if (props.game.away_team?.club?.name) {
+        return props.game.away_team.club.name
     }
     return ''
 })
