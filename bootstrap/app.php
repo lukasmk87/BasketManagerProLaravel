@@ -158,14 +158,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // Handle authorization exceptions
         $exceptions->render(function (\Illuminate\Auth\Access\AuthorizationException $e, $request) {
-            // For Inertia requests, return a proper 403 response instead of redirect
-            if ($request->header('X-Inertia')) {
-                return response()->json([
-                    'message' => $e->getMessage() ?: 'Sie haben keine Berechtigung für diese Aktion.',
-                    'errors' => [],
-                ], 403);
-            }
-            
             // For API requests, return JSON response
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
@@ -174,22 +166,14 @@ return Application::configure(basePath: dirname(__DIR__))
                     'errors' => [],
                 ], 403);
             }
-            
-            // For regular web requests, return the default Laravel behavior
-            return response()->view('errors.403', ['exception' => $e], 403);
+
+            // For Inertia and regular web requests: use Laravel/Inertia default error handling
+            return null;
         });
-        
+
         // Handle HTTP exceptions (like abort(403))
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) {
             if ($e->getStatusCode() === 403) {
-                // For Inertia requests, return a proper 403 response
-                if ($request->header('X-Inertia')) {
-                    return response()->json([
-                        'message' => $e->getMessage() ?: 'Sie haben keine Berechtigung für diese Aktion.',
-                        'errors' => [],
-                    ], 403);
-                }
-                
                 // For API requests, return JSON response
                 if ($request->expectsJson() || $request->is('api/*')) {
                     return response()->json([
@@ -198,9 +182,9 @@ return Application::configure(basePath: dirname(__DIR__))
                         'errors' => [],
                     ], 403);
                 }
-                
-                // For regular web requests
-                return response()->view('errors.403', ['exception' => $e], 403);
+
+                // For Inertia and regular web requests: use Laravel/Inertia default error handling
+                return null;
             }
         });
 
