@@ -7,8 +7,10 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import { usePricing } from '@/Composables/usePricing';
+import { useSubscriptionFeatures } from '@/Composables/useSubscriptionFeatures';
 
 const { formatPrice: formatPriceWithSettings, getPriceLabel, getSmallBusinessNotice, pricingSettings } = usePricing();
+const { getDisplayFeatures, getFeatureLabel, getLimitLabel, getLimitName } = useSubscriptionFeatures();
 
 const props = defineProps({
     club: Object,
@@ -125,27 +127,16 @@ const getLimitColor = (percentage) => {
                             </div>
 
                             <!-- Features -->
-                            <div v-if="current_plan.features && current_plan.features.length > 0" class="mt-6">
+                            <div v-if="getDisplayFeatures(current_plan).length > 0" class="mt-6">
                                 <div class="text-sm font-medium text-gray-700 mb-3">Features:</div>
                                 <div class="flex flex-wrap gap-2">
                                     <span
-                                        v-for="feature in current_plan.features"
-                                        :key="feature"
+                                        v-for="(feature, index) in getDisplayFeatures(current_plan)"
+                                        :key="index"
                                         class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                                     >
                                         {{ feature }}
                                     </span>
-                                </div>
-                            </div>
-
-                            <!-- Limits -->
-                            <div v-if="current_plan.limits && Object.keys(current_plan.limits).length > 0" class="mt-6">
-                                <div class="text-sm font-medium text-gray-700 mb-3">Limits:</div>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div v-for="(value, key) in current_plan.limits" :key="key" class="text-sm">
-                                        <span class="font-medium text-gray-900">{{ key }}:</span>
-                                        <span class="ml-1 text-gray-600">{{ value === -1 ? 'Unlimited' : value }}</span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -169,9 +160,9 @@ const getLimitColor = (percentage) => {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div v-for="(limit, key) in subscription_limits" :key="key" class="space-y-2">
                                 <div class="flex justify-between text-sm">
-                                    <span class="font-medium text-gray-900">{{ key }}</span>
+                                    <span class="font-medium text-gray-900">{{ getLimitName(key) }}</span>
                                     <span class="text-gray-600">
-                                        {{ limit.current }} / {{ limit.unlimited ? 'Unlimited' : limit.limit }}
+                                        {{ limit.current }} / {{ limit.unlimited ? 'Unbegrenzt' : limit.limit }}
                                     </span>
                                 </div>
                                 <div class="w-full bg-gray-200 rounded-full h-2">
@@ -224,27 +215,16 @@ const getLimitColor = (percentage) => {
                                         <p v-if="plan.description" class="text-sm text-gray-600 mb-3">{{ plan.description }}</p>
 
                                         <!-- Features -->
-                                        <div v-if="plan.features && plan.features.length > 0" class="mb-3">
+                                        <div v-if="getDisplayFeatures(plan).length > 0" class="mb-3">
                                             <div class="text-xs font-medium text-gray-700 mb-2">Features:</div>
                                             <div class="flex flex-wrap gap-2">
                                                 <span
-                                                    v-for="feature in plan.features"
-                                                    :key="feature"
+                                                    v-for="(feature, index) in getDisplayFeatures(plan)"
+                                                    :key="index"
                                                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                                                 >
                                                     {{ feature }}
                                                 </span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Limits -->
-                                        <div v-if="plan.limits && Object.keys(plan.limits).length > 0">
-                                            <div class="text-xs font-medium text-gray-700 mb-2">Limits:</div>
-                                            <div class="grid grid-cols-2 gap-2 text-sm">
-                                                <div v-for="(value, key) in plan.limits" :key="key" class="text-gray-600">
-                                                    <span class="font-medium">{{ key }}:</span>
-                                                    <span class="ml-1">{{ value === -1 ? 'Unlimited' : value }}</span>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -317,10 +297,10 @@ const getLimitColor = (percentage) => {
                                     </span>
                                     <span v-if="priceLabel" class="block text-sm text-gray-500 mt-1">{{ priceLabel }}</span>
                                 </div>
-                                <ul v-if="plan.features && plan.features.length > 0" class="space-y-2">
+                                <ul v-if="getDisplayFeatures(plan).length > 0" class="space-y-2">
                                     <li
-                                        v-for="feature in plan.features"
-                                        :key="feature"
+                                        v-for="(feature, index) in getDisplayFeatures(plan)"
+                                        :key="index"
                                         class="flex items-start"
                                     >
                                         <svg class="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

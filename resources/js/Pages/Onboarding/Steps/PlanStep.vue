@@ -8,8 +8,10 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import VoucherInput from '@/Components/Club/VoucherInput.vue';
 import { usePricing } from '@/Composables/usePricing';
+import { useSubscriptionFeatures } from '@/Composables/useSubscriptionFeatures';
 
 const { formatPrice: formatPriceWithSettings, getPriceLabel, getSmallBusinessNotice, pricingSettings } = usePricing();
+const { getDisplayFeatures } = useSubscriptionFeatures();
 
 const props = defineProps({
     availablePlans: {
@@ -164,9 +166,7 @@ const getPlanColor = (plan) => {
 };
 
 const getFeatureList = (plan) => {
-    if (!plan.features) return [];
-    if (Array.isArray(plan.features)) return plan.features;
-    return Object.values(plan.features);
+    return getDisplayFeatures(plan);
 };
 </script>
 
@@ -289,27 +289,13 @@ const getFeatureList = (plan) => {
 
                 <!-- Features -->
                 <ul class="space-y-2 text-sm">
-                    <li v-for="(feature, index) in getFeatureList(plan).slice(0, 4)" :key="index" class="flex items-start">
+                    <li v-for="(feature, index) in getFeatureList(plan).slice(0, 6)" :key="index" class="flex items-start">
                         <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
                         <span class="text-gray-600">{{ feature }}</span>
                     </li>
                 </ul>
-
-                <!-- Limits -->
-                <div v-if="plan.limits" class="mt-4 pt-4 border-t border-gray-100">
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div v-if="plan.limits.max_teams">
-                            <span class="text-gray-500">Teams:</span>
-                            <span class="font-medium ml-1">{{ plan.limits.max_teams === -1 ? 'Unbegrenzt' : plan.limits.max_teams }}</span>
-                        </div>
-                        <div v-if="plan.limits.max_players">
-                            <span class="text-gray-500">Spieler:</span>
-                            <span class="font-medium ml-1">{{ plan.limits.max_players === -1 ? 'Unbegrenzt' : plan.limits.max_players }}</span>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 

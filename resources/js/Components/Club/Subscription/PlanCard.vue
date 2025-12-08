@@ -4,9 +4,11 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { useTranslations } from '@/Composables/core/useTranslations';
 import { usePricing } from '@/Composables/usePricing';
+import { useSubscriptionFeatures } from '@/Composables/useSubscriptionFeatures';
 
 const { trans } = useTranslations();
 const { formatPrice: formatPriceWithSettings, getPriceLabel, getSmallBusinessNotice } = usePricing();
+const { getDisplayFeatures } = useSubscriptionFeatures();
 
 const props = defineProps({
     plan: {
@@ -125,6 +127,10 @@ const buttonText = computed(() => {
     return trans('subscription.plans.switch');
 });
 
+const displayFeatures = computed(() => {
+    return getDisplayFeatures(props.plan);
+});
+
 const handleAction = () => {
     if (props.isCurrentPlan) {
         emit('manage');
@@ -204,14 +210,14 @@ const handleAction = () => {
             </div>
 
             <!-- Features -->
-            <div v-if="plan.features && plan.features.length > 0" class="mb-6 flex-1">
+            <div v-if="displayFeatures.length > 0" class="mb-6 flex-1">
                 <h4 class="mb-3 text-sm font-semibold text-gray-700">
                     {{ trans('subscription.plans.features') }}:
                 </h4>
                 <ul class="space-y-2">
                     <li
-                        v-for="feature in plan.features"
-                        :key="feature"
+                        v-for="(feature, index) in displayFeatures"
+                        :key="index"
                         class="flex items-start text-sm"
                     >
                         <svg class="mr-3 h-5 w-5 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,25 +226,6 @@ const handleAction = () => {
                         <span class="text-gray-700">{{ feature }}</span>
                     </li>
                 </ul>
-            </div>
-
-            <!-- Limits -->
-            <div v-if="plan.limits && Object.keys(plan.limits).length > 0" class="mb-6">
-                <h4 class="mb-3 text-sm font-semibold text-gray-700">
-                    {{ trans('subscription.plans.limits') }}:
-                </h4>
-                <div class="grid grid-cols-2 gap-2 text-sm">
-                    <div
-                        v-for="(value, key) in plan.limits"
-                        :key="key"
-                        class="flex flex-col rounded bg-gray-50 p-2"
-                    >
-                        <span class="text-xs text-gray-600">{{ key }}</span>
-                        <span class="font-semibold text-gray-900">
-                            {{ value === -1 ? trans('subscription.common.unlimited') : value }}
-                        </span>
-                    </div>
-                </div>
             </div>
 
             <!-- Action Button -->
