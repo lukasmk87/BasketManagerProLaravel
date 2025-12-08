@@ -153,18 +153,18 @@ class DashboardController extends Controller
                 $adminClubs = Club::select(['id', 'name', 'slug', 'logo_path', 'is_active', 'is_verified', 'tenant_id'])
                     ->withCount(['teams', 'users'])
                     ->with([
-                        'teams' => fn($q) => $q->select(['id', 'name', 'club_id'])->withCount('players'),
+                        'teams' => fn ($q) => $q->select(['id', 'name', 'club_id'])->withCount('players'),
                     ])
                     ->get();
             } else {
                 // PERF-001: Added withPivot('role') to prevent N+1 when accessing pivot->role in all_clubs map
-            $adminClubs = $user->clubs()
+                $adminClubs = $user->clubs()
                     ->wherePivotIn('role', ['admin', 'owner', 'manager'])
                     ->withPivot('role')
                     ->select(['clubs.id', 'clubs.name', 'clubs.slug', 'clubs.logo_path', 'clubs.is_active', 'clubs.is_verified', 'clubs.tenant_id'])
                     ->withCount(['teams', 'users'])
                     ->with([
-                        'teams' => fn($q) => $q->select(['id', 'name', 'club_id'])->withCount('players'),
+                        'teams' => fn ($q) => $q->select(['id', 'name', 'club_id'])->withCount('players'),
                     ])
                     ->get();
             }
@@ -186,7 +186,7 @@ class DashboardController extends Controller
                 'club_statistics' => $clubStats,
                 // PERF-001: Removed 'players' from with() - only players_count is used
                 'teams_overview' => $primaryClub->teams()
-                    ->select(['id', 'name', 'season', 'league', 'head_coach_id', 'is_active', 'club_id'])
+                    ->select(['id', 'name', 'season', 'league', 'head_coach_id', 'is_active', 'club_id', 'games_played', 'games_won'])
                     ->with(['headCoach:id,name'])
                     ->withCount(['players', 'homeGames', 'awayGames'])
                     ->get()
@@ -259,7 +259,7 @@ class DashboardController extends Controller
 
             // Vollständige Fallback-Struktur zurückgeben
             return [
-                'error' => 'Dashboard-Daten konnten nicht geladen werden: ' . $e->getMessage(),
+                'error' => 'Dashboard-Daten konnten nicht geladen werden: '.$e->getMessage(),
                 'primary_club' => null,
                 'club_statistics' => [
                     'basic_stats' => [
@@ -311,7 +311,7 @@ class DashboardController extends Controller
             $coachedTeams = $user->coachedTeams()
                 ->with([
                     'club:id,name',
-                    'players:id,user_id' => fn($q) => $q->with('user:id,name'),
+                    'players:id,user_id' => fn ($q) => $q->with('user:id,name'),
                 ])
                 ->withCount(['players'])
                 ->get();
@@ -324,7 +324,7 @@ class DashboardController extends Controller
                 $assistantCoachedTeams = Team::whereIn('id', $assistantTeamIds)
                     ->with([
                         'club:id,name',
-                        'players:id,user_id' => fn($q) => $q->with('user:id,name'),
+                        'players:id,user_id' => fn ($q) => $q->with('user:id,name'),
                     ])
                     ->withCount(['players'])
                     ->get();
@@ -398,6 +398,9 @@ class DashboardController extends Controller
             Log::error('Failed to load trainer dashboard', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return ['error' => 'Dashboard-Daten konnten nicht geladen werden.'];
