@@ -33,7 +33,9 @@ class LiveScoringController extends Controller
         private LiveScoringService $liveScoringService,
         private StatisticsService $statisticsService
     ) {
-        $this->middleware(['auth', 'can:score games']);
+        // Note: 'can:score games' middleware removed - GamePolicy::score() handles
+        // permission check + team membership validation
+        $this->middleware(['auth']);
     }
 
     /**
