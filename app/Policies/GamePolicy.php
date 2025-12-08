@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Game;
+use App\Models\Team;
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesUsers;
 
@@ -43,9 +44,9 @@ class GamePolicy
             );
         }
 
-        // Coaches can view games of teams they coach
+        // Coaches can view games of teams they coach (head + assistant)
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+            $coachTeamIds = $this->getAllCoachedTeamIds($user);
 
             return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
@@ -96,6 +97,28 @@ class GamePolicy
     }
 
     /**
+     * Get all team IDs where the user is head coach or assistant coach.
+     *
+     * This includes both:
+     * - Teams where user is head_coach_id
+     * - Teams where user is in the assistant_coaches JSON array
+     *
+     * @return array<int>
+     */
+    private function getAllCoachedTeamIds(User $user): array
+    {
+        // Head Coach Teams
+        $teamIds = $user->coachedTeams()->pluck('id')->toArray();
+
+        // Assistant Coach Teams (from JSON field)
+        $assistantTeamIds = Team::whereJsonContains('assistant_coaches', $user->id)
+            ->pluck('id')
+            ->toArray();
+
+        return array_unique(array_merge($teamIds, $assistantTeamIds));
+    }
+
+    /**
      * Determine whether the user can create models.
      */
     public function create(User $user): bool
@@ -127,9 +150,9 @@ class GamePolicy
             return ! empty(array_intersect($userClubIds, $gameClubIds));
         }
 
-        // Coaches can edit games of teams they coach
-        if ($user->hasRole('trainer')) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+        // Coaches can edit games of teams they coach (head + assistant)
+        if ($user->isCoach()) {
+            $coachTeamIds = $this->getAllCoachedTeamIds($user);
 
             return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
@@ -184,9 +207,9 @@ class GamePolicy
             return false;
         }
 
-        // Coaches can score games of teams they coach
+        // Coaches can score games of teams they coach (head + assistant)
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+            $coachTeamIds = $this->getAllCoachedTeamIds($user);
 
             return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
@@ -260,9 +283,9 @@ class GamePolicy
             return false;
         }
 
-        // Coaches can publish results for games they coached
+        // Coaches can publish results for games they coached (head + assistant)
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+            $coachTeamIds = $this->getAllCoachedTeamIds($user);
 
             return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
@@ -299,9 +322,9 @@ class GamePolicy
             return true;
         }
 
-        // Coaches can control in absence of referees
+        // Coaches can control in absence of referees (head + assistant)
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+            $coachTeamIds = $this->getAllCoachedTeamIds($user);
 
             return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
@@ -347,9 +370,9 @@ class GamePolicy
             return false;
         }
 
-        // Coaches can edit statistics for their team's games
+        // Coaches can edit statistics for their team's games (head + assistant)
         if ($user->isCoach()) {
-            $coachTeamIds = $user->coachedTeams()->pluck('id')->toArray();
+            $coachTeamIds = $this->getAllCoachedTeamIds($user);
 
             return ! empty(array_intersect($coachTeamIds, [$game->home_team_id, $game->away_team_id]));
         }
