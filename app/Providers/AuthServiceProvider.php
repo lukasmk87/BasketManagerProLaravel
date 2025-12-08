@@ -45,6 +45,8 @@ use App\Models\Playbook;
 use App\Policies\PlaybookPolicy;
 use App\Models\Voucher;
 use App\Policies\VoucherPolicy;
+use App\Models\PlayerAbsence;
+use App\Policies\PlayerAbsencePolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -75,6 +77,7 @@ class AuthServiceProvider extends ServiceProvider
         PlayFavorite::class => PlayFavoritePolicy::class,
         Playbook::class => PlaybookPolicy::class,
         Voucher::class => VoucherPolicy::class,
+        PlayerAbsence::class => PlayerAbsencePolicy::class,
     ];
 
     /**

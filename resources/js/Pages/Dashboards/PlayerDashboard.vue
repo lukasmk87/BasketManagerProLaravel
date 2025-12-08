@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import StatisticsWidget from '@/Components/Basketball/StatisticsWidget.vue';
 import PlayerCard from '@/Components/Basketball/PlayerCard.vue';
 import StatsChart from '@/Components/Basketball/StatsChart.vue';
+import AvailabilitySection from '@/Components/Availability/AvailabilitySection.vue';
 
 const props = defineProps({
     dashboardData: Object,
@@ -155,21 +156,21 @@ const teamStarters = computed(() => {
                     :subtitle="`${personalStatistics.games_started || 0} als Starter`"
                     icon="calendar"
                     color="blue" />
-                
+
                 <StatisticsWidget
                     title="Ø Punkte"
                     :value="personalStatistics.avg_points || '0.0'"
                     :subtitle="`${personalStatistics.total_points || 0} gesamt`"
                     icon="chart-bar"
                     color="green" />
-                
+
                 <StatisticsWidget
                     title="Ø Rebounds"
                     :value="personalStatistics.avg_rebounds || '0.0'"
                     :subtitle="`${personalStatistics.total_rebounds || 0} gesamt`"
                     icon="trending-up"
                     color="indigo" />
-                
+
                 <StatisticsWidget
                     title="Ø Assists"
                     :value="personalStatistics.avg_assists || '0.0'"
@@ -177,6 +178,9 @@ const teamStarters = computed(() => {
                     icon="users"
                     color="orange" />
             </div>
+
+            <!-- Availability & Absences Section -->
+            <AvailabilitySection :player-id="playerInfo.id" />
 
             <!-- Performance Chart and Development -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -273,6 +273,30 @@ class Player extends Model implements HasMedia
         return $this->hasMany(SeasonStatistic::class);
     }
 
+    /**
+     * Get all absences for this player.
+     */
+    public function absences(): HasMany
+    {
+        return $this->hasMany(PlayerAbsence::class);
+    }
+
+    /**
+     * Get currently active absences.
+     */
+    public function currentAbsences(): HasMany
+    {
+        return $this->absences()->current();
+    }
+
+    /**
+     * Get upcoming absences.
+     */
+    public function upcomingAbsences(): HasMany
+    {
+        return $this->absences()->upcoming();
+    }
+
     // ============================
     // SCOPES
     // ============================
@@ -635,6 +659,26 @@ class Player extends Model implements HasMedia
         }
 
         return true;
+    }
+
+    /**
+     * Check if player has an active absence on a specific date.
+     */
+    public function hasAbsenceOn(\Carbon\Carbon $date): bool
+    {
+        return $this->absences()
+            ->coversDate($date)
+            ->exists();
+    }
+
+    /**
+     * Get the active absence for a specific date.
+     */
+    public function getAbsenceOn(\Carbon\Carbon $date): ?PlayerAbsence
+    {
+        return $this->absences()
+            ->coversDate($date)
+            ->first();
     }
 
     /**

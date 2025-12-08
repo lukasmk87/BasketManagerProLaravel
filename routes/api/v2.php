@@ -120,7 +120,45 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     */
     
     Route::apiResource('emergency-contacts', EmergencyContactController::class);
-    
+
+    /*
+    |--------------------------------------------------------------------------
+    | Player Availability & Absence Management
+    |--------------------------------------------------------------------------
+    */
+
+    // Player Availability (for players)
+    Route::prefix('availability')->name('api.availability.')->group(function () {
+        Route::get('my-events', [\App\Http\Controllers\Api\PlayerAvailabilityController::class, 'myUpcomingEvents'])
+            ->name('my-events');
+        Route::post('respond', [\App\Http\Controllers\Api\PlayerAvailabilityController::class, 'respondToEvent'])
+            ->name('respond');
+        Route::get('event', [\App\Http\Controllers\Api\PlayerAvailabilityController::class, 'eventAvailability'])
+            ->name('event');
+        Route::get('team/{team}', [\App\Http\Controllers\Api\PlayerAvailabilityController::class, 'teamAvailability'])
+            ->name('team');
+        Route::get('pending-responses', [\App\Http\Controllers\Api\PlayerAvailabilityController::class, 'pendingResponses'])
+            ->name('pending-responses');
+    });
+
+    // Player Absences CRUD
+    Route::prefix('absences')->name('api.absences.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\PlayerAbsenceController::class, 'index'])
+            ->name('index');
+        Route::post('/', [\App\Http\Controllers\Api\PlayerAbsenceController::class, 'store'])
+            ->name('store');
+        Route::get('my', [\App\Http\Controllers\Api\PlayerAbsenceController::class, 'myAbsences'])
+            ->name('my');
+        Route::get('team/{team}', [\App\Http\Controllers\Api\PlayerAbsenceController::class, 'teamAbsences'])
+            ->name('team');
+        Route::get('{absence}', [\App\Http\Controllers\Api\PlayerAbsenceController::class, 'show'])
+            ->name('show');
+        Route::put('{absence}', [\App\Http\Controllers\Api\PlayerAbsenceController::class, 'update'])
+            ->name('update');
+        Route::delete('{absence}', [\App\Http\Controllers\Api\PlayerAbsenceController::class, 'destroy'])
+            ->name('destroy');
+    });
+
     /*
     |--------------------------------------------------------------------------
     | Additional Basketball Analytics

@@ -97,3 +97,12 @@ app(Schedule::class)->command('invoices:process-overdue')
     ->onOneServer()
     ->name('invoices-process-overdue')
     ->description('Process overdue invoices, send reminders, and suspend subscriptions');
+
+// Event Response Reminders - remind players to respond to upcoming events
+app(Schedule::class)->command('events:send-reminders --hours=48')
+    ->dailyAt('09:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onOneServer()
+    ->name('events-send-reminders')
+    ->description('Send reminders to players who have not responded to upcoming events');

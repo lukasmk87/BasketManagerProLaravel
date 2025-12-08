@@ -117,6 +117,10 @@ Route::middleware([
         Route::delete('/{player}', [\App\Http\Controllers\TeamController::class, 'detachPlayer'])->name('detach');
     });
 
+    // Team Availability Overview (for trainers)
+    Route::get('basketball-teams/{team}/availability', [\App\Http\Controllers\TeamAvailabilityController::class, 'index'])
+        ->name('web.teams.availability');
+
     // Basketball Team Coaches Routes (nested resource for managing coaches in teams)
     Route::prefix('basketball-teams/{team}/coaches')->name('web.teams.coaches.')->group(function () {
         Route::post('/head', [\App\Http\Controllers\TeamController::class, 'assignHeadCoach'])->name('assignHead');
