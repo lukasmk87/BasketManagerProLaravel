@@ -26,9 +26,9 @@ class LandingPageService
      * 4. Global published content for default locale (de)
      * 5. Default hardcoded content
      *
-     * @param string $section The section name
-     * @param int|null $tenantId The tenant ID (null for global)
-     * @param string $locale The locale (default: 'de')
+     * @param  string  $section  The section name
+     * @param  int|null  $tenantId  The tenant ID (null for global)
+     * @param  string  $locale  The locale (default: 'de')
      * @return array The section content
      */
     public function getContent(string $section, ?int $tenantId = null, string $locale = 'de'): array
@@ -93,7 +93,7 @@ class LandingPageService
     /**
      * Get all published content for all sections.
      *
-     * @param int|null $tenantId The tenant ID
+     * @param  int|null  $tenantId  The tenant ID
      * @return array Array of section => content
      */
     public function getAllContent(?int $tenantId = null): array
@@ -111,10 +111,9 @@ class LandingPageService
     /**
      * Get draft content for editing (published or draft).
      *
-     * @param string $section The section name
-     * @param int|null $tenantId The tenant ID
-     * @param string $locale The locale (default: 'de')
-     * @return LandingPageContent|null
+     * @param  string  $section  The section name
+     * @param  int|null  $tenantId  The tenant ID
+     * @param  string  $locale  The locale (default: 'de')
      */
     public function getDraft(string $section, ?int $tenantId = null, string $locale = 'de'): ?LandingPageContent
     {
@@ -133,12 +132,11 @@ class LandingPageService
     /**
      * Create or update section content.
      *
-     * @param string $section The section name
-     * @param array $content The content data
-     * @param int|null $tenantId The tenant ID
-     * @param string $locale The locale (default: 'de')
-     * @param bool $publish Whether to publish immediately
-     * @return LandingPageContent
+     * @param  string  $section  The section name
+     * @param  array  $content  The content data
+     * @param  int|null  $tenantId  The tenant ID
+     * @param  string  $locale  The locale (default: 'de')
+     * @param  bool  $publish  Whether to publish immediately
      */
     public function saveContent(
         string $section,
@@ -179,21 +177,21 @@ class LandingPageService
     /**
      * Publish section content.
      *
-     * @param string $section The section name
-     * @param int|null $tenantId The tenant ID
-     * @param string $locale The locale (default: 'de')
-     * @return bool
+     * @param  string  $section  The section name
+     * @param  int|null  $tenantId  The tenant ID
+     * @param  string  $locale  The locale (default: 'de')
      */
     public function publishContent(string $section, ?int $tenantId = null, string $locale = 'de'): bool
     {
         $content = $this->getDraft($section, $tenantId, $locale);
 
-        if (!$content) {
+        if (! $content) {
             Log::warning('Attempted to publish non-existent content', [
                 'section' => $section,
                 'tenant_id' => $tenantId,
                 'locale' => $locale,
             ]);
+
             return false;
         }
 
@@ -215,16 +213,15 @@ class LandingPageService
     /**
      * Unpublish section content.
      *
-     * @param string $section The section name
-     * @param int|null $tenantId The tenant ID
-     * @param string $locale The locale (default: 'de')
-     * @return bool
+     * @param  string  $section  The section name
+     * @param  int|null  $tenantId  The tenant ID
+     * @param  string  $locale  The locale (default: 'de')
      */
     public function unpublishContent(string $section, ?int $tenantId = null, string $locale = 'de'): bool
     {
         $content = $this->getDraft($section, $tenantId, $locale);
 
-        if (!$content) {
+        if (! $content) {
             return false;
         }
 
@@ -246,12 +243,11 @@ class LandingPageService
     /**
      * Copy content from one locale to another.
      *
-     * @param string $section The section name
-     * @param int|null $tenantId The tenant ID
-     * @param string $fromLocale Source locale
-     * @param string $toLocale Target locale
-     * @param bool $overwrite Whether to overwrite existing content
-     * @return LandingPageContent|null
+     * @param  string  $section  The section name
+     * @param  int|null  $tenantId  The tenant ID
+     * @param  string  $fromLocale  Source locale
+     * @param  string  $toLocale  Target locale
+     * @param  bool  $overwrite  Whether to overwrite existing content
      */
     public function copyContentToLocale(
         string $section,
@@ -263,24 +259,26 @@ class LandingPageService
         // Get source content
         $sourceContent = $this->getDraft($section, $tenantId, $fromLocale);
 
-        if (!$sourceContent) {
+        if (! $sourceContent) {
             Log::warning('Source content not found for locale copy', [
                 'section' => $section,
                 'tenant_id' => $tenantId,
                 'from_locale' => $fromLocale,
             ]);
+
             return null;
         }
 
         // Check if target already exists
         $targetContent = $this->getDraft($section, $tenantId, $toLocale);
 
-        if ($targetContent && !$overwrite) {
+        if ($targetContent && ! $overwrite) {
             Log::info('Target locale content already exists, skipping copy', [
                 'section' => $section,
                 'tenant_id' => $tenantId,
                 'to_locale' => $toLocale,
             ]);
+
             return $targetContent;
         }
 
@@ -306,15 +304,14 @@ class LandingPageService
     /**
      * Delete section content.
      *
-     * @param string $section The section name
-     * @param int|null $tenantId The tenant ID
-     * @return bool
+     * @param  string  $section  The section name
+     * @param  int|null  $tenantId  The tenant ID
      */
     public function deleteContent(string $section, ?int $tenantId = null): bool
     {
         $content = $this->getDraft($section, $tenantId);
 
-        if (!$content) {
+        if (! $content) {
             return false;
         }
 
@@ -335,8 +332,7 @@ class LandingPageService
     /**
      * Get default hardcoded content for a section.
      *
-     * @param string $section The section name
-     * @return array
+     * @param  string  $section  The section name
      */
     private function getDefaultContent(string $section): array
     {
@@ -587,12 +583,13 @@ class LandingPageService
     /**
      * Validate section name.
      *
-     * @param string $section The section name
+     * @param  string  $section  The section name
+     *
      * @throws \InvalidArgumentException
      */
     private function validateSection(string $section): void
     {
-        if (!in_array($section, LandingPageContent::SECTIONS)) {
+        if (! in_array($section, LandingPageContent::SECTIONS)) {
             throw new \InvalidArgumentException("Invalid section: {$section}");
         }
     }
@@ -600,8 +597,9 @@ class LandingPageService
     /**
      * Validate content structure for a section.
      *
-     * @param string $section The section name
-     * @param array $content The content to validate
+     * @param  string  $section  The section name
+     * @param  array  $content  The content to validate
+     *
      * @throws \InvalidArgumentException
      */
     private function validateContent(string $section, array $content): void
@@ -625,30 +623,29 @@ class LandingPageService
                 }
                 break;
 
-            // Add more validations as needed
+                // Add more validations as needed
         }
     }
 
     /**
      * Get cache key for a section.
      *
-     * @param string $section The section name
-     * @param int|null $tenantId The tenant ID
-     * @return string
+     * @param  string  $section  The section name
+     * @param  int|null  $tenantId  The tenant ID
      */
     private function getCacheKey(string $section, ?int $tenantId, string $locale = 'de'): string
     {
         $tenantPart = $tenantId ? "tenant:{$tenantId}" : 'global';
+
         return "landing_page:{$tenantPart}:{$section}:{$locale}:published";
     }
 
     /**
      * Invalidate cache for a section (all locales).
      *
-     * @param string $section The section name
-     * @param int|null $tenantId The tenant ID
-     * @param string|null $locale Specific locale or null for all
-     * @return void
+     * @param  string  $section  The section name
+     * @param  int|null  $tenantId  The tenant ID
+     * @param  string|null  $locale  Specific locale or null for all
      */
     private function invalidateCache(string $section, ?int $tenantId, ?string $locale = null): void
     {
@@ -674,8 +671,7 @@ class LandingPageService
     /**
      * Get featured subscription plans for the landing page pricing section.
      *
-     * @param int|null $tenantId The tenant ID
-     * @return Collection
+     * @param  int|null  $tenantId  The tenant ID
      */
     public function getFeaturedPlans(?int $tenantId = null): Collection
     {
@@ -693,18 +689,23 @@ class LandingPageService
     /**
      * Transform subscription plans for landing page display.
      *
-     * @param Collection $plans The plans collection
-     * @return array
+     * @param  Collection  $plans  The plans collection
      */
     public function transformPlansForLandingPage(Collection $plans): array
     {
         return $plans->map(function ($plan) {
+            // Brutto-Preis berechnen (19% MwSt. für deutschen Markt)
+            $taxRate = 0.19;
+            $grossPrice = round($plan->price * (1 + $taxRate), 2);
+
             return [
                 'id' => $plan->id,
                 'name' => $plan->name,
                 'slug' => $plan->slug,
                 'price' => $plan->price,
                 'formatted_price' => $plan->formatted_price,
+                'gross_price' => $grossPrice,
+                'formatted_gross_price' => number_format($grossPrice, 2, ',', '.').' €',
                 'currency' => $plan->currency,
                 'billing_interval' => $plan->billing_interval,
                 'description' => $plan->description,
@@ -715,7 +716,7 @@ class LandingPageService
                 'is_default' => $plan->is_default,
                 'trial_period_days' => $plan->trial_period_days,
                 'cta_text' => 'Jetzt starten',
-                'cta_link' => route('register') . '?plan=' . $plan->slug,
+                'cta_link' => route('register').'?plan='.$plan->slug,
             ];
         })->toArray();
     }
@@ -723,9 +724,8 @@ class LandingPageService
     /**
      * Get pricing content for landing page with fallback to featured plans.
      *
-     * @param int|null $tenantId The tenant ID
-     * @param string $locale The locale
-     * @return array
+     * @param  int|null  $tenantId  The tenant ID
+     * @param  string  $locale  The locale
      */
     public function getPricingContent(?int $tenantId = null, string $locale = 'de'): array
     {
@@ -754,8 +754,7 @@ class LandingPageService
     /**
      * Get localized feature names.
      *
-     * @param array $features The feature slugs
-     * @return array
+     * @param  array  $features  The feature slugs
      */
     private function getLocalizedFeatures(array $features): array
     {

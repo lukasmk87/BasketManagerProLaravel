@@ -63,7 +63,7 @@
                                     >
                                         <option value="">Team auswählen</option>
                                         <option v-for="team in teams" :key="team.id" :value="team.id">
-                                            {{ team.name }} ({{ team.club.name }})
+                                            {{ team.name }} ({{ team.club?.name || 'N/A' }})
                                         </option>
                                     </select>
                                     <InputError :message="form.errors.home_team_id" class="mt-2" />
@@ -150,12 +150,12 @@
                                         :disabled="!form.home_team_id || game.status !== 'scheduled'"
                                     >
                                         <option value="">Team auswählen</option>
-                                        <option 
-                                            v-for="team in availableAwayTeams" 
-                                            :key="team.id" 
+                                        <option
+                                            v-for="team in availableAwayTeams"
+                                            :key="team.id"
                                             :value="team.id"
                                         >
-                                            {{ team.name }} ({{ team.club.name }})
+                                            {{ team.name }} ({{ team.club?.name || 'N/A' }})
                                         </option>
                                     </select>
                                     <InputError :message="form.errors.away_team_id" class="mt-2" />

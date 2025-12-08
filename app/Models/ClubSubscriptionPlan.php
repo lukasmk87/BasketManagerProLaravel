@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 class ClubSubscriptionPlan extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes, BelongsToTenant;
+    use BelongsToTenant, HasFactory, HasUuids, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -163,7 +163,7 @@ class ClubSubscriptionPlan extends Model
     public function scopePubliclyAvailable($query)
     {
         return $query->where('is_active', true)
-                     ->where('is_featured', true);
+            ->where('is_featured', true);
     }
 
     // =============================
@@ -176,18 +176,19 @@ class ClubSubscriptionPlan extends Model
     public function hasFeature(string $feature): bool
     {
         $planFeatures = $this->features ?? [];
+
         return in_array($feature, $planFeatures);
     }
 
     /**
      * Get limit for a specific metric.
      *
-     * @param string $metric
      * @return int Returns -1 for unlimited
      */
     public function getLimit(string $metric): int
     {
         $limits = $this->limits ?? [];
+
         return $limits[$metric] ?? -1; // -1 = unlimited
     }
 
@@ -197,13 +198,13 @@ class ClubSubscriptionPlan extends Model
     public function isWithinTenantLimits(): bool
     {
         $tenant = $this->tenant;
-        if (!$tenant) {
+        if (! $tenant) {
             return false;
         }
 
         // Check all plan features are available in tenant
         foreach ($this->features ?? [] as $feature) {
-            if (!$tenant->hasFeature($feature)) {
+            if (! $tenant->hasFeature($feature)) {
                 return false; // Plan has feature that tenant doesn't have
             }
         }
@@ -230,8 +231,6 @@ class ClubSubscriptionPlan extends Model
     /**
      * Validate plan data against tenant capabilities.
      *
-     * @param array $planData
-     * @param Tenant $tenant
      * @return array Array of errors (empty if valid)
      */
     public static function validateAgainstTenant(array $planData, Tenant $tenant): array
@@ -241,7 +240,7 @@ class ClubSubscriptionPlan extends Model
         // Validate features
         $planFeatures = $planData['features'] ?? [];
         foreach ($planFeatures as $feature) {
-            if (!$tenant->hasFeature($feature)) {
+            if (! $tenant->hasFeature($feature)) {
                 $errors['features'][] = "Feature '{$feature}' not available in tenant tier '{$tenant->subscription_tier}'";
             }
         }
@@ -286,7 +285,23 @@ class ClubSubscriptionPlan extends Model
      */
     public function getFormattedPriceAttribute(): string
     {
-        return number_format($this->price, 2, ',', '.') . ' ' . $this->currency;
+        return number_format($this->price, 2, ',', '.').' '.$this->currency;
+    }
+
+    /**
+     * Get gross price including VAT (19% for German market).
+     */
+    public function getGrossPriceAttribute(): float
+    {
+        return round($this->price * 1.19, 2);
+    }
+
+    /**
+     * Get formatted gross price with currency.
+     */
+    public function getFormattedGrossPriceAttribute(): string
+    {
+        return number_format($this->gross_price, 2, ',', '.').' '.$this->currency;
     }
 
     /**
@@ -325,12 +340,12 @@ class ClubSubscriptionPlan extends Model
     public function needsStripeSync(): bool
     {
         // If never synced, needs sync
-        if (!$this->is_stripe_synced) {
+        if (! $this->is_stripe_synced) {
             return true;
         }
 
         // If synced but missing critical Stripe IDs, needs sync
-        if (!$this->stripe_product_id || (!$this->stripe_price_id_monthly && !$this->stripe_price_id_yearly)) {
+        if (! $this->stripe_product_id || (! $this->stripe_price_id_monthly && ! $this->stripe_price_id_yearly)) {
             return true;
         }
 

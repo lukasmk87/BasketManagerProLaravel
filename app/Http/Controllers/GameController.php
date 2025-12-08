@@ -74,11 +74,10 @@ class GameController extends Controller
         $this->authorize('create', Game::class);
 
         $teams = Team::query()
-            ->with('club')
-            ->select(['id', 'name', 'club_id'])
+            ->with('club:id,name')
             ->where('is_active', true)
             ->orderBy('name')
-            ->get();
+            ->get(['id', 'name', 'club_id']);
 
         return Inertia::render('Games/Create', [
             'teams' => $teams,
@@ -226,11 +225,10 @@ class GameController extends Controller
         }
 
         $teams = Team::query()
-            ->with('club')
-            ->select(['id', 'name', 'club_id'])
+            ->with('club:id,name')
             ->where('is_active', true)
             ->orderBy('name')
-            ->get();
+            ->get(['id', 'name', 'club_id']);
 
         return Inertia::render('Games/Edit', [
             'game' => $game->load(['homeTeam', 'awayTeam']),

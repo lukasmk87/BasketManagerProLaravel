@@ -342,8 +342,9 @@
                             ? 'bg-orange-600 text-white hover:bg-orange-700'
                             : 'bg-gray-900 text-white hover:bg-gray-800';
 
-                        // Get price display
-                        $priceDisplay = $plan['formatted_price'] ?? ($plan['price'] ?? '0') . ' EUR';
+                        // Get price display (Brutto inkl. MwSt.)
+                        $grossPrice = isset($plan['gross_price']) ? $plan['gross_price'] : (($plan['price'] ?? 0) * 1.19);
+                        $priceDisplay = $plan['formatted_gross_price'] ?? number_format($grossPrice, 2, ',', '.') . ' €';
                         if ($isFree) {
                             $priceDisplay = 'Kostenlos';
                         }
@@ -383,6 +384,9 @@
                             <span class="text-4xl font-bold text-gray-900">{{ $priceDisplay }}</span>
                             @if(!$isFree && $priceDisplay !== 'Custom')
                                 <span class="text-gray-600">/{{ $interval }}</span>
+                            @endif
+                            @if(!$isFree && $priceDisplay !== 'Custom')
+                                <p class="text-xs text-gray-500 mt-1">inkl. MwSt.</p>
                             @endif
                         </div>
 
