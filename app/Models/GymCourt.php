@@ -56,6 +56,10 @@ class GymCourt extends Model
         return $this->belongsTo(GymHall::class);
     }
 
+    /**
+     * @deprecated This relationship is broken - gym_bookings has no gym_court_id column.
+     * Bookings use court_ids JSON array instead. Use isAvailableAt() or query GymBooking directly.
+     */
     public function bookings(): HasMany
     {
         return $this->hasMany(GymBooking::class);
@@ -132,12 +136,18 @@ class GymCourt extends Model
 
         $endTime = $dateTime->copy()->addMinutes($durationMinutes);
 
-        // Check for overlapping bookings
-        $overlappingBookings = $this->bookings()
+        // Query GymBooking directly using JSON court_ids field
+        // Note: The bookings() relationship is broken (no gym_court_id column exists)
+        $overlappingBookings = GymBooking::query()
+            ->where(function ($q) {
+                $q->whereJsonContains('court_ids', $this->id)
+                    ->orWhereJsonContains('court_ids', (string) $this->id);
+            })
+            ->whereDate('booking_date', $dateTime->toDateString())
             ->where('status', 'confirmed')
             ->where(function ($query) use ($dateTime, $endTime) {
-                $query->where('start_time', '<', $endTime)
-                    ->where('end_time', '>', $dateTime);
+                $query->where('start_time', '<', $endTime->format('H:i:s'))
+                    ->where('end_time', '>', $dateTime->format('H:i:s'));
             })
             ->exists();
 

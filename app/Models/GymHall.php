@@ -565,10 +565,19 @@ class GymHall extends Model implements HasMedia
     {
         $dayOfWeek = strtolower($date->format('l'));
 
-        // Get operating hours for the day
+        // Defensive checks for operating_hours
+        if (! is_array($this->operating_hours)) {
+            return [];
+        }
+
         $operatingHours = $this->operating_hours[$dayOfWeek] ?? null;
 
-        if (! $operatingHours || ! $operatingHours['is_open']) {
+        if (! is_array($operatingHours) || empty($operatingHours['is_open'])) {
+            return [];
+        }
+
+        // Ensure required time keys exist
+        if (empty($operatingHours['open_time']) || empty($operatingHours['close_time'])) {
             return [];
         }
 
