@@ -579,6 +579,11 @@ class TeamController extends Controller
         // Authorization: User must be able to view available coaches for this club
         $user = $request->user();
 
+        // Return 401 if not authenticated (handles edge cases with fetch() requests)
+        if (! $user) {
+            return response()->json(['error' => 'Nicht authentifiziert'], 401);
+        }
+
         // Super admins und tenant admins können immer zugreifen
         if (! $user->hasAnyRole(['super_admin', 'tenant_admin'])) {
             // Club admins müssen zum Club gehören
@@ -594,28 +599,38 @@ class TeamController extends Controller
         }
 
         // Get users with 'trainer' role in this club WITH all their roles
-        $coaches = $club->users()
-            ->whereHas('roles', function ($q) {
-                $q->where('name', 'trainer');
-            })
-            ->where('is_active', true)
-            ->with('roles:id,name')  // Load all system roles
-            ->select('id', 'name', 'email')
-            ->orderBy('name')
-            ->get()
-            ->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'roles' => $user->roles->pluck('name'),  // All role names
-                    'role_labels' => $this->getRoleLabels($user->roles),  // German labels
-                ];
-            });
+        try {
+            $coaches = $club->users()
+                ->whereHas('roles', function ($q) {
+                    $q->where('name', 'trainer');
+                })
+                ->where('is_active', true)
+                ->with('roles:id,name')  // Load all system roles
+                ->select('id', 'name', 'email')
+                ->orderBy('name')
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'roles' => $user->roles->pluck('name'),  // All role names
+                        'role_labels' => $this->getRoleLabels($user->roles),  // German labels
+                    ];
+                });
 
-        return response()->json([
-            'coaches' => $coaches,
-        ]);
+            return response()->json([
+                'coaches' => $coaches,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error loading available coaches', [
+                'club_id' => $club->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Fehler beim Laden der Trainer'], 500);
+        }
     }
 
     /**

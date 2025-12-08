@@ -8,15 +8,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class GymHall extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes, LogsActivity, InteractsWithMedia;
+    use HasFactory, InteractsWithMedia, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -89,7 +89,7 @@ class GymHall extends Model implements HasMedia
             if (empty($gymHall->uuid)) {
                 $gymHall->uuid = (string) Str::uuid();
             }
-            if (empty($gymHall->slug) && !empty($gymHall->name)) {
+            if (empty($gymHall->slug) && ! empty($gymHall->name)) {
                 $gymHall->slug = Str::slug($gymHall->name);
             }
         });
@@ -192,22 +192,22 @@ class GymHall extends Model implements HasMedia
 
     public function getIsOpenAttribute(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
         $now = now();
         $currentDay = strtolower($now->format('l'));
-        
+
         if ($this->operating_hours && isset($this->operating_hours[$currentDay])) {
             $hours = $this->operating_hours[$currentDay];
-            if (!$hours['is_open']) {
+            if (! $hours['is_open']) {
                 return false;
             }
 
             $openTime = \Carbon\Carbon::createFromTimeString($hours['open_time']);
             $closeTime = \Carbon\Carbon::createFromTimeString($hours['close_time']);
-            
+
             return $now->between($openTime, $closeTime);
         }
 
@@ -239,17 +239,17 @@ class GymHall extends Model implements HasMedia
     {
         // Convert day name to lowercase for consistency
         $dayOfWeek = strtolower($dayOfWeek);
-        
+
         // If operating_hours has day-specific parallel booking settings, use those
         if ($this->operating_hours && isset($this->operating_hours[$dayOfWeek])) {
             $daySettings = $this->operating_hours[$dayOfWeek];
-            
+
             // Check if parallel bookings are explicitly set for this day
             if (isset($daySettings['supports_parallel_bookings'])) {
                 return $daySettings['supports_parallel_bookings'];
             }
         }
-        
+
         // Fall back to global setting
         return $this->supports_parallel_bookings;
     }
@@ -259,7 +259,7 @@ class GymHall extends Model implements HasMedia
      */
     public function normalizeOperatingHoursParallelBookings(): bool
     {
-        if (!$this->operating_hours) {
+        if (! $this->operating_hours) {
             return true; // Nothing to normalize
         }
 
@@ -275,6 +275,7 @@ class GymHall extends Model implements HasMedia
 
         if ($wasModified) {
             $this->operating_hours = $operatingHours;
+
             return $this->save();
         }
 
@@ -289,7 +290,7 @@ class GymHall extends Model implements HasMedia
         $dayOfWeek = strtolower($dayOfWeek);
         $operatingHours = $this->operating_hours ?: [];
 
-        if (!isset($operatingHours[$dayOfWeek])) {
+        if (! isset($operatingHours[$dayOfWeek])) {
             $operatingHours[$dayOfWeek] = [];
         }
 
@@ -304,10 +305,10 @@ class GymHall extends Model implements HasMedia
      */
     public function getMaxParallelTeamsForDay(string $dayOfWeek): int
     {
-        if (!$this->supportsParallelBookingsForDay($dayOfWeek)) {
+        if (! $this->supportsParallelBookingsForDay($dayOfWeek)) {
             return 1;
         }
-        
+
         // With parallel bookings enabled, maximum teams equals number of courts
         return max(1, $this->court_count);
     }
@@ -326,8 +327,8 @@ class GymHall extends Model implements HasMedia
     public function hasMainCourtBooking(string $dayOfWeek, string $startTime, string $endTime): bool
     {
         $mainCourt = $this->getMainCourt();
-        
-        if (!$mainCourt) {
+
+        if (! $mainCourt) {
             return false;
         }
 
@@ -340,12 +341,12 @@ class GymHall extends Model implements HasMedia
     public function getEffectiveMaxParallelTeams(string $dayOfWeek, string $startTime, string $endTime): int
     {
         $baseMax = $this->getMaxParallelTeamsForDay($dayOfWeek);
-        
+
         // If main court is booked during this time, only allow 1 team total
         if ($this->hasMainCourtBooking($dayOfWeek, $startTime, $endTime)) {
             return 1;
         }
-        
+
         return $baseMax;
     }
 
@@ -356,21 +357,21 @@ class GymHall extends Model implements HasMedia
     public function allowsParallelBookingsForTime(string $dayOfWeek, string $startTime, string $endTime): bool
     {
         // First check if parallel bookings are allowed for this day
-        if (!$this->supportsParallelBookingsForDay($dayOfWeek)) {
+        if (! $this->supportsParallelBookingsForDay($dayOfWeek)) {
             return false;
         }
-        
+
         // If main court is booked, no parallel bookings allowed
         if ($this->hasMainCourtBooking($dayOfWeek, $startTime, $endTime)) {
             return false;
         }
-        
+
         return true;
     }
 
     public function getHallTypeDisplayAttribute(): string
     {
-        return match($this->hall_type) {
+        return match ($this->hall_type) {
             'single' => 'Einfachhalle',
             'double' => 'Doppelhalle',
             'triple' => 'Dreifachhalle',
@@ -396,33 +397,33 @@ class GymHall extends Model implements HasMedia
     public function isAvailableAt(\Carbon\Carbon $dateTime, int $durationMinutes = 120): bool
     {
         $endTime = $dateTime->copy()->addMinutes($durationMinutes);
-        
+
         $conflictingBookings = $this->bookings()
             ->whereDate('booking_date', $dateTime->toDateString())
             ->where(function ($query) use ($dateTime, $endTime) {
                 $query->where(function ($q) use ($dateTime, $endTime) {
                     // Booking starts before our end time and ends after our start time
                     $q->where('start_time', '<', $endTime->format('H:i:s'))
-                      ->where('end_time', '>', $dateTime->format('H:i:s'));
+                        ->where('end_time', '>', $dateTime->format('H:i:s'));
                 });
             })
             ->whereIn('status', ['reserved', 'confirmed'])
             ->exists();
 
-        return !$conflictingBookings;
+        return ! $conflictingBookings;
     }
 
     public function getAvailableTimeSlots(\Carbon\Carbon $date): array
     {
         $dayOfWeek = strtolower($date->format('l'));
-        
+
         return $this->timeSlots()
             ->where('day_of_week', $dayOfWeek)
             ->where('status', 'active')
             ->where('valid_from', '<=', $date)
             ->where(function ($query) use ($date) {
                 $query->whereNull('valid_until')
-                      ->orWhere('valid_until', '>=', $date);
+                    ->orWhere('valid_until', '>=', $date);
             })
             ->get()
             ->filter(function ($slot) use ($date) {
@@ -430,7 +431,7 @@ class GymHall extends Model implements HasMedia
                 if ($slot->excluded_dates && in_array($date->toDateString(), $slot->excluded_dates)) {
                     return false;
                 }
-                
+
                 return true;
             })
             ->toArray();
@@ -441,9 +442,9 @@ class GymHall extends Model implements HasMedia
         return $this->getAvailableTimeSlots(now());
     }
 
-    public function getWeeklySchedule(\Carbon\Carbon $startOfWeek = null): array
+    public function getWeeklySchedule(?\Carbon\Carbon $startOfWeek = null): array
     {
-        if (!$startOfWeek) {
+        if (! $startOfWeek) {
             $startOfWeek = now()->startOfWeek();
         }
 
@@ -453,7 +454,7 @@ class GymHall extends Model implements HasMedia
             $schedule[$date->format('Y-m-d')] = [
                 'date' => $date,
                 'day_name' => $date->format('l'),
-                'slots' => $this->getAvailableTimeSlots($date)
+                'slots' => $this->getAvailableTimeSlots($date),
             ];
         }
 
@@ -498,7 +499,7 @@ class GymHall extends Model implements HasMedia
      */
     public function getFallbackTimeSlot(): ?array
     {
-        if (!$this->hasFallbackConfiguration()) {
+        if (! $this->hasFallbackConfiguration()) {
             return null;
         }
 
@@ -520,7 +521,7 @@ class GymHall extends Model implements HasMedia
      */
     public function getFallbackTimeRangeAttribute(): ?string
     {
-        if (!$this->hasFallbackConfiguration()) {
+        if (! $this->hasFallbackConfiguration()) {
             return null;
         }
 
@@ -563,36 +564,36 @@ class GymHall extends Model implements HasMedia
     public function generateTimeGrid(\Carbon\Carbon $date, int $slotDuration = 30): array
     {
         $dayOfWeek = strtolower($date->format('l'));
-        
+
         // Get operating hours for the day
         $operatingHours = $this->operating_hours[$dayOfWeek] ?? null;
-        
-        if (!$operatingHours || !$operatingHours['is_open']) {
+
+        if (! $operatingHours || ! $operatingHours['is_open']) {
             return [];
         }
 
         $startTime = \Carbon\Carbon::createFromTimeString($operatingHours['open_time']);
         $endTime = \Carbon\Carbon::createFromTimeString($operatingHours['close_time']);
-        
+
         $timeGrid = [];
         $current = $startTime->copy();
 
         while ($current->copy()->addMinutes($slotDuration)->lte($endTime)) {
             $slotStart = $current->copy();
             $slotEnd = $current->copy()->addMinutes($slotDuration);
-            
+
             $slotData = [
                 'start_time' => $slotStart->format('H:i'),
                 'end_time' => $slotEnd->format('H:i'),
                 'duration' => $slotDuration,
-                'courts' => []
+                'courts' => [],
             ];
 
             // Check availability for each court
             foreach ($this->activeCourts()->orderBy('sort_order')->get() as $court) {
-                $slotDateTime = $date->copy()->setTimeFrom($slotStart);
+                $slotDateTime = $date->copy()->setTime($slotStart->hour, $slotStart->minute, 0);
                 $isAvailable = $court->isAvailableAt($slotDateTime, $slotDuration);
-                
+
                 $slotData['courts'][] = [
                     'court_id' => $court->id,
                     'court_identifier' => $court->court_identifier,
@@ -600,7 +601,7 @@ class GymHall extends Model implements HasMedia
                     'court_number' => $court->court_number,
                     'color_code' => $court->color_code,
                     'is_available' => $isAvailable,
-                    'bookings' => []  // TODO: Implement getConflictingBookings method
+                    'bookings' => [],  // TODO: Implement getConflictingBookings method
                 ];
             }
 
@@ -613,18 +614,19 @@ class GymHall extends Model implements HasMedia
 
     public function canAccommodateTeams(int $teamCount, \Carbon\Carbon $dateTime, int $duration = 30): bool
     {
-        if (!$this->supports_parallel_bookings) {
+        if (! $this->supports_parallel_bookings) {
             return $teamCount <= 1;
         }
 
         $availableCourts = $this->getAvailableCourtsByTime($dateTime, $duration);
+
         return $availableCourts->count() >= $teamCount;
     }
 
     public function findOptimalCourtsForTeams(int $teamCount, \Carbon\Carbon $dateTime, int $duration = 30): \Illuminate\Database\Eloquent\Collection
     {
         $availableCourts = $this->getAvailableCourtsByTime($dateTime, $duration);
-        
+
         if ($availableCourts->count() < $teamCount) {
             return collect();
         }
@@ -636,43 +638,43 @@ class GymHall extends Model implements HasMedia
     public function validateBookingTime(\Carbon\Carbon $dateTime, int $duration): array
     {
         $errors = [];
-        
+
         // Check if duration matches booking increment
         if ($duration % $this->booking_increment !== 0) {
             $errors[] = "Buchungsdauer muss ein Vielfaches von {$this->booking_increment} Minuten sein.";
         }
-        
+
         // Check minimum duration
         if ($duration < $this->min_booking_duration) {
             $errors[] = "Mindestbuchungsdauer beträgt {$this->min_booking_duration} Minuten.";
         }
-        
+
         // Check if time is on valid increment (00 or 30 minutes)
         $minutes = $dateTime->minute;
         if ($minutes % $this->booking_increment !== 0) {
             $errors[] = "Startzeit muss auf einem {$this->booking_increment}-Minuten-Raster liegen.";
         }
-        
+
         // Check if within operating hours
         $dayOfWeek = strtolower($dateTime->format('l'));
         $operatingHours = $this->operating_hours[$dayOfWeek] ?? null;
-        
-        if (!$operatingHours || !$operatingHours['is_open']) {
-            $errors[] = "Halle ist an diesem Tag nicht geöffnet.";
+
+        if (! $operatingHours || ! $operatingHours['is_open']) {
+            $errors[] = 'Halle ist an diesem Tag nicht geöffnet.';
         } elseif (isset($operatingHours['open_time'], $operatingHours['close_time'])) {
             $openTime = \Carbon\Carbon::createFromTimeString($operatingHours['open_time']);
             $closeTime = \Carbon\Carbon::createFromTimeString($operatingHours['close_time']);
             $endTime = $dateTime->copy()->addMinutes($duration);
-            
+
             if ($dateTime->format('H:i') < $openTime->format('H:i')) {
                 $errors[] = "Startzeit liegt vor Öffnungszeit ({$openTime->format('H:i')}).";
             }
-            
+
             if ($endTime->format('H:i') > $closeTime->format('H:i')) {
                 $errors[] = "Endzeit liegt nach Schließzeit ({$closeTime->format('H:i')}).";
             }
         }
-        
+
         return $errors;
     }
 
@@ -682,25 +684,26 @@ class GymHall extends Model implements HasMedia
             return; // Already has courts
         }
 
-        $courtsToCreate = match($this->hall_type) {
+        $courtsToCreate = match ($this->hall_type) {
             'single' => [
-                ['identifier' => '1', 'name' => 'Hauptfeld', 'color' => '#3B82F6']
+                ['identifier' => '1', 'name' => 'Hauptfeld', 'color' => '#3B82F6'],
             ],
             'double' => [
                 ['identifier' => 'A', 'name' => 'Feld A', 'color' => '#3B82F6'],
-                ['identifier' => 'B', 'name' => 'Feld B', 'color' => '#10B981']
+                ['identifier' => 'B', 'name' => 'Feld B', 'color' => '#10B981'],
             ],
             'triple' => [
                 ['identifier' => 'A', 'name' => 'Feld A', 'color' => '#3B82F6'],
                 ['identifier' => 'B', 'name' => 'Feld B', 'color' => '#10B981'],
-                ['identifier' => 'C', 'name' => 'Feld C', 'color' => '#F59E0B']
+                ['identifier' => 'C', 'name' => 'Feld C', 'color' => '#F59E0B'],
             ],
-            'multi' => array_map(function($i) {
+            'multi' => array_map(function ($i) {
                 $colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316'];
+
                 return [
-                    'identifier' => (string)($i + 1),
-                    'name' => 'Feld ' . ($i + 1),
-                    'color' => $colors[$i % count($colors)]
+                    'identifier' => (string) ($i + 1),
+                    'name' => 'Feld '.($i + 1),
+                    'color' => $colors[$i % count($colors)],
                 ];
             }, range(0, $this->court_count - 1)),
             default => []
@@ -717,8 +720,8 @@ class GymHall extends Model implements HasMedia
                     'identifier' => $courtData['identifier'],
                     'color_code' => $courtData['color'],
                     'court_type' => 'full',
-                    'max_capacity' => $this->capacity
-                ]
+                    'max_capacity' => $this->capacity,
+                ],
             ]);
         }
     }
@@ -753,7 +756,7 @@ class GymHall extends Model implements HasMedia
         return LogOptions::defaults()
             ->logOnly([
                 'name', 'is_active', 'capacity', 'hourly_rate',
-                'opening_time', 'closing_time'
+                'opening_time', 'closing_time',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
@@ -762,25 +765,25 @@ class GymHall extends Model implements HasMedia
     // ============================
     // ACCESSORS
     // ============================
-    
+
     public function getFullAddressAttribute(): string
     {
         $addressParts = [];
-        
+
         if ($this->address_street) {
             $addressParts[] = $this->address_street;
         }
-        
+
         if ($this->address_zip && $this->address_city) {
-            $addressParts[] = $this->address_zip . ' ' . $this->address_city;
+            $addressParts[] = $this->address_zip.' '.$this->address_city;
         } elseif ($this->address_city) {
             $addressParts[] = $this->address_city;
         }
-        
+
         if ($this->address_country && $this->address_country !== 'Deutschland') {
             $addressParts[] = $this->address_country;
         }
-        
+
         return implode(', ', $addressParts) ?: 'Keine Adresse angegeben';
     }
 

@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class GymCourt extends Model
 {
@@ -59,6 +59,11 @@ class GymCourt extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(GymBooking::class);
+    }
+
+    public function teamAssignments(): HasMany
+    {
+        return $this->hasMany(GymTimeSlotTeamAssignment::class);
     }
 
     // ============================
@@ -121,7 +126,7 @@ class GymCourt extends Model
 
     public function isAvailableAt(\Carbon\Carbon $dateTime, int $durationMinutes = 30): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -132,11 +137,11 @@ class GymCourt extends Model
             ->where('status', 'confirmed')
             ->where(function ($query) use ($dateTime, $endTime) {
                 $query->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $dateTime);
+                    ->where('end_time', '>', $dateTime);
             })
             ->exists();
 
-        return !$overlappingBookings;
+        return ! $overlappingBookings;
     }
 
     // ============================
@@ -174,9 +179,9 @@ class GymCourt extends Model
         return $this->teamAssignments()
             ->where('day_of_week', $dayOfWeek)
             ->where('status', 'active')
-            ->where(function($q) use ($startTime, $endTime) {
+            ->where(function ($q) use ($startTime, $endTime) {
                 $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
+                    ->where('end_time', '>', $startTime);
             })
             ->exists();
     }
@@ -209,7 +214,7 @@ class GymCourt extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'name', 'court_number', 'is_active', 'is_main_court', 'hourly_rate'
+                'name', 'court_number', 'is_active', 'is_main_court', 'hourly_rate',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
