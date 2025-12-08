@@ -75,13 +75,15 @@ class PlayerPolicy
         // Club admins can view all players in their clubs
         if ($user->hasRole('club_admin')) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
-            if ($player->team && in_array($player->team->club_id, $userClubIds)) {
+            $primaryTeam = $player->primaryTeam();
+            if ($primaryTeam && in_array($primaryTeam->club_id, $userClubIds)) {
                 return true;
             }
         }
 
         // Club members can view players in their clubs
-        if ($player->team && $user->clubs()->where('club_id', $player->team->club_id)->exists()) {
+        $primaryTeam = $player->primaryTeam();
+        if ($primaryTeam && $user->clubs()->where('club_id', $primaryTeam->club_id)->exists()) {
             return true;
         }
 
@@ -112,10 +114,11 @@ class PlayerPolicy
         }
 
         // Club admins can edit players in their clubs
-        if ($user->hasRole('club_admin') && $player->team) {
+        $primaryTeam = $player->primaryTeam();
+        if ($user->hasRole('club_admin') && $primaryTeam) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
 
-            return in_array($player->team->club_id, $userClubIds);
+            return in_array($primaryTeam->club_id, $userClubIds);
         }
 
         // Coaches can edit players in their teams
@@ -144,10 +147,11 @@ class PlayerPolicy
         }
 
         // Club admins can delete players in their clubs
-        if ($user->hasRole('club_admin') && $player->team) {
+        $primaryTeam = $player->primaryTeam();
+        if ($user->hasRole('club_admin') && $primaryTeam) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
 
-            return in_array($player->team->club_id, $userClubIds);
+            return in_array($primaryTeam->club_id, $userClubIds);
         }
 
         return true;
@@ -203,10 +207,11 @@ class PlayerPolicy
         }
 
         // Club admins can manage contracts for players in their clubs
-        if ($user->hasRole('club_admin') && $player->team) {
+        $primaryTeam = $player->primaryTeam();
+        if ($user->hasRole('club_admin') && $primaryTeam) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
 
-            return in_array($player->team->club_id, $userClubIds);
+            return in_array($primaryTeam->club_id, $userClubIds);
         }
 
         return true; // For admins and super_admins
@@ -302,10 +307,11 @@ class PlayerPolicy
         }
 
         // Club admins can transfer players within or out of their clubs
-        if ($user->hasRole('club_admin') && $player->team) {
+        $primaryTeam = $player->primaryTeam();
+        if ($user->hasRole('club_admin') && $primaryTeam) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
 
-            return in_array($player->team->club_id, $userClubIds);
+            return in_array($primaryTeam->club_id, $userClubIds);
         }
 
         return true; // For admins and super_admins
@@ -321,12 +327,9 @@ class PlayerPolicy
             return false;
         }
 
-        // Team managers can assign jersey numbers
-        if ($user->hasRole('team_manager')) {
-            $managedTeamIds = $user->managedTeams()->pluck('id')->toArray();
-
-            return $this->playerBelongsToTeams($player, $managedTeamIds);
-        }
+        // Team managers can assign jersey numbers if they can edit the player
+        // Note: The update() check above already validates the user has permission
+        // to edit this player (via club_admin, trainer, or general permission)
 
         return true;
     }
@@ -347,10 +350,11 @@ class PlayerPolicy
         }
 
         // Club admins can change status for players in their clubs
-        if ($user->hasRole('club_admin') && $player->team) {
+        $primaryTeam = $player->primaryTeam();
+        if ($user->hasRole('club_admin') && $primaryTeam) {
             $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
 
-            return in_array($player->team->club_id, $userClubIds);
+            return in_array($primaryTeam->club_id, $userClubIds);
         }
 
         return true; // For admins and super_admins

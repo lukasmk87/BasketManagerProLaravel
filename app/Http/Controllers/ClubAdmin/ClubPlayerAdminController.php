@@ -177,7 +177,7 @@ class ClubPlayerAdminController extends Controller
             ]);
 
             return back()
-                ->with('error', 'Fehler beim Erstellen des Spielers: ' . $e->getMessage())
+                ->with('error', 'Fehler beim Erstellen des Spielers: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -273,7 +273,11 @@ class ClubPlayerAdminController extends Controller
             if (! empty($validated['team_id'])) {
                 $team = BasketballTeam::find($validated['team_id']);
                 if ($team && $team->club_id === $primaryClub->id) {
-                    $player->teams()->wherePivot('club_id', $primaryClub->id)->detach();
+                    // Detach player from all teams in this club (club_id is on teams table, not pivot)
+                    $teamIdsToDetach = $player->teams()->where('club_id', $primaryClub->id)->pluck('basketball_teams.id');
+                    if ($teamIdsToDetach->isNotEmpty()) {
+                        $player->teams()->detach($teamIdsToDetach);
+                    }
                     $player->teams()->attach($team->id, [
                         'jersey_number' => $validated['jersey_number'] ?? null,
                         'primary_position' => $validated['primary_position'] ?? null,
@@ -300,7 +304,7 @@ class ClubPlayerAdminController extends Controller
             ]);
 
             return back()
-                ->with('error', 'Fehler beim Aktualisieren des Spielers: ' . $e->getMessage())
+                ->with('error', 'Fehler beim Aktualisieren des Spielers: '.$e->getMessage())
                 ->withInput();
         }
     }
