@@ -50,6 +50,14 @@ class GameController extends Controller
             ->orderBy('scheduled_at', 'desc')
             ->paginate(20);
 
+        // Add display names for external teams (when home_team_id or away_team_id is null)
+        $games->getCollection()->transform(function ($game) {
+            $game->home_team_display_name = $game->getHomeTeamDisplayName();
+            $game->away_team_display_name = $game->getAwayTeamDisplayName();
+
+            return $game;
+        });
+
         return Inertia::render('Games/Index', [
             'games' => $games,
             'can' => [

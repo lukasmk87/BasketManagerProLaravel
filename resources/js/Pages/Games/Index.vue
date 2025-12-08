@@ -98,7 +98,7 @@
                                         <div class="flex items-center space-x-4">
                                             <div class="text-right">
                                                 <div class="text-lg font-semibold text-gray-900">
-                                                    {{ game.home_team?.name }}
+                                                    {{ game.home_team_display_name || game.home_team?.name || 'Unbekannt' }}
                                                 </div>
                                                 <div class="text-sm text-gray-600">
                                                     {{ game.home_team?.club?.name }}
@@ -118,7 +118,7 @@
 
                                             <div class="text-left">
                                                 <div class="text-lg font-semibold text-gray-900">
-                                                    {{ game.away_team?.name }}
+                                                    {{ game.away_team_display_name || game.away_team?.name || 'Unbekannt' }}
                                                 </div>
                                                 <div class="text-sm text-gray-600">
                                                     {{ game.away_team?.club?.name }}
@@ -220,7 +220,7 @@
 
             <template #content>
                 <div v-if="gameToDelete">
-                    Sind Sie sicher, dass Sie das Spiel <strong>{{ gameToDelete.home_team?.name }} vs {{ gameToDelete.away_team?.name }}</strong> 
+                    Sind Sie sicher, dass Sie das Spiel <strong>{{ gameToDelete.home_team_display_name || gameToDelete.home_team?.name || 'Unbekannt' }} vs {{ gameToDelete.away_team_display_name || gameToDelete.away_team?.name || 'Unbekannt' }}</strong>
                     vom {{ formatDate(gameToDelete.scheduled_at) }} löschen möchten?
                     <br><br>
                     Diese Aktion kann nicht rückgängig gemacht werden.

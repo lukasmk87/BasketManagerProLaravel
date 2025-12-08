@@ -294,10 +294,13 @@ class ICalImportService
                 $importedCount++;
 
             } catch (\Exception $e) {
-                $errors[] = "Fehler beim Importieren von Spiel {$gameData['home_team_raw']} vs {$gameData['away_team_raw']}: ".$e->getMessage();
+                $gameType = ($isHomeGame ?? null) ? 'Heimspiel' : 'Auswärtsspiel';
+                $errors[] = "Fehler beim Importieren von {$gameType} {$gameData['home_team_raw']} vs {$gameData['away_team_raw']}: ".$e->getMessage();
                 Log::error('Game import error', [
                     'game_data' => $gameData,
                     'team_id' => $team->id,
+                    'is_home_game' => $isHomeGame ?? 'unknown',
+                    'create_data' => $createData ?? [],
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -522,11 +525,14 @@ class ICalImportService
                 $importedCount++;
 
             } catch (\Exception $e) {
-                $errors[] = "Fehler beim Importieren von Spiel {$gameData['home_team_raw']} vs {$gameData['away_team_raw']}: ".$e->getMessage();
+                $gameType = ($isHomeGame ?? null) ? 'Heimspiel' : 'Auswärtsspiel';
+                $errors[] = "Fehler beim Importieren von {$gameType} {$gameData['home_team_raw']} vs {$gameData['away_team_raw']}: ".$e->getMessage();
                 Log::error('Game import with mapping error', [
                     'game_data' => $gameData,
                     'team_mapping' => $teamMapping,
                     'selected_team_id' => $selectedTeamId,
+                    'is_home_game' => $isHomeGame ?? 'unknown',
+                    'create_data' => $createData ?? [],
                     'error' => $e->getMessage(),
                 ]);
             }
