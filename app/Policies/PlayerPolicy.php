@@ -72,6 +72,14 @@ class PlayerPolicy
             return in_array($player->id, $childPlayerIds);
         }
 
+        // Club admins can view all players in their clubs
+        if ($user->hasRole('club_admin')) {
+            $userClubIds = $user->clubs()->pluck('clubs.id')->toArray();
+            if ($player->team && in_array($player->team->club_id, $userClubIds)) {
+                return true;
+            }
+        }
+
         // Club members can view players in their clubs
         if ($player->team && $user->clubs()->where('club_id', $player->team->club_id)->exists()) {
             return true;
