@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Drill;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class DrillSeeder extends Seeder
 {
@@ -13,11 +13,13 @@ class DrillSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get the first admin user as creator
-        $creator = User::where('role', 'admin')->first() ?? User::first();
-        
-        if (!$creator) {
+        // Get the first admin user as creator (using Spatie Permission)
+        $creator = User::role(['super_admin', 'tenant_admin', 'club_admin'])->first()
+                   ?? User::first();
+
+        if (! $creator) {
             $this->command->error('No users found. Please run UserSeeder first.');
+
             return;
         }
 
@@ -25,34 +27,34 @@ class DrillSeeder extends Seeder
 
         // Warm-up Drills
         $this->seedWarmUpDrills($creator);
-        
+
         // Ball Handling Drills
         $this->seedBallHandlingDrills($creator);
-        
+
         // Shooting Drills
         $this->seedShootingDrills($creator);
-        
+
         // Passing Drills
         $this->seedPassingDrills($creator);
-        
+
         // Defense Drills
         $this->seedDefenseDrills($creator);
-        
+
         // Rebounding Drills
         $this->seedReboundingDrills($creator);
-        
+
         // Conditioning Drills
         $this->seedConditioningDrills($creator);
-        
+
         // Team Offense Drills
         $this->seedTeamOffenseDrills($creator);
-        
+
         // Team Defense Drills
         $this->seedTeamDefenseDrills($creator);
-        
+
         // Scrimmage & Game Situations
         $this->seedScrimmageAndGameDrills($creator);
-        
+
         // Cool Down Drills
         $this->seedCoolDownDrills($creator);
 
@@ -77,7 +79,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Auf saubere Bewegungsausführung achten',
                     'Intensität langsam steigern',
-                    'Bei Schmerzen sofort stoppen'
+                    'Bei Schmerzen sofort stoppen',
                 ],
             ],
             [
@@ -95,7 +97,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Ball kontrolliert führen',
                     'Blick vom Ball lösen',
-                    'Tempo langsam steigern'
+                    'Tempo langsam steigern',
                 ],
             ],
             [
@@ -113,7 +115,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Langsam und kontrolliert ausführen',
                     'Vollständigen Bewegungsumfang nutzen',
-                    'Atmung nicht vergessen'
+                    'Atmung nicht vergessen',
                 ],
             ],
         ];
@@ -150,7 +152,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Ball mit Fingerspitzen kontrollieren',
                     'Blick nach oben richten',
-                    'Flüssige Bewegungen'
+                    'Flüssige Bewegungen',
                 ],
             ],
             [
@@ -170,7 +172,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Ball niedrig halten',
                     'Körper als Schutz nutzen',
-                    'Kopf oben behalten'
+                    'Kopf oben behalten',
                 ],
             ],
             [
@@ -189,7 +191,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Gleichmäßigen Rhythmus halten',
                     'Beide Hände gleich stark',
-                    'Geduld bei Anfangsschwierigkeiten'
+                    'Geduld bei Anfangsschwierigkeiten',
                 ],
             ],
             [
@@ -209,7 +211,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Enge Kontrolle am Hütchen',
                     'Körper tief halten',
-                    'Explosive Richtungswechsel'
+                    'Explosive Richtungswechsel',
                 ],
             ],
         ];
@@ -247,7 +249,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'BEEF: Balance, Eyes, Elbow, Follow-through',
                     'Konstanter Bogenflug',
-                    'Weiches Handgelenk'
+                    'Weiches Handgelenk',
                 ],
                 'measurable_outcomes' => ['Trefferquote', 'Wurfform-Bewertung'],
                 'success_criteria' => ['70% Trefferquote aus kurzer Distanz'],
@@ -271,7 +273,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Gleiche Form bei jedem Wurf',
                     'Schnelle Vorbereitung',
-                    'Mentale Stärke bei Fehlwürfen'
+                    'Mentale Stärke bei Fehlwürfen',
                 ],
                 'measurable_outcomes' => ['Trefferquote pro Position', 'Gesamttrefferquote'],
             ],
@@ -292,7 +294,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Füße beim Fangen schon setzen',
                     'Ball schnell in Wurfposition',
-                    'Rhythmus halten'
+                    'Rhythmus halten',
                 ],
             ],
             [
@@ -313,7 +315,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Immer gleiche Routine',
                     'Positive Visualisierung',
-                    'Entspannte Schultern'
+                    'Entspannte Schultern',
                 ],
                 'measurable_outcomes' => ['Freiwurf-Quote', 'Längste Trefferserie'],
                 'success_criteria' => ['80% Freiwurf-Quote'],
@@ -352,7 +354,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Schritt zum Pass',
                     'Ziel genau anvisieren',
-                    'Follow-through mit Handgelenk'
+                    'Follow-through mit Handgelenk',
                 ],
             ],
             [
@@ -371,7 +373,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Konstante Pass-Stärke',
                     'Bereit für Rückpass',
-                    'Saubere Technik auch bei Tempo'
+                    'Saubere Technik auch bei Tempo',
                 ],
             ],
             [
@@ -391,7 +393,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Pass und sofort laufen',
                     'Timing ist entscheidend',
-                    'Kommunikation wichtig'
+                    'Kommunikation wichtig',
                 ],
             ],
             [
@@ -411,7 +413,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Schnelle Ballverteilung',
                     'Übersicht behalten',
-                    'Kraftvolle, präzise Pässe'
+                    'Kraftvolle, präzise Pässe',
                 ],
             ],
         ];
@@ -447,7 +449,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Tiefe Haltung halten',
                     'Füße nie überkreuzen',
-                    'Balance in allen Bewegungen'
+                    'Balance in allen Bewegungen',
                 ],
             ],
             [
@@ -466,7 +468,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Augen auf Hüfte des Angreifers',
                     'Distanz konstant halten',
-                    'Schnelle Richtungswechsel'
+                    'Schnelle Richtungswechsel',
                 ],
             ],
             [
@@ -485,7 +487,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Kontrollierte Geschwindigkeit',
                     'Balance beim Stoppen',
-                    'Hand hoch zum Ball'
+                    'Hand hoch zum Ball',
                 ],
             ],
             [
@@ -505,7 +507,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Konstante Kommunikation',
                     'Schnelle Rotation',
-                    'Ballverteidiger Pressure'
+                    'Ballverteidiger Pressure',
                 ],
             ],
         ];
@@ -542,7 +544,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Maximale Intensität',
                     'Vollständige Distanzen',
-                    'Mentale Stärke zeigen'
+                    'Mentale Stärke zeigen',
                 ],
                 'measurable_outcomes' => ['Zeit pro Runde', 'Herzfrequenz'],
             ],
@@ -564,7 +566,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Konstantes Tempo halten',
                     'Gemeinsam motivieren',
-                    'Mentale Stärke'
+                    'Mentale Stärke',
                 ],
             ],
             [
@@ -583,7 +585,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Tiefe Stance beibehalten',
                     'Keine Überkreuzung',
-                    'Explosiver Richtungswechsel'
+                    'Explosiver Richtungswechsel',
                 ],
             ],
         ];
@@ -621,7 +623,7 @@ class DrillSeeder extends Seeder
                 'coaching_points' => [
                     'Konstante Bewegung',
                     'Gutes Spacing',
-                    'Lesen der Defense'
+                    'Lesen der Defense',
                 ],
             ],
             // Add more team offense drills...
@@ -640,8 +642,19 @@ class DrillSeeder extends Seeder
     }
 
     // Add other seed methods for remaining categories...
-    private function seedReboundingDrills(User $creator): void { /* Add rebounding drills */ }
-    private function seedTeamDefenseDrills(User $creator): void { /* Add team defense drills */ }
-    private function seedScrimmageAndGameDrills(User $creator): void { /* Add scrimmage drills */ }
-    private function seedCoolDownDrills(User $creator): void { /* Add cool down drills */ }
+    private function seedReboundingDrills(User $creator): void
+    { /* Add rebounding drills */
+    }
+
+    private function seedTeamDefenseDrills(User $creator): void
+    { /* Add team defense drills */
+    }
+
+    private function seedScrimmageAndGameDrills(User $creator): void
+    { /* Add scrimmage drills */
+    }
+
+    private function seedCoolDownDrills(User $creator): void
+    { /* Add cool down drills */
+    }
 }

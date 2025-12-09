@@ -2,33 +2,31 @@
 
 namespace App\Services;
 
+use App\Exceptions\UsageQuotaExceededException;
 use App\Models\Club;
 use App\Models\ClubUsage;
-use App\Exceptions\UsageQuotaExceededException;
-use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class ClubUsageTrackingService
 {
     /**
      * Track resource usage for a club.
      *
-     * @param Club $club The club to track usage for
-     * @param string $metric The metric to track (e.g., 'max_teams', 'max_players')
-     * @param int $amount The amount to add (default: 1)
-     * @param array $metadata Optional metadata for context
-     * @return void
+     * @param  Club  $club  The club to track usage for
+     * @param  string  $metric  The metric to track (e.g., 'max_teams', 'max_players')
+     * @param  int  $amount  The amount to add (default: 1)
+     * @param  array  $metadata  Optional metadata for context
      */
     public function trackResource(Club $club, string $metric, int $amount = 1, array $metadata = []): void
     {
         // Update Redis cache for real-time tracking
         $cacheKey = $this->getCacheKey($club->id, $metric);
-        $currentUsage = (int) Redis::get($cacheKey) ?: 0;
+        $currentUsage = (int) $this->safeRedisGet($cacheKey) ?: 0;
 
         // Set expiry to 31 days (covers full month + buffer)
-        Redis::setex($cacheKey, 86400 * 31, $currentUsage + $amount);
+        $this->safeRedisSetex($cacheKey, 86400 * 31, $currentUsage + $amount);
 
         // Update database for persistence
         $this->updateDatabaseUsage($club, $metric, $amount, $metadata);
@@ -45,19 +43,18 @@ class ClubUsageTrackingService
     /**
      * Remove tracked resource usage (for deletions).
      *
-     * @param Club $club The club to untrack usage for
-     * @param string $metric The metric to untrack
-     * @param int $amount The amount to subtract (default: 1)
-     * @return void
+     * @param  Club  $club  The club to untrack usage for
+     * @param  string  $metric  The metric to untrack
+     * @param  int  $amount  The amount to subtract (default: 1)
      */
     public function untrackResource(Club $club, string $metric, int $amount = 1): void
     {
         // Update Redis cache
         $cacheKey = $this->getCacheKey($club->id, $metric);
-        $currentUsage = (int) Redis::get($cacheKey) ?: 0;
+        $currentUsage = (int) $this->safeRedisGet($cacheKey) ?: 0;
         $newUsage = max(0, $currentUsage - $amount); // Prevent negative usage
 
-        Redis::setex($cacheKey, 86400 * 31, $newUsage);
+        $this->safeRedisSetex($cacheKey, 86400 * 31, $newUsage);
 
         // Update database
         $this->updateDatabaseUsage($club, $metric, -$amount);
@@ -79,8 +76,8 @@ class ClubUsageTrackingService
      * - Fixing discrepancies between cached and actual usage
      * - Periodic reconciliation
      *
-     * @param Club $club The club to sync
-     * @param array|null $metrics Specific metrics to sync (null = all metrics)
+     * @param  Club  $club  The club to sync
+     * @param  array|null  $metrics  Specific metrics to sync (null = all metrics)
      * @return array Synced usage data
      */
     public function syncClubUsage(Club $club, ?array $metrics = null): array
@@ -93,7 +90,7 @@ class ClubUsageTrackingService
 
             // Update both Redis and database
             $cacheKey = $this->getCacheKey($club->id, $metric);
-            Redis::setex($cacheKey, 86400 * 31, $actualUsage);
+            $this->safeRedisSetex($cacheKey, 86400 * 31, $actualUsage);
 
             $this->setDatabaseUsage($club, $metric, $actualUsage);
 
@@ -115,10 +112,9 @@ class ClubUsageTrackingService
      * This method is used by the storage sync command to set the calculated
      * storage usage value directly, bypassing the automatic calculation.
      *
-     * @param Club $club The club to update
-     * @param string $metric The storage metric (e.g., 'max_storage_gb')
-     * @param float|int $value The storage value (in GB for storage metrics)
-     * @return void
+     * @param  Club  $club  The club to update
+     * @param  string  $metric  The storage metric (e.g., 'max_storage_gb')
+     * @param  float|int  $value  The storage value (in GB for storage metrics)
      */
     public function setStorageUsage(Club $club, string $metric, float|int $value): void
     {
@@ -128,7 +124,7 @@ class ClubUsageTrackingService
 
         // Update Redis cache
         $cacheKey = $this->getCacheKey($club->id, $metric);
-        Redis::setex($cacheKey, 86400 * 31, $storageValue);
+        $this->safeRedisSetex($cacheKey, 86400 * 31, $storageValue);
 
         // Update database
         $this->setDatabaseUsage($club, $metric, $storageValue);
@@ -144,13 +140,14 @@ class ClubUsageTrackingService
     /**
      * SEC-008: Get storage usage in GB (converts from internal representation).
      *
-     * @param Club $club The club
-     * @param string $metric The storage metric
+     * @param  Club  $club  The club
+     * @param  string  $metric  The storage metric
      * @return float Storage usage in GB
      */
     public function getStorageUsageGB(Club $club, string $metric = 'max_storage_gb'): float
     {
         $rawValue = $this->getCurrentUsage($club, $metric);
+
         // Convert from millibytes back to GB
         return $rawValue / 1000;
     }
@@ -158,9 +155,9 @@ class ClubUsageTrackingService
     /**
      * Check if club can use a resource (respects limits).
      *
-     * @param Club $club The club to check
-     * @param string $metric The metric to check
-     * @param int $amount The amount to check (default: 1)
+     * @param  Club  $club  The club to check
+     * @param  string  $metric  The metric to check
+     * @param  int  $amount  The amount to check (default: 1)
      * @return bool True if usage is within limits
      */
     public function checkLimit(Club $club, string $metric, int $amount = 1): bool
@@ -180,22 +177,22 @@ class ClubUsageTrackingService
     /**
      * Require that club can use a resource, throw exception if over limit.
      *
-     * @param Club $club The club to check
-     * @param string $metric The metric to check
-     * @param int $amount The amount to check (default: 1)
+     * @param  Club  $club  The club to check
+     * @param  string  $metric  The metric to check
+     * @param  int  $amount  The amount to check (default: 1)
+     *
      * @throws UsageQuotaExceededException If quota is exceeded
-     * @return void
      */
     public function requireLimit(Club $club, string $metric, int $amount = 1): void
     {
-        if (!$this->checkLimit($club, $metric, $amount)) {
+        if (! $this->checkLimit($club, $metric, $amount)) {
             $limit = $club->getLimit($metric);
             $currentUsage = $this->getCurrentUsage($club, $metric);
 
             throw new UsageQuotaExceededException(
-                "Club '{$club->name}' has exceeded the usage quota for '{$metric}'. " .
-                "Current: {$currentUsage}, Limit: {$limit}, Attempted: +{$amount}. " .
-                "Please upgrade your subscription plan to continue."
+                "Club '{$club->name}' has exceeded the usage quota for '{$metric}'. ".
+                "Current: {$currentUsage}, Limit: {$limit}, Attempted: +{$amount}. ".
+                'Please upgrade your subscription plan to continue.'
             );
         }
     }
@@ -203,15 +200,15 @@ class ClubUsageTrackingService
     /**
      * Get current usage for a specific metric.
      *
-     * @param Club $club The club to get usage for
-     * @param string $metric The metric to get usage for
+     * @param  Club  $club  The club to get usage for
+     * @param  string  $metric  The metric to get usage for
      * @return int Current usage count
      */
     public function getCurrentUsage(Club $club, string $metric): int
     {
         // Try Redis first for real-time data
         $cacheKey = $this->getCacheKey($club->id, $metric);
-        $usage = Redis::get($cacheKey);
+        $usage = $this->safeRedisGet($cacheKey);
 
         if ($usage !== null) {
             return (int) $usage;
@@ -228,7 +225,7 @@ class ClubUsageTrackingService
             $clubUsage = $this->calculateActualUsage($club, $metric);
 
             // Cache the calculated value
-            Redis::setex($cacheKey, 86400 * 31, $clubUsage);
+            $this->safeRedisSetex($cacheKey, 86400 * 31, $clubUsage);
         }
 
         return $clubUsage;
@@ -237,8 +234,8 @@ class ClubUsageTrackingService
     /**
      * Get usage percentage for a metric.
      *
-     * @param Club $club The club to get percentage for
-     * @param string $metric The metric to calculate percentage for
+     * @param  Club  $club  The club to get percentage for
+     * @param  string  $metric  The metric to calculate percentage for
      * @return float Percentage of limit used (0-100, or 0 for unlimited)
      */
     public function getUsagePercentage(Club $club, string $metric): float
@@ -257,7 +254,7 @@ class ClubUsageTrackingService
     /**
      * Get all usage metrics for a club with percentages and limits.
      *
-     * @param Club $club The club to get all usage for
+     * @param  Club  $club  The club to get all usage for
      * @return array Usage data keyed by metric
      */
     public function getAllUsage(Club $club): array
@@ -287,8 +284,8 @@ class ClubUsageTrackingService
     /**
      * Get usage statistics for analytics (historical data).
      *
-     * @param Club $club The club to get stats for
-     * @param int $days Number of days to look back (default: 30)
+     * @param  Club  $club  The club to get stats for
+     * @param  int  $days  Number of days to look back (default: 30)
      * @return array Usage statistics grouped by metric
      */
     public function getUsageStats(Club $club, int $days = 30): array
@@ -305,15 +302,14 @@ class ClubUsageTrackingService
     /**
      * Reset usage for a specific metric (manual reset or testing).
      *
-     * @param Club $club The club to reset usage for
-     * @param string $metric The metric to reset
-     * @return void
+     * @param  Club  $club  The club to reset usage for
+     * @param  string  $metric  The metric to reset
      */
     public function resetUsage(Club $club, string $metric): void
     {
         // Clear Redis cache
         $cacheKey = $this->getCacheKey($club->id, $metric);
-        Redis::del($cacheKey);
+        $this->safeRedisDel($cacheKey);
 
         // Delete current period database records
         ClubUsage::where('club_id', $club->id)
@@ -330,7 +326,7 @@ class ClubUsageTrackingService
     /**
      * Check if club is approaching any limits (>80% usage).
      *
-     * @param Club $club The club to check
+     * @param  Club  $club  The club to check
      * @return array Metrics that are approaching limits
      */
     public function getApproachingLimits(Club $club): array
@@ -345,7 +341,7 @@ class ClubUsageTrackingService
     /**
      * Get recommended upgrade based on usage.
      *
-     * @param Club $club The club to get recommendation for
+     * @param  Club  $club  The club to get recommendation for
      * @return array|null Upgrade recommendation or null
      */
     public function getUpgradeRecommendation(Club $club): ?array
@@ -375,23 +371,22 @@ class ClubUsageTrackingService
     /**
      * Get Redis cache key for club usage.
      *
-     * @param int $clubId The club ID
-     * @param string $metric The metric name
+     * @param  int  $clubId  The club ID
+     * @param  string  $metric  The metric name
      * @return string Redis cache key
      */
     private function getCacheKey(int $clubId, string $metric): string
     {
-        return "club_usage:{$clubId}:{$metric}:" . now()->format('Y-m');
+        return "club_usage:{$clubId}:{$metric}:".now()->format('Y-m');
     }
 
     /**
      * Update database usage (increment/decrement).
      *
-     * @param Club $club The club
-     * @param string $metric The metric
-     * @param int $amount The amount to add/subtract
-     * @param array $metadata Optional metadata
-     * @return void
+     * @param  Club  $club  The club
+     * @param  string  $metric  The metric
+     * @param  int  $amount  The amount to add/subtract
+     * @param  array  $metadata  Optional metadata
      */
     private function updateDatabaseUsage(Club $club, string $metric, int $amount, array $metadata = []): void
     {
@@ -414,10 +409,10 @@ class ClubUsageTrackingService
 
         // Increment usage_count safely (prevents negative with max())
         if ($amount > 0) {
-            $clubUsage->increment('usage_count', (int)$amount);
+            $clubUsage->increment('usage_count', (int) $amount);
         } elseif ($amount < 0) {
             // Prevent negative values
-            $clubUsage->decrement('usage_count', min(abs((int)$amount), $clubUsage->usage_count));
+            $clubUsage->decrement('usage_count', min(abs((int) $amount), $clubUsage->usage_count));
         }
 
         // Update metadata and timestamp
@@ -430,10 +425,9 @@ class ClubUsageTrackingService
     /**
      * Set database usage to exact value (used in sync).
      *
-     * @param Club $club The club
-     * @param string $metric The metric
-     * @param int $value The exact value to set
-     * @return void
+     * @param  Club  $club  The club
+     * @param  string  $metric  The metric
+     * @param  int  $value  The exact value to set
      */
     private function setDatabaseUsage(Club $club, string $metric, int $value): void
     {
@@ -456,13 +450,13 @@ class ClubUsageTrackingService
     /**
      * Calculate actual usage from database counts (expensive operation).
      *
-     * @param Club $club The club
-     * @param string $metric The metric to calculate
+     * @param  Club  $club  The club
+     * @param  string  $metric  The metric to calculate
      * @return int Actual usage count
      */
     private function calculateActualUsage(Club $club, string $metric): int
     {
-        return match($metric) {
+        return match ($metric) {
             'max_teams' => $club->teams()->count(),
             'max_players' => $club->players()->count(),
             'max_games_per_month' => $club->getGames()
@@ -478,5 +472,56 @@ class ClubUsageTrackingService
             'max_storage_gb' => $club->calculateStorageUsage(),
             default => 0,
         };
+    }
+
+    /**
+     * Safely get a value from Redis with graceful fallback.
+     *
+     * @param  string  $key  The Redis key
+     * @return string|null The value or null if unavailable
+     */
+    private function safeRedisGet(string $key): ?string
+    {
+        try {
+            return Redis::get($key);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Safely set a value in Redis with expiry, gracefully handling failures.
+     *
+     * @param  string  $key  The Redis key
+     * @param  int  $ttl  Time to live in seconds
+     * @param  mixed  $value  The value to store
+     * @return bool True if successful, false if Redis unavailable
+     */
+    private function safeRedisSetex(string $key, int $ttl, $value): bool
+    {
+        try {
+            Redis::setex($key, $ttl, $value);
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Safely delete a key from Redis, gracefully handling failures.
+     *
+     * @param  string  $key  The Redis key
+     * @return bool True if successful, false if Redis unavailable
+     */
+    private function safeRedisDel(string $key): bool
+    {
+        try {
+            Redis::del($key);
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }
