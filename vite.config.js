@@ -60,11 +60,6 @@ export default defineConfig({
                         return 'konva';
                     }
 
-                    // Drag & Drop
-                    if (id.includes('node_modules/vuedraggable') || id.includes('node_modules/sortablejs')) {
-                        return 'dragdrop';
-                    }
-
                     // Icons
                     if (id.includes('node_modules/@heroicons/')) {
                         return 'icons';
