@@ -418,6 +418,9 @@ require __DIR__ . '/club_admin.php';
 // Include Onboarding routes
 require __DIR__ . '/onboarding.php';
 
+// Include Profile Completion routes (for invited users)
+require __DIR__ . '/profile_completion.php';
+
 // Include Jetstream Routes (Inertia stack)
 if (file_exists(base_path('vendor/laravel/jetstream/routes/inertia.php'))) {
     require base_path('vendor/laravel/jetstream/routes/inertia.php');

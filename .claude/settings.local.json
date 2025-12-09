@@ -7,7 +7,9 @@
       "Bash(./vendor/bin/pint:*)",
       "Bash(php -l:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(php:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

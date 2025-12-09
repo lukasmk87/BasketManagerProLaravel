@@ -5,11 +5,10 @@ namespace App\Services;
 use App\Models\Club;
 use App\Models\ClubInvitation;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class ClubInvitationService
 {
@@ -23,10 +22,9 @@ class ClubInvitationService
     /**
      * Create a new club invitation.
      *
-     * @param int $userId Creator user ID
-     * @param int $clubId Club ID
-     * @param array $options Options (default_role, expires_at, max_uses, settings)
-     * @return ClubInvitation
+     * @param  int  $userId  Creator user ID
+     * @param  int  $clubId  Club ID
+     * @param  array  $options  Options (default_role, expires_at, max_uses, settings)
      */
     public function createInvitation(int $userId, int $clubId, array $options = []): ClubInvitation
     {
@@ -69,14 +67,13 @@ class ClubInvitationService
     /**
      * Validate an invitation token.
      *
-     * @param string $token
      * @return array{valid: bool, invitation: ?ClubInvitation, error: ?string}
      */
     public function validateToken(string $token): array
     {
         $invitation = ClubInvitation::where('invitation_token', $token)->first();
 
-        if (!$invitation) {
+        if (! $invitation) {
             return [
                 'valid' => false,
                 'invitation' => null,
@@ -84,7 +81,7 @@ class ClubInvitationService
             ];
         }
 
-        if (!$invitation->is_active) {
+        if (! $invitation->is_active) {
             return [
                 'valid' => false,
                 'invitation' => $invitation,
@@ -118,15 +115,15 @@ class ClubInvitationService
     /**
      * Register a new user via invitation token and associate with club.
      *
-     * @param string $token Invitation token
-     * @param array $userData User data (name, email, password, phone, birth_date, etc.)
+     * @param  string  $token  Invitation token
+     * @param  array  $userData  User data (name, email, password, phone, birth_date, etc.)
      * @return array{success: bool, user: ?User, invitation: ?ClubInvitation, error: ?string}
      */
     public function registerUserWithClub(string $token, array $userData): array
     {
         // Validate token first
         $validation = $this->validateToken($token);
-        if (!$validation['valid']) {
+        if (! $validation['valid']) {
             return [
                 'success' => false,
                 'user' => null,
@@ -159,6 +156,7 @@ class ClubInvitationService
                 'date_of_birth' => isset($userData['date_of_birth']) ? Carbon::parse($userData['date_of_birth']) : null,
                 'gender' => $userData['gender'] ?? null,
                 'is_active' => true,
+                'needs_profile_completion' => true,
             ]);
 
             // Assign Spatie role based on club role
@@ -205,22 +203,19 @@ class ClubInvitationService
                 'success' => false,
                 'user' => null,
                 'invitation' => $invitation,
-                'error' => 'Registrierung fehlgeschlagen: ' . $e->getMessage(),
+                'error' => 'Registrierung fehlgeschlagen: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * Get statistics for an invitation.
-     *
-     * @param int $invitationId
-     * @return array
      */
     public function getInvitationStats(int $invitationId): array
     {
         $invitation = ClubInvitation::with('registeredUsers')->find($invitationId);
 
-        if (!$invitation) {
+        if (! $invitation) {
             return [];
         }
 
@@ -229,15 +224,12 @@ class ClubInvitationService
 
     /**
      * Deactivate an invitation.
-     *
-     * @param int $invitationId
-     * @return bool
      */
     public function deactivateInvitation(int $invitationId): bool
     {
         $invitation = ClubInvitation::find($invitationId);
 
-        if (!$invitation) {
+        if (! $invitation) {
             return false;
         }
 
@@ -251,7 +243,6 @@ class ClubInvitationService
     /**
      * Get all invitations for a club.
      *
-     * @param int $clubId
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getClubInvitations(int $clubId)
@@ -264,13 +255,10 @@ class ClubInvitationService
 
     /**
      * Map club role to Spatie permission role.
-     *
-     * @param string $clubRole
-     * @return string
      */
     protected function mapClubRoleToSpatieRole(string $clubRole): string
     {
-        return match($clubRole) {
+        return match ($clubRole) {
             'player' => 'player',
             'parent' => 'parent',
             'volunteer', 'sponsor', 'member' => 'guest',
@@ -280,10 +268,6 @@ class ClubInvitationService
 
     /**
      * Send notifications after registration (optional - to be implemented).
-     *
-     * @param ClubInvitation $invitation
-     * @param User $user
-     * @return void
      */
     protected function sendRegistrationNotifications(ClubInvitation $invitation, User $user): void
     {

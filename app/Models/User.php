@@ -3,32 +3,33 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Services\User\UserApiService;
+use App\Services\User\UserRoleService;
 use App\Traits\HasLocalePreference;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Cashier\Billable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
-use Laravel\Cashier\Billable;
-use Spatie\Permission\Traits\HasRoles;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
-use App\Services\User\UserRoleService;
-use App\Services\User\UserApiService;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
+    use Billable;
     use HasApiTokens;
-    use HasFactory; 
+    use HasFactory;
     use HasLocalePreference;
     use HasProfilePhoto;
     use HasRoles;
@@ -37,7 +38,6 @@ class User extends Authenticatable implements MustVerifyEmail
     use Notifiable;
     use SoftDeletes;
     use TwoFactorAuthenticatable;
-    use Billable;
 
     /**
      * The attributes that are mass assignable.
@@ -108,6 +108,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'background_check_completed',
         'background_check_date',
         'onboarding_completed_at',
+        'needs_profile_completion',
+        'profile_completed_at',
     ];
 
     /**
@@ -155,6 +157,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'api_key_last_used_at' => 'datetime',
             'rate_limit_cache' => 'array',
             'onboarding_completed_at' => 'datetime',
+            'needs_profile_completion' => 'boolean',
+            'profile_completed_at' => 'datetime',
         ];
     }
 
@@ -165,8 +169,6 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Determine if the user has verified their email address.
      * Override Laravel's default implementation to correctly check email_verified_at.
-     *
-     * @return bool
      */
     public function hasVerifiedEmail(): bool
     {
@@ -175,8 +177,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Mark the given user's email as verified.
-     *
-     * @return bool
      */
     public function markEmailAsVerified(): bool
     {
@@ -247,8 +247,8 @@ class User extends Authenticatable implements MustVerifyEmail
     public function clubs(): BelongsToMany
     {
         return $this->belongsToMany(Club::class, 'club_user')
-                    ->withPivot('role', 'joined_at', 'is_active')
-                    ->withTimestamps();
+            ->withPivot('role', 'joined_at', 'is_active')
+            ->withTimestamps();
     }
 
     /**
@@ -408,9 +408,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function scopePlayers($query)
     {
         return $query->where('player_profile_active', true)
-                    ->whereHas('playerProfile', function($q) {
-                        $q->where('status', 'active');
-                    });
+            ->whereHas('playerProfile', function ($q) {
+                $q->where('status', 'active');
+            });
     }
 
     /**
@@ -419,9 +419,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function scopeWithActivePlayerProfile($query)
     {
         return $query->where('player_profile_active', true)
-                    ->whereHas('playerProfile', function($q) {
-                        $q->where('status', 'active');
-                    });
+            ->whereHas('playerProfile', function ($q) {
+                $q->where('status', 'active');
+            });
     }
 
     /**
@@ -429,18 +429,18 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function scopeInCurrentTeam($query, $season = null, $league = null)
     {
-        return $query->whereHas('playerProfile', function($q) use ($season, $league) {
+        return $query->whereHas('playerProfile', function ($q) use ($season, $league) {
             $q->where('status', 'active')
-              ->whereHas('teams', function($teamQuery) use ($season, $league) {
-                  if ($season) {
-                      $teamQuery->where('teams.season', $season);
-                  }
-                  if ($league !== null) {
-                      $teamQuery->where('teams.league', $league);
-                  }
-                  $teamQuery->where('teams.is_active', true)
-                           ->wherePivot('status', 'active');
-              });
+                ->whereHas('teams', function ($teamQuery) use ($season, $league) {
+                    if ($season) {
+                        $teamQuery->where('teams.season', $season);
+                    }
+                    if ($league !== null) {
+                        $teamQuery->where('teams.league', $league);
+                    }
+                    $teamQuery->where('teams.is_active', true)
+                        ->wherePivot('status', 'active');
+                });
         });
     }
 
@@ -482,9 +482,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function avatarUrl(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->avatar_path 
-                ? asset('storage/' . $this->avatar_path)
-                : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF'
+            get: fn () => $this->avatar_path
+                ? asset('storage/'.$this->avatar_path)
+                : 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&color=7F9CF5&background=EBF4FF'
         );
     }
 
@@ -506,6 +506,37 @@ class User extends Authenticatable implements MustVerifyEmail
     public function markOnboardingComplete(): void
     {
         $this->update(['onboarding_completed_at' => now()]);
+    }
+
+    /**
+     * Check if the user needs to complete their profile (invited users).
+     */
+    public function needsProfileCompletion(): bool
+    {
+        return $this->needs_profile_completion && $this->profile_completed_at === null;
+    }
+
+    /**
+     * Mark the profile as completed (for invited users).
+     * Also marks onboarding as completed.
+     */
+    public function markProfileComplete(): void
+    {
+        $this->update([
+            'profile_completed_at' => now(),
+            'needs_profile_completion' => false,
+            'onboarding_completed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Check if the user was registered via a club invitation.
+     */
+    public function wasRegisteredViaInvitation(): bool
+    {
+        return $this->clubs()
+            ->wherePivotNotNull('registered_via_invitation_id')
+            ->exists();
     }
 
     /**
@@ -562,7 +593,8 @@ class User extends Authenticatable implements MustVerifyEmail
      * Get clubs administered by this user.
      *
      * @deprecated Use UserRoleService::getAdministeredClubs() instead
-     * @param bool $asQuery If true, returns query builder. If false, returns collection.
+     *
+     * @param  bool  $asQuery  If true, returns query builder. If false, returns collection.
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany|\Illuminate\Database\Eloquent\Collection
      */
     public function getAdministeredClubs(bool $asQuery = true)
@@ -574,7 +606,6 @@ class User extends Authenticatable implements MustVerifyEmail
      * Get IDs of clubs administered by this user.
      *
      * @deprecated Use UserRoleService::getAdministeredClubIds() instead
-     * @return array
      */
     public function getAdministeredClubIds(): array
     {
@@ -671,7 +702,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function hasRequiredConsents(): bool
     {
-        if (!$this->isPlayer() || !$this->playerProfile) {
+        if (! $this->isPlayer() || ! $this->playerProfile) {
             return true;
         }
 

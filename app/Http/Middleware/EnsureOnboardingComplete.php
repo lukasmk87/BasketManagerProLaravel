@@ -13,6 +13,7 @@ class EnsureOnboardingComplete
      */
     protected array $excludedRoutes = [
         'onboarding.*',
+        'profile-completion.*',
         'logout',
         'api.*',
         'webhooks.*',
@@ -43,7 +44,7 @@ class EnsureOnboardingComplete
         $user = $request->user();
 
         // Skip for unauthenticated users
-        if (!$user) {
+        if (! $user) {
             return $next($request);
         }
 
@@ -57,8 +58,13 @@ class EnsureOnboardingComplete
             return $next($request);
         }
 
+        // Check if user needs profile completion (invited users)
+        if ($user->needsProfileCompletion()) {
+            return redirect()->route('profile-completion.index');
+        }
+
         // Redirect to onboarding if not completed
-        if (!$user->hasCompletedOnboarding()) {
+        if (! $user->hasCompletedOnboarding()) {
             return redirect()->route('onboarding.index');
         }
 
@@ -77,7 +83,7 @@ class EnsureOnboardingComplete
         }
 
         // Also skip for AJAX requests to avoid issues with background requests
-        if ($request->expectsJson() && !$request->routeIs('dashboard')) {
+        if ($request->expectsJson() && ! $request->routeIs('dashboard')) {
             return true;
         }
 

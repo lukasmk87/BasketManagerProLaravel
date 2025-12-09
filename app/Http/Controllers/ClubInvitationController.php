@@ -271,10 +271,12 @@ class ClubInvitationController extends Controller
                 ->with('error', $result['error']);
         }
 
-        // Redirect to success page
+        // Auto-login the user and redirect to profile completion
+        Auth::login($result['user']);
+
         return redirect()
-            ->route('public.club.success', ['token' => $token])
-            ->with('success', __('Registrierung erfolgreich! Sie können sich nun anmelden.'));
+            ->route('profile-completion.index')
+            ->with('success', __('Registrierung erfolgreich! Bitte vervollständigen Sie nun Ihr Profil.'));
     }
 
     /**
