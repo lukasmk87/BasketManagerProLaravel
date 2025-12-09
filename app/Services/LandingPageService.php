@@ -399,7 +399,7 @@ class LandingPageService
                 'items' => [
                     [
                         'name' => 'Starter',
-                        'price' => '7,99',
+                        'price' => 7.99,
                         'period' => 'Monat',
                         'description' => 'Perfekt für kleine Vereine',
                         'features' => [
@@ -415,7 +415,7 @@ class LandingPageService
                     ],
                     [
                         'name' => 'Club',
-                        'price' => '29,99',
+                        'price' => 29.99,
                         'period' => 'Monat',
                         'description' => 'Ideal für wachsende Vereine',
                         'features' => [
@@ -432,7 +432,7 @@ class LandingPageService
                     ],
                     [
                         'name' => 'Professional',
-                        'price' => '59,99',
+                        'price' => 59.99,
                         'period' => 'Monat',
                         'description' => 'Für professionelle Vereine',
                         'features' => [
@@ -450,7 +450,7 @@ class LandingPageService
                     ],
                     [
                         'name' => 'Enterprise',
-                        'price' => 'Custom',
+                        'price' => null,
                         'period' => '',
                         'description' => 'Individuelle Lösungen',
                         'features' => [

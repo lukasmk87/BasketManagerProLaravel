@@ -343,10 +343,22 @@
                             : 'bg-gray-900 text-white hover:bg-gray-800';
 
                         // Get price display (Brutto inkl. MwSt.)
-                        $grossPrice = isset($plan['gross_price']) ? $plan['gross_price'] : (($plan['price'] ?? 0) * 1.19);
-                        $priceDisplay = $plan['formatted_gross_price'] ?? number_format($grossPrice, 2, ',', '.') . ' €';
+                        // Handle both numeric and string prices (German format)
+                        $rawPrice = $plan['price'] ?? 0;
+                        if (is_string($rawPrice)) {
+                            // Convert German format (7,99) to float (7.99)
+                            $rawPrice = str_replace(',', '.', $rawPrice);
+                            $rawPrice = is_numeric($rawPrice) ? floatval($rawPrice) : 0;
+                        }
+                        $grossPrice = isset($plan['gross_price']) ? $plan['gross_price'] : ($rawPrice * 1.19);
+
+                        // Handle special cases
                         if ($isFree) {
                             $priceDisplay = 'Kostenlos';
+                        } elseif ($plan['price'] === null || $plan['price'] === 'Custom') {
+                            $priceDisplay = 'Custom';
+                        } else {
+                            $priceDisplay = $plan['formatted_gross_price'] ?? number_format($grossPrice, 2, ',', '.') . ' €';
                         }
 
                         // Get billing interval
