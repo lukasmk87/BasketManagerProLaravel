@@ -186,6 +186,7 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'translations' => fn () => [
+                'auth' => __('auth'),
                 'subscription' => __('subscription'),
                 'billing' => __('billing'),
                 'checkout' => __('checkout'),

@@ -7,8 +7,11 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 const recovery = ref(false);
+
+const { trans } = useTranslations();
 
 const form = useForm({
     code: '',
@@ -38,7 +41,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Two-factor Confirmation" />
+    <Head :title="trans('auth.two_factor.title')" />
 
     <AuthenticationCard>
         <template #logo>
@@ -47,17 +50,17 @@ const submit = () => {
 
         <div class="mb-4 text-sm text-gray-600">
             <template v-if="! recovery">
-                Please confirm access to your account by entering the authentication code provided by your authenticator application.
+                {{ trans('auth.two_factor.authentication_challenge') }}
             </template>
 
             <template v-else>
-                Please confirm access to your account by entering one of your emergency recovery codes.
+                {{ trans('auth.two_factor.recovery_challenge') }}
             </template>
         </div>
 
         <form @submit.prevent="submit">
             <div v-if="! recovery">
-                <InputLabel for="code" value="Code" />
+                <InputLabel for="code" :value="trans('auth.two_factor.code')" />
                 <TextInput
                     id="code"
                     ref="codeInput"
@@ -72,7 +75,7 @@ const submit = () => {
             </div>
 
             <div v-else>
-                <InputLabel for="recovery_code" value="Recovery Code" />
+                <InputLabel for="recovery_code" :value="trans('auth.two_factor.recovery_code')" />
                 <TextInput
                     id="recovery_code"
                     ref="recoveryCodeInput"
@@ -87,16 +90,16 @@ const submit = () => {
             <div class="flex items-center justify-end mt-4">
                 <button type="button" class="text-sm text-gray-600 hover:text-gray-900 underline cursor-pointer" @click.prevent="toggleRecovery">
                     <template v-if="! recovery">
-                        Use a recovery code
+                        {{ trans('auth.two_factor.use_recovery_code') }}
                     </template>
 
                     <template v-else>
-                        Use an authentication code
+                        {{ trans('auth.two_factor.use_authentication_code') }}
                     </template>
                 </button>
 
                 <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Log in
+                    {{ trans('auth.two_factor.sign_in') }}
                 </PrimaryButton>
             </div>
         </form>

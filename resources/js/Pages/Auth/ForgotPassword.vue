@@ -6,10 +6,13 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 defineProps({
     status: String,
 });
+
+const { trans } = useTranslations();
 
 const form = useForm({
     email: '',
@@ -21,7 +24,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Forgot Password" />
+    <Head :title="trans('auth.forgot_password.title')" />
 
     <AuthenticationCard>
         <template #logo>
@@ -29,7 +32,7 @@ const submit = () => {
         </template>
 
         <div class="mb-4 text-sm text-gray-600">
-            Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.
+            {{ trans('auth.forgot_password.no_problem') }}
         </div>
 
         <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
@@ -38,7 +41,7 @@ const submit = () => {
 
         <form @submit.prevent="submit">
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" :value="trans('auth.forgot_password.email')" />
                 <TextInput
                     id="email"
                     v-model="form.email"
@@ -53,7 +56,7 @@ const submit = () => {
 
             <div class="flex items-center justify-end mt-4">
                 <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Email Password Reset Link
+                    {{ trans('auth.forgot_password.send_reset_link') }}
                 </PrimaryButton>
             </div>
         </form>

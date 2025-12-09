@@ -6,11 +6,14 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { useTranslations } from '@/Composables/core/useTranslations';
 
 const props = defineProps({
     email: String,
     token: String,
 });
+
+const { trans } = useTranslations();
 
 const form = useForm({
     token: props.token,
@@ -27,7 +30,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Reset Password" />
+    <Head :title="trans('auth.reset_password.title')" />
 
     <AuthenticationCard>
         <template #logo>
@@ -36,7 +39,7 @@ const submit = () => {
 
         <form @submit.prevent="submit">
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" :value="trans('auth.reset_password.email')" />
                 <TextInput
                     id="email"
                     v-model="form.email"
@@ -50,7 +53,7 @@ const submit = () => {
             </div>
 
             <div class="mt-4">
-                <InputLabel for="password" value="Password" />
+                <InputLabel for="password" :value="trans('auth.reset_password.password')" />
                 <TextInput
                     id="password"
                     v-model="form.password"
@@ -63,7 +66,7 @@ const submit = () => {
             </div>
 
             <div class="mt-4">
-                <InputLabel for="password_confirmation" value="Confirm Password" />
+                <InputLabel for="password_confirmation" :value="trans('auth.reset_password.password_confirmation')" />
                 <TextInput
                     id="password_confirmation"
                     v-model="form.password_confirmation"
@@ -77,7 +80,7 @@ const submit = () => {
 
             <div class="flex items-center justify-end mt-4">
                 <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Reset Password
+                    {{ trans('auth.reset_password.reset_password_button') }}
                 </PrimaryButton>
             </div>
         </form>

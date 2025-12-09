@@ -11,7 +11,8 @@
       "Bash(php:*)",
       "Bash(npm run build:*)",
       "WebSearch",
-      "Bash(composer test:*)"
+      "Bash(composer test:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []
