@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php -r \"\ntry {\n    $pdo = new PDO(\n        ''mysql:host=w015b7e3.kasserver.com;port=3306;dbname=d0453b99'',\n        ''d0453b99'',\n        ''yvj85cjxHAM6pR7Y7YJ6''\n    );\n    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);\n    \n    // Check if there''s a tenant_id on users\n    echo ''=== User Tenant IDs ==='' . PHP_EOL;\n    $stmt = $pdo->query(\"\"\n        SELECT u.id, u.name, u.tenant_id, t.name as tenant_name\n        FROM users u\n        LEFT JOIN tenants t ON u.tenant_id = t.id\n        WHERE u.id IN (2, 6)\n    \"\");\n    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);\n    foreach ($users as $u) {\n        echo \"\"User {$u[''id'']}: tenant_id=\"\" . ($u[''tenant_id''] ?: ''NULL'') . \"\", tenant=\"\" . ($u[''tenant_name''] ?: ''N/A'') . PHP_EOL;\n    }\n    \n    // Check permissions table for any team/tenant scoping\n    echo PHP_EOL . ''=== Permissions Tabelle Struktur ==='' . PHP_EOL;\n    $stmt = $pdo->query(\"\"DESCRIBE permissions\"\");\n    $cols = $stmt->fetchAll(PDO::FETCH_ASSOC);\n    foreach ($cols as $c) {\n        echo \"\"{$c[''Field'']} ({$c[''Type'']})\"\" . PHP_EOL;\n    }\n    \n    // Check model_has_permissions for direct user permissions\n    echo PHP_EOL . ''=== Direkte User Permissions (User 2 & 6) ==='' . PHP_EOL;\n    $stmt = $pdo->query(\"\"\n        SELECT mhp.model_id, p.name as permission_name\n        FROM model_has_permissions mhp\n        JOIN permissions p ON mhp.permission_id = p.id\n        WHERE mhp.model_type = ''App\\\\\\\\Models\\\\\\\\User''\n        AND mhp.model_id IN (2, 6)\n    \"\");\n    $perms = $stmt->fetchAll(PDO::FETCH_ASSOC);\n    if (empty($perms)) {\n        echo ''Keine direkten Permissions - alle kommen über Rollen'' . PHP_EOL;\n    } else {\n        foreach ($perms as $p) {\n            echo \"\"User {$p[''model_id'']}: {$p[''permission_name'']}\"\" . PHP_EOL;\n        }\n    }\n    \n} catch (PDOException $e) {\n    echo ''Fehler: '' . $e->getMessage() . PHP_EOL;\n}\n\")"
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(php artisan tinker:*)",
+      "Bash(./vendor/bin/pint:*)",
+      "Bash(php -l:*)"
     ],
     "deny": [],
     "ask": []

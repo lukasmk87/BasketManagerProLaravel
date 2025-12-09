@@ -23,7 +23,7 @@ class PlayerController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        
+
         // Get players based on user permissions
         $players = Player::query()
             ->with(['teams.club', 'user'])
@@ -35,10 +35,10 @@ class PlayerController extends Controller
                 // Other users see players from their teams/clubs
                 return $query->whereHas('teams', function ($q) use ($user) {
                     $q->where('head_coach_id', $user->id)
-                      ->orWhereJsonContains('assistant_coaches', $user->id)
-                      ->orWhereHas('club.users', function ($subQ) use ($user) {
-                          $subQ->where('user_id', $user->id);
-                      });
+                        ->orWhereJsonContains('assistant_coaches', $user->id)
+                        ->orWhereHas('club.users', function ($subQ) use ($user) {
+                            $subQ->where('user_id', $user->id);
+                        });
                 });
             })
             ->leftJoin('player_team', 'players.id', '=', 'player_team.player_id')
@@ -48,6 +48,16 @@ class PlayerController extends Controller
             ->select('players.*')
             ->distinct()
             ->paginate(20);
+
+        // Add per-player permissions for frontend
+        $players->getCollection()->transform(function ($player) {
+            $player->can = [
+                'update' => auth()->user()->can('update', $player),
+                'delete' => auth()->user()->can('delete', $player),
+            ];
+
+            return $player;
+        });
 
         return Inertia::render('Players/Index', [
             'players' => $players,
@@ -65,7 +75,7 @@ class PlayerController extends Controller
         $this->authorize('create', Player::class);
 
         $user = auth()->user();
-        
+
         $teams = Team::query()
             ->with('club')
             ->select(['id', 'name', 'club_id'])
@@ -79,7 +89,7 @@ class PlayerController extends Controller
                     $q->whereHas('club.users', function ($subQ) use ($user) {
                         $subQ->where('user_id', $user->id);
                     })->orWhere('head_coach_id', $user->id)
-                    ->orWhereJsonContains('assistant_coaches', $user->id);
+                        ->orWhereJsonContains('assistant_coaches', $user->id);
                 });
             })
             ->orderBy('name')
@@ -105,37 +115,37 @@ class PlayerController extends Controller
             'phone' => 'nullable|string|max:20',
             'birth_date' => 'nullable|date|before:today',
             'gender' => 'nullable|in:male,female,other',
-            
+
             // Player Basic Info
             'team_id' => 'required|exists:teams,id',
             'jersey_number' => 'required|integer|min:0|max:99',
             'primary_position' => 'required|in:PG,SG,SF,PF,C',
             'secondary_positions' => 'nullable|array',
             'secondary_positions.*' => 'in:PG,SG,SF,PF,C',
-            
+
             // Physical Information
             'height_cm' => 'nullable|integer|min:100|max:250',
             'weight_kg' => 'nullable|numeric|min:30|max:200',
             'dominant_hand' => 'nullable|in:left,right,ambidextrous',
             'shoe_size' => 'nullable|string|max:10',
-            
+
             // Basketball Experience
             'started_playing' => 'nullable|date|before_or_equal:today',
             'years_experience' => 'nullable|integer|min:0|max:50',
             'previous_teams' => 'nullable|array',
             'achievements' => 'nullable|array',
-            
+
             // Player Status
             'status' => 'required|in:active,inactive,injured,suspended',
             'is_starter' => 'boolean',
             'is_captain' => 'boolean',
             'is_rookie' => 'boolean',
-            
+
             // Contract Information
             'contract_start' => 'nullable|date',
             'contract_end' => 'nullable|date|after:contract_start',
             'registration_number' => 'nullable|string|max:50|unique:players,registration_number',
-            
+
             // Medical Information
             'medical_conditions' => 'nullable|array',
             'allergies' => 'nullable|array',
@@ -145,29 +155,29 @@ class PlayerController extends Controller
             'medical_clearance_expires' => 'nullable|date|after:today',
             'preferred_hospital' => 'nullable|string|max:255',
             'medical_notes' => 'nullable|string|max:2000',
-            
+
             // Insurance Information
             'insurance_provider' => 'nullable|string|max:255',
             'insurance_policy_number' => 'nullable|string|max:100',
             'insurance_expires' => 'nullable|date|after:today',
-            
+
             // Emergency Contacts
             'emergency_medical_contact' => 'nullable|string|max:255',
             'emergency_medical_phone' => 'nullable|string|max:20',
             'parent_user_id' => 'nullable|exists:users,id',
             'guardian_contacts' => 'nullable|array',
-            
+
             // Development & Training
             'training_focus_areas' => 'nullable|array',
             'development_goals' => 'nullable|array',
             'coach_notes' => 'nullable|string|max:2000',
-            
+
             // Academic Information (for minors)
             'school_name' => 'nullable|string|max:255',
             'grade_level' => 'nullable|string|max:20',
             'gpa' => 'nullable|numeric|min:1.0|max:4.0',
             'academic_eligibility' => 'boolean',
-            
+
             // Preferences
             'preferences' => 'nullable|array',
             'dietary_restrictions' => 'nullable|array',
@@ -186,25 +196,25 @@ class PlayerController extends Controller
 
         if ($existingPlayer) {
             return back()->withErrors([
-                'jersey_number' => 'Diese Rückennummer ist bereits im Team vergeben.'
+                'jersey_number' => 'Diese Rückennummer ist bereits im Team vergeben.',
             ]);
         }
 
         // Create user first
         $userData = [
-            'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+            'name' => $validated['first_name'].' '.$validated['last_name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'date_of_birth' => $validated['birth_date'] ?? null,
             'gender' => $validated['gender'] ?? null,
         ];
-        
+
         $user = $this->userService->createUser($userData);
-        
+
         // Prepare player data with user_id
         $playerData = $validated;
         $playerData['user_id'] = $user->id;
-        
+
         $player = $this->playerService->createPlayer($playerData);
 
         return redirect()->route('web.players.show', $player)
@@ -223,7 +233,7 @@ class PlayerController extends Controller
             'teams.club',
             'user',
             'parent',
-            'gameActions.game'
+            'gameActions.game',
         ]);
 
         // Add computed attributes to the player
@@ -240,7 +250,7 @@ class PlayerController extends Controller
             'age',
             'all_positions',
             'medical_clearance_expired',
-            'insurance_expired'
+            'insurance_expired',
         ]);
 
         // Get season from player's team or use current season as fallback
@@ -253,7 +263,7 @@ class PlayerController extends Controller
             'can' => [
                 'update' => auth()->user()->can('update', $player),
                 'delete' => auth()->user()->can('delete', $player),
-                'view_medical' => auth()->user()->can('view', $player) && 
+                'view_medical' => auth()->user()->can('view', $player) &&
                     (auth()->user()->hasAnyRole(['tenant_admin', 'club_admin', 'trainer']) || auth()->id() === $player->user_id),
             ],
         ]);
@@ -267,20 +277,20 @@ class PlayerController extends Controller
         $this->authorize('update', $player);
 
         $user = auth()->user();
-        
+
         // Load player with proper relationships and pivot data
         $player->load([
             'teams.club',
             'user',
-            'parent'
+            'parent',
         ]);
-        
+
         // Get the primary team for form population
         $primaryTeam = $player->primaryTeam();
-        
+
         // Structure player data with team-specific fields from pivot
         $playerData = $player->toArray();
-        
+
         if ($primaryTeam) {
             $playerData['team_id'] = $primaryTeam->id;
             $playerData['jersey_number'] = $primaryTeam->pivot->jersey_number;
@@ -293,7 +303,7 @@ class PlayerController extends Controller
             $playerData['contract_end'] = $primaryTeam->pivot->contract_end;
             $playerData['registration_number'] = $primaryTeam->pivot->registration_number;
         }
-        
+
         // Add user data if available
         if ($player->user) {
             $playerData['first_name'] = $player->user->first_name ?? '';
@@ -303,7 +313,7 @@ class PlayerController extends Controller
             $playerData['birth_date'] = $player->user->birth_date ?? '';
             $playerData['gender'] = $player->user->gender ?? '';
         }
-        
+
         $teams = Team::query()
             ->with('club')
             ->select(['id', 'name', 'club_id'])
@@ -317,7 +327,7 @@ class PlayerController extends Controller
                     $q->whereHas('club.users', function ($subQ) use ($user) {
                         $subQ->where('user_id', $user->id);
                     })->orWhere('head_coach_id', $user->id)
-                    ->orWhereJsonContains('assistant_coaches', $user->id);
+                        ->orWhereJsonContains('assistant_coaches', $user->id);
                 });
             })
             ->orderBy('name')
@@ -340,41 +350,41 @@ class PlayerController extends Controller
             // User Information (these will be handled separately for User model)
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $player->user_id,
+            'email' => 'required|email|unique:users,email,'.$player->user_id,
             'phone' => 'nullable|string|max:20',
             'birth_date' => 'nullable|date|before:today',
             'gender' => 'nullable|in:male,female,other',
-            
+
             // Player Basic Info
             'team_id' => 'required|exists:teams,id',
             'jersey_number' => 'required|integer|min:0|max:99',
             'primary_position' => 'required|in:PG,SG,SF,PF,C',
             'secondary_positions' => 'nullable|array',
             'secondary_positions.*' => 'in:PG,SG,SF,PF,C',
-            
+
             // Physical Information
             'height_cm' => 'nullable|integer|min:100|max:250',
             'weight_kg' => 'nullable|numeric|min:30|max:200',
             'dominant_hand' => 'nullable|in:left,right,ambidextrous',
             'shoe_size' => 'nullable|string|max:10',
-            
+
             // Basketball Experience
             'started_playing' => 'nullable|date|before_or_equal:today',
             'years_experience' => 'nullable|integer|min:0|max:50',
             'previous_teams' => 'nullable|array',
             'achievements' => 'nullable|array',
-            
+
             // Player Status
             'status' => 'required|in:active,inactive,injured,suspended',
             'is_starter' => 'boolean',
             'is_captain' => 'boolean',
             'is_rookie' => 'boolean',
-            
+
             // Contract Information
             'contract_start' => 'nullable|date',
             'contract_end' => 'nullable|date|after:contract_start',
-            'registration_number' => 'nullable|string|max:50|unique:players,registration_number,' . $player->id,
-            
+            'registration_number' => 'nullable|string|max:50|unique:players,registration_number,'.$player->id,
+
             // Medical Information
             'medical_conditions' => 'nullable|array',
             'allergies' => 'nullable|array',
@@ -384,29 +394,29 @@ class PlayerController extends Controller
             'medical_clearance_expires' => 'nullable|date|after:today',
             'preferred_hospital' => 'nullable|string|max:255',
             'medical_notes' => 'nullable|string|max:2000',
-            
+
             // Insurance Information
             'insurance_provider' => 'nullable|string|max:255',
             'insurance_policy_number' => 'nullable|string|max:100',
             'insurance_expires' => 'nullable|date|after:today',
-            
+
             // Emergency Contacts
             'emergency_medical_contact' => 'nullable|string|max:255',
             'emergency_medical_phone' => 'nullable|string|max:20',
             'parent_user_id' => 'nullable|exists:users,id',
             'guardian_contacts' => 'nullable|array',
-            
+
             // Development & Training
             'training_focus_areas' => 'nullable|array',
             'development_goals' => 'nullable|array',
             'coach_notes' => 'nullable|string|max:2000',
-            
+
             // Academic Information (for minors)
             'school_name' => 'nullable|string|max:255',
             'grade_level' => 'nullable|string|max:20',
             'gpa' => 'nullable|numeric|min:1.0|max:4.0',
             'academic_eligibility' => 'boolean',
-            
+
             // Preferences
             'preferences' => 'nullable|array',
             'dietary_restrictions' => 'nullable|array',
@@ -426,7 +436,7 @@ class PlayerController extends Controller
 
         if ($existingPlayer) {
             return back()->withErrors([
-                'jersey_number' => 'Diese Rückennummer ist bereits im Team vergeben.'
+                'jersey_number' => 'Diese Rückennummer ist bereits im Team vergeben.',
             ]);
         }
 
@@ -540,6 +550,7 @@ class PlayerController extends Controller
             ->update(['status' => $validated['status']]);
 
         $count = count($validated['player_ids']);
+
         return back()->with('success', "{$count} Spieler wurden erfolgreich aktualisiert.");
     }
 
@@ -576,7 +587,7 @@ class PlayerController extends Controller
                 'medications' => $player->medications,
                 'blood_type' => $player->blood_type,
                 'preferred_hospital' => $player->preferred_hospital,
-            ]
+            ],
         ]);
     }
 
@@ -587,7 +598,7 @@ class PlayerController extends Controller
     {
         $query = $request->get('q', '');
         $excludeTeam = $request->get('exclude_team');
-        
+
         if (strlen($query) < 2) {
             return response()->json(['players' => []]);
         }
@@ -595,19 +606,19 @@ class PlayerController extends Controller
         $playersQuery = Player::query()
             ->with('user')
             ->join('users', 'players.user_id', '=', 'users.id')
-            ->where(function($q) use ($query) {
+            ->where(function ($q) use ($query) {
                 $q->where('users.name', 'LIKE', "%{$query}%")
-                  ->orWhere('users.email', 'LIKE', "%{$query}%");
+                    ->orWhere('users.email', 'LIKE', "%{$query}%");
             });
 
         // Exclude players already in a specific team
         if ($excludeTeam) {
-            $playersQuery->whereNotExists(function($q) use ($excludeTeam) {
+            $playersQuery->whereNotExists(function ($q) use ($excludeTeam) {
                 $q->select('*')
-                  ->from('player_team')
-                  ->whereColumn('player_team.player_id', 'players.id')
-                  ->where('player_team.team_id', $excludeTeam)
-                  ->where('player_team.is_active', true);
+                    ->from('player_team')
+                    ->whereColumn('player_team.player_id', 'players.id')
+                    ->where('player_team.team_id', $excludeTeam)
+                    ->where('player_team.is_active', true);
             });
         }
 
@@ -625,9 +636,9 @@ class PlayerController extends Controller
                         'id' => $player->user->id,
                         'name' => $player->user->name,
                         'email' => $player->user->email,
-                    ] : null
+                    ] : null,
                 ];
-            })
+            }),
         ]);
     }
 }

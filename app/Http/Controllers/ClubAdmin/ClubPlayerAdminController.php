@@ -143,22 +143,13 @@ class ClubPlayerAdminController extends Controller
                 'is_active' => true,
             ]);
 
-            $player = $this->playerService->createPlayer(
-                user: $playerUser,
-                status: 'active'
-            );
-
-            if (! empty($validated['team_id'])) {
-                $team = BasketballTeam::find($validated['team_id']);
-                if ($team && $team->club_id === $primaryClub->id) {
-                    $player->teams()->attach($team->id, [
-                        'jersey_number' => $validated['jersey_number'] ?? null,
-                        'primary_position' => $validated['primary_position'] ?? null,
-                        'joined_at' => now(),
-                        'is_active' => true,
-                    ]);
-                }
-            }
+            $player = $this->playerService->createPlayer([
+                'user_id' => $playerUser->id,
+                'team_id' => $validated['team_id'] ?? null,
+                'jersey_number' => $validated['jersey_number'] ?? null,
+                'primary_position' => $validated['primary_position'] ?? null,
+                'status' => 'active',
+            ]);
 
             Log::info('Club admin created player', [
                 'club_admin_id' => $user->id,
