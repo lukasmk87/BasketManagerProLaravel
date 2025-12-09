@@ -12,7 +12,8 @@
       "Bash(npm run build:*)",
       "WebSearch",
       "Bash(composer test:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

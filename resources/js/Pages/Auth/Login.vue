@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
 import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
 import Checkbox from '@/Components/Checkbox.vue';
@@ -15,6 +15,16 @@ defineProps({
 });
 
 const { trans } = useTranslations();
+const page = usePage();
+
+// DEBUG: Log translation values
+console.log('=== LOGIN DEBUG ===');
+console.log('Translations available:', !!page.props.translations);
+console.log('Auth translations:', page.props.translations?.auth);
+console.log('Email label:', trans('auth.login.email'));
+console.log('Password label:', trans('auth.login.password'));
+console.log('Remember me:', trans('auth.login.remember_me'));
+console.log('==================');
 
 const form = useForm({
     email: '',
