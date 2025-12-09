@@ -5,7 +5,9 @@
       "Bash(ls:*)",
       "Bash(php artisan tinker:*)",
       "Bash(./vendor/bin/pint:*)",
-      "Bash(php -l:*)"
+      "Bash(php -l:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

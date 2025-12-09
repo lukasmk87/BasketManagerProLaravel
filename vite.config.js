@@ -30,7 +30,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks(id) {
-                    // Video/ML Components - Only loaded on analysis pages (~60 KB savings)
+                    // Video/ML Components - Only loaded on analysis pages
                     if (id.includes('/Components/Features/ML/') || id.includes('/Components/Features/Video/')) {
                         return 'video-ml';
                     }
@@ -41,7 +41,7 @@ export default defineConfig({
                     }
 
                     // Rich Text Editor (only on Editor pages)
-                    if (id.includes('node_modules/@tiptap/')) {
+                    if (id.includes('node_modules/@tiptap/') || id.includes('node_modules/prosemirror')) {
                         return 'editor';
                     }
 
@@ -50,14 +50,45 @@ export default defineConfig({
                         return 'stripe';
                     }
 
-                    // Real-time (only for Live features) - now lazy loaded in echo.js
+                    // Real-time (only for Live features)
                     if (id.includes('node_modules/laravel-echo') || id.includes('node_modules/pusher-js')) {
                         return 'realtime';
                     }
 
-                    // Vendor Core
+                    // Konva/TacticBoard
+                    if (id.includes('node_modules/konva') || id.includes('node_modules/vue-konva')) {
+                        return 'konva';
+                    }
+
+                    // Drag & Drop
+                    if (id.includes('node_modules/vuedraggable') || id.includes('node_modules/sortablejs')) {
+                        return 'dragdrop';
+                    }
+
+                    // Icons
+                    if (id.includes('node_modules/@heroicons/')) {
+                        return 'icons';
+                    }
+
+                    // VueUse Utilities
+                    if (id.includes('node_modules/@vueuse/')) {
+                        return 'vueuse';
+                    }
+
+                    // Date utilities
+                    if (id.includes('node_modules/date-fns')) {
+                        return 'date-utils';
+                    }
+
+                    // GIF Export (TacticBoard)
+                    if (id.includes('node_modules/gif.js')) {
+                        return 'gif';
+                    }
+
+                    // Vendor Core - nur essenzielle Libraries
                     if (id.includes('node_modules/vue') ||
                         id.includes('node_modules/@inertiajs') ||
+                        id.includes('node_modules/@vue') ||
                         id.includes('node_modules/axios')) {
                         return 'vendor';
                     }
