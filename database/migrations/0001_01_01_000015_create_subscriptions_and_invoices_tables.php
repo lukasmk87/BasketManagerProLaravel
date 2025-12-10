@@ -76,14 +76,28 @@ return new class extends Migration
         // Club Usages
         Schema::create('club_usages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('club_id')->constrained()->onDelete('cascade');
-            $table->string('metric');
-            $table->integer('value')->default(0);
-            $table->date('period_start');
-            $table->date('period_end');
+            $table->foreignId('club_id')->constrained('clubs')->cascadeOnDelete();
+            $table->uuid('tenant_id');
+            $table->string('metric'); // e.g., 'max_teams', 'max_players', 'max_games_per_month'
+            $table->bigInteger('usage_count')->default(0);
+            $table->timestamp('period_start'); // Start of tracking period (monthly reset)
+            $table->timestamp('period_end')->nullable(); // End of period (for historical records)
+            $table->timestamp('last_tracked_at')->nullable();
+            $table->json('metadata')->nullable(); // Additional context (e.g., breakdown by team)
             $table->timestamps();
 
-            $table->unique(['club_id', 'metric', 'period_start']);
+            // Foreign key constraint for tenant_id (UUID)
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+
+            // Indexes for performance
+            $table->index('club_id');
+            $table->index('tenant_id');
+            $table->index('metric');
+            $table->index('period_start');
+            $table->index('last_tracked_at');
+
+            // Unique constraint: One record per club-metric-period combination
+            $table->unique(['club_id', 'metric', 'period_start'], 'club_metric_period_unique');
         });
 
         // Subscription MRR Snapshots
