@@ -35,8 +35,18 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // DEBUG: Log installation status
+        \Log::info('=== HandleInertiaRequests Debug ===', [
+            'url' => $request->fullUrl(),
+            'storage_path' => storage_path('installed'),
+            'file_exists' => file_exists(storage_path('installed')),
+            'installing_file_exists' => file_exists(storage_path('installing')),
+            'installation_check_result' => (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))),
+        ]);
+
         // During installation, return minimal shared data to prevent DB access errors
         if (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))) {
+            \Log::info('HandleInertiaRequests: Using MINIMAL props (installation mode)');
             return [
                 ...parent::share($request),
                 'appName' => fn () => config('app.name', 'BasketManager Pro'),
@@ -54,6 +64,7 @@ class HandleInertiaRequests extends Middleware
             ];
         }
 
+        \Log::info('HandleInertiaRequests: Using FULL props with translations');
         return [
             ...parent::share($request),
             'appName' => fn () => app_name(),
@@ -93,7 +104,7 @@ class HandleInertiaRequests extends Middleware
                 // Get the first club the user belongs to (primary club)
                 // You can modify this logic based on your multi-tenant needs
                 $club = $user->clubs()
-                    ->wherePivot('is_active', true)
+                    ->whereNull('club_user.left_at')
                     ->orderBy('club_user.created_at', 'asc')
                     ->first();
 

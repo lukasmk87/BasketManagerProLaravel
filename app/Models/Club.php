@@ -194,7 +194,7 @@ class Club extends Model implements HasMedia, Invoiceable
     {
         return $this->belongsToMany(User::class)
             ->withPivot([
-                'role', 'joined_at', 'membership_expires_at', 'is_active',
+                'role', 'joined_at', 'left_at', 'membership_expires_at',
                 'is_verified', 'membership_number', 'membership_type',
                 'membership_fee_paid', 'last_payment_date', 'payment_status',
                 'permissions', 'restricted_areas', 'receive_newsletters',
@@ -209,7 +209,7 @@ class Club extends Model implements HasMedia, Invoiceable
      */
     public function activeUsers(): BelongsToMany
     {
-        return $this->users()->wherePivot('is_active', true);
+        return $this->users()->whereNull('club_user.left_at');
     }
 
     /**

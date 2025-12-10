@@ -13,7 +13,8 @@
       "WebSearch",
       "Bash(composer test:*)",
       "Bash(wc:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []

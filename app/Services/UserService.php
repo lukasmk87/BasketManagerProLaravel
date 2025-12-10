@@ -169,9 +169,9 @@ class UserService
         try {
             // Check if user has critical dependencies
             $hasActivePlayerProfile = $user->playerProfile && $user->playerProfile->status === 'active';
-            $hasActiveTeams = $user->coachedTeams()->where('is_active', true)->exists() || 
+            $hasActiveTeams = $user->coachedTeams()->where('is_active', true)->exists() ||
                              $user->assistantCoachedTeams()->where('is_active', true)->exists();
-            $hasActiveClubMemberships = $user->clubs()->wherePivot('is_active', true)->exists();
+            $hasActiveClubMemberships = $user->clubs()->whereNull('club_user.left_at')->exists();
 
             if ($hasActivePlayerProfile || $hasActiveTeams || $hasActiveClubMemberships) {
                 Log::info("User soft deleted due to active dependencies", [
