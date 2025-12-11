@@ -84,6 +84,9 @@ class ClubSeasonController extends Controller
             'end_date' => 'required|date|after:start_date',
             'description' => 'nullable|string|max:1000',
             'settings' => 'nullable|array',
+            'selected_teams' => 'nullable|array',
+            'selected_teams.*' => 'exists:teams,id',
+            'auto_activate' => 'nullable|boolean',
         ]);
 
         try {
@@ -96,13 +99,26 @@ class ClubSeasonController extends Controller
                 $validated['settings'] ?? []
             );
 
+            // Teams der Saison zuordnen
+            if (! empty($validated['selected_teams'])) {
+                $this->seasonService->assignTeamsToSeason(
+                    $season,
+                    $validated['selected_teams']
+                );
+            }
+
+            // Optional automatisch aktivieren
+            if ($validated['auto_activate'] ?? false) {
+                $this->seasonService->activateSeason($season);
+            }
+
             return redirect()
                 ->route('club-admin.seasons.show', $season)
                 ->with('success', 'Saison erfolgreich erstellt.');
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Fehler beim Erstellen der Saison: ' . $e->getMessage());
+                ->with('error', 'Fehler beim Erstellen der Saison: '.$e->getMessage());
         }
     }
 
@@ -180,7 +196,7 @@ class ClubSeasonController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Fehler beim Aktualisieren der Saison: ' . $e->getMessage());
+                ->with('error', 'Fehler beim Aktualisieren der Saison: '.$e->getMessage());
         }
     }
 
@@ -208,7 +224,7 @@ class ClubSeasonController extends Controller
                 ->route('club-admin.seasons.index')
                 ->with('success', 'Saison erfolgreich gelöscht.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Fehler beim Löschen der Saison: ' . $e->getMessage());
+            return back()->with('error', 'Fehler beim Löschen der Saison: '.$e->getMessage());
         }
     }
 
@@ -229,7 +245,7 @@ class ClubSeasonController extends Controller
 
             return back()->with('success', 'Saison erfolgreich aktiviert.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Fehler beim Aktivieren der Saison: ' . $e->getMessage());
+            return back()->with('error', 'Fehler beim Aktivieren der Saison: '.$e->getMessage());
         }
     }
 
@@ -252,7 +268,7 @@ class ClubSeasonController extends Controller
 
             return back()->with('success', 'Saison erfolgreich abgeschlossen.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Fehler beim Abschließen der Saison: ' . $e->getMessage());
+            return back()->with('error', 'Fehler beim Abschließen der Saison: '.$e->getMessage());
         }
     }
 }

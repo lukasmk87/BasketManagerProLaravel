@@ -354,7 +354,7 @@ const handleExportPDF = () => {
                                 <p class="text-sm text-yellow-700">
                                     Sie benötigen mindestens 2 Saisons, um die Vergleichsfunktion zu nutzen.
                                     <a
-                                        :href="route('club.seasons.wizard.index', { club: club.id })"
+                                        :href="route('club-admin.seasons.create')"
                                         class="font-medium underline hover:text-yellow-600"
                                     >
                                         Erstellen Sie jetzt eine neue Saison.

@@ -56,16 +56,16 @@ const canStartNewSeason = computed(() => {
 });
 
 const handleSeasonClick = (season) => {
-    router.visit(route('club.seasons.show', { club: props.club.id, season: season.id }));
+    router.visit(route('club-admin.seasons.show', season.id));
 };
 
 const handleEditSeason = (season) => {
-    router.visit(route('club.seasons.edit', { club: props.club.id, season: season.id }));
+    router.visit(route('club-admin.seasons.edit', season.id));
 };
 
 const handleActivateSeason = (season) => {
     if (confirm(`Möchten Sie die Saison "${season.name}" wirklich aktivieren? Dies deaktiviert alle anderen Saisons.`)) {
-        router.post(route('club.seasons.activate', { club: props.club.id, season: season.id }), {}, {
+        router.post(route('club-admin.seasons.activate', season.id), {}, {
             preserveScroll: true,
             onSuccess: () => {
                 // Success message wird von Laravel Flash Message gehandelt
@@ -76,7 +76,7 @@ const handleActivateSeason = (season) => {
 
 const handleCompleteSeason = (season) => {
     if (confirm(`Möchten Sie die Saison "${season.name}" wirklich abschließen? Dies erstellt einen Statistik-Snapshot und beendet die Saison.`)) {
-        router.post(route('club.seasons.complete', { club: props.club.id, season: season.id }), {
+        router.post(route('club-admin.seasons.complete', season.id), {
             create_snapshots: true
         }, {
             preserveScroll: true,
@@ -89,7 +89,7 @@ const handleCompleteSeason = (season) => {
 
 const handleDeleteSeason = (season) => {
     if (confirm(`Möchten Sie die Saison "${season.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden!`)) {
-        router.delete(route('club.seasons.destroy', { club: props.club.id, season: season.id }), {
+        router.delete(route('club-admin.seasons.destroy', season.id), {
             preserveScroll: true,
             onSuccess: () => {
                 // Success message
@@ -99,7 +99,7 @@ const handleDeleteSeason = (season) => {
 };
 
 const startNewSeason = () => {
-    router.visit(route('club.seasons.wizard', { club: props.club.id }));
+    router.visit(route('club-admin.seasons.create'));
 };
 
 const compareSeasons = () => {
@@ -150,7 +150,7 @@ const compareSeasons = () => {
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-medium text-gray-900">Aktuelle Saison</h3>
                         <Link
-                            :href="route('club.seasons.show', { club: club.id, season: activeSeason.id })"
+                            :href="route('club-admin.seasons.show', activeSeason.id)"
                             class="text-sm font-medium text-blue-600 hover:text-blue-500"
                         >
                             Details anzeigen →

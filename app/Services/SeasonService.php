@@ -2,15 +2,15 @@
 
 namespace App\Services;
 
-use App\Models\Season;
-use App\Models\Club;
 use App\Models\BasketballTeam;
+use App\Models\Club;
 use App\Models\Player;
+use App\Models\Season;
 use App\Models\SeasonStatistic;
+use App\Services\Statistics\StatisticsService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
-use App\Services\Statistics\StatisticsService;
 
 class SeasonService
 {
@@ -51,7 +51,7 @@ class SeasonService
             'settings' => $settings,
         ]);
 
-        Log::info("Neue Saison erstellt", [
+        Log::info('Neue Saison erstellt', [
             'season_id' => $season->id,
             'club_id' => $club->id,
             'name' => $name,
@@ -61,12 +61,33 @@ class SeasonService
     }
 
     /**
+     * Ordnet Teams einer Saison zu
+     */
+    public function assignTeamsToSeason(Season $season, array $teamIds): int
+    {
+        $club = $season->club;
+
+        // Nur Teams des gleichen Clubs erlauben
+        $updated = BasketballTeam::where('club_id', $club->id)
+            ->whereIn('id', $teamIds)
+            ->update(['season_id' => $season->id]);
+
+        Log::info('Teams der Saison zugeordnet', [
+            'season_id' => $season->id,
+            'team_ids' => $teamIds,
+            'updated_count' => $updated,
+        ]);
+
+        return $updated;
+    }
+
+    /**
      * Schließt eine Saison ab und erstellt Statistik-Snapshots
      */
     public function completeSeason(Season $season, bool $createSnapshots = true): bool
     {
-        if (!$season->isActive()) {
-            throw new \Exception("Nur aktive Saisons können abgeschlossen werden.");
+        if (! $season->isActive()) {
+            throw new \Exception('Nur aktive Saisons können abgeschlossen werden.');
         }
 
         DB::beginTransaction();
@@ -85,7 +106,7 @@ class SeasonService
 
             DB::commit();
 
-            Log::info("Saison abgeschlossen", [
+            Log::info('Saison abgeschlossen', [
                 'season_id' => $season->id,
                 'season_name' => $season->name,
                 'snapshots_created' => $createSnapshots,
@@ -94,7 +115,7 @@ class SeasonService
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Fehler beim Abschließen der Saison", [
+            Log::error('Fehler beim Abschließen der Saison', [
                 'season_id' => $season->id,
                 'error' => $e->getMessage(),
             ]);
@@ -118,7 +139,7 @@ class SeasonService
 
         try {
             // Hole vorherige Saison falls nicht übergeben
-            if (!$previousSeason) {
+            if (! $previousSeason) {
                 $previousSeason = $this->getActiveSeason($club);
             }
 
@@ -140,7 +161,7 @@ class SeasonService
 
             DB::commit();
 
-            Log::info("Neue Saison gestartet", [
+            Log::info('Neue Saison gestartet', [
                 'club_id' => $club->id,
                 'new_season_id' => $newSeason->id,
                 'previous_season_id' => $previousSeason?->id,
@@ -150,7 +171,7 @@ class SeasonService
             return $newSeason;
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Fehler beim Starten der neuen Saison", [
+            Log::error('Fehler beim Starten der neuen Saison', [
                 'club_id' => $club->id,
                 'error' => $e->getMessage(),
             ]);
@@ -177,7 +198,7 @@ class SeasonService
             }
         }
 
-        Log::info("Teams in neue Saison kopiert", [
+        Log::info('Teams in neue Saison kopiert', [
             'old_season_id' => $oldSeason->id,
             'new_season_id' => $newSeason->id,
             'teams_count' => count($copiedTeams),
@@ -193,7 +214,7 @@ class SeasonService
     {
         $newTeam = $team->replicate();
         $newTeam->uuid = (string) \Illuminate\Support\Str::uuid(); // Generate new UUID
-        $newTeam->slug = \Illuminate\Support\Str::slug($team->name . '-' . $newSeason->name); // Generate new slug
+        $newTeam->slug = \Illuminate\Support\Str::slug($team->name.'-'.$newSeason->name); // Generate new slug
         $newTeam->season_id = $newSeason->id;
         $newTeam->season = $newSeason->name; // Für Rückwärtskompatibilität
         $newTeam->season_start = $newSeason->start_date;
@@ -202,7 +223,7 @@ class SeasonService
         $newTeam->updated_at = now();
         $newTeam->save();
 
-        Log::info("Team in neue Saison kopiert", [
+        Log::info('Team in neue Saison kopiert', [
             'old_team_id' => $team->id,
             'new_team_id' => $newTeam->id,
             'season_id' => $newSeason->id,
@@ -252,7 +273,7 @@ class SeasonService
             $transferredCount++;
         }
 
-        Log::info("Kader übertragen", [
+        Log::info('Kader übertragen', [
             'old_team_id' => $oldTeam->id,
             'new_team_id' => $newTeam->id,
             'players_count' => $transferredCount,
@@ -279,7 +300,7 @@ class SeasonService
             }
         }
 
-        Log::info("Statistik-Snapshots erstellt", [
+        Log::info('Statistik-Snapshots erstellt', [
             'season_id' => $season->id,
             'snapshots_count' => $snapshotCount,
         ]);
@@ -384,7 +405,7 @@ class SeasonService
         $query = Season::where('club_id', $club->id)
             ->orderBy('start_date', 'desc');
 
-        if (!$includeCompleted) {
+        if (! $includeCompleted) {
             $query->where('status', '!=', 'completed');
         }
 
@@ -396,7 +417,7 @@ class SeasonService
      */
     public function activateSeason(Season $season): bool
     {
-        if (!$season->canBeActivated()) {
+        if (! $season->canBeActivated()) {
             throw new \Exception("Saison kann nicht aktiviert werden. Status: {$season->status}");
         }
 

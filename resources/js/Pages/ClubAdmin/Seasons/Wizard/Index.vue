@@ -172,7 +172,7 @@ const handleSubmit = () => {
         return;
     }
 
-    form.post(route('club.seasons.wizard.complete', { club: props.club.id }), {
+    form.post(route('club-admin.seasons.store'), {
         onSuccess: () => {
             clearDraft();
         },
@@ -190,7 +190,7 @@ const handleSubmit = () => {
 
 const handleCancel = () => {
     if (confirm('Möchten Sie den Wizard wirklich abbrechen? Alle Änderungen werden gespeichert und können später fortgesetzt werden.')) {
-        router.visit(route('club.seasons.dashboard', { club: props.club.id }));
+        router.visit(route('club-admin.seasons.index'));
     }
 };
 
