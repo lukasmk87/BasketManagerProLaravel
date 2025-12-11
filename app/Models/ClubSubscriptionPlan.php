@@ -289,23 +289,12 @@ class ClubSubscriptionPlan extends Model
     }
 
     /**
-     * Get gross price including VAT (19% for German market).
-     */
-    public function getGrossPriceAttribute(): float
-    {
-        return round($this->price * 1.19, 2);
-    }
-
-    /**
-     * Get formatted gross price with currency.
-     */
-    public function getFormattedGrossPriceAttribute(): string
-    {
-        return number_format($this->gross_price, 2, ',', '.').' '.$this->currency;
-    }
-
-    /**
      * Get all features as array.
+     *
+     * Note: Gross price calculation has been moved to PricingService
+     * to support dynamic tax rates and small business (§19 UStG) settings.
+     * Use app(\App\Services\Pricing\PricingService::class)->calculateDisplayPrice($plan->price)
+     * to get price information with correct tax calculation.
      */
     public function getFeaturesList(): array
     {

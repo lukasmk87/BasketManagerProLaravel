@@ -311,6 +311,8 @@ const characterCount = (text, max) => {
                 <div class="text-sm text-blue-800">
                     <p class="font-medium mb-1">Tipps für überzeugende Preispläne:</p>
                     <ul class="list-disc list-inside space-y-1 text-blue-700">
+                        <li><strong>Geben Sie Preise OHNE MwSt. an</strong> - das System zeigt sie automatisch mit korrekter MwSt. an</li>
+                        <li>Für Kleingewerbe (§19 UStG) wird automatisch der Hinweis ergänzt</li>
                         <li>Markieren Sie den empfohlenen Plan als "Beliebt" für höhere Conversions</li>
                         <li>Features sollten konkrete Vorteile kommunizieren (nicht nur Zahlen)</li>
                         <li>Sortieren Sie Pläne von günstig nach teuer (Drag & Drop)</li>

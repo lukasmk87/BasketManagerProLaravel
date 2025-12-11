@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ClubSubscriptionPlan;
 use App\Models\LandingPageContent;
 use App\Models\Tenant;
+use App\Services\Pricing\PricingService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -15,6 +16,13 @@ class LandingPageService
      * Cache TTL in seconds (1 hour).
      */
     private const CACHE_TTL = 3600;
+
+    /**
+     * Create a new service instance.
+     */
+    public function __construct(
+        private PricingService $pricingService
+    ) {}
 
     /**
      * Get content for a specific section with fallback hierarchy.
@@ -694,9 +702,8 @@ class LandingPageService
     public function transformPlansForLandingPage(Collection $plans): array
     {
         return $plans->map(function ($plan) {
-            // Brutto-Preis berechnen (19% MwSt. für deutschen Markt)
-            $taxRate = 0.19;
-            $grossPrice = round($plan->price * (1 + $taxRate), 2);
+            // Use PricingService for dynamic tax calculation based on settings
+            $priceInfo = $this->pricingService->calculateDisplayPrice($plan->price);
 
             return [
                 'id' => $plan->id,
@@ -704,8 +711,14 @@ class LandingPageService
                 'slug' => $plan->slug,
                 'price' => $plan->price,
                 'formatted_price' => $plan->formatted_price,
-                'gross_price' => $grossPrice,
-                'formatted_gross_price' => number_format($grossPrice, 2, ',', '.').' €',
+                'display_price' => $priceInfo['display_price'],
+                'gross_price' => $priceInfo['gross_price'],
+                'net_price' => $priceInfo['net_price'],
+                'formatted_gross_price' => number_format($priceInfo['gross_price'], 2, ',', '.').' €',
+                'tax_rate' => $priceInfo['tax_rate'],
+                'price_label' => $priceInfo['price_label'] ?? '',
+                'is_small_business' => $priceInfo['is_small_business'] ?? false,
+                'small_business_notice' => $priceInfo['small_business_notice'] ?? null,
                 'currency' => $plan->currency,
                 'billing_interval' => $plan->billing_interval,
                 'description' => $plan->description,

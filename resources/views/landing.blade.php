@@ -342,15 +342,20 @@
                             ? 'bg-orange-600 text-white hover:bg-orange-700'
                             : 'bg-gray-900 text-white hover:bg-gray-800';
 
-                        // Get price display (Brutto inkl. MwSt.)
-                        // Handle both numeric and string prices (German format)
+                        // Get price display with dynamic tax calculation
+                        // LandingPageService now provides all price information via PricingService
                         $rawPrice = $plan['price'] ?? 0;
                         if (is_string($rawPrice)) {
                             // Convert German format (7,99) to float (7.99)
                             $rawPrice = str_replace(',', '.', $rawPrice);
                             $rawPrice = is_numeric($rawPrice) ? floatval($rawPrice) : 0;
                         }
-                        $grossPrice = isset($plan['gross_price']) ? $plan['gross_price'] : ($rawPrice * 1.19);
+
+                        // Use pre-calculated values from LandingPageService
+                        $displayPrice = $plan['display_price'] ?? $rawPrice;
+                        $grossPrice = $plan['gross_price'] ?? $rawPrice;
+                        $priceLabel = $plan['price_label'] ?? '';
+                        $smallBusinessNotice = $plan['small_business_notice'] ?? null;
 
                         // Handle special cases
                         if ($isFree) {
@@ -358,7 +363,7 @@
                         } elseif ($plan['price'] === null || $plan['price'] === 'Custom') {
                             $priceDisplay = 'Custom';
                         } else {
-                            $priceDisplay = $plan['formatted_gross_price'] ?? number_format($grossPrice, 2, ',', '.') . ' €';
+                            $priceDisplay = number_format($displayPrice, 2, ',', '.') . ' €';
                         }
 
                         // Get billing interval
@@ -398,7 +403,12 @@
                                 <span class="text-gray-600">/{{ $interval }}</span>
                             @endif
                             @if(!$isFree && $priceDisplay !== 'Custom')
-                                <p class="text-xs text-gray-500 mt-1">inkl. MwSt.</p>
+                                @if(!empty($priceLabel))
+                                    <p class="text-xs text-gray-500 mt-1">{{ $priceLabel }}</p>
+                                @endif
+                                @if($smallBusinessNotice)
+                                    <p class="text-xs text-amber-700 mt-1 italic">{{ $smallBusinessNotice }}</p>
+                                @endif
                             @endif
                         </div>
 

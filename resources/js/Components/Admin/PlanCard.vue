@@ -1,6 +1,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { usePricing } from '@/Composables/usePricing';
 
 const props = defineProps({
     plan: {
@@ -12,6 +13,8 @@ const props = defineProps({
         default: true,
     },
 });
+
+const { formatPrice: formatPriceWithSettings, getPriceLabel, getSmallBusinessNotice } = usePricing();
 
 const billingPeriodLabel = computed(() => {
     const labels = {
@@ -25,11 +28,12 @@ const billingPeriodLabel = computed(() => {
 const formatPrice = computed(() => {
     // Ensure price is a valid number, default to 0 if null/undefined
     const validPrice = typeof props.plan.price === 'number' && !isNaN(props.plan.price) ? props.plan.price : 0;
-    return new Intl.NumberFormat('de-DE', {
-        style: 'currency',
-        currency: props.plan.currency || 'EUR',
-    }).format(validPrice / 100);
+    const netPrice = validPrice / 100; // Convert from cents to euros
+    return formatPriceWithSettings(netPrice, props.plan.currency || 'EUR');
 });
+
+const priceLabel = computed(() => getPriceLabel());
+const smallBusinessNotice = computed(() => getSmallBusinessNotice());
 
 const isUnlimited = (value) => {
     return value === -1 || value === null;
@@ -78,6 +82,12 @@ const formatLimit = (value, unit = '') => {
                 <span class="text-4xl font-extrabold text-gray-900">{{ formatPrice }}</span>
                 <span class="ml-2 text-sm text-gray-500">/ {{ billingPeriodLabel }}</span>
             </div>
+            <div v-if="priceLabel" class="mt-1 text-xs text-gray-500">
+                {{ priceLabel }}
+            </div>
+            <p v-if="smallBusinessNotice" class="mt-2 text-xs text-amber-700 italic">
+                {{ smallBusinessNotice }}
+            </p>
             <p v-if="plan.trial_days > 0" class="mt-1 text-sm text-indigo-600">
                 {{ plan.trial_days }} Tage kostenloser Test
             </p>
