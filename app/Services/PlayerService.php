@@ -160,8 +160,10 @@ class PlayerService
         DB::beginTransaction();
 
         try {
-            // Define field categories
-            $userFields = ['first_name', 'last_name', 'email', 'phone', 'birth_date', 'gender'];
+            // Define field categories (fields that map directly to User model)
+            $userFields = ['email', 'phone', 'gender'];
+            // Fields that need transformation before User update
+            $userMappedFields = ['first_name', 'last_name', 'birth_date'];
             $pivotFields = [
                 'jersey_number', 'primary_position', 'secondary_positions',
                 'is_starter', 'is_captain', 'status', 'contract_start',
@@ -209,9 +211,33 @@ class PlayerService
             }
 
             // 1. Update User fields if present
-            $userData = array_intersect_key($data, array_flip($userFields));
-            if (! empty($userData) && $player->user) {
-                $player->user->update($userData);
+            if ($player->user) {
+                $userData = [];
+
+                // Map first_name + last_name to User.name
+                if (isset($data['first_name']) || isset($data['last_name'])) {
+                    $currentName = $player->user->name ?? '';
+                    $nameParts = explode(' ', $currentName, 2);
+                    $firstName = $data['first_name'] ?? ($nameParts[0] ?? '');
+                    $lastName = $data['last_name'] ?? ($nameParts[1] ?? '');
+                    $userData['name'] = trim($firstName.' '.$lastName);
+                }
+
+                // Map birth_date to User.date_of_birth
+                if (isset($data['birth_date'])) {
+                    $userData['date_of_birth'] = $data['birth_date'];
+                }
+
+                // Copy direct User fields
+                foreach ($userFields as $field) {
+                    if (isset($data[$field])) {
+                        $userData[$field] = $data[$field];
+                    }
+                }
+
+                if (! empty($userData)) {
+                    $player->user->update($userData);
+                }
             }
 
             // 2. Update pivot table fields if present
@@ -221,7 +247,7 @@ class PlayerService
             }
 
             // 3. Update only Player-specific fields
-            $excludeFields = array_merge($userFields, $pivotFields, ['team_id', 'emergency_contacts']);
+            $excludeFields = array_merge($userFields, $userMappedFields, $pivotFields, ['team_id', 'emergency_contacts']);
             $playerData = array_diff_key($data, array_flip($excludeFields));
             if (! empty($playerData)) {
                 $player->update($playerData);

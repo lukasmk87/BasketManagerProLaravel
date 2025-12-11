@@ -209,7 +209,9 @@ class StatisticsController extends Controller
 
         return [
             'my_teams' => $userTeams->count(),
-            'my_players' => Player::whereIn('team_id', $teamIds)->where('status', 'active')->count(),
+            'my_players' => Player::whereHas('teams', function ($q) use ($teamIds) {
+                $q->whereIn('teams.id', $teamIds)->where('player_team.is_active', true);
+            })->where('status', 'active')->count(),
             'my_games_total' => Game::where(function ($query) use ($teamIds) {
                 $query->whereIn('home_team_id', $teamIds)->orWhereIn('away_team_id', $teamIds);
             })->count(),
