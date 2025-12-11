@@ -19,10 +19,10 @@ const form = useForm({
     last_name: '',
     email: '',
     phone: '',
-    date_of_birth: '',
-    preferred_position: '',
-    height_cm: '',
-    weight_kg: '',
+    birth_date: '',
+    position: '',
+    height: '',
+    weight: '',
     gdpr_consent: false,
 });
 
@@ -72,7 +72,7 @@ const minBirthDate = computed(() => {
 });
 
 const submit = () => {
-    form.post(route('public.player.register.submit', props.invitation.token), {
+    form.post(route('public.player.submit', props.invitation.token), {
         onSuccess: () => {
             // Redirect is handled by controller
         },
@@ -216,14 +216,14 @@ const submit = () => {
                             <InputLabel for="date_of_birth" value="Geburtsdatum *" />
                             <TextInput
                                 id="date_of_birth"
-                                v-model="form.date_of_birth"
+                                v-model="form.birth_date"
                                 type="date"
                                 class="mt-1 block w-full md:w-1/2"
                                 :min="minBirthDate"
                                 :max="maxBirthDate"
                                 required
                             />
-                            <InputError :message="form.errors.date_of_birth" class="mt-2" />
+                            <InputError :message="form.errors.birth_date" class="mt-2" />
                         </div>
 
                         <!-- Basketball Information -->
@@ -238,7 +238,7 @@ const submit = () => {
                                     <InputLabel for="preferred_position" value="Bevorzugte Position *" />
                                     <select
                                         id="preferred_position"
-                                        v-model="form.preferred_position"
+                                        v-model="form.position"
                                         class="mt-1 block w-full md:w-1/2 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                         required
                                     >
@@ -247,7 +247,7 @@ const submit = () => {
                                             {{ pos.label }}
                                         </option>
                                     </select>
-                                    <InputError :message="form.errors.preferred_position" class="mt-2" />
+                                    <InputError :message="form.errors.position" class="mt-2" />
                                 </div>
 
                                 <!-- Height -->
@@ -255,14 +255,14 @@ const submit = () => {
                                     <InputLabel for="height_cm" value="Größe (cm)" />
                                     <TextInput
                                         id="height_cm"
-                                        v-model="form.height_cm"
+                                        v-model="form.height"
                                         type="number"
                                         class="mt-1 block w-full"
                                         placeholder="180"
                                         min="100"
                                         max="250"
                                     />
-                                    <InputError :message="form.errors.height_cm" class="mt-2" />
+                                    <InputError :message="form.errors.height" class="mt-2" />
                                 </div>
 
                                 <!-- Weight -->
@@ -270,14 +270,14 @@ const submit = () => {
                                     <InputLabel for="weight_kg" value="Gewicht (kg)" />
                                     <TextInput
                                         id="weight_kg"
-                                        v-model="form.weight_kg"
+                                        v-model="form.weight"
                                         type="number"
                                         class="mt-1 block w-full"
                                         placeholder="75"
                                         min="30"
                                         max="200"
                                     />
-                                    <InputError :message="form.errors.weight_kg" class="mt-2" />
+                                    <InputError :message="form.errors.weight" class="mt-2" />
                                 </div>
                             </div>
                         </div>

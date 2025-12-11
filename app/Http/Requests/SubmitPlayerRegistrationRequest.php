@@ -91,6 +91,12 @@ class SubmitPlayerRegistrationRequest extends FormRequest
                 'min:100',
                 'max:250',
             ],
+            'weight' => [
+                'nullable',
+                'integer',
+                'min:30',
+                'max:200',
+            ],
             'experience' => [
                 'nullable',
                 'string',
@@ -223,6 +229,10 @@ class SubmitPlayerRegistrationRequest extends FormRequest
             'height.min' => 'Die Körpergröße muss mindestens :min cm betragen.',
             'height.max' => 'Die Körpergröße darf maximal :max cm betragen.',
 
+            'weight.integer' => 'Das Gewicht muss eine Zahl sein.',
+            'weight.min' => 'Das Gewicht muss mindestens :min kg betragen.',
+            'weight.max' => 'Das Gewicht darf maximal :max kg betragen.',
+
             'experience.max' => 'Die Beschreibung Ihrer Erfahrung darf maximal :max Zeichen lang sein.',
 
             // GDPR
@@ -250,6 +260,7 @@ class SubmitPlayerRegistrationRequest extends FormRequest
             'country' => 'Land',
             'position' => 'Position',
             'height' => 'Körpergröße',
+            'weight' => 'Gewicht',
             'experience' => 'Erfahrung',
             'gdpr_consent' => 'Datenschutzerklärung',
             'newsletter_consent' => 'Newsletter',
