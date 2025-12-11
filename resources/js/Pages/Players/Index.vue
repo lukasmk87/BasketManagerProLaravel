@@ -281,11 +281,17 @@
                                     </div>
                                     
                                     <div class="text-sm text-gray-600 space-y-2">
-                                        <div>
-                                            <span class="font-medium">Team:</span> {{ player.team?.name }}
+                                        <div v-if="player.teams && player.teams.length > 0">
+                                            <div v-for="team in player.teams" :key="team.id" class="mb-1">
+                                                <span class="font-medium">Team:</span> {{ team.name }}
+                                                <span v-if="team.pivot?.jersey_number" class="ml-1">#{{ team.pivot.jersey_number }}</span>
+                                                <div v-if="team.club" class="text-gray-500 text-xs">
+                                                    <span class="font-medium">Club:</span> {{ team.club.name }}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span class="font-medium">Club:</span> {{ player.team?.club?.name }}
+                                        <div v-else class="text-gray-400 italic">
+                                            Kein Team zugeordnet
                                         </div>
                                         <div v-if="player.height">
                                             <span class="font-medium">Größe:</span> {{ player.height }} cm
@@ -400,12 +406,14 @@ const availableTeams = computed(() => {
     if (props.teams && props.teams.length > 0) {
         return props.teams
     }
-    
+
     // Extract unique teams from players
     const teams = new Map()
     props.players.data.forEach(player => {
-        if (player.team) {
-            teams.set(player.team.id, player.team)
+        if (player.teams && player.teams.length > 0) {
+            player.teams.forEach(team => {
+                teams.set(team.id, team)
+            })
         }
     })
     return Array.from(teams.values())

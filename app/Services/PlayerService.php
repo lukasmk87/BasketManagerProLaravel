@@ -168,11 +168,14 @@ class PlayerService
                 'contract_end', 'registration_number',
             ];
 
-            // Track the team for pivot updates
-            $targetTeamId = $data['team_id'] ?? $player->team_id;
+            // Get current team ID from pivot table (not from non-existent attribute)
+            $currentTeamId = $player->teams()->wherePivot('is_active', true)->first()?->id;
 
-            // Handle team transfer if team_id is changing
-            if (isset($data['team_id']) && (int) $data['team_id'] !== (int) $player->team_id) {
+            // Track the team for pivot updates
+            $targetTeamId = $data['team_id'] ?? $currentTeamId;
+
+            // Handle team transfer if team_id is actually changing
+            if (isset($data['team_id']) && $currentTeamId && (int) $data['team_id'] !== (int) $currentTeamId) {
                 $newTeam = Team::findOrFail($data['team_id']);
 
                 // Provide more detailed error message for team capacity issues

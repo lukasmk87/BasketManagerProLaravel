@@ -155,11 +155,12 @@ class PlayerController extends Controller
             'medical_clearance_expires' => 'nullable|date|after:today',
             'preferred_hospital' => 'nullable|string|max:255',
             'medical_notes' => 'nullable|string|max:2000',
+            'last_medical_check' => 'nullable|date|before_or_equal:today',
 
             // Insurance Information
             'insurance_provider' => 'nullable|string|max:255',
             'insurance_policy_number' => 'nullable|string|max:100',
-            'insurance_expires' => 'nullable|date|after:today',
+            'insurance_expires' => 'nullable|date',
 
             // Emergency Contacts
             'emergency_medical_contact' => 'nullable|string|max:255',
@@ -254,11 +255,35 @@ class PlayerController extends Controller
         ]);
 
         // Get season from player's team or use current season as fallback
-        $season = $player->primaryTeam()?->season ?? config('basketball.season.current');
+        $primaryTeam = $player->primaryTeam();
+        $season = $primaryTeam?->season ?? config('basketball.season.current');
         $playerStats = $this->playerService->getPlayerStatistics($player, $season);
 
+        // Structure player data with team-specific fields from pivot
+        $playerData = $player->toArray();
+
+        if ($primaryTeam) {
+            $playerData['team'] = $primaryTeam->toArray();
+            $playerData['team']['club'] = $primaryTeam->club?->toArray();
+            $playerData['jersey_number'] = $primaryTeam->pivot->jersey_number;
+            $playerData['primary_position'] = $primaryTeam->pivot->primary_position;
+            $playerData['secondary_positions'] = $primaryTeam->pivot->secondary_positions ?? [];
+            $playerData['status'] = $primaryTeam->pivot->status ?? 'active';
+            $playerData['is_captain'] = $primaryTeam->pivot->is_captain ?? false;
+            $playerData['is_starter'] = $primaryTeam->pivot->is_starter ?? false;
+            $playerData['contract_start'] = $primaryTeam->pivot->contract_start;
+            $playerData['contract_end'] = $primaryTeam->pivot->contract_end;
+            $playerData['registration_number'] = $primaryTeam->pivot->registration_number;
+            $playerData['games_played'] = $primaryTeam->pivot->games_played ?? 0;
+            $playerData['games_started'] = $primaryTeam->pivot->games_started ?? 0;
+            $playerData['minutes_played'] = $primaryTeam->pivot->minutes_played ?? 0;
+            $playerData['points_scored'] = $primaryTeam->pivot->points_scored ?? 0;
+            $playerData['is_registered'] = $primaryTeam->pivot->is_registered ?? false;
+            $playerData['registered_at'] = $primaryTeam->pivot->registered_at;
+        }
+
         return Inertia::render('Players/Show', [
-            'player' => $player,
+            'player' => $playerData,
             'statistics' => $playerStats,
             'can' => [
                 'update' => auth()->user()->can('update', $player),
@@ -306,11 +331,13 @@ class PlayerController extends Controller
 
         // Add user data if available
         if ($player->user) {
-            $playerData['first_name'] = $player->user->first_name ?? '';
-            $playerData['last_name'] = $player->user->last_name ?? '';
+            // Split name into first_name and last_name (User model only has 'name')
+            $nameParts = explode(' ', $player->user->name ?? '', 2);
+            $playerData['first_name'] = $nameParts[0] ?? '';
+            $playerData['last_name'] = $nameParts[1] ?? '';
             $playerData['email'] = $player->user->email ?? '';
             $playerData['phone'] = $player->user->phone ?? '';
-            $playerData['birth_date'] = $player->user->birth_date ?? '';
+            $playerData['birth_date'] = $player->user->date_of_birth ?? '';
             $playerData['gender'] = $player->user->gender ?? '';
         }
 
@@ -394,11 +421,12 @@ class PlayerController extends Controller
             'medical_clearance_expires' => 'nullable|date|after:today',
             'preferred_hospital' => 'nullable|string|max:255',
             'medical_notes' => 'nullable|string|max:2000',
+            'last_medical_check' => 'nullable|date|before_or_equal:today',
 
             // Insurance Information
             'insurance_provider' => 'nullable|string|max:255',
             'insurance_policy_number' => 'nullable|string|max:100',
-            'insurance_expires' => 'nullable|date|after:today',
+            'insurance_expires' => 'nullable|date',
 
             // Emergency Contacts
             'emergency_medical_contact' => 'nullable|string|max:255',

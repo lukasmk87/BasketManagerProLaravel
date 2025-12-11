@@ -17,7 +17,7 @@
         <div class="py-12">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                    <form @submit.prevent="submit" class="p-6">
+                    <form @submit.prevent="submit" class="p-6" novalidate>
                         <!-- Form Navigation -->
                         <div class="mb-8 border-b border-gray-200">
                             <nav class="-mb-px flex space-x-8">
@@ -231,6 +231,44 @@
                                         />
                                         <span class="ml-2">Rookie</span>
                                     </label>
+                                </div>
+
+                                <!-- Vertragsinformationen -->
+                                <div class="md:col-span-2 border-t border-gray-200 pt-4 mt-4">
+                                    <h4 class="text-base font-medium text-gray-900 mb-3">Vertrag & Registrierung</h4>
+                                </div>
+
+                                <div>
+                                    <InputLabel for="contract_start" value="Vertragsbeginn" />
+                                    <TextInput
+                                        id="contract_start"
+                                        v-model="form.contract_start"
+                                        type="date"
+                                        class="mt-1 block w-full"
+                                    />
+                                    <InputError :message="form.errors.contract_start" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="contract_end" value="Vertragsende" />
+                                    <TextInput
+                                        id="contract_end"
+                                        v-model="form.contract_end"
+                                        type="date"
+                                        class="mt-1 block w-full"
+                                    />
+                                    <InputError :message="form.errors.contract_end" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="registration_number" value="Registrierungsnummer" />
+                                    <TextInput
+                                        id="registration_number"
+                                        v-model="form.registration_number"
+                                        type="text"
+                                        class="mt-1 block w-full"
+                                    />
+                                    <InputError :message="form.errors.registration_number" class="mt-2" />
                                 </div>
                             </div>
                         </div>
@@ -447,6 +485,56 @@
                                     ></textarea>
                                     <InputError :message="form.errors.medical_notes" class="mt-2" />
                                 </div>
+
+                                <div>
+                                    <InputLabel for="last_medical_check" value="Letzte med. Untersuchung" />
+                                    <TextInput
+                                        id="last_medical_check"
+                                        v-model="form.last_medical_check"
+                                        type="date"
+                                        class="mt-1 block w-full"
+                                        :max="maxBirthDate"
+                                    />
+                                    <InputError :message="form.errors.last_medical_check" class="mt-2" />
+                                </div>
+
+                                <!-- Versicherungs-Informationen -->
+                                <div class="md:col-span-2 border-t border-gray-200 pt-4 mt-4">
+                                    <h4 class="text-base font-medium text-gray-900 mb-3">Versicherung</h4>
+                                </div>
+
+                                <div>
+                                    <InputLabel for="insurance_provider" value="Versicherungsanbieter" />
+                                    <TextInput
+                                        id="insurance_provider"
+                                        v-model="form.insurance_provider"
+                                        type="text"
+                                        class="mt-1 block w-full"
+                                    />
+                                    <InputError :message="form.errors.insurance_provider" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="insurance_policy_number" value="Policennummer" />
+                                    <TextInput
+                                        id="insurance_policy_number"
+                                        v-model="form.insurance_policy_number"
+                                        type="text"
+                                        class="mt-1 block w-full"
+                                    />
+                                    <InputError :message="form.errors.insurance_policy_number" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="insurance_expires" value="Versicherung gültig bis" />
+                                    <TextInput
+                                        id="insurance_expires"
+                                        v-model="form.insurance_expires"
+                                        type="date"
+                                        class="mt-1 block w-full"
+                                    />
+                                    <InputError :message="form.errors.insurance_expires" class="mt-2" />
+                                </div>
                             </div>
                         </div>
 
@@ -626,6 +714,34 @@
                             </div>
                         </div>
 
+                        <!-- Entwicklung -->
+                        <div v-show="activeSection === 'development'" class="space-y-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Training & Entwicklung</h3>
+                            <div class="grid grid-cols-1 gap-6">
+                                <div>
+                                    <InputLabel for="training_focus_areas" value="Trainingsfokusbereiche" />
+                                    <TagInput
+                                        v-model="form.training_focus_areas"
+                                        placeholder="Fokusbereich hinzufügen..."
+                                        class="mt-1"
+                                    />
+                                    <InputError :message="form.errors.training_focus_areas" class="mt-2" />
+                                    <div class="text-xs text-gray-500 mt-1">Drücken Sie Enter, um Bereiche hinzuzufügen</div>
+                                </div>
+
+                                <div>
+                                    <InputLabel for="development_goals" value="Entwicklungsziele" />
+                                    <TagInput
+                                        v-model="form.development_goals"
+                                        placeholder="Ziel hinzufügen..."
+                                        class="mt-1"
+                                    />
+                                    <InputError :message="form.errors.development_goals" class="mt-2" />
+                                    <div class="text-xs text-gray-500 mt-1">Drücken Sie Enter, um Ziele hinzuzufügen</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Submit Button -->
                         <div class="flex items-center justify-between mt-6">
                             <DangerButton
@@ -701,12 +817,13 @@ const activeSection = ref('basic')
 
 const formSections = ref([
     { id: 'basic', name: 'Basis', fields: ['first_name', 'last_name', 'email', 'phone', 'birth_date', 'gender'] },
-    { id: 'team', name: 'Team', fields: ['team_id', 'jersey_number', 'primary_position', 'secondary_positions', 'status'] },
+    { id: 'team', name: 'Team', fields: ['team_id', 'jersey_number', 'primary_position', 'secondary_positions', 'status', 'contract_start', 'contract_end', 'registration_number'] },
     { id: 'physical', name: 'Physisch', fields: ['height_cm', 'weight_kg', 'dominant_hand', 'shoe_size'] },
     { id: 'experience', name: 'Erfahrung', fields: ['started_playing', 'years_experience', 'previous_teams', 'achievements'] },
-    { id: 'medical', name: 'Medizinisch', fields: ['blood_type', 'medical_clearance', 'medical_conditions', 'allergies', 'medications'] },
+    { id: 'medical', name: 'Medizinisch', fields: ['blood_type', 'medical_clearance', 'medical_conditions', 'allergies', 'medications', 'insurance_provider', 'insurance_policy_number', 'insurance_expires', 'last_medical_check'] },
     { id: 'emergency', name: 'Notfall', fields: ['emergency_medical_contact', 'emergency_medical_phone', 'guardian_contacts'] },
-    { id: 'preferences', name: 'Präferenzen', fields: ['dietary_restrictions', 'allow_photos', 'allow_media_interviews', 'school_name', 'grade_level'] }
+    { id: 'preferences', name: 'Präferenzen', fields: ['dietary_restrictions', 'allow_photos', 'allow_media_interviews', 'school_name', 'grade_level'] },
+    { id: 'development', name: 'Entwicklung', fields: ['training_focus_areas', 'development_goals'] }
 ])
 
 // Extended Form with all fields from Create.vue - with safe property access
@@ -728,6 +845,11 @@ const form = useForm({
     is_captain: props.player?.is_captain ?? false,
     is_starter: props.player?.is_starter ?? false,
     is_rookie: props.player?.is_rookie ?? false,
+
+    // Contract Information
+    contract_start: props.player?.contract_start ?? '',
+    contract_end: props.player?.contract_end ?? '',
+    registration_number: props.player?.registration_number ?? '',
     
     // Physical Information
     height_cm: props.player?.height_cm ?? props.player?.height ?? null,
@@ -750,6 +872,12 @@ const form = useForm({
     medical_clearance_expires: props.player?.medical_clearance_expires ?? '',
     preferred_hospital: props.player?.preferred_hospital ?? '',
     medical_notes: props.player?.medical_notes ?? '',
+    last_medical_check: props.player?.last_medical_check ?? '',
+
+    // Insurance Information
+    insurance_provider: props.player?.insurance_provider ?? '',
+    insurance_policy_number: props.player?.insurance_policy_number ?? '',
+    insurance_expires: props.player?.insurance_expires ?? '',
     
     // Emergency Contacts
     emergency_medical_contact: props.player?.emergency_medical_contact ?? '',
