@@ -175,7 +175,7 @@ class PlayerRegistrationService
                 'pending_team_assignment' => true,
                 'registered_via_invitation_id' => $invitation->id,
                 'registration_completed_at' => now(),
-                'status' => 'pending_assignment',
+                'status' => 'inactive',
                 // Optional fields
                 'height_cm' => $playerData['height_cm'] ?? null,
                 'weight_kg' => $playerData['weight_kg'] ?? null,

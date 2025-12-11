@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Player;
 use App\Models\BasketballTeam;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 
 class AssignPlayerToTeamRequest extends FormRequest
@@ -132,9 +133,10 @@ class AssignPlayerToTeamRequest extends FormRequest
             $jerseyNumber = $this->input('jersey_number') ?? $this->input('team_data.jersey_number');
 
             if ($jerseyNumber !== null) {
-                $jerseyExists = Player::where('team_id', $this->team_id)
+                $jerseyExists = DB::table('player_team')
+                    ->where('team_id', $this->team_id)
                     ->where('jersey_number', $jerseyNumber)
-                    ->where('id', '!=', $this->player_id)
+                    ->where('player_id', '!=', $this->player_id)
                     ->exists();
 
                 if ($jerseyExists) {
