@@ -1,9 +1,10 @@
 import { ref, onMounted } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 
 const THEME_KEY = 'theme';
 
 // Global reactive state (shared between all components)
-const theme = ref('system');
+const theme = ref('light');
 const isDark = ref(false);
 
 let initialized = false;
@@ -22,6 +23,8 @@ let initialized = false;
  * cycleTheme();       // Cycle: light -> dark -> system -> light
  */
 export function useDarkMode() {
+    const page = usePage();
+
     /**
      * Apply theme to HTML element
      */
@@ -74,18 +77,37 @@ export function useDarkMode() {
     };
 
     /**
+     * Initialize from server theme (for server-sync)
+     */
+    const initializeFromServer = (serverTheme) => {
+        if (serverTheme && ['light', 'dark', 'system'].includes(serverTheme)) {
+            theme.value = serverTheme;
+            localStorage.setItem(THEME_KEY, serverTheme);
+            applyTheme(serverTheme);
+        }
+    };
+
+    /**
      * Initialize (runs once)
      */
     const initialize = () => {
         if (initialized) return;
         initialized = true;
 
-        // Load stored theme
-        const stored = localStorage.getItem(THEME_KEY);
-        if (stored && ['light', 'dark', 'system'].includes(stored)) {
-            theme.value = stored;
+        // Priority: Server theme > localStorage > default 'system'
+        const serverTheme = page.props?.auth?.user?.theme;
+        const localTheme = localStorage.getItem(THEME_KEY);
+
+        if (serverTheme && ['light', 'dark', 'system'].includes(serverTheme)) {
+            // Use server theme and sync to localStorage
+            theme.value = serverTheme;
+            localStorage.setItem(THEME_KEY, serverTheme);
+        } else if (localTheme && ['light', 'dark', 'system'].includes(localTheme)) {
+            // Fallback to localStorage
+            theme.value = localTheme;
         } else {
-            theme.value = 'system';
+            // Default
+            theme.value = 'light';
         }
 
         applyTheme(theme.value);
@@ -109,5 +131,6 @@ export function useDarkMode() {
         setTheme,
         toggleTheme,
         cycleTheme,
+        initializeFromServer,
     };
 }

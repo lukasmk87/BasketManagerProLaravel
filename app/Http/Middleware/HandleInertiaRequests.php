@@ -41,12 +41,13 @@ class HandleInertiaRequests extends Middleware
             'storage_path' => storage_path('installed'),
             'file_exists' => file_exists(storage_path('installed')),
             'installing_file_exists' => file_exists(storage_path('installing')),
-            'installation_check_result' => (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))),
+            'installation_check_result' => (! file_exists(storage_path('installed')) || file_exists(storage_path('installing'))),
         ]);
 
         // During installation, return minimal shared data to prevent DB access errors
-        if (!file_exists(storage_path('installed')) || file_exists(storage_path('installing'))) {
+        if (! file_exists(storage_path('installed')) || file_exists(storage_path('installing'))) {
             \Log::info('HandleInertiaRequests: Using MINIMAL props (installation mode)');
+
             return [
                 ...parent::share($request),
                 'appName' => fn () => config('app.name', 'BasketManager Pro'),
@@ -65,6 +66,7 @@ class HandleInertiaRequests extends Middleware
         }
 
         \Log::info('HandleInertiaRequests: Using FULL props with translations');
+
         return [
             ...parent::share($request),
             'appName' => fn () => app_name(),
@@ -93,6 +95,7 @@ class HandleInertiaRequests extends Middleware
                             && \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::twoFactorAuthentication())
                             && ! is_null($user->two_factor_secret),
                         'roles' => $user->getRoleNames()->toArray(),
+                        'theme' => $user->preferences['theme'] ?? 'light',
                     ]);
                 },
             ],
@@ -108,7 +111,7 @@ class HandleInertiaRequests extends Middleware
                     ->orderBy('club_user.created_at', 'asc')
                     ->first();
 
-                if (!$club) {
+                if (! $club) {
                     return null;
                 }
 
@@ -123,7 +126,7 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'jetstream' => function () use ($request) {
-                if (!class_exists('\Laravel\Jetstream\Jetstream')) {
+                if (! class_exists('\Laravel\Jetstream\Jetstream')) {
                     return null;
                 }
 
@@ -133,17 +136,17 @@ class HandleInertiaRequests extends Middleware
                     'canCreateTeams' => $user &&
                                         \Laravel\Jetstream\Jetstream::userHasTeamFeatures($user) &&
                                         \Illuminate\Support\Facades\Gate::forUser($user)->check('create', \Laravel\Jetstream\Jetstream::newTeamModel()),
-                    'canManageTwoFactorAuthentication' => class_exists('\Laravel\Fortify\Features') 
-                        ? \Laravel\Fortify\Features::canManageTwoFactorAuthentication() 
+                    'canManageTwoFactorAuthentication' => class_exists('\Laravel\Fortify\Features')
+                        ? \Laravel\Fortify\Features::canManageTwoFactorAuthentication()
                         : false,
-                    'canUpdatePassword' => class_exists('\Laravel\Fortify\Features') 
-                        ? \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::updatePasswords()) 
+                    'canUpdatePassword' => class_exists('\Laravel\Fortify\Features')
+                        ? \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::updatePasswords())
                         : false,
-                    'canUpdateProfileInformation' => class_exists('\Laravel\Fortify\Features') 
-                        ? \Laravel\Fortify\Features::canUpdateProfileInformation() 
+                    'canUpdateProfileInformation' => class_exists('\Laravel\Fortify\Features')
+                        ? \Laravel\Fortify\Features::canUpdateProfileInformation()
                         : false,
-                    'hasEmailVerification' => class_exists('\Laravel\Fortify\Features') 
-                        ? \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::emailVerification()) 
+                    'hasEmailVerification' => class_exists('\Laravel\Fortify\Features')
+                        ? \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::emailVerification())
                         : false,
                     'flash' => $request->session()->get('flash', []),
                     'hasAccountDeletionFeatures' => \Laravel\Jetstream\Jetstream::hasAccountDeletionFeatures(),
@@ -163,12 +166,13 @@ class HandleInertiaRequests extends Middleware
                 if ($user = $request->user()) {
                     return $user->locale ?? app()->getLocale();
                 }
+
                 return app()->getLocale();
             },
             'superAdmin' => function () use ($request) {
                 $user = $request->user();
 
-                if (!$user || !$user->hasRole('super_admin')) {
+                if (! $user || ! $user->hasRole('super_admin')) {
                     return null;
                 }
 

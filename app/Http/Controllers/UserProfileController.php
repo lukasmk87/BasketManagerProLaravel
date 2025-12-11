@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Carbon\Carbon;
 
 class UserProfileController extends Controller
 {
@@ -57,11 +57,11 @@ class UserProfileController extends Controller
             'player_profile_active' => ['boolean'],
             'coaching_certifications' => ['nullable', 'array'],
             'coaching_certifications.*.name' => ['required_with:coaching_certifications', 'string', 'max:255'],
-            'coaching_certifications.*.year' => ['nullable', 'integer', 'min:1900', 'max:' . (date('Y') + 1)],
+            'coaching_certifications.*.year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 1)],
             'coaching_certifications.*.issuer' => ['nullable', 'string', 'max:255'],
             'referee_certifications' => ['nullable', 'array'],
             'referee_certifications.*.name' => ['required_with:referee_certifications', 'string', 'max:255'],
-            'referee_certifications.*.year' => ['nullable', 'integer', 'min:1900', 'max:' . (date('Y') + 1)],
+            'referee_certifications.*.year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 1)],
             'referee_certifications.*.issuer' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -77,8 +77,8 @@ class UserProfileController extends Controller
             'preferred_positions' => isset($validated['preferred_positions']) ? json_encode($validated['preferred_positions']) : null,
             'skill_level' => $validated['skill_level'] ?? null,
             'player_profile_active' => $validated['player_profile_active'] ?? false,
-            'coaching_certifications' => isset($validated['coaching_certifications']) ? json_encode(array_filter($validated['coaching_certifications'], fn($cert) => !empty($cert['name']))) : null,
-            'referee_certifications' => isset($validated['referee_certifications']) ? json_encode(array_filter($validated['referee_certifications'], fn($cert) => !empty($cert['name']))) : null,
+            'coaching_certifications' => isset($validated['coaching_certifications']) ? json_encode(array_filter($validated['coaching_certifications'], fn ($cert) => ! empty($cert['name']))) : null,
+            'referee_certifications' => isset($validated['referee_certifications']) ? json_encode(array_filter($validated['referee_certifications'], fn ($cert) => ! empty($cert['name']))) : null,
         ]);
 
         return back()->with('success', 'Basketball-Daten erfolgreich aktualisiert.');
@@ -122,9 +122,9 @@ class UserProfileController extends Controller
             'emergency_contact_phone' => $validated['emergency_contact_phone'] ?? null,
             'emergency_contact_relationship' => $validated['emergency_contact_relationship'] ?? null,
             'blood_type' => $validated['blood_type'] ?? null,
-            'medical_conditions' => isset($validated['medical_conditions']) ? json_encode(array_filter($validated['medical_conditions'], fn($cond) => !empty($cond['name']))) : null,
-            'allergies' => isset($validated['allergies']) ? json_encode(array_filter($validated['allergies'], fn($allergy) => !empty($allergy['name']))) : null,
-            'medications' => isset($validated['medications']) ? json_encode(array_filter($validated['medications'], fn($med) => !empty($med['name']))) : null,
+            'medical_conditions' => isset($validated['medical_conditions']) ? json_encode(array_filter($validated['medical_conditions'], fn ($cond) => ! empty($cond['name']))) : null,
+            'allergies' => isset($validated['allergies']) ? json_encode(array_filter($validated['allergies'], fn ($allergy) => ! empty($allergy['name']))) : null,
+            'medications' => isset($validated['medications']) ? json_encode(array_filter($validated['medications'], fn ($med) => ! empty($med['name']))) : null,
             'medical_consent' => $validated['medical_consent'] ?? false,
             'medical_consent_date' => ($validated['medical_consent'] ?? false) ? Carbon::now() : null,
         ]);
@@ -145,6 +145,7 @@ class UserProfileController extends Controller
             'timezone' => ['nullable', 'string', 'max:100', 'timezone'],
             'date_format' => ['nullable', 'string', 'max:20'],
             'time_format' => ['nullable', 'string', 'max:20'],
+            'theme' => ['nullable', 'string', Rule::in(['light', 'dark', 'system'])],
             'notification_settings' => ['nullable', 'array'],
             'notification_settings.email_notifications' => ['boolean'],
             'notification_settings.push_notifications' => ['boolean'],
@@ -164,6 +165,12 @@ class UserProfileController extends Controller
 
         $validated = $validator->validated();
 
+        // Handle theme in preferences JSON
+        $preferences = $user->preferences ?? [];
+        if (isset($validated['theme'])) {
+            $preferences['theme'] = $validated['theme'];
+        }
+
         // Convert arrays to JSON for storage
         $user->update([
             'language' => $validated['language'] ?? null,
@@ -171,6 +178,7 @@ class UserProfileController extends Controller
             'timezone' => $validated['timezone'] ?? null,
             'date_format' => $validated['date_format'] ?? null,
             'time_format' => $validated['time_format'] ?? null,
+            'preferences' => $preferences,
             'notification_settings' => isset($validated['notification_settings']) ? json_encode($validated['notification_settings']) : null,
             'privacy_settings' => isset($validated['privacy_settings']) ? json_encode($validated['privacy_settings']) : null,
         ]);
