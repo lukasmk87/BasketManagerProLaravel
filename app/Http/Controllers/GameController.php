@@ -42,12 +42,18 @@ class GameController extends Controller
                             ->orWhereJsonContains('assistant_coaches', $user->id)
                             ->orWhereHas('club.users', function ($clubQ) use ($user) {
                                 $clubQ->where('user_id', $user->id);
+                            })
+                            ->orWhereHas('players', function ($playerQ) use ($user) {
+                                $playerQ->where('user_id', $user->id);
                             });
                     })->orWhereHas('awayTeam', function ($subQ) use ($user) {
                         $subQ->where('head_coach_id', $user->id)
                             ->orWhereJsonContains('assistant_coaches', $user->id)
                             ->orWhereHas('club.users', function ($clubQ) use ($user) {
                                 $clubQ->where('user_id', $user->id);
+                            })
+                            ->orWhereHas('players', function ($playerQ) use ($user) {
+                                $playerQ->where('user_id', $user->id);
                             });
                     });
                 });
@@ -57,9 +63,20 @@ class GameController extends Controller
             ->withQueryString();
 
         // Add display names for external teams (when home_team_id or away_team_id is null)
-        $games->getCollection()->transform(function ($game) {
+        // and player availability status
+        $player = $user->player;
+        $games->getCollection()->transform(function ($game) use ($player) {
             $game->home_team_display_name = $game->getHomeTeamDisplayName();
             $game->away_team_display_name = $game->getAwayTeamDisplayName();
+
+            // Add player availability if user is a player
+            if ($player) {
+                $registration = $game->registrations()
+                    ->where('player_id', $player->id)
+                    ->first();
+                $game->availability_status = $registration?->availability_status ?? 'pending';
+                $game->can_respond = $game->status === 'scheduled';
+            }
 
             return $game;
         });
@@ -192,10 +209,16 @@ class GameController extends Controller
 
         // Get current player's registration if they are a player
         $currentPlayerRegistration = null;
+        $playerAvailability = null;
         if (auth()->user()->player) {
             $currentPlayerRegistration = $game->registrations()
                 ->where('player_id', auth()->user()->player->id)
                 ->first();
+
+            $playerAvailability = [
+                'status' => $currentPlayerRegistration?->availability_status ?? 'pending',
+                'can_respond' => $game->status === 'scheduled',
+            ];
         }
 
         // Get available playbooks for game preparation
@@ -211,6 +234,7 @@ class GameController extends Controller
             'recentGameActions' => $recentGameActions,
             'statistics' => $gameStats,
             'currentPlayerRegistration' => $currentPlayerRegistration,
+            'playerAvailability' => $playerAvailability,
             'availablePlaybooks' => $availablePlaybooks,
             'can' => [
                 'update' => auth()->user()->can('update', $game),

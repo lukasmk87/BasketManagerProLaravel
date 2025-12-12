@@ -1,9 +1,11 @@
 <script setup>
 import { computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import StatisticsWidget from '@/Components/Basketball/StatisticsWidget.vue';
 import PlayerCard from '@/Components/Basketball/PlayerCard.vue';
 import StatsChart from '@/Components/Basketball/StatsChart.vue';
 import AvailabilitySection from '@/Components/Availability/AvailabilitySection.vue';
+import RsvpButtons from '@/Components/Availability/RsvpButtons.vue';
 
 const props = defineProps({
     dashboardData: Object,
@@ -273,9 +275,25 @@ const teamStarters = computed(() => {
                             </div>
                             
                             <div class="text-center">
-                                <button class="bg-orange-600 text-white text-sm px-4 py-2 rounded-md hover:bg-orange-700 transition-colors">
+                                <Link
+                                    :href="route('web.games.show', nextGame.id)"
+                                    class="inline-block bg-orange-600 text-white text-sm px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
+                                >
                                     Spieldetails anzeigen
-                                </button>
+                                </Link>
+                            </div>
+
+                            <!-- RSVP Buttons -->
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <p class="text-sm text-gray-600 mb-2 text-center">Deine Verfügbarkeit:</p>
+                                <div class="flex justify-center">
+                                    <RsvpButtons
+                                        event-type="game"
+                                        :event-id="nextGame.id"
+                                        :current-status="nextGame.availability_status || 'pending'"
+                                        :can-respond="nextGame.can_respond !== false"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

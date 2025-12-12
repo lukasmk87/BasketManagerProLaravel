@@ -483,7 +483,16 @@ class DashboardController extends Controller
                     ->where('status', 'scheduled')
                     ->orderBy('scheduled_at')
                     ->limit(5)
-                    ->get(),
+                    ->get()
+                    ->map(function ($game) use ($player) {
+                        $registration = $game->registrations()
+                            ->where('player_id', $player->id)
+                            ->first();
+                        $game->availability_status = $registration?->availability_status ?? 'pending';
+                        $game->can_respond = $game->status === 'scheduled';
+
+                        return $game;
+                    }),
                 'recent_games' => $team->allGames()
                     ->with(['homeTeam:id,name', 'awayTeam:id,name'])
                     ->where('status', 'finished')

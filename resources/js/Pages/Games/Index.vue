@@ -168,6 +168,16 @@
 
                                     <!-- Actions -->
                                     <div class="flex items-center space-x-3">
+                                        <!-- RSVP Buttons for Players -->
+                                        <RsvpButtons
+                                            v-if="game.availability_status"
+                                            event-type="game"
+                                            :event-id="game.id"
+                                            :current-status="game.availability_status"
+                                            :can-respond="game.can_respond"
+                                            :compact="true"
+                                        />
+
                                         <Link
                                             :href="route('web.games.show', game.id)"
                                             class="text-indigo-600 hover:text-indigo-500 font-medium text-sm"
@@ -285,6 +295,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 import DangerButton from '@/Components/DangerButton.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
+import RsvpButtons from '@/Components/Availability/RsvpButtons.vue'
 
 const props = defineProps({
     games: Object,

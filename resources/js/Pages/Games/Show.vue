@@ -122,6 +122,17 @@
                             </dl>
                         </div>
 
+                        <!-- Player Availability / RSVP -->
+                        <div v-if="playerAvailability" class="mt-4 border-t pt-4">
+                            <h4 class="text-sm font-medium text-gray-500 mb-3">Deine Verfügbarkeit</h4>
+                            <RsvpButtons
+                                event-type="game"
+                                :event-id="game.id"
+                                :current-status="playerAvailability.status"
+                                :can-respond="playerAvailability.can_respond"
+                            />
+                        </div>
+
                         <!-- Notes -->
                         <div v-if="game.notes" class="mt-4 border-t pt-4">
                             <h4 class="text-sm font-medium text-gray-500 mb-2">Notizen</h4>
@@ -423,12 +434,14 @@ import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import PlayerRegistration from '@/Components/PlayerRegistration.vue'
 import PlaybookSelector from '@/Components/TacticBoard/PlaybookSelector.vue'
 import TacticBoardViewer from '@/Components/TacticBoard/TacticBoardViewer.vue'
+import RsvpButtons from '@/Components/Availability/RsvpButtons.vue'
 
 const props = defineProps({
     game: Object,
     gameStats: Object,
     can: Object,
     currentPlayerRegistration: Object,
+    playerAvailability: Object,
     availablePlaybooks: {
         type: Array,
         default: () => []

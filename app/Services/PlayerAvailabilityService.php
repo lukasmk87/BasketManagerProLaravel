@@ -433,6 +433,7 @@ class PlayerAvailabilityService
         ?string $notes = null
     ): GameRegistration {
         $game = Game::findOrFail($gameId);
+        $player = Player::findOrFail($playerId);
 
         // Check for absence
         $absence = $this->getActiveAbsence($playerId, $game->scheduled_at);
@@ -440,9 +441,19 @@ class PlayerAvailabilityService
             throw new \Exception('Spieler hat eine aktive Abwesenheit für dieses Datum.');
         }
 
+        // Ermittle team_id: Welches Team des Spielers nimmt am Spiel teil?
+        $playerTeamIds = $player->teams()->pluck('teams.id')->toArray();
+        $gameTeamIds = array_filter([$game->home_team_id, $game->away_team_id]);
+        $teamId = collect($playerTeamIds)->intersect($gameTeamIds)->first();
+
+        if (! $teamId) {
+            throw new \Exception('Spieler gehört zu keinem Team, das an diesem Spiel teilnimmt.');
+        }
+
         $registration = GameRegistration::firstOrCreate(
             ['game_id' => $gameId, 'player_id' => $playerId],
             [
+                'team_id' => $teamId,
                 'availability_status' => $status,
                 'registration_status' => 'pending',
                 'registered_at' => now(),
