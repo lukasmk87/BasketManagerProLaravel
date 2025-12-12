@@ -65,7 +65,7 @@ class PlayerAvailabilityService
                 'reason_type' => $absence->type,
                 'source' => 'absence',
                 'absence_id' => $absence->id,
-                'absence' => $absence->getSummary(),
+                'absence' => ($absence->start_date && $absence->end_date) ? $absence->getSummary() : null,
             ];
         }
 
@@ -147,20 +147,38 @@ class PlayerAvailabilityService
             ->get();
 
         foreach ($games as $game) {
-            $availability = $this->getEffectiveAvailability($player, $game);
-            $events[] = [
-                'type' => 'game',
-                'id' => $game->id,
-                'title' => $game->home_team_name.' vs '.$game->away_team_name,
-                'scheduled_at' => $game->scheduled_at->toIso8601String(),
-                'scheduled_at_formatted' => $game->scheduled_at->format('d.m.Y H:i'),
-                'venue' => $game->venue,
-                'team_id' => in_array($game->home_team_id, $teamIds) ? $game->home_team_id : $game->away_team_id,
-                'is_home_game' => in_array($game->home_team_id, $teamIds),
-                'availability' => $availability,
-                'registration_deadline' => $game->getRegistrationDeadline()?->toIso8601String(),
-                'can_respond' => $game->isRegistrationOpen(),
-            ];
+            try {
+                // Skip games with invalid scheduled_at
+                if (! $game->scheduled_at) {
+                    continue;
+                }
+
+                $availability = $this->getEffectiveAvailability($player, $game);
+                $homeName = $game->home_team_name ?? $game->homeTeam?->name ?? 'TBD';
+                $awayName = $game->away_team_name ?? $game->awayTeam?->name ?? 'TBD';
+
+                $events[] = [
+                    'type' => 'game',
+                    'id' => $game->id,
+                    'title' => $homeName.' vs '.$awayName,
+                    'scheduled_at' => $game->scheduled_at->toIso8601String(),
+                    'scheduled_at_formatted' => $game->scheduled_at->format('d.m.Y H:i'),
+                    'venue' => $game->venue,
+                    'team_id' => in_array($game->home_team_id, $teamIds) ? $game->home_team_id : $game->away_team_id,
+                    'is_home_game' => in_array($game->home_team_id, $teamIds),
+                    'availability' => $availability,
+                    'registration_deadline' => $game->getRegistrationDeadline()?->toIso8601String(),
+                    'can_respond' => $game->isRegistrationOpen(),
+                ];
+            } catch (\Throwable $e) {
+                \Log::warning('Failed to process game for availability', [
+                    'game_id' => $game->id,
+                    'player_id' => $player->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                continue;
+            }
         }
 
         // Get upcoming training sessions
@@ -172,21 +190,36 @@ class PlayerAvailabilityService
             ->get();
 
         foreach ($trainings as $training) {
-            $availability = $this->getEffectiveAvailability($player, $training);
-            $events[] = [
-                'type' => 'training',
-                'id' => $training->id,
-                'title' => $training->title ?: 'Training',
-                'scheduled_at' => $training->scheduled_at->toIso8601String(),
-                'scheduled_at_formatted' => $training->scheduled_at->format('d.m.Y H:i'),
-                'venue' => $training->venue,
-                'team_id' => $training->team_id,
-                'session_type' => $training->session_type,
-                'is_mandatory' => $training->is_mandatory,
-                'availability' => $availability,
-                'registration_deadline' => $training->getRegistrationDeadline()?->toIso8601String(),
-                'can_respond' => $training->isRegistrationOpen(),
-            ];
+            try {
+                // Skip trainings with invalid scheduled_at
+                if (! $training->scheduled_at) {
+                    continue;
+                }
+
+                $availability = $this->getEffectiveAvailability($player, $training);
+                $events[] = [
+                    'type' => 'training',
+                    'id' => $training->id,
+                    'title' => $training->title ?: 'Training',
+                    'scheduled_at' => $training->scheduled_at->toIso8601String(),
+                    'scheduled_at_formatted' => $training->scheduled_at->format('d.m.Y H:i'),
+                    'venue' => $training->venue,
+                    'team_id' => $training->team_id,
+                    'session_type' => $training->session_type,
+                    'is_mandatory' => $training->is_mandatory,
+                    'availability' => $availability,
+                    'registration_deadline' => $training->getRegistrationDeadline()?->toIso8601String(),
+                    'can_respond' => $training->isRegistrationOpen(),
+                ];
+            } catch (\Throwable $e) {
+                \Log::warning('Failed to process training for availability', [
+                    'training_id' => $training->id,
+                    'player_id' => $player->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                continue;
+            }
         }
 
         // Sort all events by scheduled_at

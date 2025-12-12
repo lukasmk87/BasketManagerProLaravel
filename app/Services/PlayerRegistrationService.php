@@ -2,19 +2,19 @@
 
 namespace App\Services;
 
+use App\Models\BasketballTeam;
 use App\Models\Club;
 use App\Models\Player;
 use App\Models\PlayerRegistrationInvitation;
 use App\Models\User;
-use App\Models\BasketballTeam;
-use App\Notifications\PlayerRegisteredNotification;
 use App\Notifications\PlayerAssignedNotification;
+use App\Notifications\PlayerRegisteredNotification;
 use App\Notifications\RegistrationWelcomeNotification;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class PlayerRegistrationService
 {
@@ -28,10 +28,9 @@ class PlayerRegistrationService
     /**
      * Create a new player registration invitation.
      *
-     * @param int $userId Creator user ID
-     * @param int $clubId Club ID
-     * @param array $options Options (target_team_id, expires_at, max_registrations, settings)
-     * @return PlayerRegistrationInvitation
+     * @param  int  $userId  Creator user ID
+     * @param  int  $clubId  Club ID
+     * @param  array  $options  Options (target_team_id, expires_at, max_registrations, settings)
      */
     public function createInvitation(int $userId, int $clubId, array $options = []): PlayerRegistrationInvitation
     {
@@ -74,14 +73,13 @@ class PlayerRegistrationService
     /**
      * Validate a registration token.
      *
-     * @param string $token
      * @return array{valid: bool, invitation: ?PlayerRegistrationInvitation, error: ?string}
      */
     public function validateToken(string $token): array
     {
         $invitation = PlayerRegistrationInvitation::where('invitation_token', $token)->first();
 
-        if (!$invitation) {
+        if (! $invitation) {
             return [
                 'valid' => false,
                 'invitation' => null,
@@ -89,7 +87,7 @@ class PlayerRegistrationService
             ];
         }
 
-        if (!$invitation->is_active) {
+        if (! $invitation->is_active) {
             return [
                 'valid' => false,
                 'invitation' => $invitation,
@@ -123,15 +121,15 @@ class PlayerRegistrationService
     /**
      * Register a new player via invitation token.
      *
-     * @param string $token Invitation token
-     * @param array $playerData Player data (first_name, last_name, email, birth_date, etc.)
+     * @param  string  $token  Invitation token
+     * @param  array  $playerData  Player data (first_name, last_name, email, birth_date, etc.)
      * @return array{success: bool, user: ?User, player: ?Player, error: ?string}
      */
     public function registerPlayer(string $token, array $playerData): array
     {
         // Validate token first
         $validation = $this->validateToken($token);
-        if (!$validation['valid']) {
+        if (! $validation['valid']) {
             return [
                 'success' => false,
                 'user' => null,
@@ -155,19 +153,29 @@ class PlayerRegistrationService
         try {
             DB::beginTransaction();
 
-            // Create User
+            // Get the club for tenant_id
+            $club = $invitation->club;
+
+            // Create User with tenant_id
             $user = User::create([
-                'name' => trim($playerData['first_name'] . ' ' . $playerData['last_name']),
+                'tenant_id' => $club->tenant_id,
+                'name' => trim($playerData['first_name'].' '.$playerData['last_name']),
                 'email' => $playerData['email'],
                 'password' => Hash::make(Str::random(32)), // Random password, user must reset
                 'phone' => $playerData['phone'] ?? null,
                 'birth_date' => isset($playerData['birth_date']) ? Carbon::parse($playerData['birth_date']) : null,
                 'account_status' => 'pending',
                 'pending_verification' => config('player_registration.require_email_verification', false),
+                'needs_profile_completion' => true,
             ]);
 
             // Assign 'player' role
             $user->assignRole('player');
+
+            // Associate user with club
+            $club->addMember($user, 'member', [
+                'registered_via_invitation_id' => $invitation->id,
+            ]);
 
             // Create Player profile
             $player = Player::create([
@@ -217,7 +225,7 @@ class PlayerRegistrationService
                 'success' => false,
                 'user' => null,
                 'player' => null,
-                'error' => 'Registration failed: ' . $e->getMessage(),
+                'error' => 'Registration failed: '.$e->getMessage(),
             ];
         }
     }
@@ -225,17 +233,15 @@ class PlayerRegistrationService
     /**
      * Assign a pending player to a team and activate them.
      *
-     * @param int $playerId
-     * @param int $teamId
-     * @param int $assignedBy User ID who assigned
-     * @param array $teamData Optional team-specific data (jersey_number, primary_position, etc.)
+     * @param  int  $assignedBy  User ID who assigned
+     * @param  array  $teamData  Optional team-specific data (jersey_number, primary_position, etc.)
      * @return array{success: bool, player: ?Player, error: ?string}
      */
     public function assignPlayerToTeam(int $playerId, int $teamId, int $assignedBy, array $teamData = []): array
     {
         $player = Player::with('user')->find($playerId);
 
-        if (!$player) {
+        if (! $player) {
             return [
                 'success' => false,
                 'player' => null,
@@ -243,7 +249,7 @@ class PlayerRegistrationService
             ];
         }
 
-        if (!$player->pending_team_assignment) {
+        if (! $player->pending_team_assignment) {
             return [
                 'success' => false,
                 'player' => $player,
@@ -252,7 +258,7 @@ class PlayerRegistrationService
         }
 
         $team = BasketballTeam::find($teamId);
-        if (!$team) {
+        if (! $team) {
             return [
                 'success' => false,
                 'player' => $player,
@@ -312,22 +318,19 @@ class PlayerRegistrationService
             return [
                 'success' => false,
                 'player' => $player,
-                'error' => 'Assignment failed: ' . $e->getMessage(),
+                'error' => 'Assignment failed: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * Get statistics for an invitation.
-     *
-     * @param int $invitationId
-     * @return array
      */
     public function getInvitationStats(int $invitationId): array
     {
         $invitation = PlayerRegistrationInvitation::with('registeredPlayers')->find($invitationId);
 
-        if (!$invitation) {
+        if (! $invitation) {
             return [];
         }
 
@@ -336,15 +339,12 @@ class PlayerRegistrationService
 
     /**
      * Deactivate an invitation.
-     *
-     * @param int $invitationId
-     * @return bool
      */
     public function deactivateInvitation(int $invitationId): bool
     {
         $invitation = PlayerRegistrationInvitation::find($invitationId);
 
-        if (!$invitation) {
+        if (! $invitation) {
             return false;
         }
 
@@ -358,7 +358,6 @@ class PlayerRegistrationService
     /**
      * Get all pending players for a club.
      *
-     * @param int $clubId
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getPendingPlayers(int $clubId)
@@ -374,11 +373,6 @@ class PlayerRegistrationService
 
     /**
      * Send notifications after player registration.
-     *
-     * @param PlayerRegistrationInvitation $invitation
-     * @param User $user
-     * @param Player $player
-     * @return void
      */
     protected function sendRegistrationNotifications(PlayerRegistrationInvitation $invitation, User $user, Player $player): void
     {

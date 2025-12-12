@@ -49,6 +49,17 @@ const minEndDate = computed(() => {
     return form.value.start_date || minDate.value;
 });
 
+// Define resetForm BEFORE watch statements to avoid temporal dead zone
+const resetForm = () => {
+    form.value = {
+        type: 'vacation',
+        start_date: '',
+        end_date: '',
+        reason: '',
+        notes: '',
+    };
+};
+
 // Watch for changes in absence prop (edit mode)
 watch(() => props.absence, (newVal) => {
     if (newVal) {
@@ -70,16 +81,6 @@ watch(() => props.show, (newVal) => {
         resetForm();
     }
 });
-
-const resetForm = () => {
-    form.value = {
-        type: 'vacation',
-        start_date: '',
-        end_date: '',
-        reason: '',
-        notes: '',
-    };
-};
 
 const handleSubmit = () => {
     emit('submit', {

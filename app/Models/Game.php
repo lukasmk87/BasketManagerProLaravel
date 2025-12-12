@@ -951,16 +951,24 @@ class Game extends Model implements HasMedia
     /**
      * Get the registration deadline for this game.
      */
-    public function getRegistrationDeadline(): Carbon
+    public function getRegistrationDeadline(): ?Carbon
     {
+        if (! $this->scheduled_at) {
+            return null;
+        }
+
         return $this->scheduled_at->subHours($this->registration_deadline_hours ?? 24);
     }
 
     /**
      * Get the lineup deadline for this game.
      */
-    public function getLineupDeadline(): Carbon
+    public function getLineupDeadline(): ?Carbon
     {
+        if (! $this->scheduled_at) {
+            return null;
+        }
+
         return $this->scheduled_at->subHours($this->lineup_deadline_hours ?? 2);
     }
 
@@ -969,6 +977,10 @@ class Game extends Model implements HasMedia
      */
     public function isRegistrationOpen(): bool
     {
+        if (! $this->scheduled_at) {
+            return false;
+        }
+
         if (! $this->allow_player_registrations) {
             return false;
         }
@@ -985,6 +997,10 @@ class Game extends Model implements HasMedia
      */
     public function isLineupChangesAllowed(): bool
     {
+        if (! $this->scheduled_at) {
+            return false;
+        }
+
         if (! in_array($this->status, ['scheduled'])) {
             return false;
         }
